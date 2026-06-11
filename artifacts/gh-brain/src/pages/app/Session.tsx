@@ -5,7 +5,7 @@ import {
   Stethoscope, Scale, Search, FlaskConical, Settings2, Play, Square,
   ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download, ChevronDown,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
-  Printer, Package,
+  Printer, Package, ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates"
 import type { CourtConfig } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -365,7 +366,8 @@ function exportPDF(state: ReturnType<typeof useBrainSession>["state"]): void {
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function SessionPage() {
   const { state, run, stop, pause, reset, setQuestion, setTemplate, setConfig } = useBrainSession();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -398,6 +400,12 @@ export default function SessionPage() {
   async function handleRun() {
     if (!state.question.trim()) {
       toast.error("Please enter a question first.");
+      return;
+    }
+    if (userProfile && userProfile.creditBalance < 10) {
+      toast.error("You need at least 10 credits to run a session. Buy credits to continue.", {
+        action: { label: "Buy Credits", onClick: () => navigate("/billing") },
+      });
       return;
     }
     setFeedbackGiven(null);
@@ -481,6 +489,49 @@ export default function SessionPage() {
             className="flex-1 overflow-y-auto"
           >
             <div className="max-w-4xl mx-auto px-4 py-8">
+              {/* Low-credit warning banner */}
+              {userProfile && userProfile.creditBalance < 10 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4 flex items-start gap-3"
+                >
+                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-400">Almost out of credits</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      You have <span className="font-mono font-bold text-red-400">{userProfile.creditBalance}</span> credits remaining — you need at least 10 to run a session.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate("/billing")}
+                    className="shrink-0 bg-red-500 hover:bg-red-400 text-white gap-1.5 h-7 text-xs"
+                  >
+                    <ShoppingCart className="w-3 h-3" />
+                    Buy Credits
+                  </Button>
+                </motion.div>
+              )}
+              {userProfile && userProfile.creditBalance >= 10 && userProfile.creditBalance < 50 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-3 flex items-center gap-3"
+                >
+                  <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
+                  <p className="text-xs text-yellow-500 flex-1">
+                    Running low — <span className="font-mono font-bold">{userProfile.creditBalance}</span> credits remaining.
+                  </p>
+                  <button
+                    onClick={() => navigate("/billing")}
+                    className="text-xs text-yellow-500 hover:text-yellow-400 underline underline-offset-2 shrink-0"
+                  >
+                    Top up
+                  </button>
+                </motion.div>
+              )}
+
               {/* Header */}
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-xs font-mono text-primary mb-4">
