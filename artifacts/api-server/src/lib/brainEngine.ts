@@ -100,8 +100,12 @@ export interface BrainRunResult {
   turns: TurnRecord[];
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new Error("Session aborted by client");
+}
+
 export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunResult> {
-  const { question, config, templateSystemPrompt, res } = opts;
+  const { question, config, templateSystemPrompt, res, abortSignal } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
   const maxTokens = getTokensForMode(config.responseMode);
@@ -119,6 +123,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
   // ── Orchestrator frame ──────────────────────────────────────────────────────
+  throwIfAborted(abortSignal);
   sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0 });
   let orchestratorFrame = "";
 
@@ -160,11 +165,14 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const debateNotesList: string[] = [];
 
   for (let round = 1; round <= config.maxIterations; round++) {
+    throwIfAborted(abortSignal);
     sendSSE(res, { type: "round_start", round });
 
     const previousTranscript = transcript.join("\n\n");
 
     for (let i = 0; i < roles.length; i++) {
+      throwIfAborted(abortSignal);
+
       const role = roles[i];
       sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round });
 
@@ -193,13 +201,16 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         });
 
         for await (const chunk of stream) {
+          if (abortSignal?.aborted) break;
           const content = chunk.choices[0]?.delta?.content;
           if (content) {
             roleOutput += content;
             sendSSE(res, { type: "content", role: role.name, content });
           }
         }
+        throwIfAborted(abortSignal);
       } catch (err: any) {
+        if (err?.message === "Session aborted by client") throw err;
         const fallback = `[${role.name} unable to respond — ${err?.message || "API error"}]`;
         roleOutput = fallback;
         sendSSE(res, { type: "content", role: role.name, content: fallback });
@@ -224,6 +235,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   }
 
   // ── Final Verdict ───────────────────────────────────────────────────────────
+  throwIfAborted(abortSignal);
   sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99 });
 
   let finalAnswer = "";

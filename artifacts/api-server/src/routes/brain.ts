@@ -44,37 +44,44 @@ router.post("/run-brain", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
 
-  if (authHeader?.startsWith("Bearer ") && db) {
+  if (authHeader?.startsWith("Bearer ")) {
+    // A bearer token was supplied — validate it strictly.
+    // An invalid/expired token is always rejected; we do NOT fall through to guest mode.
+    if (!db) {
+      res.status(503).json({ message: "Auth service unavailable." });
+      return;
+    }
     const token = authHeader.slice(7);
     const decoded = await verifyIdToken(token);
-    if (decoded) {
-      uid = decoded.uid;
+    if (!decoded) {
+      res.status(401).json({ message: "Invalid or expired auth token." });
+      return;
+    }
+    uid = decoded.uid;
 
-      // Optimistic credit reservation: deduct estimatedCost upfront atomically.
-      // This prevents concurrent sessions from overdrawing the same balance.
-      // Post-run: refund (estimatedCost - actualCost) when actual < estimated.
-      let reserved = false;
-      try {
-        reserved = await db.runTransaction(async (txn) => {
-          const userRef = db.collection("users").doc(uid!);
-          const userDoc = await txn.get(userRef);
-          const balance = (userDoc.data()?.creditBalance as number) ?? 0;
-          if (balance < estimatedCost) return false;
-          // Deduct upfront as reservation; will reconcile after run
-          txn.update(userRef, { creditBalance: FieldValue.increment(-estimatedCost) });
-          return true;
-        });
-      } catch {
-        // Firestore unavailable — allow run, skip credit accounting
-        reserved = true;
-      }
+    // Optimistic credit reservation: deduct estimatedCost upfront atomically.
+    // This prevents concurrent sessions from overdrawing the same balance.
+    // Post-run: refund (estimatedCost - actualCost) when actual < estimated.
+    let reserved = false;
+    try {
+      reserved = await db.runTransaction(async (txn) => {
+        const userRef = db.collection("users").doc(uid!);
+        const userDoc = await txn.get(userRef);
+        const balance = (userDoc.data()?.creditBalance as number) ?? 0;
+        if (balance < estimatedCost) return false;
+        txn.update(userRef, { creditBalance: FieldValue.increment(-estimatedCost) });
+        return true;
+      });
+    } catch {
+      // Firestore unavailable — allow run without credit accounting
+      reserved = true;
+    }
 
-      if (!reserved) {
-        res.status(402).json({
-          message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
-        });
-        return;
-      }
+    if (!reserved) {
+      res.status(402).json({
+        message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
+      });
+      return;
     }
   } else {
     // Guest mode: one free session per IP, then require signup
@@ -96,6 +103,10 @@ router.post("/run-brain", async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
+  // Wire client disconnect → abort signal so server-side AI calls stop immediately
+  const abortCtrl = new AbortController();
+  req.on("close", () => abortCtrl.abort());
+
   let runSucceeded = false;
   let actualCost = 0;
 
@@ -106,6 +117,7 @@ router.post("/run-brain", async (req, res) => {
       templateId,
       sessionId,
       res,
+      abortSignal: abortCtrl.signal,
     });
 
     runSucceeded = true;
