@@ -168,7 +168,11 @@ export async function getSessions(
 export async function deleteAccount(idToken?: string): Promise<void> {
   const headers: Record<string, string> = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  await fetch(getApiUrl("/account"), { method: "DELETE", headers });
+  const res = await fetch(getApiUrl("/account"), { method: "DELETE", headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).message || `Delete account failed (${res.status})`);
+  }
 }
 
 export async function getSession(id: string, idToken?: string): Promise<SavedSession> {
@@ -186,17 +190,37 @@ export async function updateSession(
 ): Promise<void> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  await fetch(getApiUrl(`/sessions/${id}`), {
+  const res = await fetch(getApiUrl(`/sessions/${id}`), {
     method: "PATCH",
     headers,
     body: JSON.stringify(data),
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).message || `Update session failed (${res.status})`);
+  }
 }
 
 export async function deleteSession(id: string, idToken?: string): Promise<void> {
   const headers: Record<string, string> = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  await fetch(getApiUrl(`/sessions/${id}`), { method: "DELETE", headers });
+  const res = await fetch(getApiUrl(`/sessions/${id}`), { method: "DELETE", headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).message || `Delete session failed (${res.status})`);
+  }
+}
+
+/** Fetch every session page by cursor until exhausted. Use for exports. */
+export async function getAllSessions(idToken?: string): Promise<SavedSession[]> {
+  const all: SavedSession[] = [];
+  let cursor: string | null = null;
+  do {
+    const page = await getSessions(idToken, { limit: 100, cursor });
+    all.push(...page.sessions);
+    cursor = page.hasMore ? page.nextCursor : null;
+  } while (cursor);
+  return all;
 }
 
 export async function generateShareLink(id: string, idToken?: string): Promise<string> {

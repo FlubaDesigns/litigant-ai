@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateUserProfile, getUserProfile } from "@/services/firestoreService";
-import { getSessions, exportSessionAsMarkdown, deleteAccount } from "@/services/sessionService";
+import { getAllSessions, exportSessionAsMarkdown, deleteAccount } from "@/services/sessionService";
 import {
   updateProfile,
   updateEmail,
@@ -550,8 +550,8 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
     setExportLoading(true);
     try {
       const idToken = await user.getIdToken();
-      const [sessionsPage, profile] = await Promise.all([
-        getSessions(idToken, { limit: 100 }),
+      const [allSessions, profile] = await Promise.all([
+        getAllSessions(idToken),
         getUserProfile(user.uid),
       ]);
 
@@ -567,7 +567,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
         },
         settings: profile?.defaultSettings,
         notifications: profile?.notifications,
-        sessions: sessionsPage.sessions.map((s) => ({
+        sessions: allSessions.map((s) => ({
           id: s.id,
           title: s.title,
           question: s.question,

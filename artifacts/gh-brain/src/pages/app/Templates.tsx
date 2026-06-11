@@ -1,16 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
   Search, Briefcase, Globe, TrendingUp, Code2, FileText,
   BookOpen, Stethoscope, Scale, FlaskConical, ArrowRight,
-  Zap, LayoutTemplate,
+  Zap, LayoutTemplate, Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
+import { TEMPLATES as STATIC_TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
 import { cn } from "@/lib/utils";
+
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
+
+async function fetchTemplates(): Promise<Template[]> {
+  const res = await fetch(`${API_BASE}/templates`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Briefcase, Globe, TrendingUp, Code2, FileText,
@@ -55,7 +63,7 @@ function TemplateCard({ template, onUse }: { template: Template; onUse: () => vo
             variant="outline"
             className={cn("text-[10px] font-medium px-1.5 py-0 h-4", colorClass)}
           >
-            {CATEGORY_LABELS[template.category]}
+            {CATEGORY_LABELS[template.category] ?? template.category}
           </Badge>
         </div>
         <div className="flex items-center gap-1 text-xs font-mono text-muted-foreground shrink-0">
@@ -70,9 +78,8 @@ function TemplateCard({ template, onUse }: { template: Template; onUse: () => vo
 
       <div className="border-t border-border/40 pt-3 flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
-          {template.inputFields.length} input{template.inputFields.length !== 1 ? "s" : ""}
-          {" · "}
-          {template.defaultConfig.courtMode} mode
+          {template.inputFields?.length ?? 0} input{(template.inputFields?.length ?? 0) !== 1 ? "s" : ""}
+          {template.defaultConfig ? ` · ${template.defaultConfig.courtMode} mode` : ""}
         </div>
         <Button
           size="sm"
@@ -91,8 +98,30 @@ export default function TemplatesPage() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [templates, setTemplates] = useState<Template[]>(STATIC_TEMPLATES);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = TEMPLATES.filter((t) => {
+  useEffect(() => {
+    let cancelled = false;
+    fetchTemplates()
+      .then((data) => {
+        if (!cancelled && data.length > 0) setTemplates(data);
+      })
+      .catch(() => {
+        // fallback: keep static templates
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Derive categories from the live template list
+  const presentCategories = TEMPLATE_CATEGORIES.filter((cat) =>
+    templates.some((t) => t.category === cat.id)
+  );
+
+  const filtered = templates.filter((t) => {
     const matchesCategory = activeCategory === "all" || t.category === activeCategory;
     const matchesSearch =
       !search.trim() ||
@@ -114,6 +143,7 @@ export default function TemplatesPage() {
           <div className="flex items-center gap-2 mb-2">
             <LayoutTemplate className="w-5 h-5 text-primary" />
             <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
+            {loading && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
           </div>
           <p className="text-muted-foreground text-sm">
             Choose a template to pre-configure the courtroom for your use case. Each template optimises the AI roles, debate mode, and output format.
@@ -142,10 +172,10 @@ export default function TemplatesPage() {
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent"
               )}
             >
-              All ({TEMPLATES.length})
+              All ({templates.length})
             </button>
-            {TEMPLATE_CATEGORIES.map(({ id, label }) => {
-              const count = TEMPLATES.filter((t) => t.category === id).length;
+            {presentCategories.map(({ id, label }) => {
+              const count = templates.filter((t) => t.category === id).length;
               return (
                 <button
                   key={id}
