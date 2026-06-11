@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import brainRouter from "./brain";
 import sessionsRouter from "./sessions";
 import templatesRouter from "./templates";
+import accountRouter from "./account";
 
 const router: IRouter = Router();
 
@@ -10,5 +11,6 @@ router.use(healthRouter);
 router.use(brainRouter);
 router.use(sessionsRouter);
 router.use(templatesRouter);
+router.use(accountRouter);
 
 export default router;

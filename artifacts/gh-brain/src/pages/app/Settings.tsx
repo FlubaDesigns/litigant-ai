@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   Settings, User as UserIcon, Sliders, AlertTriangle, Save,
-  Eye, EyeOff, Download, Loader2, Shield, Check,
+  Eye, EyeOff, Download, Loader2, Shield, Check, Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,34 +23,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateUserProfile, getUserProfile } from "@/services/firestoreService";
-import { getSessions, exportSessionAsMarkdown } from "@/services/sessionService";
+import { getSessions, exportSessionAsMarkdown, deleteAccount } from "@/services/sessionService";
 import {
   updateProfile,
+  updateEmail,
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
   type User,
 } from "firebase/auth";
-import { auth, isConfigured } from "@/lib/firebase";
-import { TEMPLATE_CATEGORIES } from "@/data/templates";
+import { TEMPLATES, TEMPLATE_CATEGORIES } from "@/data/templates";
 
-type TabId = "profile" | "preferences" | "danger";
-
-interface DefaultSettings {
-  courtMode: string;
-  confidenceTarget: number;
-  responseMode: string;
-  outputFormat: string;
-}
+type TabId = "profile" | "preferences" | "notifications" | "danger";
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "profile", label: "Profile", icon: UserIcon },
   { id: "preferences", label: "Preferences", icon: Sliders },
+  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "danger", label: "Danger Zone", icon: AlertTriangle },
 ];
 
@@ -71,31 +66,64 @@ function Section({ title, description, children }: {
 
 function ProfileTab({ user }: { user: User }) {
   const [displayName, setDisplayName] = useState(user.displayName ?? "");
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savedProfile, setSavedProfile] = useState(false);
+  const [newEmail, setNewEmail] = useState(user.email ?? "");
+  const [savingName, setSavingName] = useState(false);
+  const [savedName, setSavedName] = useState(false);
 
-  const [currentPassword, setCurrentPassword] = useState("");
+  // Password section
+  const [reauthPassword, setReauthPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
+  // Email section
+  const [emailPassword, setEmailPassword] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+
   const isEmailProvider = user.providerData.some((p: { providerId: string }) => p.providerId === "password");
   const isGoogleProvider = user.providerData.some((p: { providerId: string }) => p.providerId === "google.com");
 
-  async function handleSaveProfile() {
+  async function handleSaveName() {
     if (!displayName.trim()) { toast.error("Display name cannot be empty."); return; }
-    setSavingProfile(true);
+    setSavingName(true);
     try {
       await updateProfile(user, { displayName: displayName.trim() });
       await updateUserProfile(user.uid, { displayName: displayName.trim() });
-      setSavedProfile(true);
-      setTimeout(() => setSavedProfile(false), 2000);
-      toast.success("Profile updated.");
+      setSavedName(true);
+      setTimeout(() => setSavedName(false), 2000);
+      toast.success("Name updated.");
     } catch {
-      toast.error("Failed to update profile.");
+      toast.error("Failed to update name.");
     } finally {
-      setSavingProfile(false);
+      setSavingName(false);
+    }
+  }
+
+  async function handleUpdateEmail() {
+    if (!newEmail.trim() || newEmail === user.email) { toast.error("Enter a new email address."); return; }
+    if (!emailPassword) { toast.error("Enter your current password to confirm."); return; }
+    setSavingEmail(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email!, emailPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updateEmail(user, newEmail.trim());
+      await updateUserProfile(user.uid, { email: newEmail.trim() });
+      setEmailPassword("");
+      toast.success("Email updated. Please verify your new address.");
+    } catch (err: any) {
+      if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
+        toast.error("Current password is incorrect.");
+      } else if (err?.code === "auth/email-already-in-use") {
+        toast.error("That email address is already in use.");
+      } else if (err?.code === "auth/invalid-email") {
+        toast.error("Invalid email address.");
+      } else {
+        toast.error("Failed to update email.");
+      }
+    } finally {
+      setSavingEmail(false);
     }
   }
 
@@ -105,13 +133,13 @@ function ProfileTab({ user }: { user: User }) {
     if (newPassword !== confirmPassword) { toast.error("Passwords do not match."); return; }
     setSavingPassword(true);
     try {
-      const credential = EmailAuthProvider.credential(user.email!, currentPassword);
+      const credential = EmailAuthProvider.credential(user.email!, reauthPassword);
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, newPassword);
-      setCurrentPassword("");
+      setReauthPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      toast.success("Password changed successfully.");
+      toast.success("Password changed.");
     } catch (err: any) {
       if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
         toast.error("Current password is incorrect.");
@@ -125,10 +153,8 @@ function ProfileTab({ user }: { user: User }) {
 
   return (
     <div className="space-y-8">
-      <Section
-        title="Display name"
-        description="This is how you appear in the app."
-      >
+      {/* Display name */}
+      <Section title="Display name" description="This is how you appear in the app.">
         <div className="flex gap-3 max-w-sm">
           <Input
             value={displayName}
@@ -137,11 +163,11 @@ function ProfileTab({ user }: { user: User }) {
             className="bg-card border-border/60"
           />
           <Button
-            onClick={handleSaveProfile}
-            disabled={savingProfile || displayName === user.displayName}
+            onClick={handleSaveName}
+            disabled={savingName || displayName === user.displayName}
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shrink-0"
           >
-            {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : savedProfile ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : savedName ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             Save
           </Button>
         </div>
@@ -149,44 +175,73 @@ function ProfileTab({ user }: { user: User }) {
 
       <Separator />
 
-      <Section title="Email & auth provider">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50 max-w-sm">
-            <div className="flex-1">
-              <p className="text-sm font-medium">{user.email}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Email address (read-only)</p>
+      {/* Email */}
+      <Section title="Email address" description={isEmailProvider ? "Changing your email requires your current password." : "Email linked via Google."}>
+        <div className="space-y-3 max-w-sm">
+          <Input
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            placeholder="New email address"
+            className="bg-card border-border/60"
+            disabled={!isEmailProvider}
+          />
+          {isEmailProvider && (
+            <>
+              <div className="relative">
+                <Input
+                  type={showEmailPassword ? "text" : "password"}
+                  value={emailPassword}
+                  onChange={(e) => setEmailPassword(e.target.value)}
+                  placeholder="Current password to confirm"
+                  className="bg-card border-border/60 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showEmailPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <Button
+                onClick={handleUpdateEmail}
+                disabled={savingEmail || !emailPassword || newEmail === user.email}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+              >
+                {savingEmail && <Loader2 className="w-4 h-4 animate-spin" />}
+                Update email
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-2">
+          {isEmailProvider && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/60 bg-muted/20 text-xs text-muted-foreground">
+              <Shield className="w-3 h-3" /> Email & password
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {isEmailProvider && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                <Shield className="w-3 h-3" /> Email & password
-              </div>
-            )}
-            {isGoogleProvider && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                <Shield className="w-3 h-3" /> Google
-              </div>
-            )}
-          </div>
+          )}
+          {isGoogleProvider && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/60 bg-muted/20 text-xs text-muted-foreground">
+              <Shield className="w-3 h-3" /> Google
+            </div>
+          )}
         </div>
       </Section>
 
       {isEmailProvider && (
         <>
           <Separator />
-          <Section
-            title="Change password"
-            description="You'll need to enter your current password to confirm."
-          >
+          <Section title="Change password" description="You'll need your current password to confirm.">
             <div className="space-y-3 max-w-sm">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Current password</Label>
                 <div className="relative">
                   <Input
                     type={showPasswords ? "text" : "password"}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    value={reauthPassword}
+                    onChange={(e) => setReauthPassword(e.target.value)}
                     placeholder="••••••••"
                     className="bg-card border-border/60 pr-10"
                   />
@@ -221,7 +276,7 @@ function ProfileTab({ user }: { user: User }) {
               </div>
               <Button
                 onClick={handleChangePassword}
-                disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                disabled={savingPassword || !reauthPassword || !newPassword || !confirmPassword}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
               >
                 {savingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -235,12 +290,21 @@ function ProfileTab({ user }: { user: User }) {
   );
 }
 
+interface DefaultSettings {
+  courtMode: string;
+  confidenceTarget: number;
+  responseMode: string;
+  outputFormat: string;
+  preferredTemplates: string[];
+}
+
 function PreferencesTab({ user }: { user: User }) {
   const [settings, setSettings] = useState<DefaultSettings>({
     courtMode: "adversarial",
     confidenceTarget: 85,
     responseMode: "balanced",
     outputFormat: "report",
+    preferredTemplates: [],
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -248,10 +312,25 @@ function PreferencesTab({ user }: { user: User }) {
   useEffect(() => {
     getUserProfile(user.uid).then((profile) => {
       if (profile?.defaultSettings) {
-        setSettings((prev) => ({ ...prev, ...profile.defaultSettings }));
+        setSettings({
+          courtMode: profile.defaultSettings.courtMode ?? "adversarial",
+          confidenceTarget: profile.defaultSettings.confidenceTarget ?? 85,
+          responseMode: profile.defaultSettings.responseMode ?? "balanced",
+          outputFormat: profile.defaultSettings.outputFormat ?? "report",
+          preferredTemplates: profile.defaultSettings.preferredTemplates ?? [],
+        });
       }
     }).catch(() => {});
   }, [user.uid]);
+
+  function toggleTemplate(id: string) {
+    setSettings((s) => ({
+      ...s,
+      preferredTemplates: s.preferredTemplates.includes(id)
+        ? s.preferredTemplates.filter((t) => t !== id)
+        : [...s.preferredTemplates, id],
+    }));
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -269,20 +348,12 @@ function PreferencesTab({ user }: { user: User }) {
 
   return (
     <div className="space-y-8 max-w-md">
-      <Section
-        title="Default court configuration"
-        description="These are pre-filled each time you start a new session. You can always override them."
-      >
+      <Section title="Default court configuration" description="Pre-filled for each new session. You can always override.">
         <div className="space-y-5">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Default court mode</Label>
-            <Select
-              value={settings.courtMode}
-              onValueChange={(v) => setSettings((s) => ({ ...s, courtMode: v }))}
-            >
-              <SelectTrigger className="bg-card border-border/60">
-                <SelectValue />
-              </SelectTrigger>
+            <Select value={settings.courtMode} onValueChange={(v) => setSettings((s) => ({ ...s, courtMode: v }))}>
+              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="adversarial">⚔️ Adversarial — debate</SelectItem>
                 <SelectItem value="socratic">❓ Socratic — questioning</SelectItem>
@@ -297,28 +368,19 @@ function PreferencesTab({ user }: { user: User }) {
               Confidence target — {settings.confidenceTarget}%
             </Label>
             <Slider
-              min={60}
-              max={95}
-              step={5}
+              min={60} max={95} step={5}
               value={[settings.confidenceTarget]}
               onValueChange={([v]) => setSettings((s) => ({ ...s, confidenceTarget: v }))}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>60% quick</span>
-              <span>80% standard</span>
-              <span>95% thorough</span>
+              <span>60% quick</span><span>80% standard</span><span>95% thorough</span>
             </div>
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Response depth</Label>
-            <Select
-              value={settings.responseMode}
-              onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v }))}
-            >
-              <SelectTrigger className="bg-card border-border/60">
-                <SelectValue />
-              </SelectTrigger>
+            <Select value={settings.responseMode} onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v }))}>
+              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="concise">Concise</SelectItem>
                 <SelectItem value="balanced">Balanced</SelectItem>
@@ -329,13 +391,8 @@ function PreferencesTab({ user }: { user: User }) {
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Output format</Label>
-            <Select
-              value={settings.outputFormat}
-              onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v }))}
-            >
-              <SelectTrigger className="bg-card border-border/60">
-                <SelectValue />
-              </SelectTrigger>
+            <Select value={settings.outputFormat} onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v }))}>
+              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="report">Full Report</SelectItem>
                 <SelectItem value="memo">Executive Memo</SelectItem>
@@ -347,18 +404,137 @@ function PreferencesTab({ user }: { user: User }) {
         </div>
       </Section>
 
+      <Separator />
+
+      <Section title="Preferred templates" description="Pin templates to the top of your session template grid for quick access.">
+        <div className="space-y-3">
+          {TEMPLATE_CATEGORIES.map(({ id: catId, label }) => {
+            const catTemplates = TEMPLATES.filter((t) => t.category === catId);
+            return (
+              <div key={catId}>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">{label}</p>
+                <div className="flex flex-wrap gap-2">
+                  {catTemplates.map((t) => {
+                    const selected = settings.preferredTemplates.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => toggleTemplate(t.id)}
+                        className={cn(
+                          "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                          selected
+                            ? "bg-primary/10 text-primary border-primary/30"
+                            : "bg-transparent text-muted-foreground border-border/50 hover:border-border hover:text-foreground"
+                        )}
+                      >
+                        {selected && <Check className="w-3 h-3 inline-block mr-1" />}
+                        {t.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {settings.preferredTemplates.length > 0 && (
+            <button
+              onClick={() => setSettings((s) => ({ ...s, preferredTemplates: [] }))}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Clear all ({settings.preferredTemplates.length} selected)
+            </button>
+          )}
+        </div>
+      </Section>
+
       <Button
         onClick={handleSave}
         disabled={saving}
         className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
       >
-        {saving ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : saved ? (
-          <Check className="w-4 h-4" />
-        ) : (
-          <Save className="w-4 h-4" />
-        )}
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+        Save preferences
+      </Button>
+    </div>
+  );
+}
+
+function NotificationsTab({ user }: { user: User }) {
+  const [notifications, setNotifications] = useState({
+    sessionComplete: true,
+    weeklyDigest: false,
+    productUpdates: true,
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getUserProfile(user.uid).then((profile) => {
+      if (profile?.notifications) {
+        setNotifications((n) => ({ ...n, ...profile.notifications }));
+      }
+    }).catch(() => {});
+  }, [user.uid]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateUserProfile(user.uid, { notifications });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      toast.success("Notification preferences saved.");
+    } catch {
+      toast.error("Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const prefs = [
+    {
+      key: "sessionComplete" as const,
+      label: "Session complete",
+      description: "Notify when a Brain Session finishes processing.",
+    },
+    {
+      key: "weeklyDigest" as const,
+      label: "Weekly digest",
+      description: "Summary of your session activity each week.",
+    },
+    {
+      key: "productUpdates" as const,
+      label: "Product updates",
+      description: "New features, templates, and major improvements.",
+    },
+  ];
+
+  return (
+    <div className="space-y-6 max-w-md">
+      <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
+        Email notifications will be sent to <strong>{user.email}</strong>. Firebase email delivery requires a configured sender — these preferences are stored now and will take effect once email is wired.
+      </div>
+
+      <div className="space-y-4">
+        {prefs.map(({ key, label, description }) => (
+          <div key={key} className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">{label}</p>
+              <p className="text-xs text-muted-foreground">{description}</p>
+            </div>
+            <Switch
+              checked={notifications[key]}
+              onCheckedChange={(v) => setNotifications((n) => ({ ...n, [key]: v }))}
+            />
+          </div>
+        ))}
+      </div>
+
+      <Button
+        onClick={handleSave}
+        disabled={saving}
+        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+      >
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
         Save preferences
       </Button>
     </div>
@@ -374,8 +550,10 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
     setExportLoading(true);
     try {
       const idToken = await user.getIdToken();
-      const sessions = await getSessions(idToken);
-      const profile = await getUserProfile(user.uid);
+      const [sessionsPage, profile] = await Promise.all([
+        getSessions(idToken, { limit: 100 }),
+        getUserProfile(user.uid),
+      ]);
 
       const exportData = {
         exportedAt: new Date().toISOString(),
@@ -384,10 +562,12 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
           email: user.email,
           displayName: user.displayName,
           createdAt: profile?.createdAt,
+          plan: profile?.plan,
+          creditBalance: profile?.creditBalance,
         },
         settings: profile?.defaultSettings,
-        plan: profile?.plan,
-        sessions: sessions.map((s) => ({
+        notifications: profile?.notifications,
+        sessions: sessionsPage.sessions.map((s) => ({
           id: s.id,
           title: s.title,
           question: s.question,
@@ -395,6 +575,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
           status: s.status,
           confidence: s.confidence,
           creditsUsed: s.creditsUsed,
+          starred: s.starred,
           createdAt: s.createdAt,
           updatedAt: s.updatedAt,
         })),
@@ -417,10 +598,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
 
   return (
     <div className="space-y-8">
-      <Section
-        title="Export your data"
-        description="Download all your sessions and account data as a JSON file."
-      >
+      <Section title="Export your data" description="Download all your sessions and account data as a JSON file.">
         <Button
           onClick={handleExportData}
           disabled={exportLoading}
@@ -441,7 +619,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
             <div>
               <p className="text-sm font-medium text-destructive">This action is permanent</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Deleting your account will permanently remove your profile, all saved sessions, and your credit balance. This cannot be undone.
+                Deleting your account will permanently remove your profile, all saved sessions, feedback, and your credit balance. This cannot be undone.
               </p>
             </div>
           </div>
@@ -462,9 +640,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
             <AlertDialogTitle>Delete account permanently?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>
-                  All your sessions, settings, and credits will be deleted. This cannot be reversed.
-                </p>
+                <p>All your sessions, settings, and credits will be permanently deleted. This cannot be reversed.</p>
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium">
                     Type <span className="font-mono text-destructive">DELETE</span> to confirm:
@@ -499,13 +675,25 @@ export default function SettingsPage() {
   const { user, removeAccount, firebaseReady } = useAuth();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<TabId>("profile");
+  const [deleting, setDeleting] = useState(false);
 
   async function handleDeleteAccount() {
+    if (!user) return;
+    setDeleting(true);
     try {
+      // 1. Delete all Firestore data server-side (sessions, profile, feedback)
+      const idToken = await user.getIdToken();
+      await deleteAccount(idToken);
+    } catch {
+      // Non-fatal — proceed to delete the auth user regardless
+    }
+    try {
+      // 2. Delete the Firebase Auth user
       await removeAccount();
-      toast.success("Account deleted. Goodbye.");
+      toast.success("Account deleted.");
       setLocation("/");
     } catch (err: any) {
+      setDeleting(false);
       if (err?.code === "auth/requires-recent-login") {
         toast.error("Please sign out and sign back in before deleting your account.");
       } else {
@@ -538,8 +726,8 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6">
-          {/* Sidebar tabs */}
-          <nav className="sm:w-44 shrink-0">
+          {/* Sidebar */}
+          <nav className="sm:w-48 shrink-0">
             <div className="flex sm:flex-col gap-1">
               {TABS.map(({ id, label, icon: Icon }) => (
                 <button
@@ -554,19 +742,29 @@ export default function SettingsPage() {
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   )}
                 >
-                  <Icon className={cn("w-4 h-4", id === "danger" && activeTab === id ? "text-destructive" : "")} />
-                  {label}
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{label}</span>
                 </button>
               ))}
             </div>
           </nav>
 
-          {/* Tab content */}
+          {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="rounded-xl border border-border/60 bg-card/50 p-6">
-              {activeTab === "profile" && <ProfileTab user={user} />}
-              {activeTab === "preferences" && <PreferencesTab user={user} />}
-              {activeTab === "danger" && <DangerTab user={user} onDelete={handleDeleteAccount} />}
+              {deleting ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground">Deleting account data…</p>
+                </div>
+              ) : (
+                <>
+                  {activeTab === "profile" && <ProfileTab user={user} />}
+                  {activeTab === "preferences" && <PreferencesTab user={user} />}
+                  {activeTab === "notifications" && <NotificationsTab user={user} />}
+                  {activeTab === "danger" && <DangerTab user={user} onDelete={handleDeleteAccount} />}
+                </>
+              )}
             </div>
           </div>
         </div>

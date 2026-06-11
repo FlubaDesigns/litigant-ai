@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   History, Search, Star, Archive, Trash2, Share2, Download,
   Edit3, Check, X, ChevronRight, Clock, Zap, Target,
-  MoreHorizontal, Filter, ExternalLink, Copy,
+  MoreHorizontal, Filter, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,7 +129,7 @@ function SessionDetail({ session, onClose }: { session: SavedSession; onClose: (
 
           {!session.finalAnswer && !session.debateNotes && !session.transcript && (
             <p className="text-muted-foreground text-xs text-center py-8">
-              Session content not available — this session may have been saved without full transcript data.
+              Session content is not available in the list view. This session may have been saved without full transcript data.
             </p>
           )}
         </div>
@@ -181,10 +181,7 @@ function SessionRow({
       </button>
 
       {/* Main content */}
-      <button
-        className="flex-1 min-w-0 text-left"
-        onClick={editing ? undefined : onOpen}
-      >
+      <button className="flex-1 min-w-0 text-left" onClick={editing ? undefined : onOpen}>
         {editing ? (
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Input
@@ -229,7 +226,7 @@ function SessionRow({
           </span>
         )}
         <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />{formatDate(session.createdAt)}
+          <Clock className="w-3 h-3" />{formatDate(session.updatedAt ?? session.createdAt)}
         </span>
         <Badge variant="outline" className={cn("text-[10px] h-4 px-1.5", STATUS_STYLES[session.status] ?? "")}>
           {session.status}
@@ -272,34 +269,42 @@ function SessionRow({
   );
 }
 
+const PAGE_SIZE = 20;
+
 export default function HistoryPage() {
   const { user, firebaseReady } = useAuth();
   const [, setLocation] = useLocation();
 
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tabView, setTabView] = useState<TabView>("all");
   const [templateFilter, setTemplateFilter] = useState<string>("all");
   const [detailSession, setDetailSession] = useState<SavedSession | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (cursor: string | null = null, append = false) => {
     if (!user) return;
-    setLoading(true);
+    cursor ? setLoadingMore(true) : setLoading(true);
     try {
       const idToken = await user.getIdToken();
-      const data = await getSessions(idToken);
-      setSessions(data);
+      const page = await getSessions(idToken, { limit: PAGE_SIZE, cursor });
+      setSessions((prev) => append ? [...prev, ...page.sessions] : page.sessions);
+      setHasMore(page.hasMore);
+      setNextCursor(page.nextCursor);
     } catch {
       toast.error("Failed to load sessions.");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [user]);
 
   useEffect(() => {
-    loadSessions();
+    loadSessions(null, false);
   }, [loadSessions]);
 
   async function openDetail(session: SavedSession) {
@@ -400,10 +405,9 @@ export default function HistoryPage() {
     try {
       const idToken = await user.getIdToken();
       const url = await generateShareLink(session.id, idToken);
+      const newShareId = url.split("/").pop();
       setSessions((prev) => prev.map((s) =>
-        s.id === session.id
-          ? { ...s, shared: true, shareId: url.split("/").pop() }
-          : s
+        s.id === session.id ? { ...s, shared: true, shareId: newShareId } : s
       ));
       await navigator.clipboard.writeText(url);
       toast.success("Share link created and copied to clipboard.", {
@@ -414,14 +418,21 @@ export default function HistoryPage() {
     }
   }
 
-  const uniqueTemplates = [...new Set(sessions.map((s) => s.templateId).filter(Boolean))];
+  // Unique templates present in loaded sessions
+  const uniqueTemplateIds = [...new Set(sessions.map((s) => s.templateId))];
+  const hasCustom = uniqueTemplateIds.includes(null);
+  const uniqueNamed = uniqueTemplateIds.filter((id): id is string => id !== null);
 
   const filtered = sessions.filter((s) => {
-    if (tabView === "starred") return s.starred && !s.archived;
-    if (tabView === "archived") return s.archived;
+    if (tabView === "starred") return s.starred === true && !s.archived;
+    if (tabView === "archived") return s.archived === true;
     return !s.archived;
   }).filter((s) => {
-    if (templateFilter !== "all" && s.templateId !== templateFilter) return false;
+    if (templateFilter === "all") return true;
+    // "custom" means null templateId
+    if (templateFilter === "__custom__") return s.templateId == null;
+    return s.templateId === templateFilter;
+  }).filter((s) => {
     if (!search.trim()) return true;
     return (
       s.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -456,7 +467,8 @@ export default function HistoryPage() {
               <h1 className="text-2xl font-bold tracking-tight">Session History</h1>
             </div>
             <p className="text-muted-foreground text-sm">
-              {sessions.filter((s) => !s.archived).length} session{sessions.filter((s) => !s.archived).length !== 1 ? "s" : ""} saved
+              {sessions.filter((s) => !s.archived).length} session{sessions.filter((s) => !s.archived).length !== 1 ? "s" : ""}
+              {hasMore ? "+" : ""} saved
             </p>
           </div>
           <Button
@@ -497,19 +509,19 @@ export default function HistoryPage() {
               />
             </div>
 
-            {uniqueTemplates.length > 0 && (
+            {(uniqueNamed.length > 0 || hasCustom) && (
               <div className="flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <select
                   value={templateFilter}
                   onChange={(e) => setTemplateFilter(e.target.value)}
                   className="text-xs bg-card border border-border/60 rounded-md px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                 >
                   <option value="all">All templates</option>
-                  <option value="">Custom (no template)</option>
-                  {uniqueTemplates.map((tid) => (
-                    <option key={tid} value={tid!}>
-                      {getTemplateName(tid!)}
+                  {hasCustom && <option value="__custom__">Custom (no template)</option>}
+                  {uniqueNamed.map((tid) => (
+                    <option key={tid} value={tid}>
+                      {getTemplateName(tid)}
                     </option>
                   ))}
                 </select>
@@ -552,23 +564,40 @@ export default function HistoryPage() {
             )}
           </div>
         ) : (
-          <AnimatePresence initial={false}>
-            <div className="flex flex-col gap-2">
-              {filtered.map((session) => (
-                <SessionRow
-                  key={session.id}
-                  session={session}
-                  onOpen={() => openDetail(session)}
-                  onRename={(title) => handleRename(session.id, title)}
-                  onToggleStar={() => handleToggleStar(session)}
-                  onToggleArchive={() => handleToggleArchive(session)}
-                  onDelete={() => setDeleteTarget(session.id)}
-                  onExport={() => handleExport(session)}
-                  onShare={() => handleShare(session)}
-                />
-              ))}
-            </div>
-          </AnimatePresence>
+          <>
+            <AnimatePresence initial={false}>
+              <div className="flex flex-col gap-2">
+                {filtered.map((session) => (
+                  <SessionRow
+                    key={session.id}
+                    session={session}
+                    onOpen={() => openDetail(session)}
+                    onRename={(title) => handleRename(session.id, title)}
+                    onToggleStar={() => handleToggleStar(session)}
+                    onToggleArchive={() => handleToggleArchive(session)}
+                    onDelete={() => setDeleteTarget(session.id)}
+                    onExport={() => handleExport(session)}
+                    onShare={() => handleShare(session)}
+                  />
+                ))}
+              </div>
+            </AnimatePresence>
+
+            {/* Load more */}
+            {hasMore && !search && templateFilter === "all" && tabView === "all" && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => loadSessions(nextCursor, true)}
+                  disabled={loadingMore}
+                  className="gap-2 border-border/60"
+                >
+                  {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Load more
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

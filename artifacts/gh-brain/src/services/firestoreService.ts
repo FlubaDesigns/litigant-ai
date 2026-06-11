@@ -24,6 +24,12 @@ export interface UserProfile {
     confidenceTarget: number;
     responseMode: string;
     outputFormat: string;
+    preferredTemplates?: string[];
+  };
+  notifications?: {
+    sessionComplete: boolean;
+    weeklyDigest: boolean;
+    productUpdates: boolean;
   };
 }
 

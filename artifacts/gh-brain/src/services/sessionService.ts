@@ -139,12 +139,36 @@ export interface SavedSession {
   artifacts?: string;
 }
 
-export async function getSessions(idToken?: string): Promise<SavedSession[]> {
+export interface SessionsPage {
+  sessions: SavedSession[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export async function getSessions(
+  idToken?: string,
+  opts: { limit?: number; cursor?: string | null } = {}
+): Promise<SessionsPage> {
   const headers: Record<string, string> = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  const res = await fetch(getApiUrl("/sessions"), { headers });
+  const params = new URLSearchParams();
+  if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.cursor) params.set("cursor", opts.cursor);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(getApiUrl(`/sessions${qs}`), { headers });
   if (!res.ok) throw new Error("Failed to fetch sessions");
-  return res.json();
+  // Handle both new paginated format {sessions,hasMore,nextCursor} and legacy plain array
+  const data = await res.json();
+  if (Array.isArray(data)) {
+    return { sessions: data, hasMore: false, nextCursor: null };
+  }
+  return data as SessionsPage;
+}
+
+export async function deleteAccount(idToken?: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  await fetch(getApiUrl("/account"), { method: "DELETE", headers });
 }
 
 export async function getSession(id: string, idToken?: string): Promise<SavedSession> {

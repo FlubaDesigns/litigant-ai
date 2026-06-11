@@ -18,22 +18,37 @@ router.get("/sessions", async (req, res) => {
     return;
   }
 
+  const limit = Math.min(Number(req.query["limit"]) || 20, 100);
+  const cursor = (req.query["cursor"] as string) || null;
+
   try {
-    const snap = await db
+    let query = db
       .collection("sessions")
       .where("userId", "==", decoded.uid)
-      .orderBy("createdAt", "desc")
-      .limit(50)
-      .get();
+      .orderBy("updatedAt", "desc")
+      .limit(limit + 1);
 
-    res.json(
-      snap.docs.map((doc) => ({
+    if (cursor) {
+      const cursorDoc = await db.collection("sessions").doc(cursor).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc) as typeof query;
+      }
+    }
+
+    const snap = await query.get();
+    const docs = snap.docs.slice(0, limit);
+    const hasMore = snap.docs.length > limit;
+
+    res.json({
+      sessions: docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() ?? null,
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() ?? null,
-      }))
-    );
+      })),
+      hasMore,
+      nextCursor: hasMore ? docs[docs.length - 1]?.id ?? null : null,
+    });
   } catch (e: any) {
     res.status(500).json({ message: e?.message || "Failed to fetch sessions" });
   }
@@ -82,6 +97,9 @@ router.delete("/sessions/:id", async (req, res) => {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
     if (!doc.exists) { res.status(404).json({ message: "Not found" }); return; }
     if (doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
+    // Also delete session_turns subcollection
+    const turnsSnap = await doc.ref.collection("session_turns").get();
+    await Promise.all(turnsSnap.docs.map((t) => t.ref.delete()));
     await doc.ref.delete();
     res.json({ success: true });
   } catch (e: any) {
