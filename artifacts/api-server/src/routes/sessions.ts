@@ -97,10 +97,19 @@ router.patch("/sessions/:id", async (req, res) => {
   const decoded = await verifyIdToken(authHeader.slice(7));
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
 
-  const { title, shared } = req.body as { title?: string; shared?: boolean };
+  const { title, shared, starred, archived, shareId } = req.body as {
+    title?: string;
+    shared?: boolean;
+    starred?: boolean;
+    archived?: boolean;
+    shareId?: string;
+  };
   const updates: Record<string, unknown> = {};
   if (title !== undefined) updates["title"] = title;
   if (shared !== undefined) updates["shared"] = shared;
+  if (starred !== undefined) updates["starred"] = starred;
+  if (archived !== undefined) updates["archived"] = archived;
+  if (shareId !== undefined) updates["shareId"] = shareId;
 
   try {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();

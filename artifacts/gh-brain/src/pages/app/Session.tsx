@@ -372,6 +372,19 @@ export default function SessionPage() {
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
+  // Pre-select template from ?templateId= URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tid = params.get("templateId");
+    if (tid && state.phase === "idle" && !state.template) {
+      const template = TEMPLATES.find((t) => t.id === tid);
+      if (template) {
+        setTemplate(template);
+        setConfig(template.defaultConfig);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-scroll runtime feed
   useEffect(() => {
     if (feedRef.current && state.phase === "running") {
