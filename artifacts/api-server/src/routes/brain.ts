@@ -5,7 +5,8 @@ import { FieldValue } from "firebase-admin/firestore";
 
 const router = Router();
 
-// In-memory guest session tracking (resets on server restart; replace with Firestore when Firebase configured)
+// In-memory guest session tracking (resets on server restart)
+// When Firebase is configured, use Firestore `guest_sessions` collection instead.
 const guestSessionIPs = new Set<string>();
 
 function getClientIp(req: import("express").Request): string {
@@ -38,7 +39,7 @@ router.post("/run-brain", async (req, res) => {
 
   const estimatedCost = estimateCreditCost(effectiveConfig);
 
-  // ── Auth + credit enforcement ──────────────────────────────────────────────
+  // ── Auth + credit reservation ─────────────────────────────────────────────
   let uid: string | null = null;
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
@@ -48,28 +49,35 @@ router.post("/run-brain", async (req, res) => {
     const decoded = await verifyIdToken(token);
     if (decoded) {
       uid = decoded.uid;
-      // Atomic pre-run credit check via transaction
+
+      // Optimistic credit reservation: deduct estimatedCost upfront atomically.
+      // This prevents concurrent sessions from overdrawing the same balance.
+      // Post-run: refund (estimatedCost - actualCost) when actual < estimated.
+      let reserved = false;
       try {
-        const creditOk = await db.runTransaction(async (txn) => {
+        reserved = await db.runTransaction(async (txn) => {
           const userRef = db.collection("users").doc(uid!);
           const userDoc = await txn.get(userRef);
           const balance = (userDoc.data()?.creditBalance as number) ?? 0;
           if (balance < estimatedCost) return false;
-          // Reserve credits optimistically; finalise actual deduction after run
+          // Deduct upfront as reservation; will reconcile after run
+          txn.update(userRef, { creditBalance: FieldValue.increment(-estimatedCost) });
           return true;
         });
-        if (!creditOk) {
-          res.status(402).json({
-            message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
-          });
-          return;
-        }
       } catch {
-        // Non-fatal — allow run, skip deduction if Firestore unavailable
+        // Firestore unavailable — allow run, skip credit accounting
+        reserved = true;
+      }
+
+      if (!reserved) {
+        res.status(402).json({
+          message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
+        });
+        return;
       }
     }
   } else {
-    // Guest session: allow one free session per IP, then prompt signup
+    // Guest mode: one free session per IP, then require signup
     const ip = getClientIp(req);
     if (guestSessionIPs.has(ip)) {
       res.status(402).json({
@@ -88,6 +96,9 @@ router.post("/run-brain", async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
+  let runSucceeded = false;
+  let actualCost = 0;
+
   try {
     const result = await runBrainSession({
       question,
@@ -97,29 +108,29 @@ router.post("/run-brain", async (req, res) => {
       res,
     });
 
-    // Mark guest IP as used
+    runSucceeded = true;
+    actualCost = result.creditsUsed;
+
+    // Mark guest IP as used after successful run
     if (!uid) {
       const ip = getClientIp(req);
       guestSessionIPs.add(ip);
     }
 
-    // ── Persist + deduct credits atomically ────────────────────────────────
+    // ── Post-run: reconcile credits + persist session ───────────────────────
     if (db && uid) {
+      const sessionRef = db.collection("sessions").doc(result.sessionId);
+
       try {
-        const sessionRef = db.collection("sessions").doc(result.sessionId);
-
-        // Atomic credit deduction + session write
         await db.runTransaction(async (txn) => {
-          const userRef = db.collection("users").doc(uid!);
-          const userDoc = await txn.get(userRef);
-          const currentBalance = (userDoc.data()?.creditBalance as number) ?? 0;
-          const actualCost = Math.min(result.creditsUsed, currentBalance);
-          const newBalance = Math.max(0, currentBalance - actualCost);
+          // Reconcile: if actual cost < reserved, refund the difference
+          const refund = Math.max(0, estimatedCost - actualCost);
+          if (refund > 0) {
+            const userRef = db.collection("users").doc(uid!);
+            txn.update(userRef, { creditBalance: FieldValue.increment(refund) });
+          }
 
-          // Deduct credits
-          txn.update(userRef, { creditBalance: newBalance });
-
-          // Write session document
+          // Persist session
           txn.set(sessionRef, {
             sessionId: result.sessionId,
             userId: uid,
@@ -137,21 +148,20 @@ router.post("/run-brain", async (req, res) => {
             updatedAt: FieldValue.serverTimestamp(),
           });
 
-          // Write credit transaction ledger entry
+          // Credit ledger entry (records the net cost)
           const txLedgerRef = db.collection("credit_transactions").doc();
           txn.set(txLedgerRef, {
             transactionId: txLedgerRef.id,
             userId: uid,
             type: "usage",
             amount: -actualCost,
-            balanceAfter: newBalance,
             source: "brain_session",
             sessionId: result.sessionId,
             createdAt: FieldValue.serverTimestamp(),
           });
         });
 
-        // Write session_turns subcollection (outside transaction — supplementary, not critical)
+        // Write session_turns subcollection (supplementary — outside transaction is fine)
         const turnsCol = sessionRef.collection("session_turns");
         await Promise.all(
           result.turns.map((turn, idx) =>
@@ -165,8 +175,8 @@ router.post("/run-brain", async (req, res) => {
           )
         );
       } catch (e) {
-        // Non-fatal — session result already streamed to client
-        console.error("[brain] Firestore write failed:", e);
+        // Non-fatal — result already streamed; log for investigation
+        console.error("[brain] Firestore post-run write failed:", e);
       }
     }
   } catch (err: any) {
@@ -176,6 +186,14 @@ router.post("/run-brain", async (req, res) => {
       );
     }
   } finally {
+    // If run failed and credits were reserved, refund the full reservation
+    if (!runSucceeded && uid && db) {
+      db.runTransaction(async (txn) => {
+        const userRef = db.collection("users").doc(uid!);
+        txn.update(userRef, { creditBalance: FieldValue.increment(estimatedCost) });
+      }).catch((e) => console.error("[brain] Credit refund failed:", e));
+    }
+
     if (!res.writableEnded) res.end();
   }
 });
