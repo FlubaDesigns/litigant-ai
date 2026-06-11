@@ -33,7 +33,7 @@ import {
   listAdminSessions, getAdminSession, listAdminTransactions, issueRefund,
   getFeatureFlags, setFeatureFlag, listAdminTemplates, updateAdminTemplate,
   getSystemHealth, getApiUsage, getErrorLogs, getAbuseFlags,
-  type AdminUser, type AdminSession, type AdminTransaction,
+  type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
@@ -703,6 +703,30 @@ function SessionsTab() {
   );
 }
 
+function TurnCard({ turn }: { turn: SessionTurn }) {
+  const [expanded, setExpanded] = useState(false);
+  const content = turn.content ?? "";
+  const isLong = content.length > 500;
+  return (
+    <div className="rounded-lg border border-border bg-background p-3">
+      <p className="text-xs font-mono text-primary mb-1">
+        {turn.role} · Round {turn.round}
+      </p>
+      <p className="text-xs whitespace-pre-wrap text-muted-foreground leading-relaxed">
+        {isLong && !expanded ? content.slice(0, 500) : content}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((p) => !p)}
+          className="mt-1 text-xs font-mono text-primary/70 hover:text-primary transition-colors"
+        >
+          {expanded ? "▲ Show less" : `▼ Show full (${content.length} chars)`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-session", id],
@@ -760,16 +784,9 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
                   {showTranscript ? "Hide" : "Show"} {data.turns.length} transcript turns
                 </button>
                 {showTranscript && (
-                  <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
                     {data.turns.map((turn) => (
-                      <div key={turn.id} className="rounded-lg border border-border bg-background p-3">
-                        <p className="text-xs font-mono text-primary mb-1">
-                          {turn.role} · Round {turn.round}
-                        </p>
-                        <p className="text-xs whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                          {(turn.content ?? "").slice(0, 500)}{(turn.content?.length ?? 0) > 500 ? "…" : ""}
-                        </p>
-                      </div>
+                      <TurnCard key={turn.id} turn={turn} />
                     ))}
                   </div>
                 )}

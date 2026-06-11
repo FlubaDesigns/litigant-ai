@@ -48,40 +48,38 @@ router.get("/report/:shareId", async (req, res) => {
     if (data["createdAt"]?.toDate) result["createdAt"] = data["createdAt"].toDate().toISOString();
     if (data["updatedAt"]?.toDate) result["updatedAt"] = data["updatedAt"].toDate().toISOString();
 
-    // Reconstruct transcript from turns if not stored inline
-    if (!result["transcript"] || !result["debateNotes"]) {
-      try {
-        const turnsSnap = await doc.ref
-          .collection("session_turns")
-          .orderBy("turnIndex")
-          .get();
-        if (!turnsSnap.empty) {
-          const turns = turnsSnap.docs.map((t) => t.data());
-          if (!result["transcript"]) {
-            result["transcript"] = turns
-              .filter((t) => t["role"] !== "Orchestrator")
-              .map((t) => `**${t["role"]} (Round ${t["round"]}):**\n${t["content"]}`)
-              .join("\n\n---\n\n");
-          }
-          if (!result["debateNotes"]) {
-            result["debateNotes"] = turns
-              .filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict")
-              .map((t) => `### ${t["role"]} — Round ${t["round"]}\n${t["content"]}`)
-              .join("\n\n---\n\n");
-          }
-          // Infer rounds and litigant count from turns
-          const rounds = turns.reduce((max: number, t: any) => Math.max(max, t["round"] ?? 0), 0);
-          const litigants = new Set(
-            turns
-              .filter((t: any) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict" && t["role"] !== "Moderator")
-              .map((t: any) => t["role"])
-          ).size;
-          result["roundsCompleted"] = rounds;
-          result["litigantCount"] = litigants;
+    // Always fetch session_turns to compute accurate metrics and fill missing inline fields
+    try {
+      const turnsSnap = await doc.ref
+        .collection("session_turns")
+        .orderBy("turnIndex")
+        .get();
+      if (!turnsSnap.empty) {
+        const turns = turnsSnap.docs.map((t) => t.data());
+        if (!result["transcript"]) {
+          result["transcript"] = turns
+            .filter((t) => t["role"] !== "Orchestrator")
+            .map((t) => `**${t["role"]} (Round ${t["round"]}):**\n${t["content"]}`)
+            .join("\n\n---\n\n");
         }
-      } catch {
-        // Non-fatal
+        if (!result["debateNotes"]) {
+          result["debateNotes"] = turns
+            .filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict")
+            .map((t) => `### ${t["role"]} — Round ${t["round"]}\n${t["content"]}`)
+            .join("\n\n---\n\n");
+        }
+        // Always derive metrics from turns — do not rely on inline session fields
+        const rounds = turns.reduce((max: number, t: any) => Math.max(max, t["round"] ?? 0), 0);
+        const litigants = new Set(
+          turns
+            .filter((t: any) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict" && t["role"] !== "Moderator")
+            .map((t: any) => t["role"])
+        ).size;
+        result["roundsCompleted"] = rounds;
+        result["litigantCount"] = litigants;
       }
+    } catch {
+      // Non-fatal — report still renders without turn-derived metrics
     }
 
     return res.json(result);
