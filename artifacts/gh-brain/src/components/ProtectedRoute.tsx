@@ -12,7 +12,12 @@ export function ProtectedRoute({
   requireVerified = true,
   requireAdmin = false,
 }: ProtectedRouteProps) {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, firebaseReady } = useAuth();
+
+  // When Firebase is not configured, allow all access in guest mode
+  if (!firebaseReady) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
