@@ -144,7 +144,7 @@ router.post("/run-brain", async (req, res) => {
             txn.update(userRef, { creditBalance: FieldValue.increment(refund) });
           }
 
-          // Persist session
+          // Persist session — include all output fields so History detail view works
           txn.set(sessionRef, {
             sessionId: result.sessionId,
             userId: uid,
@@ -155,6 +155,11 @@ router.post("/run-brain", async (req, res) => {
             creditsUsed: actualCost,
             status: "complete",
             finalAnswer: result.finalAnswer,
+            debateNotes: result.debateNotes,
+            transcript: result.debateNotes
+              ? result.transcript.join("\n\n---\n\n")
+              : "",
+            caveats: result.caveats,
             artifacts: result.artifacts,
             shared: false,
             shareId: null,

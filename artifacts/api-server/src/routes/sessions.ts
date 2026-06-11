@@ -74,9 +74,37 @@ router.get("/sessions/:id", async (req, res) => {
       res.status(403).json({ message: "Forbidden" }); return;
     }
 
+    // If transcript/debateNotes were not saved in the session doc (legacy sessions),
+    // reconstruct them from the session_turns subcollection.
+    let transcript = (data["transcript"] as string) || "";
+    let debateNotes = (data["debateNotes"] as string) || "";
+    if (!transcript || !debateNotes) {
+      try {
+        const turnsSnap = await doc.ref
+          .collection("session_turns")
+          .orderBy("turnIndex")
+          .get();
+        if (!turnsSnap.empty) {
+          const turns = turnsSnap.docs.map((t) => t.data());
+          const lines = turns
+            .filter((t) => t["role"] !== "Orchestrator")
+            .map((t) => `**${t["role"] as string} (Round ${t["round"] as number}):**\n${t["content"] as string}`);
+          transcript = lines.join("\n\n---\n\n");
+          debateNotes = turns
+            .filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict")
+            .map((t) => `### ${t["role"] as string} — Round ${t["round"] as number}\n${t["content"] as string}`)
+            .join("\n\n---\n\n");
+        }
+      } catch {
+        // non-fatal — return whatever we have
+      }
+    }
+
     res.json({
       id: doc.id,
       ...data,
+      transcript,
+      debateNotes,
       createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
       updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
     });
