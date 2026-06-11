@@ -37,6 +37,7 @@ export interface SessionState {
   debateNotes: string;
   transcript: string;
   caveats: string;
+  artifacts: string;
   errorMessage: string | null;
 }
 
@@ -51,7 +52,19 @@ type Action =
   | { type: "ROLE_END"; role: string }
   | { type: "ROUND_START"; round: number }
   | { type: "CONFIDENCE_UPDATE"; confidence: number; creditsUsed: number }
-  | { type: "SESSION_DONE"; payload: { confidence: number; creditsUsed: number; finalAnswer: string; debateNotes: string; transcript: string; caveats: string; sessionId: string } }
+  | {
+      type: "SESSION_DONE";
+      payload: {
+        confidence: number;
+        creditsUsed: number;
+        finalAnswer: string;
+        debateNotes: string;
+        transcript: string;
+        caveats: string;
+        artifacts: string;
+        sessionId: string;
+      };
+    }
   | { type: "ERROR"; message: string }
   | { type: "RESET" };
 
@@ -71,6 +84,7 @@ const initialState: SessionState = {
   debateNotes: "",
   transcript: "",
   caveats: "",
+  artifacts: "",
   errorMessage: null,
 };
 
@@ -102,6 +116,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         debateNotes: "",
         transcript: "",
         caveats: "",
+        artifacts: "",
         errorMessage: null,
       };
     case "ROLE_START":
@@ -150,6 +165,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         debateNotes: action.payload.debateNotes,
         transcript: action.payload.transcript,
         caveats: action.payload.caveats,
+        artifacts: action.payload.artifacts,
         sessionId: action.payload.sessionId,
       };
     case "ERROR":
@@ -164,7 +180,6 @@ function reducer(state: SessionState, action: Action): SessionState {
 export function useBrainSession() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const abortRef = useRef<AbortController | null>(null);
-  const pausedRef = useRef(false);
   const { user } = useAuth();
 
   const handleSSEEvent = useCallback((event: SSEEvent) => {
@@ -197,6 +212,7 @@ export function useBrainSession() {
             debateNotes: event.debateNotes || "",
             transcript: event.transcript || "",
             caveats: event.caveats || "",
+            artifacts: event.artifacts || "",
             sessionId: event.sessionId!,
           },
         });
@@ -211,7 +227,6 @@ export function useBrainSession() {
     if (!state.question.trim()) return;
 
     abortRef.current = new AbortController();
-    pausedRef.current = false;
 
     let idToken: string | undefined;
     try {
@@ -228,23 +243,22 @@ export function useBrainSession() {
     try {
       await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
     } catch (err: any) {
-      dispatch({ type: "ERROR", message: err?.message || "Session failed" });
+      if (err?.name !== "AbortError") {
+        dispatch({ type: "ERROR", message: err?.message || "Session failed" });
+      }
     }
   }, [state.question, state.config, state.template, user, handleSSEEvent]);
 
+  // Stop aborts the stream and marks the session complete with whatever was received
   const stop = useCallback(() => {
     abortRef.current?.abort();
     dispatch({ type: "SET_PHASE", phase: "complete" });
   }, []);
 
+  // Pause aborts the stream and transitions to "paused" so the user can review partial output
   const pause = useCallback(() => {
-    pausedRef.current = true;
+    abortRef.current?.abort();
     dispatch({ type: "SET_PHASE", phase: "paused" });
-  }, []);
-
-  const resume = useCallback(() => {
-    pausedRef.current = false;
-    dispatch({ type: "SET_PHASE", phase: "running" });
   }, []);
 
   const reset = useCallback(() => {
@@ -256,5 +270,5 @@ export function useBrainSession() {
   const setTemplate = useCallback((t: Template | null) => dispatch({ type: "SET_TEMPLATE", template: t }), []);
   const setConfig = useCallback((c: Partial<CourtConfig>) => dispatch({ type: "SET_CONFIG", config: c }), []);
 
-  return { state, run, stop, pause, resume, reset, setQuestion, setTemplate, setConfig };
+  return { state, run, stop, pause, reset, setQuestion, setTemplate, setConfig };
 }

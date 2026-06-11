@@ -42,7 +42,9 @@ export interface SSEEvent {
   debateNotes?: string;
   transcript?: string;
   caveats?: string;
+  artifacts?: string;
   message?: string;
+  guestLimitReached?: boolean;
 }
 
 export function runBrainSession(

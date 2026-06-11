@@ -25,7 +25,13 @@ interface RoleDefinition {
   instruction: string;
 }
 
-function getRoles(config: CourtConfig, question: string): RoleDefinition[] {
+export interface TurnRecord {
+  role: string;
+  round: number;
+  content: string;
+}
+
+function getRoles(config: CourtConfig): RoleDefinition[] {
   const modePersonas: Record<CourtMode, RoleDefinition[]> = {
     adversarial: [
       { name: "Advocate", persona: "Advocate", instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive." },
@@ -67,9 +73,15 @@ function sendSSE(res: Response, event: Record<string, unknown>): void {
   }
 }
 
+export function estimateCreditCost(config: CourtConfig): number {
+  const litigants = Math.min(config.litigantCount, 4);
+  return litigants * config.maxIterations * 3 + 7; // +7 for Orchestrator + Verdict
+}
+
 export interface BrainRunOptions {
   question: string;
   config: CourtConfig;
+  templateId?: string;
   templateSystemPrompt?: string;
   sessionId?: string;
   res: Response;
@@ -84,19 +96,21 @@ export interface BrainRunResult {
   debateNotes: string;
   transcript: string[];
   caveats: string;
+  artifacts: string;
+  turns: TurnRecord[];
 }
 
 export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunResult> {
   const { question, config, templateSystemPrompt, res } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const roles = getRoles(config, question);
+  const roles = getRoles(config);
   const maxTokens = getTokensForMode(config.responseMode);
-  const estimatedCredits = roles.length * config.maxIterations * 3 + 5;
+  const estimatedCredits = estimateCreditCost(config);
 
   sendSSE(res, { type: "start", sessionId, estimatedCredits });
 
   const transcript: string[] = [];
-  const roleOutputs: Record<string, string[]> = {};
+  const turns: TurnRecord[] = [];
   let creditsUsed = 0;
   let confidence = 20;
 
@@ -104,7 +118,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
-  // ── Orchestrator frame ─────────────────────────────────────────────────────
+  // ── Orchestrator frame ──────────────────────────────────────────────────────
   sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0 });
   let orchestratorFrame = "";
 
@@ -116,8 +130,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       messages: [
         {
           role: "system",
-          content:
-            "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).",
+          content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).",
         },
         {
           role: "user",
@@ -133,16 +146,17 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         sendSSE(res, { type: "content", role: "Orchestrator", content });
       }
     }
-  } catch (err: any) {
-    sendSSE(res, { type: "content", role: "Orchestrator", content: `[Session framed — proceeding to examination of: "${question}"]` });
-    orchestratorFrame = `Examining: "${question}"`;
+  } catch {
+    orchestratorFrame = `[Courtroom convened — examining: "${question}"]`;
+    sendSSE(res, { type: "content", role: "Orchestrator", content: orchestratorFrame });
   }
 
   transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
+  turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
   sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
   creditsUsed += 1;
 
-  // ── Debate rounds ──────────────────────────────────────────────────────────
+  // ── Debate rounds ───────────────────────────────────────────────────────────
   const debateNotesList: string[] = [];
 
   for (let round = 1; round <= config.maxIterations; round++) {
@@ -191,15 +205,13 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         sendSSE(res, { type: "content", role: role.name, content: fallback });
       }
 
-      if (!roleOutputs[role.name]) roleOutputs[role.name] = [];
-      roleOutputs[role.name].push(roleOutput);
       transcript.push(`**${role.name} (Round ${round}):** ${roleOutput}`);
       debateNotesList.push(`### ${role.name} — Round ${round}\n${roleOutput}`);
+      turns.push({ role: role.name, round, content: roleOutput });
 
       sendSSE(res, { type: "role_end", role: role.name, fullContent: roleOutput });
       creditsUsed += Math.ceil(maxTokens / 200);
 
-      // update confidence after each round
       confidence = Math.min(
         config.confidenceTarget,
         20 + (round * roles.length + i + 1) * Math.floor((config.confidenceTarget - 20) / (config.maxIterations * roles.length))
@@ -208,39 +220,53 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     }
 
     sendSSE(res, { type: "round_end", round, confidence });
-
     if (confidence >= config.confidenceTarget && round >= 2) break;
   }
 
-  // ── Final Verdict ──────────────────────────────────────────────────────────
+  // ── Final Verdict ───────────────────────────────────────────────────────────
   sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99 });
 
   let finalAnswer = "";
   let caveats = "";
+  let artifacts = "";
 
   const verdictPrompt = `${baseContext}
 
-You have observed the following structured debate:\n\n${transcript.join("\n\n")}
+You have observed the following structured debate:
 
-Now deliver the final verdict as the Synthesizer:
-1. **Final Answer**: A clear, direct response to the original question (2-4 paragraphs)
-2. **Key Findings**: The 3-5 most important conclusions from the debate
-3. **Confidence Assessment**: Rate confidence ${confidence}% and explain key uncertainties
-4. **Caveats & Limitations**: What this analysis cannot account for
+${transcript.join("\n\n")}
 
-Output format (${config.outputFormat}):
-${config.outputFormat === "bullets" ? "Use bullet points throughout." : ""}
-${config.outputFormat === "verdict" ? "Lead with a one-sentence verdict, then elaborate." : ""}
-${config.outputFormat === "memo" ? "Write as a professional decision memo." : ""}
-${config.outputFormat === "report" ? "Write as a structured analytical report." : ""}`;
+Now deliver the complete final output. Structure it with these EXACT section headers:
+
+## Final Answer
+A clear, direct response (2-4 paragraphs). Lead with a definitive position where warranted.
+
+## Key Findings
+3-5 bullet points summarising the most important conclusions.
+
+## Artifacts
+Provide concrete, immediately usable output based on the debate. This could be:
+- A prioritised action checklist if the question is a decision
+- A structured analysis table if the question is evaluative
+- A decision memo if the question is strategic
+- A risk matrix if the question involves risk assessment
+Format this as a practical work product the user can use directly.
+
+## Sources & Caveats
+What assumptions underlie this analysis? What would change the verdict? What professional expertise should be consulted? List key limitations.
+
+Output format: ${config.outputFormat}`;
 
   try {
     const verdictStream = await openai.chat.completions.create({
       model: "gpt-5.4",
-      max_completion_tokens: 1200,
+      max_completion_tokens: 1600,
       stream: true,
       messages: [
-        { role: "system", content: "You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict that incorporates all perspectives from the debate. Be definitive where evidence is clear, honest about uncertainty where it remains." },
+        {
+          role: "system",
+          content: "You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections.",
+        },
         { role: "user", content: verdictPrompt },
       ],
     });
@@ -253,20 +279,31 @@ ${config.outputFormat === "report" ? "Write as a structured analytical report." 
       }
     }
   } catch (err: any) {
-    finalAnswer = `[Verdict generation failed: ${err?.message || "API error"}]\n\nBased on the debate, the question "${question}" has been examined from multiple perspectives. Review the transcript for the individual role outputs.`;
+    finalAnswer = `## Final Answer\n\nBased on the debate, "${question}" has been examined from ${roles.length} perspectives. Review the transcript for detailed arguments.\n\n## Artifacts\n\nNo structured artifact could be generated due to an error.\n\n## Sources & Caveats\n\nThis analysis is AI-generated. [Error: ${err?.message || "API error"}]`;
     sendSSE(res, { type: "content", role: "Verdict", content: finalAnswer });
   }
 
-  // Extract caveats section if present
-  const caveatMatch = finalAnswer.match(/(?:Caveats?|Limitations?)[:\s]+([^#]+?)(?=\n#|\n\*\*|$)/is);
+  // Extract sections
+  const artifactsMatch = finalAnswer.match(/##\s+Artifacts\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  if (artifactsMatch) {
+    artifacts = artifactsMatch[1].trim();
+  }
+
+  const caveatMatch = finalAnswer.match(/##\s+(?:Sources &|Sources &amp;|Caveats?|Sources)\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   if (caveatMatch) {
     caveats = caveatMatch[1].trim();
   } else {
     caveats = "This analysis represents AI-generated reasoning and should not substitute for professional advice in legal, medical, financial, or safety-critical domains.";
   }
 
+  // Extract clean final answer (up to Key Findings or Artifacts)
+  const answerMatch = finalAnswer.match(/##\s+Final Answer\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  const cleanFinalAnswer = answerMatch ? answerMatch[1].trim() : finalAnswer;
+
   creditsUsed += 6;
   confidence = Math.min(95, confidence + 5);
+
+  turns.push({ role: "Verdict", round: 99, content: finalAnswer });
 
   sendSSE(res, { type: "role_end", role: "Verdict", fullContent: finalAnswer });
   sendSSE(res, {
@@ -274,19 +311,22 @@ ${config.outputFormat === "report" ? "Write as a structured analytical report." 
     sessionId,
     confidence,
     creditsUsed,
-    finalAnswer,
+    finalAnswer: cleanFinalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript: transcript.join("\n\n---\n\n"),
     caveats,
+    artifacts,
   });
 
   return {
     sessionId,
     confidence,
     creditsUsed,
-    finalAnswer,
+    finalAnswer: cleanFinalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript,
     caveats,
+    artifacts,
+    turns,
   };
 }
