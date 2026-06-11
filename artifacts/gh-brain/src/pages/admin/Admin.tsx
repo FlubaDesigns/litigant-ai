@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Users, Brain, CreditCard, Activity, Flag, LayoutTemplate,
   Search, ChevronRight, MoreHorizontal, Loader2, Shield,
-  Ban, Zap, Clock, Target, RefreshCw, Check, X, Edit3,
-  AlertTriangle, TrendingUp, Database,
+  Ban, Zap, Clock, RefreshCw, Check, Edit3,
+  AlertTriangle, TrendingUp, Database, Server, BarChart2,
+  AlertCircle, HeartCrack, ThumbsDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,19 +31,26 @@ import {
   getAdminStats, listAdminUsers, getAdminUser, adjustUserCredits, banUser,
   listAdminSessions, getAdminSession, listAdminTransactions, issueRefund,
   getFeatureFlags, setFeatureFlag, listAdminTemplates, updateAdminTemplate,
+  getSystemHealth, getApiUsage, getErrorLogs, getAbuseFlags,
   type AdminUser, type AdminSession, type AdminTransaction,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
-type AdminTab = "overview" | "users" | "sessions" | "transactions" | "flags" | "templates";
+type AdminTab =
+  | "overview" | "health" | "users" | "sessions" | "transactions"
+  | "api-usage" | "errors" | "abuse" | "flags" | "templates";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-  { id: "overview",     label: "Overview",      icon: Activity },
-  { id: "users",        label: "Users",          icon: Users },
-  { id: "sessions",     label: "Sessions",       icon: Brain },
-  { id: "transactions", label: "Transactions",   icon: CreditCard },
-  { id: "flags",        label: "Feature Flags",  icon: Flag },
-  { id: "templates",    label: "Templates",      icon: LayoutTemplate },
+  { id: "overview",     label: "Overview",       icon: Activity },
+  { id: "health",       label: "System Health",  icon: Server },
+  { id: "users",        label: "Users",           icon: Users },
+  { id: "sessions",     label: "Sessions",        icon: Brain },
+  { id: "transactions", label: "Transactions",    icon: CreditCard },
+  { id: "api-usage",    label: "API Usage",       icon: BarChart2 },
+  { id: "errors",       label: "Error Logs",      icon: AlertCircle },
+  { id: "abuse",        label: "Abuse Flags",     icon: HeartCrack },
+  { id: "flags",        label: "Feature Flags",   icon: Flag },
+  { id: "templates",    label: "Templates",       icon: LayoutTemplate },
 ];
 
 function formatDate(iso?: string | null) {
@@ -483,8 +491,12 @@ function BanModal({
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => banUser(user.id, toBanned, reason || undefined),
-    onSuccess: () => {
-      toast.success(toBanned ? "User banned." : "User unbanned.");
+    onSuccess: (data: any) => {
+      if (data?.authWarning) {
+        toast.warning(`Partial success — ${data.authWarning}`);
+      } else {
+        toast.success(toBanned ? "User banned." : "User unbanned.");
+      }
       onSuccess();
       onClose();
     },
@@ -1064,6 +1076,354 @@ function TemplateEditModal({
   );
 }
 
+// ─── System Health Tab ────────────────────────────────────────────────────────
+function SystemHealthTab() {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-system-health"],
+    queryFn: getSystemHealth,
+    retry: false,
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data || data.status === "unavailable") {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>Firebase not configured — system health data is unavailable in dev mode.</span>
+      </div>
+    );
+  }
+
+  const { collections, last24h, last7d, serverTime } = data;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-mono">
+          Server time: {serverTime ? new Date(serverTime).toLocaleString() : "—"}
+        </p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        </Button>
+      </div>
+
+      {/* Collection counts */}
+      <div>
+        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Database className="w-3.5 h-3.5" />Collection sizes
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.entries(collections ?? {}).map(([col, count]) => (
+            <div key={col} className="rounded-xl border border-border bg-card p-4 text-center">
+              <p className="text-2xl font-bold font-mono">{count as number}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 font-mono">{col}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Last 24h */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" />Last 24 hours
+        </p>
+        <div className="flex items-center gap-6 text-sm">
+          <div>
+            <p className="text-2xl font-bold font-mono text-primary">{(last24h as any)?.newSessions ?? 0}</p>
+            <p className="text-xs text-muted-foreground">new sessions</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Last 7d */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <TrendingUp className="w-3.5 h-3.5" />Last 7 days
+        </p>
+        <div className="flex items-center gap-8 text-sm">
+          <div>
+            <p className="text-2xl font-bold font-mono text-destructive">{(last7d as any)?.errorSessions ?? 0}</p>
+            <p className="text-xs text-muted-foreground">error sessions</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono">{(last7d as any)?.feedbackEntries ?? 0}</p>
+            <p className="text-xs text-muted-foreground">feedback entries</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono text-amber-400">{(last7d as any)?.errorRate ?? "0.0"}%</p>
+            <p className="text-xs text-muted-foreground">session error rate</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── API Usage Tab ────────────────────────────────────────────────────────────
+function ApiUsageTab() {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-api-usage"],
+    queryFn: getApiUsage,
+    retry: false,
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>Firebase not configured — API usage data unavailable in dev mode.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-6 text-sm">
+          <div>
+            <p className="text-2xl font-bold font-mono text-primary">{data.totalCreditsUsed}</p>
+            <p className="text-xs text-muted-foreground">credits used (30d)</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono">{data.totalSessions}</p>
+            <p className="text-xs text-muted-foreground">usage transactions (30d)</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        </Button>
+      </div>
+
+      {data.byDay.length > 0 ? (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-secondary/30">
+                <TableHead>Date</TableHead>
+                <TableHead>Sessions</TableHead>
+                <TableHead>Credits Used</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.byDay.map((day) => (
+                <TableRow key={day.date} className="hover:bg-secondary/10">
+                  <TableCell className="font-mono text-sm">{day.date}</TableCell>
+                  <TableCell className="font-mono">{day.sessions}</TableCell>
+                  <TableCell className="font-mono text-primary">{day.creditsUsed}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
+          No usage data for the last 30 days.
+          <p className="mt-1 text-xs">Usage data populates from <code className="bg-secondary px-1 rounded">credit_transactions</code> where type=&#39;usage&#39;.</p>
+        </div>
+      )}
+
+      {data.apiLogs.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">api_logs (last 200)</p>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/30">
+                  <TableHead>Model</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.apiLogs.slice(0, 30).map((log: any) => (
+                  <TableRow key={log.id} className="hover:bg-secondary/10">
+                    <TableCell className="font-mono text-xs">{log.model ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn("text-xs", log.status === "error" ? "text-destructive" : "text-primary border-primary/30")}>
+                        {log.status ?? "—"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{log.durationMs ? `${log.durationMs}ms` : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(log.createdAt as string)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Error Logs Tab ───────────────────────────────────────────────────────────
+function ErrorLogsTab() {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-error-logs"],
+    queryFn: getErrorLogs,
+    retry: false,
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>Firebase not configured — error logs unavailable in dev mode.</span>
+      </div>
+    );
+  }
+
+  const allEntries = [
+    ...data.logs.map((l) => ({ ...l, source: "api_log" })),
+    ...data.failedSessions.map((s) => ({ ...s, source: "session" })),
+  ].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Shows failed sessions + <code className="bg-secondary px-1 rounded text-xs">api_logs</code> error entries.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        </Button>
+      </div>
+
+      {allEntries.length === 0 ? (
+        <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
+          No error logs found.
+          <p className="mt-1 text-xs">Failed brain sessions will appear here automatically.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-secondary/30">
+                <TableHead>Source</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allEntries.slice(0, 50).map((entry: any) => (
+                <TableRow key={entry.id} className="hover:bg-secondary/10">
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+                      {entry.source}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm max-w-xs truncate">
+                    {entry.message ?? entry.title ?? entry.question?.slice(0, 60) ?? entry.id}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[120px]">
+                    {entry.userId ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Abuse Flags Tab ──────────────────────────────────────────────────────────
+function AbuseFlagsTab() {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-abuse-flags"],
+    queryFn: getAbuseFlags,
+    retry: false,
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>Firebase not configured — abuse flag data unavailable in dev mode.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Sessions flagged as <code className="bg-secondary px-1 rounded text-xs">bad</code> or{" "}
+          <code className="bg-secondary px-1 rounded text-xs">warn</code> by user feedback.
+          Total: <span className="font-mono text-foreground">{data.totalCount}</span>
+        </p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        </Button>
+      </div>
+
+      {data.flags.length === 0 ? (
+        <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
+          No abuse flags found.
+          <p className="mt-1 text-xs">Negative feedback from sessions appears here.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-secondary/30">
+                <TableHead>Rating</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Session</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.flags.map((flag) => (
+                <TableRow key={flag.id} className="hover:bg-secondary/10">
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs gap-1",
+                        flag.rating === "bad"
+                          ? "text-destructive border-destructive/30 bg-destructive/10"
+                          : "text-amber-400 border-amber-400/30 bg-amber-400/10"
+                      )}
+                    >
+                      <ThumbsDown className="w-3 h-3" />
+                      {flag.rating}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono">{flag.role ?? "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
+                    {flag.reason ?? flag.notes ?? "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[100px]">
+                    {flag.sessionId ?? "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[100px]">
+                    {flag.userId ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDate(flag.createdAt)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function TabSkeleton() {
   return (
@@ -1136,9 +1496,13 @@ export default function AdminPage() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === "overview"     && <OverviewTab />}
+          {activeTab === "health"       && <SystemHealthTab />}
           {activeTab === "users"        && <UsersTab />}
           {activeTab === "sessions"     && <SessionsTab />}
           {activeTab === "transactions" && <TransactionsTab />}
+          {activeTab === "api-usage"    && <ApiUsageTab />}
+          {activeTab === "errors"       && <ErrorLogsTab />}
+          {activeTab === "abuse"        && <AbuseFlagsTab />}
           {activeTab === "flags"        && <FeatureFlagsTab />}
           {activeTab === "templates"    && <TemplatesTab />}
         </motion.div>

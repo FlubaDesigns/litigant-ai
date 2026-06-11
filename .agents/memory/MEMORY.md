@@ -2,3 +2,5 @@
 - [API URL from frontend](api-url-routing.md) — API server is at `/api-server/api` (Replit path routing, same domain)
 - [ProtectedRoute guest mode](protected-route-guest.md) — when `firebaseReady` is false (Firebase unconfigured), ProtectedRoute allows all access
 - [Brain engine SSE pattern](brain-engine-sse.md) — sequential multi-role calls, each role streams to SSE; roles vary by courtMode; gpt-5.4 with `max_completion_tokens`
+- [Admin bootstrap](admin-bootstrap.md) — POST /admin/set-claim is master-secret gated (no Bearer token); user must sign out/in after claim is set; ADMIN_MASTER_SECRET env var required
+- [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()

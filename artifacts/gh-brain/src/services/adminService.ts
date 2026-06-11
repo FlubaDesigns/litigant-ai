@@ -199,6 +199,96 @@ export async function setFeatureFlag(name: string, value: boolean): Promise<void
   if (!res.ok) throw new Error("Failed to update feature flag");
 }
 
+export interface SystemHealth {
+  status: string;
+  serverTime?: string;
+  collections?: Record<string, number>;
+  last24h?: Record<string, number>;
+  last7d?: Record<string, number | string>;
+}
+
+export interface ApiUsageDay {
+  date: string;
+  sessions: number;
+  creditsUsed: number;
+}
+
+export interface AbuseFlag {
+  id: string;
+  userId?: string;
+  sessionId?: string;
+  turnId?: string;
+  role?: string;
+  rating?: string;
+  reason?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface ErrorLogEntry {
+  id: string;
+  status?: string;
+  message?: string;
+  model?: string;
+  userId?: string;
+  sessionId?: string;
+  _type?: string;
+  title?: string;
+  question?: string;
+  createdAt?: string;
+}
+
+export async function getSystemHealth(): Promise<SystemHealth> {
+  const res = await adminFetch("/admin/system-health");
+  if (!res.ok) throw new Error("Failed to load system health");
+  return res.json();
+}
+
+export async function getApiUsage(): Promise<{
+  byDay: ApiUsageDay[];
+  totalSessions: number;
+  totalCreditsUsed: number;
+  apiLogs: Record<string, unknown>[];
+}> {
+  const res = await adminFetch("/admin/api-usage");
+  if (!res.ok) throw new Error("Failed to load API usage");
+  return res.json();
+}
+
+export async function getErrorLogs(): Promise<{
+  logs: ErrorLogEntry[];
+  failedSessions: ErrorLogEntry[];
+}> {
+  const res = await adminFetch("/admin/error-logs");
+  if (!res.ok) throw new Error("Failed to load error logs");
+  return res.json();
+}
+
+export async function getAbuseFlags(): Promise<{
+  flags: AbuseFlag[];
+  totalCount: number;
+}> {
+  const res = await adminFetch("/admin/abuse-flags");
+  if (!res.ok) throw new Error("Failed to load abuse flags");
+  return res.json();
+}
+
+export async function setAdminClaim(
+  secret: string,
+  opts: { email?: string; uid?: string }
+): Promise<{ success: boolean; uid?: string; email?: string; message?: string }> {
+  const res = await fetch(`${API_BASE}/admin/set-claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret, ...opts }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to set admin claim");
+  }
+  return res.json();
+}
+
 export async function listAdminTemplates(): Promise<any[]> {
   const res = await adminFetch("/admin/templates");
   if (!res.ok) return [];

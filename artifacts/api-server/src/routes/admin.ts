@@ -40,6 +40,67 @@ function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot): Record<string, u
   return out;
 }
 
+// ── Bootstrap: set admin claim (master-secret gated, no token required) ───────
+
+/**
+ * POST /admin/set-claim
+ * Body: { secret: string, email?: string, uid?: string }
+ * No Bearer token required — authenticated by ADMIN_MASTER_SECRET env var.
+ * Sets admin: true custom claim on the target Firebase Auth user.
+ * User must sign out and back in for the claim to appear in their ID token.
+ */
+router.post("/admin/set-claim", async (req, res) => {
+  const masterSecret = process.env["ADMIN_MASTER_SECRET"];
+  if (!masterSecret) {
+    return res.status(503).json({
+      error: "ADMIN_MASTER_SECRET is not set. Configure this env var on the server first.",
+    });
+  }
+  if (!isFirebaseConfigured()) {
+    return res.status(503).json({ error: "Firebase not configured" });
+  }
+
+  const { secret, email, uid } = req.body as {
+    secret?: string;
+    email?: string;
+    uid?: string;
+  };
+
+  if (secret !== masterSecret) {
+    return res.status(403).json({ error: "Invalid master secret" });
+  }
+  if (!email && !uid) {
+    return res.status(400).json({ error: "email or uid required" });
+  }
+
+  try {
+    const authAdmin = getAuth();
+    const user = email
+      ? await authAdmin.getUserByEmail(email)
+      : await authAdmin.getUser(uid!);
+
+    const existing = user.customClaims ?? {};
+    if (existing["admin"] === true) {
+      return res.json({
+        success: true,
+        uid: user.uid,
+        email: user.email,
+        message: "User already has admin: true — no change made.",
+      });
+    }
+
+    await authAdmin.setCustomUserClaims(user.uid, { ...existing, admin: true });
+    return res.json({
+      success: true,
+      uid: user.uid,
+      email: user.email,
+      message: "admin: true set. User must sign out and sign back in for the claim to appear.",
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ── System stats ──────────────────────────────────────────────────────────────
 
 router.get("/admin/stats", requireAdmin, async (_req, res) => {
@@ -53,7 +114,6 @@ router.get("/admin/stats", requireAdmin, async (_req, res) => {
       db.collection("credit_transactions").count().get(),
     ]);
 
-    // Recent sessions (last 7 days)
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentSnap = await db
       .collection("sessions")
@@ -72,6 +132,52 @@ router.get("/admin/stats", requireAdmin, async (_req, res) => {
   }
 });
 
+// ── System Health ─────────────────────────────────────────────────────────────
+
+router.get("/admin/system-health", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.json({ status: "unavailable", reason: "Firebase not configured" });
+
+  try {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      userCount, sessionCount, txCount,
+      recentSessions, errorSessions, feedbackCount,
+    ] = await Promise.all([
+      db.collection("users").count().get(),
+      db.collection("sessions").count().get(),
+      db.collection("credit_transactions").count().get(),
+      db.collection("sessions").where("createdAt", ">=", last24h).count().get(),
+      db.collection("sessions").where("status", "==", "error").where("createdAt", ">=", last7d).count().get(),
+      db.collection("feedback").where("createdAt", ">=", last7d).count().get(),
+    ]);
+
+    return res.json({
+      status: "ok",
+      serverTime: new Date().toISOString(),
+      collections: {
+        users: userCount.data().count,
+        sessions: sessionCount.data().count,
+        credit_transactions: txCount.data().count,
+      },
+      last24h: {
+        newSessions: recentSessions.data().count,
+      },
+      last7d: {
+        errorSessions: errorSessions.data().count,
+        feedbackEntries: feedbackCount.data().count,
+        errorRate: sessionCount.data().count > 0
+          ? ((errorSessions.data().count / Math.max(sessionCount.data().count, 1)) * 100).toFixed(1)
+          : "0.0",
+      },
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 
 router.get("/admin/users", requireAdmin, async (req, res) => {
@@ -83,25 +189,45 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
   const cursor = req.query["cursor"] as string | undefined;
 
   try {
-    let q = db.collection("users").orderBy("createdAt", "desc").limit(limit + 1) as any;
-    if (cursor) {
-      const cursorDoc = await db.collection("users").doc(cursor).get();
-      if (cursorDoc.exists) q = q.startAfter(cursorDoc);
+    let q: FirebaseFirestore.Query;
+
+    if (search && search.includes("@")) {
+      // Email range query — proper server-side search by email prefix
+      q = db
+        .collection("users")
+        .where("email", ">=", search)
+        .where("email", "<=", search + "\uf8ff")
+        .limit(limit + 1);
+    } else if (search) {
+      // Name search: fetch a larger page and filter client-side
+      q = db.collection("users").orderBy("createdAt", "desc").limit(200);
+    } else {
+      q = db.collection("users").orderBy("createdAt", "desc").limit(limit + 1);
+      if (cursor) {
+        const cursorDoc = await db.collection("users").doc(cursor).get();
+        if (cursorDoc.exists) q = q.startAfter(cursorDoc) as any;
+      }
     }
 
     const snap = await q.get();
-    let users = snap.docs.map((d: any) => serializeDoc(d));
-    const hasMore = users.length > limit;
-    users = users.slice(0, limit);
+    let users = snap.docs.map((d) => serializeDoc(d));
 
-    if (search) {
-      users = users.filter((u: any) =>
-        (u.email as string)?.toLowerCase().includes(search) ||
-        (u.displayName as string)?.toLowerCase().includes(search)
+    if (search && !search.includes("@")) {
+      users = users.filter(
+        (u: any) =>
+          (u.email as string)?.toLowerCase().includes(search) ||
+          (u.displayName as string)?.toLowerCase().includes(search)
       );
     }
 
-    return res.json({ users, hasMore, nextCursor: hasMore ? users[users.length - 1]?.id : null });
+    const hasMore = !search && users.length > limit;
+    if (!search) users = users.slice(0, limit);
+
+    return res.json({
+      users,
+      hasMore,
+      nextCursor: hasMore ? users[users.length - 1]?.id : null,
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
@@ -114,12 +240,14 @@ router.get("/admin/users/:uid", requireAdmin, async (req, res) => {
   try {
     const [userDoc, txSnap, sessionsSnap] = await Promise.all([
       db.collection("users").doc(req.params["uid"]!).get(),
-      db.collection("credit_transactions")
+      db
+        .collection("credit_transactions")
         .where("userId", "==", req.params["uid"]!)
         .orderBy("createdAt", "desc")
         .limit(20)
         .get(),
-      db.collection("sessions")
+      db
+        .collection("sessions")
         .where("userId", "==", req.params["uid"]!)
         .orderBy("createdAt", "desc")
         .limit(10)
@@ -138,12 +266,6 @@ router.get("/admin/users/:uid", requireAdmin, async (req, res) => {
   }
 });
 
-/**
- * POST /admin/users/:uid/credits
- * Body: { amount: number, reason: string }
- * Adjusts credits by amount (positive = add, negative = deduct).
- * Creates an immutable ledger entry.
- */
 router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => {
   const { amount, reason } = req.body as { amount?: number; reason?: string };
   if (!amount || isNaN(amount)) {
@@ -164,6 +286,8 @@ router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => 
 /**
  * POST /admin/users/:uid/ban
  * Body: { banned: boolean, reason?: string }
+ * Sets Firestore flag + disables Firebase Auth account.
+ * Returns authWarning if the Firebase Auth update fails (Firestore flag was still set).
  */
 router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
   const db = getFirestoreDb();
@@ -189,14 +313,18 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
         { merge: true }
       );
 
-    // Also disable/enable the Firebase Auth account
+    let authWarning: string | null = null;
     try {
       await getAuth().updateUser(req.params["uid"]!, { disabled: banned });
-    } catch {
-      // Non-fatal if auth update fails
+    } catch (authErr: any) {
+      authWarning = `Firestore flag was set, but Firebase Auth account update failed: ${authErr.message}. The user can still sign in.`;
     }
 
-    return res.json({ success: true, banned });
+    return res.json({
+      success: true,
+      banned,
+      ...(authWarning ? { authWarning } : {}),
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
@@ -215,7 +343,10 @@ router.get("/admin/sessions", requireAdmin, async (req, res) => {
   const status = req.query["status"] as string | undefined;
 
   try {
-    let q = db.collection("sessions").orderBy("createdAt", "desc").limit(limit + 1) as any;
+    let q = db
+      .collection("sessions")
+      .orderBy("createdAt", "desc")
+      .limit(limit + 1) as any;
     if (userId) q = q.where("userId", "==", userId);
     if (templateId) q = q.where("templateId", "==", templateId);
     if (status) q = q.where("status", "==", status);
@@ -247,8 +378,6 @@ router.get("/admin/sessions/:id", requireAdmin, async (req, res) => {
     if (!doc.exists) return res.status(404).json({ error: "Session not found" });
 
     const data = serializeDoc(doc);
-
-    // Attach session_turns
     const turnsSnap = await doc.ref.collection("session_turns").orderBy("turnIndex").get();
     const turns = turnsSnap.docs.map((t) => serializeDoc(t));
 
@@ -295,10 +424,6 @@ router.get("/admin/transactions", requireAdmin, async (req, res) => {
   }
 });
 
-/**
- * POST /admin/credits/refund
- * Body: { userId: string, amount: number, reason: string }
- */
 router.post("/admin/credits/refund", requireAdmin, async (req: any, res) => {
   const { userId, amount, reason } = req.body as {
     userId?: string;
@@ -320,7 +445,140 @@ router.post("/admin/credits/refund", requireAdmin, async (req: any, res) => {
   }
 });
 
+// ── API Usage ─────────────────────────────────────────────────────────────────
+
+router.get("/admin/api-usage", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.json({ byDay: [], totalSessions: 0, totalCreditsUsed: 0, apiLogs: [] });
+
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  try {
+    const usageSnap = await db
+      .collection("credit_transactions")
+      .where("type", "==", "usage")
+      .where("createdAt", ">=", since)
+      .orderBy("createdAt", "desc")
+      .limit(500)
+      .get();
+
+    const byDay: Record<string, { date: string; sessions: number; creditsUsed: number }> = {};
+    for (const doc of usageSnap.docs) {
+      const data = doc.data();
+      const date =
+        data["createdAt"]?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "unknown";
+      if (!byDay[date]) byDay[date] = { date, sessions: 0, creditsUsed: 0 };
+      byDay[date]!.sessions++;
+      byDay[date]!.creditsUsed += Math.abs((data["amount"] as number) ?? 0);
+    }
+
+    // Also read from api_logs if it exists (may be empty until brain.ts writes there)
+    let apiLogs: Record<string, unknown>[] = [];
+    try {
+      const logsSnap = await db
+        .collection("api_logs")
+        .where("createdAt", ">=", since)
+        .orderBy("createdAt", "desc")
+        .limit(200)
+        .get();
+      apiLogs = logsSnap.docs.map((d) => serializeDoc(d));
+    } catch {
+      /* api_logs collection may not exist yet */
+    }
+
+    const byDayArr = Object.values(byDay).sort((a, b) =>
+      b.date.localeCompare(a.date)
+    );
+
+    return res.json({
+      byDay: byDayArr,
+      totalSessions: usageSnap.size,
+      totalCreditsUsed: byDayArr.reduce((s, d) => s + d.creditsUsed, 0),
+      apiLogs,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Error Logs ────────────────────────────────────────────────────────────────
+
+router.get("/admin/error-logs", requireAdmin, async (req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.json({ logs: [], failedSessions: [] });
+
+  const limit = Math.min(Number(req.query["limit"]) || 50, 200);
+
+  try {
+    // Read from api_logs (may be empty until brain.ts writes there)
+    let logs: Record<string, unknown>[] = [];
+    try {
+      const snap = await db
+        .collection("api_logs")
+        .where("status", "==", "error")
+        .orderBy("createdAt", "desc")
+        .limit(limit)
+        .get();
+      logs = snap.docs.map((d) => serializeDoc(d));
+    } catch {
+      /* api_logs may not exist */
+    }
+
+    // Sessions with error status are always a useful error signal
+    const failedSnap = await db
+      .collection("sessions")
+      .where("status", "==", "error")
+      .orderBy("createdAt", "desc")
+      .limit(20)
+      .get();
+
+    return res.json({
+      logs,
+      failedSessions: failedSnap.docs.map((d) => ({
+        ...serializeDoc(d),
+        _type: "session_error",
+      })),
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Abuse Flags ───────────────────────────────────────────────────────────────
+
+router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.json({ flags: [], totalCount: 0 });
+
+  const limit = Math.min(Number(req.query["limit"]) || 50, 200);
+
+  try {
+    const snap = await db
+      .collection("feedback")
+      .where("rating", "in", ["bad", "warn"])
+      .orderBy("createdAt", "desc")
+      .limit(limit)
+      .get();
+
+    return res.json({
+      flags: snap.docs.map((d) => serializeDoc(d)),
+      totalCount: snap.size,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Feature Flags (public read, admin write) ──────────────────────────────────
+
+const DEFAULT_FLAGS: Record<string, boolean> = {
+  guestMode: true,
+  proUpgrade: true,
+  exportPdf: false,
+  shareReports: true,
+  templateLibrary: true,
+  autoRefill: false,
+};
 
 router.get("/feature-flags", async (_req, res) => {
   const db = getFirestoreDb();
@@ -348,7 +606,10 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
     await db
       .collection("config")
       .doc("featureFlags")
-      .set({ [req.params["name"]!]: value, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      .set(
+        { [req.params["name"]!]: value, updatedAt: FieldValue.serverTimestamp() },
+        { merge: true }
+      );
     return res.json({ success: true, name: req.params["name"], value });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -393,14 +654,5 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-
-const DEFAULT_FLAGS: Record<string, boolean> = {
-  guestMode: true,
-  proUpgrade: true,
-  exportPdf: false,
-  shareReports: true,
-  templateLibrary: true,
-  autoRefill: false,
-};
 
 export default router;
