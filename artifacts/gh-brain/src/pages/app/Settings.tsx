@@ -681,14 +681,13 @@ export default function SettingsPage() {
     if (!user) return;
     setDeleting(true);
     try {
-      // 1. Delete all Firestore data server-side (sessions, profile, feedback)
+      // Step 1: Delete all Firestore data server-side (sessions, session_turns, feedback, profile).
+      // This MUST succeed before we touch the auth account — if it fails we surface an error
+      // and leave the account intact so the user can retry.
       const idToken = await user.getIdToken();
       await deleteAccount(idToken);
-    } catch {
-      // Non-fatal — proceed to delete the auth user regardless
-    }
-    try {
-      // 2. Delete the Firebase Auth user
+
+      // Step 2: Only now delete the Firebase Auth user.
       await removeAccount();
       toast.success("Account deleted.");
       setLocation("/");
@@ -697,7 +696,10 @@ export default function SettingsPage() {
       if (err?.code === "auth/requires-recent-login") {
         toast.error("Please sign out and sign back in before deleting your account.");
       } else {
-        toast.error("Failed to delete account. Please try again.");
+        toast.error(
+          "Account deletion failed — your data has not been removed. Please try again or contact support.",
+          { description: err?.message }
+        );
       }
     }
   }
