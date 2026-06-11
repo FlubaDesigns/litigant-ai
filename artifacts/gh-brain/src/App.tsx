@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AppLayout } from "@/components/AppLayout";
 
 // Public pages
 import LandingPage from "@/pages/Landing";
@@ -41,6 +42,14 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ProtectedWithLayout({ children, requireAdmin }: { children: React.ReactNode; requireAdmin?: boolean }) {
+  return (
+    <ProtectedRoute requireAdmin={requireAdmin}>
+      <AppLayout>{children}</AppLayout>
+    </ProtectedRoute>
+  );
+}
+
 function AppRoutes() {
   return (
     <Switch>
@@ -60,43 +69,43 @@ function AppRoutes() {
       <Route path="/verify-email" component={VerifyEmailPage} />
       <Route path="/report/:shareId" component={ShareReportPage} />
 
-      {/* Protected app pages */}
+      {/* Protected app pages — wrapped with shared AppLayout */}
       <Route path="/session">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <SessionPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       <Route path="/session/:sessionId">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <SessionPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       <Route path="/templates">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <TemplatesPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       <Route path="/history">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <HistoryPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       <Route path="/billing">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <BillingPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       <Route path="/settings">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <SettingsPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
 
       {/* Admin */}
       <Route path="/admin">
-        <ProtectedRoute requireAdmin>
+        <ProtectedWithLayout requireAdmin>
           <AdminPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
 
       <Route component={NotFoundPage} />
