@@ -1,0 +1,156 @@
+
+  $('dialogBox').innerHTML='';$('deliberationBox').innerHTML='';
+  for(const h of BrainState.conversationHistory){addAnswer('You',h.q);addAnswer('Orchestrator',h.a);}
+  renderLitigants();updateConfigFromModal();
+  feedRuntime('Session restored — '+BrainState.conversationHistory.length+' turn(s) loaded.');
+  emitLocation('Session restored. Ready for follow-up.');
+}
+
+// ─── SIGNUP & ECONOMICS ───────────────────────────────────────────────────────
+let signupBannerDismissed=false;let selectedPlan='starter';let runsCompleted=0;
+function showSignupBanner(){if(signupBannerDismissed||UserSession.userId!=='guest')return;const b=$('signupBanner');if(b)b.style.display='block';}
+function dismissBanner(){signupBannerDismissed=true;const b=$('signupBanner');if(b)b.style.display='none';}
+function openSignup(){closeModals();dismissBanner();showModal('signupModal');}
+function openEconomics(){closeModals();showModal('economicsModal');}
+function selectPlan(plan){
+  selectedPlan=plan;
+  const starter=$('planStarter'),pro=$('planPro');
+  if(starter&&pro){starter.style.border=plan==='starter'?'2px solid var(--line)':'1px solid var(--dim)';starter.style.background=plan==='starter'?'rgba(0,200,83,.08)':'transparent';pro.style.border=plan==='pro'?'2px solid var(--line)':'1px solid var(--dim)';pro.style.background=plan==='pro'?'rgba(0,200,83,.08)':'transparent';}
+}
+function submitSignup(){
+  const name=$('signupName').value.trim();const email=$('signupEmail').value.trim();const msg=$('signupMsg');
+  if(!name){if(msg){msg.textContent='Please enter your name.';msg.style.display='block';}return;}
+  if(!email||!email.includes('@')){if(msg){msg.textContent='Please enter a valid email address.';msg.style.display='block';}return;}
+  if(msg){msg.style.display='none';}
+  // FIREBASE STUB: createUserWithEmailAndPassword + sendEmailVerification
+  // FIREBASE STUB: setDoc(brain_user_prefs, { name, email, plan: selectedPlan, creditBalance: 50 })
+  if(msg){msg.style.color='#b6ff6a';msg.textContent='✓ Verification email sent to '+email+'. Click the link to activate your 50 free credits.';msg.style.display='block';}
+  feedRuntime('[Signup] Stub — wire Firebase Auth to activate.');
+  setTimeout(()=>closeModals(),3500);
+}
+function checkSignupPrompt(){runsCompleted++;if(runsCompleted===1&&UserSession.userId==='guest')setTimeout(showSignupBanner,1200);}
+
+// ─── EVENT LISTENERS ──────────────────────────────────────────────────────────
+document.addEventListener('click',e=>{
+  e.stopPropagation();
+  const fb=e.target.dataset.fb;
+  const fbRun=e.target.dataset.run;
+  const fbFlow=e.target.dataset.flow;
+  const reason=e.target.dataset.reason;
+  if(fb&&fbRun!==undefined){
+    document.querySelectorAll(`[data-run="${fbRun}"].feedback-btn`).forEach(b=>b.classList.remove('selected-good','selected-bad','selected-warn'));
+    e.target.classList.add('selected-'+fb);
+    if(fb==='bad'){const r=document.getElementById('fb-reasons-'+fbRun);if(r)r.style.display='block';}
+    else{
+      const r=document.getElementById('fb-reasons-'+fbRun);if(r)r.style.display='none';
+      applyFeedback(fb,null,fbFlow);
+      const st=document.getElementById('fb-status-'+fbRun);if(st)st.style.display='inline';
+      document.querySelectorAll(`[data-run="${fbRun}"].feedback-btn`).forEach(b=>b.disabled=true);
+    }
+    return;
+  }
+  if(reason&&fbRun!==undefined){
+    applyFeedback('bad',reason,fbFlow);
+    const r=document.getElementById('fb-reasons-'+fbRun);if(r)r.style.display='none';
+    const st=document.getElementById('fb-status-'+fbRun);if(st)st.style.display='inline';
+    document.querySelectorAll(`[data-run="${fbRun}"].feedback-btn`).forEach(b=>b.disabled=true);
+    return;
+  }
+  const target=e.target.closest('[data-action]')||e.target;
+  const a=target.dataset.action;
+  const s=e.target.dataset.seatClick||e.target.closest('[data-seat-click]')?.dataset.seatClick;
+  if(s)openSeatInspector(s);
+  if(a==='openConfigure'){showModal('configureModal');updateEstimate();}
+  if(a==='saveConversation')saveConversation();
+  if(a==='printConversation')printConversation();
+  if(a==='toggleFeed')toggleFeed();
+  if(a==='openSessions')openSessionsModal();
+  if(a==='openSignup')openSignup();
+  if(a==='openEconomics')openEconomics();
+  if(a==='dismissBanner')dismissBanner();
+  if(a==='submitSignup')submitSignup();
+  if(a==='runBrain')runBrain();
+  if(a==='openAddAgent')openAddAgent();
+  if(a==='openRemoveAgent')openRemoveAgent();
+  if(a==='confirmAddAgent')confirmAddAgent();
+  if(a==='confirmRemoveAgent')confirmRemoveAgent();
+  if(a==='closeModals')closeModals();
+  if(a==='saveConfig')saveConfig();
+  if(a==='togglePause')togglePauseResume();
+  if(a==='toggleDeliberation')toggleDeliberation();
+  if(a==='stopRun'){BrainState.stop=true;BrainState.paused=false;$('pauseResumeBtn').textContent='Pause';emitLocation('Stopping...');}
+  const plan=e.target.dataset.plan;if(plan)selectPlan(plan);
+});
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target.classList.contains('modal'))closeModals()}));
+['courtMode','conscienceMode','assignmentMode','outputMode','outputStrategy','responseMode','deliberationMode','formatMode','confidenceTarget','maxIterations','maxCredits'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',updateConfigFromModal)});
+$('seatAiSelect').addEventListener('change',updateSeatAi);
+$('addAiSelect').addEventListener('change',updateAddPreview);
+document.getElementById('questionBox').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!BrainState.running)runBrain();}});
+if(window.speechSynthesis)window.speechSynthesis.cancel();
+
+setInterval(()=>{
+  const c=$('confidenceNow'),b=$('confidenceBar');if(c&&b)b.style.width=(parseInt(c.textContent||0,10))+'%';
+  const used=$('usedCredits'),cb=$('creditBar');if(used&&cb){const v=parseInt(used.textContent||0,10);cb.style.width=Math.min(100,v)+'%';}
+},300);
+
+defineRoutes();renderRails();renderSeats();renderLitigants();renderCourtControls();renderMeters();setActiveSeat('user');updateEstimate();
+
+// ─── ONBOARDING WIZARD ────────────────────────────────────────────────────────
+// STUB: replace localStorage checks with Firebase user profile reads when auth is live
+const OB={
+  idx:0,captured:false,
+  steps:[
+    {step:'Welcome',msg:'<strong style="font-size:19px;color:#b6ff6a;">Welcome to Fluba Brain.</strong><br><br>This is a multi-AI courtroom that debates your question until it reaches a confidence target. Let\'s get you set up in 3 quick steps.',nextLabel:'Get started →',pulse:null,action:'openConfig'},
+    {step:'Step 1 of 3 — Configure',msg:'First, set up your courtroom. We\'re opening <strong>Configure</strong> for you now — choose your court mode, AI models, and confidence target. Tap <strong>Save</strong> when done.',nextLabel:'Done →',pulse:'openConfigure',action:null},
+    {step:'Step 2 of 3 — Save your session',msg:'<strong>Get 50 free credits</strong> and save your session history. Enter your name and email — we\'ll send a verification link. No password needed.',nextLabel:'Claim credits →',pulse:null,action:'capture'},
+    {step:'Step 3 of 3 — Ask your question',msg:'You\'re all set. Type your question below and tap <strong>▶</strong> to start the courtroom.',nextLabel:'Got it ✓',pulse:'questionBox',action:'done'}
+  ]
+};
+function obClearPulse(){document.querySelectorAll('.onboard-pulse,.onboard-pulse-hot').forEach(el=>el.classList.remove('onboard-pulse','onboard-pulse-hot'));}
+function obPulse(id,hot){obClearPulse();const el=document.querySelector('[data-action="'+id+'"]')||document.getElementById(id);if(el)el.classList.add(hot?'onboard-pulse-hot':'onboard-pulse');}
+function obRender(){
+  const s=OB.steps[OB.idx];
+  $('onboardStep').textContent=s.step;$('onboardMsg').innerHTML=s.msg;$('onboardNext').textContent=s.nextLabel;
+  $('onboardCapture').style.display=s.action==='capture'?'block':'none';
+  $('onboardCaptureMsg').style.display='none';
+  obClearPulse();if(s.pulse)obPulse(s.pulse,s.pulse==='runBrain');
+  if(s.action==='openConfig'){setTimeout(()=>{document.querySelector('[data-action="openConfigure"]').click();setTimeout(()=>obPulse('openConfigure',false),100);},500);}
+}
+function obNext(){
+  const s=OB.steps[OB.idx];
+  if(s.action==='capture'){
+    const name=$('onboardName').value.trim();const email=$('onboardEmail').value.trim();const msg=$('onboardCaptureMsg');
+    if(!name){msg.style.color='#ff9a9a';msg.textContent='Please enter your name.';msg.style.display='block';return;}
+    if(!email||!email.includes('@')){msg.style.color='#ff9a9a';msg.textContent='Please enter a valid email.';msg.style.display='block';return;}
+    // FIREBASE STUB: createUserWithEmailAndPassword + sendEmailVerification
+    // FIREBASE STUB: setDoc(brain_user_prefs, { name, email, plan:'starter', creditBalance:50, onboarded:true })
+    msg.style.color='#b6ff6a';msg.textContent='✓ Check your email to activate 50 free credits.';msg.style.display='block';
+    OB.captured=true;
+    try{localStorage.setItem('fb_ob_email',email);localStorage.setItem('fb_ob_name',name);}catch(e){}
+    setTimeout(()=>obAdvance(),1800);return;
+  }
+  if(s.action==='done'){obFinish();return;}
+  obAdvance();
+}
+function obAdvance(){OB.idx++;if(OB.idx>=OB.steps.length){obFinish();return;}obRender();}
+function obFinish(){
+  $('onboardOverlay').style.display='none';obClearPulse();
+  try{localStorage.setItem('fb_onboarded','1');}catch(e){}
+  obPulse('runBrain',true);setTimeout(obClearPulse,6000);
+}
+function startOnboarding(){
+  if(obDevSkip)return;
+  try{if(localStorage.getItem('fb_onboarded')==='1')return;}catch(e){}
+  OB.idx=0;$('onboardOverlay').style.display='block';obRender();
+}
+document.getElementById('onboardNext').addEventListener('click',obNext);
+document.getElementById('onboardSkip').addEventListener('click',obFinish);
+document.addEventListener('click',e=>{
+  if((e.target.dataset.action==='saveConfig'||e.target.dataset.action==='closeModals')&&OB.idx===1)setTimeout(obAdvance,400);
+});
+setTimeout(startOnboarding,700);
+</script>
+</body>
+</html>
+
+```
