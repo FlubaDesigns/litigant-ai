@@ -1,0 +1,218 @@
+import { auth } from "@/lib/firebase";
+
+const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const user = auth?.currentUser;
+  if (!user) return {};
+  const token = await user.getIdToken();
+  return { Authorization: `Bearer ${token}` };
+}
+
+async function adminFetch(path: string, init?: RequestInit): Promise<Response> {
+  const headers = await authHeaders();
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: { ...headers, "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+}
+
+export interface AdminUser {
+  id: string;
+  email?: string;
+  displayName?: string;
+  plan?: string;
+  creditBalance?: number;
+  subscriptionStatus?: string;
+  createdAt?: string;
+  banned?: boolean;
+  bannedReason?: string;
+}
+
+export interface AdminSession {
+  id: string;
+  userId?: string;
+  title?: string;
+  question?: string;
+  status?: string;
+  confidence?: number;
+  creditsUsed?: number;
+  templateId?: string;
+  shared?: boolean;
+  finalAnswer?: string;
+  createdAt?: string;
+}
+
+export interface AdminTransaction {
+  id: string;
+  userId?: string;
+  type?: string;
+  amount?: number;
+  balanceAfter?: number;
+  source?: string;
+  sessionId?: string;
+  createdAt?: string;
+}
+
+export interface AdminStats {
+  userCount: number;
+  sessionCount: number;
+  txCount: number;
+  recentSessions: number;
+}
+
+export interface SessionTurn {
+  id: string;
+  role?: string;
+  round?: number;
+  content?: string;
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const res = await adminFetch("/admin/stats");
+  if (!res.ok) throw new Error("Failed to load stats");
+  return res.json();
+}
+
+export async function listAdminUsers(params?: {
+  search?: string;
+  limit?: number;
+  cursor?: string;
+}): Promise<{ users: AdminUser[]; hasMore: boolean; nextCursor: string | null }> {
+  const q = new URLSearchParams();
+  if (params?.search) q.set("search", params.search);
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  const res = await adminFetch(`/admin/users?${q}`);
+  if (!res.ok) throw new Error("Failed to load users");
+  return res.json();
+}
+
+export async function getAdminUser(uid: string): Promise<{
+  user: AdminUser;
+  recentTransactions: AdminTransaction[];
+  recentSessions: AdminSession[];
+}> {
+  const res = await adminFetch(`/admin/users/${uid}`);
+  if (!res.ok) throw new Error("Failed to load user");
+  return res.json();
+}
+
+export async function adjustUserCredits(
+  uid: string,
+  amount: number,
+  reason: string
+): Promise<{ newBalance: number }> {
+  const res = await adminFetch(`/admin/users/${uid}/credits`, {
+    method: "POST",
+    body: JSON.stringify({ amount, reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to adjust credits");
+  }
+  return res.json();
+}
+
+export async function banUser(
+  uid: string,
+  banned: boolean,
+  reason?: string
+): Promise<void> {
+  const res = await adminFetch(`/admin/users/${uid}/ban`, {
+    method: "POST",
+    body: JSON.stringify({ banned, reason }),
+  });
+  if (!res.ok) throw new Error("Failed to update ban status");
+}
+
+export async function listAdminSessions(params?: {
+  userId?: string;
+  templateId?: string;
+  status?: string;
+  limit?: number;
+  cursor?: string;
+}): Promise<{ sessions: AdminSession[]; hasMore: boolean; nextCursor: string | null }> {
+  const q = new URLSearchParams();
+  if (params?.userId) q.set("userId", params.userId);
+  if (params?.templateId) q.set("templateId", params.templateId);
+  if (params?.status) q.set("status", params.status);
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  const res = await adminFetch(`/admin/sessions?${q}`);
+  if (!res.ok) throw new Error("Failed to load sessions");
+  return res.json();
+}
+
+export async function getAdminSession(
+  id: string
+): Promise<{ session: AdminSession; turns: SessionTurn[] }> {
+  const res = await adminFetch(`/admin/sessions/${id}`);
+  if (!res.ok) throw new Error("Failed to load session");
+  return res.json();
+}
+
+export async function listAdminTransactions(params?: {
+  userId?: string;
+  type?: string;
+  limit?: number;
+  cursor?: string;
+}): Promise<{ transactions: AdminTransaction[]; hasMore: boolean; nextCursor: string | null }> {
+  const q = new URLSearchParams();
+  if (params?.userId) q.set("userId", params.userId);
+  if (params?.type) q.set("type", params.type);
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  const res = await adminFetch(`/admin/transactions?${q}`);
+  if (!res.ok) throw new Error("Failed to load transactions");
+  return res.json();
+}
+
+export async function issueRefund(
+  userId: string,
+  amount: number,
+  reason: string
+): Promise<{ newBalance: number }> {
+  const res = await adminFetch("/admin/credits/refund", {
+    method: "POST",
+    body: JSON.stringify({ userId, amount, reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to issue refund");
+  }
+  return res.json();
+}
+
+export async function getFeatureFlags(): Promise<Record<string, boolean>> {
+  const res = await fetch(`${API_BASE}/feature-flags`);
+  if (!res.ok) return {};
+  const data = await res.json();
+  return data.flags ?? {};
+}
+
+export async function setFeatureFlag(name: string, value: boolean): Promise<void> {
+  const res = await adminFetch(`/admin/feature-flags/${name}`, {
+    method: "PUT",
+    body: JSON.stringify({ value }),
+  });
+  if (!res.ok) throw new Error("Failed to update feature flag");
+}
+
+export async function listAdminTemplates(): Promise<any[]> {
+  const res = await adminFetch("/admin/templates");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.templates ?? [];
+}
+
+export async function updateAdminTemplate(
+  id: string,
+  updates: { title?: string; description?: string; isActive?: boolean }
+): Promise<void> {
+  const res = await adminFetch(`/admin/templates/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error("Failed to update template");
+}

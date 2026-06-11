@@ -6,6 +6,8 @@ import sessionsRouter from "./sessions";
 import templatesRouter from "./templates";
 import accountRouter from "./account";
 import billingRouter from "./billing";
+import adminRouter from "./admin";
+import reportRouter from "./report";
 
 const router: IRouter = Router();
 
@@ -16,5 +18,7 @@ router.use(sessionsRouter);
 router.use(templatesRouter);
 router.use(accountRouter);
 router.use(billingRouter);
+router.use(adminRouter);
+router.use(reportRouter);
 
 export default router;
