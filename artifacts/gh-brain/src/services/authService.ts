@@ -11,10 +11,27 @@ import {
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createUserProfile } from "@/services/firestoreService";
-import { grantSignupBonus } from "@/services/billingService";
 
 const googleProvider = new GoogleAuthProvider();
+
+const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api";
+
+/**
+ * Server-side equivalent of a Firebase Auth onCreate Cloud Function.
+ * Called after signup/first login — the server creates the user doc and
+ * grants the 50-credit bonus atomically (amount & logic are server-controlled).
+ */
+async function provisionUser(user: User): Promise<void> {
+  try {
+    const token = await user.getIdToken();
+    await fetch(`${API_BASE}/auth/provision`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (err) {
+    console.warn("[AuthService] provisionUser failed (non-fatal):", err);
+  }
+}
 
 export async function signUpWithEmail(
   email: string,
@@ -24,23 +41,8 @@ export async function signUpWithEmail(
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName });
   await firebaseSendEmailVerification(credential.user);
-  await createUserProfile(credential.user.uid, {
-    email,
-    displayName,
-    plan: "free",
-    creditBalance: 0,
-    createdAt: new Date().toISOString(),
-    lastLoginAt: new Date().toISOString(),
-    subscriptionStatus: "none",
-    defaultSettings: {
-      courtMode: "adversarial",
-      confidenceTarget: 85,
-      responseMode: "balanced",
-      outputFormat: "report",
-    },
-  });
-  // Server grants 50 trial credits — idempotent, amount controlled server-side
-  await grantSignupBonus(credential.user).catch(console.warn);
+  // Server creates user doc + grants 50 trial credits (idempotent, server-controlled)
+  await provisionUser(credential.user);
   return credential.user;
 }
 
@@ -54,23 +56,8 @@ export async function signInWithGoogle(): Promise<User> {
   const isNew =
     credential.user.metadata.creationTime === credential.user.metadata.lastSignInTime;
   if (isNew) {
-    await createUserProfile(credential.user.uid, {
-      email: credential.user.email || "",
-      displayName: credential.user.displayName || "User",
-      plan: "free",
-      creditBalance: 0,
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-      subscriptionStatus: "none",
-      defaultSettings: {
-        courtMode: "adversarial",
-        confidenceTarget: 85,
-        responseMode: "balanced",
-        outputFormat: "report",
-      },
-    });
-    // Server grants 50 trial credits — idempotent, amount controlled server-side
-    await grantSignupBonus(credential.user).catch(console.warn);
+    // Server creates user doc + grants 50 trial credits (idempotent, server-controlled)
+    await provisionUser(credential.user);
   }
   return credential.user;
 }

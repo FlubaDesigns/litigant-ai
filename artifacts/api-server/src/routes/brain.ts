@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { runBrainSession, estimateCreditCost, type CourtConfig } from "../lib/brainEngine.js";
-import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
+import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 
 const router = Router();
@@ -13,6 +13,83 @@ function getClientIp(req: import("express").Request): string {
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
   return req.socket.remoteAddress ?? "unknown";
+}
+
+/**
+ * Atomically reserve credits by writing both the balance deduction AND the
+ * ledger entry in a single Firestore transaction.
+ *
+ * Returns `true` if reservation succeeded, `false` if insufficient balance.
+ * Throws if the transaction itself fails.
+ */
+async function reserveCredits(
+  uid: string,
+  amount: number,
+  sessionId: string
+): Promise<boolean> {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firestore not configured");
+
+  return db.runTransaction(async (txn) => {
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await txn.get(userRef);
+    const balance = (userDoc.data()?.creditBalance as number) ?? 0;
+    if (balance < amount) return false;
+
+    const newBalance = balance - amount;
+
+    // Update balance
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
+
+    // Immutable ledger entry for the reservation
+    const txRef = db.collection("credit_transactions").doc();
+    txn.set(txRef, {
+      userId: uid,
+      type: "usage",
+      amount: -amount,
+      balanceAfter: newBalance,
+      source: "brain_reservation",
+      sessionId,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return true;
+  });
+}
+
+/**
+ * Write a reconciliation ledger entry + update balance atomically.
+ * Used for both over-estimate refunds and full failure refunds.
+ */
+async function reconcileCredits(
+  uid: string,
+  refundAmount: number,
+  sessionId: string,
+  source: "brain_reconcile" | "brain_failure_refund"
+): Promise<void> {
+  const db = getFirestoreDb();
+  if (!db) return;
+
+  await db.runTransaction(async (txn) => {
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await txn.get(userRef);
+    const balance = (userDoc.data()?.creditBalance as number) ?? 0;
+    const newBalance = balance + refundAmount;
+
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
+
+    // Immutable ledger entry for the refund
+    const txRef = db.collection("credit_transactions").doc();
+    txn.set(txRef, {
+      userId: uid,
+      type: "refund",
+      amount: refundAmount,
+      balanceAfter: newBalance,
+      source,
+      sessionId,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  }).catch((e) => console.error(`[brain] ${source} failed for ${uid}:`, e));
 }
 
 router.post("/run-brain", async (req, res) => {
@@ -47,7 +124,7 @@ router.post("/run-brain", async (req, res) => {
   if (authHeader?.startsWith("Bearer ")) {
     // A bearer token was supplied — validate it strictly.
     // An invalid/expired token is always rejected; we do NOT fall through to guest mode.
-    if (!db) {
+    if (!db || !isFirebaseConfigured()) {
       res.status(503).json({ message: "Auth service unavailable." });
       return;
     }
@@ -59,20 +136,10 @@ router.post("/run-brain", async (req, res) => {
     }
     uid = decoded.uid;
 
-    // Optimistic credit reservation: deduct estimatedCost upfront atomically.
-    // This prevents concurrent sessions from overdrawing the same balance.
-    // Post-run: refund (estimatedCost - actualCost) when actual < estimated.
+    // Optimistic credit reservation: deduct estimatedCost upfront.
+    // Every balance change (reservation, refund, failure refund) is ledgered atomically.
     try {
-      const reserved = await db.runTransaction(async (txn) => {
-        const userRef = db.collection("users").doc(uid!);
-        const userDoc = await txn.get(userRef);
-        const balance = (userDoc.data()?.creditBalance as number) ?? 0;
-        if (balance < estimatedCost) return false;
-        // Atomically reserve credits; reconciled to actual cost after run completes
-        txn.update(userRef, { creditBalance: FieldValue.increment(-estimatedCost) });
-        return true;
-      });
-
+      const reserved = await reserveCredits(uid, estimatedCost, sessionId ?? "pending");
       if (!reserved) {
         res.status(402).json({
           message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
@@ -80,7 +147,6 @@ router.post("/run-brain", async (req, res) => {
         return;
       }
     } catch (err) {
-      // Firestore transaction failure — cannot guarantee credit enforcement; reject the request
       console.error("[brain] Credit reservation failed:", err);
       res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
       return;
@@ -136,51 +202,34 @@ router.post("/run-brain", async (req, res) => {
       const sessionRef = db.collection("sessions").doc(result.sessionId);
 
       try {
-        await db.runTransaction(async (txn) => {
-          // Reconcile: if actual cost < reserved, refund the difference
-          const refund = Math.max(0, estimatedCost - actualCost);
-          if (refund > 0) {
-            const userRef = db.collection("users").doc(uid!);
-            txn.update(userRef, { creditBalance: FieldValue.increment(refund) });
-          }
-
-          // Persist session — include all output fields so History detail view works
-          txn.set(sessionRef, {
-            sessionId: result.sessionId,
-            userId: uid,
-            title: question.slice(0, 80),
-            question,
-            templateId: templateId ?? null,
-            confidence: result.confidence,
-            creditsUsed: actualCost,
-            status: "complete",
-            finalAnswer: result.finalAnswer,
-            debateNotes: result.debateNotes,
-            transcript: result.debateNotes
-              ? result.transcript.join("\n\n---\n\n")
-              : "",
-            caveats: result.caveats,
-            artifacts: result.artifacts,
-            shared: false,
-            shareId: null,
-            createdAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-
-          // Credit ledger entry (records the net cost)
-          const txLedgerRef = db.collection("credit_transactions").doc();
-          txn.set(txLedgerRef, {
-            transactionId: txLedgerRef.id,
-            userId: uid,
-            type: "usage",
-            amount: -actualCost,
-            source: "brain_session",
-            sessionId: result.sessionId,
-            createdAt: FieldValue.serverTimestamp(),
-          });
+        // Persist the session document (no credit mutations here — handled in reconcile step)
+        await sessionRef.set({
+          sessionId: result.sessionId,
+          userId: uid,
+          title: question.slice(0, 80),
+          question,
+          templateId: templateId ?? null,
+          confidence: result.confidence,
+          creditsUsed: actualCost,
+          status: "complete",
+          finalAnswer: result.finalAnswer,
+          debateNotes: result.debateNotes,
+          transcript: result.debateNotes ? result.transcript.join("\n\n---\n\n") : "",
+          caveats: result.caveats,
+          artifacts: result.artifacts,
+          shared: false,
+          shareId: null,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
-        // Write session_turns subcollection (supplementary — outside transaction is fine)
+        // Reconcile: if actual < estimated, refund the difference — this creates a ledger entry
+        const refund = Math.max(0, estimatedCost - actualCost);
+        if (refund > 0) {
+          await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+        }
+
+        // Write session_turns subcollection
         const turnsCol = sessionRef.collection("session_turns");
         await Promise.all(
           result.turns.map((turn, idx) =>
@@ -205,12 +254,9 @@ router.post("/run-brain", async (req, res) => {
       );
     }
   } finally {
-    // If run failed and credits were reserved, refund the full reservation
+    // If run failed and credits were reserved, refund the full reservation as a ledger entry
     if (!runSucceeded && uid && db) {
-      db.runTransaction(async (txn) => {
-        const userRef = db.collection("users").doc(uid!);
-        txn.update(userRef, { creditBalance: FieldValue.increment(estimatedCost) });
-      }).catch((e) => console.error("[brain] Credit refund failed:", e));
+      await reconcileCredits(uid, estimatedCost, sessionId ?? "failed", "brain_failure_refund");
     }
 
     if (!res.writableEnded) res.end();

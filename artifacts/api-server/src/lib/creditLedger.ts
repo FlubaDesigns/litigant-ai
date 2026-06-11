@@ -1,5 +1,5 @@
 import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 export type CreditTxType =
   | "purchase"
@@ -21,13 +21,23 @@ export interface CreditTransaction {
   createdAt: string;
 }
 
+/** Normalize a Firestore Timestamp, Date, or ISO string to ISO string. */
+function toIsoString(v: unknown): string {
+  if (v instanceof Timestamp) return v.toDate().toISOString();
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "string") return v;
+  return new Date().toISOString();
+}
+
 /**
- * Add credits to a user's balance.
+ * Add (or deduct, with negative amount) credits to a user's balance.
+ * Every call writes one immutable `credit_transactions` entry —
+ * the balance is ONLY mutated inside this function's transaction.
  *
- * @param opts.idempotencyKey - A unique key (e.g. Stripe event ID or "signup_bonus_{uid}") that
- *   prevents the same grant from firing more than once. If the key already exists in
- *   `stripe_events`, the operation is skipped and `{ skipped: true }` is returned.
- *   The check + grant are performed inside one Firestore transaction.
+ * @param opts.idempotencyKey  A unique key (e.g. Stripe event ID or
+ *   "signup_bonus_{uid}") stored in `stripe_events`.  If the key already
+ *   exists the entire operation is skipped and `{ skipped: true }` is
+ *   returned.  The check + grant + ledger entry are all atomic.
  */
 export async function addCredits(
   uid: string,
@@ -51,14 +61,13 @@ export async function addCredits(
   const userRef = db.collection("users").doc(uid);
 
   return db.runTransaction(async (tx) => {
-    // ── Idempotency guard ────────────────────────────────────────────────
+    // ── Idempotency guard ─────────────────────────────────────────────────────
     if (opts.idempotencyKey) {
       const dedupRef = db.collection("stripe_events").doc(opts.idempotencyKey);
       const dedupSnap = await tx.get(dedupRef);
       if (dedupSnap.exists) {
         return { newBalance: 0, skipped: true };
       }
-      // Mark as processed atomically with the credit grant
       tx.set(dedupRef, {
         eventType: type,
         uid,
@@ -67,7 +76,7 @@ export async function addCredits(
       });
     }
 
-    // ── Credit grant ─────────────────────────────────────────────────────
+    // ── Balance update ────────────────────────────────────────────────────────
     const snap = await tx.get(userRef);
     const current: number = snap.exists ? ((snap.data()?.creditBalance as number) ?? 0) : 0;
     const newBalance = current + amount;
@@ -81,8 +90,9 @@ export async function addCredits(
       { merge: true }
     );
 
+    // ── Immutable ledger entry ────────────────────────────────────────────────
     const txRef = db.collection("credit_transactions").doc();
-    const txDoc: CreditTransaction = {
+    tx.set(txRef, {
       userId: uid,
       type,
       amount,
@@ -90,12 +100,9 @@ export async function addCredits(
       source: opts.source ?? type,
       sessionId: opts.sessionId ?? null,
       stripePaymentId: opts.stripePaymentId ?? null,
-      createdAt: new Date().toISOString(),
-    };
-    tx.set(txRef, txDoc);
+      createdAt: FieldValue.serverTimestamp(),
+    });
 
-    // ── Auto-refill check ─────────────────────────────────────────────────
-    // Deferred — handled separately in checkAndTriggerAutoRefill()
     return { newBalance };
   });
 }
@@ -127,10 +134,20 @@ export async function getTransactions(
     const snap = await q.get();
     const docs = snap.docs;
     const hasMore = docs.length > limit;
-    const items = docs.slice(0, limit).map((d) => ({
-      transactionId: d.id,
-      ...(d.data() as Omit<CreditTransaction, "transactionId">),
-    }));
+    const items = docs.slice(0, limit).map((d) => {
+      const data = d.data();
+      return {
+        transactionId: d.id,
+        userId: data["userId"] as string,
+        type: data["type"] as CreditTxType,
+        amount: data["amount"] as number,
+        balanceAfter: data["balanceAfter"] as number | undefined,
+        source: data["source"] as string | undefined,
+        sessionId: (data["sessionId"] as string | null) ?? null,
+        stripePaymentId: (data["stripePaymentId"] as string | null) ?? null,
+        createdAt: toIsoString(data["createdAt"]),
+      } satisfies CreditTransaction;
+    });
 
     return {
       items,
@@ -188,8 +205,7 @@ export async function getUserIdByStripeCustomer(stripeCustomerId: string): Promi
 
 /**
  * Idempotently grant 50 trial credits to a new user.
- * Uses "signup_bonus_{uid}" as the idempotency key so this
- * can only fire once per user even if called multiple times.
+ * Uses "signup_bonus_{uid}" as the idempotency key — fires at most once per user.
  */
 export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean }> {
   const result = await addCredits(uid, 50, "signup_bonus", {
@@ -226,8 +242,6 @@ export async function setAutoRefillPreference(
 /**
  * After credit usage drops below the auto-refill threshold, generate a
  * checkout URL and store it in Firestore so the frontend can redirect the user.
- *
- * This is called server-side after credit deductions in the brain engine.
  */
 export async function checkAndTriggerAutoRefill(
   uid: string,
@@ -243,7 +257,7 @@ export async function checkAndTriggerAutoRefill(
     if (!userSnap.exists) return;
 
     const data = userSnap.data()!;
-    const autoRefill = data.autoRefill as
+    const autoRefill = data["autoRefill"] as
       | { enabled: boolean; thresholdCredits: number; packPriceId: string }
       | undefined;
 
