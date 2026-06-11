@@ -48,6 +48,15 @@ export interface StripeSubscription {
   items: Array<{ price: { id: string; product: string } }>;
 }
 
+export interface PaymentHistoryItem {
+  id: string;
+  amount: number | null;
+  currency: string;
+  status: string;
+  created: number;
+  description: string | null;
+}
+
 export async function listProductsWithPrices(): Promise<
   Array<StripeProduct & { prices: StripePrice[] }>
 > {
@@ -93,7 +102,8 @@ export async function listProductsWithPrices(): Promise<
           product: pid,
           unit_amount: row.unit_amount as number | null,
           currency: (row.currency as string) ?? "usd",
-          recurring: (row.recurring as { interval: string; interval_count: number } | null) ?? null,
+          recurring:
+            (row.recurring as { interval: string; interval_count: number } | null) ?? null,
           active: Boolean(row.price_active),
           metadata: (row.price_metadata as Record<string, string>) ?? {},
         });
@@ -180,5 +190,34 @@ export async function getSubscriptionByCustomerId(
     };
   } catch {
     return null;
+  }
+}
+
+export async function getPaymentHistory(
+  customerId: string,
+  limit = 20
+): Promise<PaymentHistoryItem[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.execute(sql`
+      SELECT id, amount, currency, status, created, description
+      FROM stripe.payment_intents
+      WHERE customer = ${customerId}
+        AND status = 'succeeded'
+      ORDER BY created DESC
+      LIMIT ${limit}
+    `);
+    return (result.rows ?? []).map((row: any) => ({
+      id: row.id as string,
+      amount: row.amount as number | null,
+      currency: (row.currency as string) ?? "usd",
+      status: (row.status as string) ?? "unknown",
+      created: row.created as number,
+      description: (row.description as string | null) ?? null,
+    }));
+  } catch (err) {
+    console.warn("[StripeStorage] getPaymentHistory error:", err);
+    return [];
   }
 }

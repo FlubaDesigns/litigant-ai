@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createUserProfile } from "@/services/firestoreService";
+import { grantSignupBonus } from "@/services/billingService";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -27,7 +28,7 @@ export async function signUpWithEmail(
     email,
     displayName,
     plan: "free",
-    creditBalance: 50,
+    creditBalance: 0,
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
     subscriptionStatus: "none",
@@ -38,6 +39,8 @@ export async function signUpWithEmail(
       outputFormat: "report",
     },
   });
+  // Server grants 50 trial credits — idempotent, amount controlled server-side
+  await grantSignupBonus(credential.user).catch(console.warn);
   return credential.user;
 }
 
@@ -48,13 +51,14 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
 export async function signInWithGoogle(): Promise<User> {
   const credential = await signInWithPopup(auth, googleProvider);
-  const isNew = credential.user.metadata.creationTime === credential.user.metadata.lastSignInTime;
+  const isNew =
+    credential.user.metadata.creationTime === credential.user.metadata.lastSignInTime;
   if (isNew) {
     await createUserProfile(credential.user.uid, {
       email: credential.user.email || "",
       displayName: credential.user.displayName || "User",
       plan: "free",
-      creditBalance: 50,
+      creditBalance: 0,
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
       subscriptionStatus: "none",
@@ -65,6 +69,8 @@ export async function signInWithGoogle(): Promise<User> {
         outputFormat: "report",
       },
     });
+    // Server grants 50 trial credits — idempotent, amount controlled server-side
+    await grantSignupBonus(credential.user).catch(console.warn);
   }
   return credential.user;
 }

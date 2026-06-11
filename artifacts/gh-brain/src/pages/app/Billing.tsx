@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Zap, CreditCard, History, TrendingUp, AlertTriangle,
+  Zap, CreditCard, History, AlertTriangle,
   CheckCircle2, Crown, Package, RefreshCw, ExternalLink,
-  ArrowUpRight, ArrowDownRight, Sparkles, Info, ChevronDown,
-  RotateCcw, ToggleLeft, ToggleRight,
+  ArrowDownRight, Sparkles, Info, ChevronDown,
+  RotateCcw, ToggleLeft, ToggleRight, Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +16,15 @@ import {
   getProducts,
   getTransactions,
   getSubscription,
+  getPaymentHistory,
+  setAutoRefill,
   createCheckoutSession,
   createPortalSession,
+  PLAN_LIMITS,
   type BillingProduct,
   type CreditTransaction,
   type StripeSubscription,
+  type PaymentHistoryItem,
 } from "@/services/billingService";
 
 const CREDIT_PACKS_LABELS: Record<string, { credits: number; badge?: string }> = {
@@ -68,6 +72,14 @@ function formatDate(iso: string) {
   }
 }
 
+function formatTimestamp(ts: number) {
+  return new Date(ts * 1000).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function formatCurrency(cents: number | null): string {
   if (cents === null) return "";
   return `$${(cents / 100).toFixed(2)}`;
@@ -76,6 +88,7 @@ function formatCurrency(cents: number | null): string {
 function CreditBalanceCard({ balance, plan }: { balance: number; plan: string }) {
   const isLow = balance < 50;
   const isCritical = balance < 10;
+  const limits = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.free;
 
   return (
     <div
@@ -140,7 +153,7 @@ function CreditBalanceCard({ balance, plan }: { balance: number; plan: string })
             )}
           >
             {plan === "pro" && <Crown className="w-3 h-3 mr-1" />}
-            {plan} Plan
+            {limits.label} Plan
           </Badge>
           {isCritical && (
             <span className="text-xs text-red-400 flex items-center gap-1">
@@ -156,6 +169,46 @@ function CreditBalanceCard({ balance, plan }: { balance: number; plan: string })
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PlanLimitsCard({ plan }: { plan: string }) {
+  const limits = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.free;
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/50 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Info className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-semibold">Plan Limits</span>
+      </div>
+      <ul className="space-y-2">
+        {limits.features.map((f) => (
+          <li key={f} className="flex items-center gap-2 text-xs">
+            <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+            <span className="text-muted-foreground">{f}</span>
+          </li>
+        ))}
+      </ul>
+      {limits.creditsPerMonth && (
+        <div className="mt-3 pt-3 border-t border-border/40">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Monthly grant</span>
+            <span className="font-mono text-primary font-semibold">
+              {limits.creditsPerMonth.toLocaleString()} cr/mo
+            </span>
+          </div>
+        </div>
+      )}
+      {limits.trialCredits && (
+        <div className="mt-3 pt-3 border-t border-border/40">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Trial credits</span>
+            <span className="font-mono text-primary font-semibold">
+              {limits.trialCredits} included
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -323,6 +376,30 @@ function TransactionRow({ tx }: { tx: CreditTransaction }) {
   );
 }
 
+function PaymentRow({ payment }: { payment: PaymentHistoryItem }) {
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-border/40 last:border-0">
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted/30 shrink-0 text-green-400">
+        <Receipt className="w-3.5 h-3.5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">
+          {payment.description ?? "Payment"}
+        </div>
+        <div className="text-xs text-muted-foreground">{formatTimestamp(payment.created)}</div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className="text-sm font-mono font-semibold tabular-nums text-green-400">
+          {formatCurrency(payment.amount)}
+        </div>
+        <div className="text-xs text-muted-foreground capitalize">{payment.status}</div>
+      </div>
+    </div>
+  );
+}
+
+type HistoryTab = "credits" | "payments";
+
 export default function BillingPage() {
   const { user, userProfile, firebaseReady } = useAuth();
   const [, navigate] = useLocation();
@@ -331,10 +408,16 @@ export default function BillingPage() {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txNextCursor, setTxNextCursor] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<StripeSubscription | null>(null);
-  const [autoRefill, setAutoRefill] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [historyTab, setHistoryTab] = useState<HistoryTab>("credits");
+
+  // Auto-refill: local toggle state reflects saved preference (optimistic UI)
+  const [autoRefillEnabled, setAutoRefillEnabled] = useState(false);
+  const [autoRefillSaving, setAutoRefillSaving] = useState(false);
 
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingTx, setLoadingTx] = useState(true);
+  const [loadingPayments, setLoadingPayments] = useState(false);
   const [loadingMoreTx, setLoadingMoreTx] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -364,6 +447,14 @@ export default function BillingPage() {
     setLoadingTx(false);
   }, [user]);
 
+  const fetchPaymentHistory = useCallback(async () => {
+    if (!user) return;
+    setLoadingPayments(true);
+    const data = await getPaymentHistory();
+    setPaymentHistory(data);
+    setLoadingPayments(false);
+  }, [user]);
+
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
     const sub = await getSubscription();
@@ -383,6 +474,21 @@ export default function BillingPage() {
     }
   }, [user, fetchTransactions, fetchSubscription]);
 
+  // Lazy-load payment history when tab is first opened
+  useEffect(() => {
+    if (historyTab === "payments" && user && paymentHistory.length === 0) {
+      fetchPaymentHistory();
+    }
+  }, [historyTab, user, paymentHistory.length, fetchPaymentHistory]);
+
+  // Sync auto-refill toggle from user profile when it loads
+  useEffect(() => {
+    const pref = (userProfile as any)?.autoRefill;
+    if (pref && typeof pref.enabled === "boolean") {
+      setAutoRefillEnabled(pref.enabled);
+    }
+  }, [userProfile]);
+
   async function handleLoadMoreTx() {
     if (!txNextCursor) return;
     setLoadingMoreTx(true);
@@ -392,13 +498,35 @@ export default function BillingPage() {
     setLoadingMoreTx(false);
   }
 
+  async function handleToggleAutoRefill() {
+    if (!user) return;
+    const next = !autoRefillEnabled;
+    setAutoRefillEnabled(next);
+    setAutoRefillSaving(true);
+    try {
+      await setAutoRefill({ enabled: next, thresholdCredits: 20, packPriceId: "price_starter" });
+      toast.success(
+        next
+          ? "Auto-refill enabled — you'll get a top-up link when credits drop below 20."
+          : "Auto-refill disabled."
+      );
+    } catch (err: any) {
+      setAutoRefillEnabled(!next);
+      toast.error(err.message ?? "Failed to update auto-refill preference.");
+    } finally {
+      setAutoRefillSaving(false);
+    }
+  }
+
   async function handleBuy(priceId: string) {
     if (!user) {
       toast.error("Please sign in to purchase credits.");
       return;
     }
     if (priceId.startsWith("price_") && !priceId.startsWith("price_s") && priceId.length < 20) {
-      toast.error("Stripe is not yet connected. Connect it via the Integrations tab to enable purchases.");
+      toast.error(
+        "Stripe is not yet connected. Connect it via the Integrations tab to enable purchases."
+      );
       return;
     }
     setCheckoutLoading(priceId);
@@ -469,7 +597,9 @@ export default function BillingPage() {
             <CreditCard className="w-6 h-6 text-primary" />
           </div>
           <h2 className="text-lg font-bold mb-2">Billing & Credits</h2>
-          <p className="text-muted-foreground text-sm mb-4">Sign in to view your balance and purchase credits.</p>
+          <p className="text-muted-foreground text-sm mb-4">
+            Sign in to view your balance and purchase credits.
+          </p>
           <Button onClick={() => navigate("/login")} className="bg-primary text-primary-foreground">
             Sign In
           </Button>
@@ -505,8 +635,11 @@ export default function BillingPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ── Left column ─────────────────────────────────── */}
           <div className="lg:col-span-1 space-y-6">
             <CreditBalanceCard balance={balance} plan={plan} />
+
+            <PlanLimitsCard plan={plan} />
 
             {(isProActive || subscription) && (
               <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-5">
@@ -563,6 +696,7 @@ export default function BillingPage() {
               </div>
             )}
 
+            {/* Auto-refill — server-persisted */}
             <div className="rounded-xl border border-border/60 bg-card/50 p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -570,17 +704,14 @@ export default function BillingPage() {
                   <span className="text-sm font-semibold">Auto-Refill</span>
                 </div>
                 <button
-                  onClick={() => {
-                    setAutoRefill((v) => !v);
-                    toast.info(
-                      autoRefill
-                        ? "Auto-refill disabled."
-                        : "Auto-refill enabled — we'll top you up when credits drop below 20."
-                    );
-                  }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleToggleAutoRefill}
+                  disabled={autoRefillSaving}
+                  className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  aria-label="Toggle auto-refill"
                 >
-                  {autoRefill ? (
+                  {autoRefillSaving ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : autoRefillEnabled ? (
                     <ToggleRight className="w-8 h-8 text-primary" />
                   ) : (
                     <ToggleLeft className="w-8 h-8" />
@@ -588,12 +719,14 @@ export default function BillingPage() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Automatically purchase the Starter Pack when your balance drops below 20 credits.
+                When credits drop below 20, we'll generate a top-up link for the Starter Pack.
               </p>
             </div>
           </div>
 
+          {/* ── Right column ────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Credit Packs */}
             <div>
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Buy Credits
@@ -620,6 +753,7 @@ export default function BillingPage() {
               )}
             </div>
 
+            {/* Pro Subscription */}
             {!isProActive && (
               <div>
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -645,16 +779,12 @@ export default function BillingPage() {
                     <div className="rounded-xl border border-border/60 bg-card/30 p-5 flex flex-col gap-3">
                       <div>
                         <h3 className="font-semibold text-sm">Pro Perks</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">Included with every Pro Plan</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Included with every Pro Plan
+                        </p>
                       </div>
                       <ul className="space-y-2">
-                        {[
-                          "2,000 credits every month",
-                          "Priority model access",
-                          "Unlimited session history",
-                          "Advanced export formats",
-                          "Early access to new features",
-                        ].map((perk) => (
+                        {PLAN_LIMITS.pro.features.map((perk) => (
                           <li key={perk} className="flex items-center gap-2 text-xs">
                             <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
                             <span>{perk}</span>
@@ -667,13 +797,37 @@ export default function BillingPage() {
               </div>
             )}
 
+            {/* History — Credits + Payments tabs */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Transaction History
-                </h2>
+                <div className="flex items-center gap-1 rounded-lg bg-muted/30 p-1">
+                  <button
+                    onClick={() => setHistoryTab("credits")}
+                    className={cn(
+                      "text-xs px-3 py-1.5 rounded-md font-medium transition-all",
+                      historyTab === "credits"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <History className="w-3 h-3 inline mr-1.5" />
+                    Credit Log
+                  </button>
+                  <button
+                    onClick={() => setHistoryTab("payments")}
+                    className={cn(
+                      "text-xs px-3 py-1.5 rounded-md font-medium transition-all",
+                      historyTab === "payments"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Receipt className="w-3 h-3 inline mr-1.5" />
+                    Payments
+                  </button>
+                </div>
                 <button
-                  onClick={fetchTransactions}
+                  onClick={historyTab === "credits" ? fetchTransactions : fetchPaymentHistory}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   title="Refresh"
                 >
@@ -681,61 +835,105 @@ export default function BillingPage() {
                 </button>
               </div>
 
-              <div className="rounded-xl border border-border/60 bg-card/40 p-1">
-                {loadingTx ? (
-                  <div className="space-y-3 p-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-muted/30 animate-pulse" />
-                        <div className="flex-1 space-y-1.5">
-                          <div className="h-3 bg-muted/30 rounded animate-pulse w-2/5" />
-                          <div className="h-2.5 bg-muted/20 rounded animate-pulse w-1/4" />
-                        </div>
-                        <div className="w-12 h-3 bg-muted/30 rounded animate-pulse" />
+              <AnimatePresence mode="wait">
+                {historyTab === "credits" ? (
+                  <motion.div
+                    key="credits"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="rounded-xl border border-border/60 bg-card/40 p-1"
+                  >
+                    {loadingTx ? (
+                      <div className="space-y-3 p-4">
+                        {[...Array(4)].map((_, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-muted/30 animate-pulse" />
+                            <div className="flex-1 space-y-1.5">
+                              <div className="h-3 bg-muted/30 rounded animate-pulse w-2/5" />
+                              <div className="h-2.5 bg-muted/20 rounded animate-pulse w-1/4" />
+                            </div>
+                            <div className="w-12 h-3 bg-muted/30 rounded animate-pulse" />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : transactions.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground">
-                    <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No transactions yet</p>
-                    <p className="text-xs mt-1">Your credit history will appear here</p>
-                  </div>
-                ) : (
-                  <div className="px-4">
-                    <AnimatePresence initial={false}>
-                      {transactions.map((tx) => (
-                        <motion.div
-                          key={tx.transactionId}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                        >
-                          <TransactionRow tx={tx} />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-
-                    {txNextCursor && (
-                      <div className="py-3 flex justify-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleLoadMoreTx}
-                          disabled={loadingMoreTx}
-                          className="text-xs text-muted-foreground"
-                        >
-                          {loadingMoreTx ? (
-                            <RefreshCw className="w-3 h-3 animate-spin mr-1.5" />
-                          ) : (
-                            <ChevronDown className="w-3 h-3 mr-1.5" />
-                          )}
-                          Load more
-                        </Button>
+                    ) : transactions.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No credit transactions yet</p>
+                        <p className="text-xs mt-1">Your credit history will appear here</p>
+                      </div>
+                    ) : (
+                      <div className="px-4">
+                        <AnimatePresence initial={false}>
+                          {transactions.map((tx) => (
+                            <motion.div
+                              key={tx.transactionId}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                            >
+                              <TransactionRow tx={tx} />
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                        {txNextCursor && (
+                          <div className="py-3 flex justify-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleLoadMoreTx}
+                              disabled={loadingMoreTx}
+                              className="text-xs text-muted-foreground"
+                            >
+                              {loadingMoreTx ? (
+                                <RefreshCw className="w-3 h-3 animate-spin mr-1.5" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3 mr-1.5" />
+                              )}
+                              Load more
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="payments"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="rounded-xl border border-border/60 bg-card/40 p-1"
+                  >
+                    {loadingPayments ? (
+                      <div className="space-y-3 p-4">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-muted/30 animate-pulse" />
+                            <div className="flex-1 space-y-1.5">
+                              <div className="h-3 bg-muted/30 rounded animate-pulse w-2/5" />
+                              <div className="h-2.5 bg-muted/20 rounded animate-pulse w-1/4" />
+                            </div>
+                            <div className="w-16 h-3 bg-muted/30 rounded animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : paymentHistory.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <Receipt className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No payments yet</p>
+                        <p className="text-xs mt-1">Your payment history will appear here after purchasing credits</p>
+                      </div>
+                    ) : (
+                      <div className="px-4">
+                        {paymentHistory.map((p) => (
+                          <PaymentRow key={p.id} payment={p} />
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </div>
           </div>
         </div>

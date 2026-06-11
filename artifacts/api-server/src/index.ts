@@ -38,7 +38,7 @@ async function initStripe() {
     const { getStripeSync } = await import("./lib/stripeClient.js");
 
     logger.info("[Stripe] Running migrations...");
-    await runMigrations({ databaseUrl, schema: "stripe" });
+    await runMigrations({ databaseUrl });
     logger.info("[Stripe] Migrations done");
 
     const stripeSync = await getStripeSync();

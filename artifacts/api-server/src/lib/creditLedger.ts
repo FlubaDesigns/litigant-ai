@@ -16,11 +16,19 @@ export interface CreditTransaction {
   amount: number;
   balanceAfter?: number;
   source?: string;
-  sessionId?: string;
-  stripePaymentId?: string;
+  sessionId?: string | null;
+  stripePaymentId?: string | null;
   createdAt: string;
 }
 
+/**
+ * Add credits to a user's balance.
+ *
+ * @param opts.idempotencyKey - A unique key (e.g. Stripe event ID or "signup_bonus_{uid}") that
+ *   prevents the same grant from firing more than once. If the key already exists in
+ *   `stripe_events`, the operation is skipped and `{ skipped: true }` is returned.
+ *   The check + grant are performed inside one Firestore transaction.
+ */
 export async function addCredits(
   uid: string,
   amount: number,
@@ -29,8 +37,9 @@ export async function addCredits(
     source?: string;
     sessionId?: string;
     stripePaymentId?: string;
+    idempotencyKey?: string;
   } = {}
-): Promise<{ newBalance: number } | null> {
+): Promise<{ newBalance: number; skipped?: boolean } | null> {
   if (!isFirebaseConfigured()) {
     console.warn("[CreditLedger] Firebase not configured — skipping credit grant for", uid);
     return null;
@@ -42,6 +51,23 @@ export async function addCredits(
   const userRef = db.collection("users").doc(uid);
 
   return db.runTransaction(async (tx) => {
+    // ── Idempotency guard ────────────────────────────────────────────────
+    if (opts.idempotencyKey) {
+      const dedupRef = db.collection("stripe_events").doc(opts.idempotencyKey);
+      const dedupSnap = await tx.get(dedupRef);
+      if (dedupSnap.exists) {
+        return { newBalance: 0, skipped: true };
+      }
+      // Mark as processed atomically with the credit grant
+      tx.set(dedupRef, {
+        eventType: type,
+        uid,
+        amount,
+        processedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    // ── Credit grant ─────────────────────────────────────────────────────
     const snap = await tx.get(userRef);
     const current: number = snap.exists ? ((snap.data()?.creditBalance as number) ?? 0) : 0;
     const newBalance = current + amount;
@@ -68,6 +94,8 @@ export async function addCredits(
     };
     tx.set(txRef, txDoc);
 
+    // ── Auto-refill check ─────────────────────────────────────────────────
+    // Deferred — handled separately in checkAndTriggerAutoRefill()
     return { newBalance };
   });
 }
@@ -155,5 +183,87 @@ export async function getUserIdByStripeCustomer(stripeCustomerId: string): Promi
     return snap.empty ? null : snap.docs[0].id;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Idempotently grant 50 trial credits to a new user.
+ * Uses "signup_bonus_{uid}" as the idempotency key so this
+ * can only fire once per user even if called multiple times.
+ */
+export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean }> {
+  const result = await addCredits(uid, 50, "signup_bonus", {
+    source: "signup_trial",
+    idempotencyKey: `signup_bonus_${uid}`,
+  });
+  return { skipped: result?.skipped === true };
+}
+
+/**
+ * Persist auto-refill preference for a user.
+ */
+export async function setAutoRefillPreference(
+  uid: string,
+  opts: {
+    enabled: boolean;
+    thresholdCredits: number;
+    packPriceId: string;
+  }
+): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  const db = getFirestoreDb();
+  if (!db) return;
+
+  await db
+    .collection("users")
+    .doc(uid)
+    .set(
+      { autoRefill: opts, updatedAt: FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+}
+
+/**
+ * After credit usage drops below the auto-refill threshold, generate a
+ * checkout URL and store it in Firestore so the frontend can redirect the user.
+ *
+ * This is called server-side after credit deductions in the brain engine.
+ */
+export async function checkAndTriggerAutoRefill(
+  uid: string,
+  newBalance: number,
+  createCheckoutUrl: (priceId: string, uid: string) => Promise<string | null>
+): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  const db = getFirestoreDb();
+  if (!db) return;
+
+  try {
+    const userSnap = await db.collection("users").doc(uid).get();
+    if (!userSnap.exists) return;
+
+    const data = userSnap.data()!;
+    const autoRefill = data.autoRefill as
+      | { enabled: boolean; thresholdCredits: number; packPriceId: string }
+      | undefined;
+
+    if (!autoRefill?.enabled) return;
+    if (newBalance >= autoRefill.thresholdCredits) return;
+
+    const url = await createCheckoutUrl(autoRefill.packPriceId, uid);
+    if (!url) return;
+
+    await db
+      .collection("users")
+      .doc(uid)
+      .set(
+        {
+          autoRefillCheckoutUrl: url,
+          autoRefillTriggeredAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+  } catch (err) {
+    console.error("[CreditLedger] checkAndTriggerAutoRefill error:", err);
   }
 }

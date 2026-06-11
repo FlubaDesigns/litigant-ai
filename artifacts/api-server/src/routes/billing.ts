@@ -5,8 +5,14 @@ import {
   listProductsWithPrices,
   findCustomerByUserId,
   getSubscriptionByCustomerId,
+  getPaymentHistory,
 } from "../lib/stripeStorage.js";
-import { getTransactions, updateUserPlan } from "../lib/creditLedger.js";
+import {
+  getTransactions,
+  updateUserPlan,
+  grantSignupBonus,
+  setAutoRefillPreference,
+} from "../lib/creditLedger.js";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
 
 const router = Router();
@@ -68,6 +74,61 @@ async function getOrCreateStripeCustomer(
   return customer.id;
 }
 
+/**
+ * POST /billing/signup-grant
+ * Idempotently grants 50 trial credits to a new user.
+ * Server-controlled and guarded by an idempotency key — safe to call on
+ * every signup even if called more than once.
+ */
+router.post("/billing/signup-grant", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+
+  if (!isFirebaseConfigured()) {
+    return res.json({ granted: false, reason: "firebase_not_configured" });
+  }
+
+  try {
+    const result = await grantSignupBonus(user.uid);
+    return res.json({ granted: !result.skipped, skipped: result.skipped });
+  } catch (err: any) {
+    console.error("[Billing] signup-grant error:", err.message);
+    return res.status(500).json({ error: "Failed to grant signup bonus" });
+  }
+});
+
+/**
+ * PATCH /billing/auto-refill
+ * Persists the user's auto-refill preference to Firestore.
+ */
+router.patch("/billing/auto-refill", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+
+  const { enabled, thresholdCredits, packPriceId } = req.body as {
+    enabled?: boolean;
+    thresholdCredits?: number;
+    packPriceId?: string;
+  };
+
+  if (typeof enabled !== "boolean") {
+    return res.status(400).json({ error: "enabled (boolean) is required" });
+  }
+
+  await setAutoRefillPreference(user.uid, {
+    enabled,
+    thresholdCredits: thresholdCredits ?? 20,
+    packPriceId: packPriceId ?? "price_starter",
+  });
+
+  return res.json({ success: true });
+});
+
+/**
+ * GET /billing/products
+ * Returns all active Stripe products with their prices.
+ * Falls back to static list when Stripe is not configured.
+ */
 router.get("/billing/products", async (_req, res) => {
   if (!isStripeConfigured()) {
     return res.json({ data: STATIC_PRODUCTS });
@@ -84,6 +145,10 @@ router.get("/billing/products", async (_req, res) => {
   }
 });
 
+/**
+ * GET /billing/transactions
+ * Returns paginated credit transaction history from Firestore.
+ */
 router.get("/billing/transactions", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
@@ -95,6 +160,33 @@ router.get("/billing/transactions", async (req, res) => {
   return res.json(result);
 });
 
+/**
+ * GET /billing/payment-history
+ * Returns Stripe payment intent history (succeeded payments) for the user.
+ */
+router.get("/billing/payment-history", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+
+  if (!isStripeConfigured()) {
+    return res.json({ data: [] });
+  }
+
+  try {
+    const customer = await findCustomerByUserId(user.uid);
+    if (!customer) return res.json({ data: [] });
+
+    const history = await getPaymentHistory(customer.id);
+    return res.json({ data: history });
+  } catch (err: any) {
+    console.warn("[Billing] payment-history error:", err.message);
+    return res.json({ data: [] });
+  }
+});
+
+/**
+ * GET /billing/subscription
+ */
 router.get("/billing/subscription", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
@@ -114,6 +206,9 @@ router.get("/billing/subscription", async (req, res) => {
   }
 });
 
+/**
+ * POST /billing/checkout
+ */
 router.post("/billing/checkout", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
@@ -159,6 +254,9 @@ router.post("/billing/checkout", async (req, res) => {
   }
 });
 
+/**
+ * POST /billing/portal
+ */
 router.post("/billing/portal", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
@@ -190,6 +288,9 @@ router.post("/billing/portal", async (req, res) => {
   }
 });
 
+/**
+ * POST /billing/cancel-subscription
+ */
 router.post("/billing/cancel-subscription", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;

@@ -1,7 +1,9 @@
 import { addCredits, updateUserPlan, getUserIdByStripeCustomer } from "./creditLedger.js";
+import { isFirebaseConfigured } from "./firebaseAdmin.js";
 import { logger } from "./logger.js";
 
 interface StripeEvent {
+  id: string;
   type: string;
   data: { object: Record<string, any> };
 }
@@ -9,6 +11,8 @@ interface StripeEvent {
 const SUBSCRIPTION_MONTHLY_CREDITS = 2000;
 
 export async function handleStripeEventForFirestore(event: StripeEvent): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+
   const obj = event.data.object;
 
   switch (event.type) {
@@ -22,11 +26,17 @@ export async function handleStripeEventForFirestore(event: StripeEvent): Promise
       if (obj.mode === "payment" && obj.payment_status === "paid") {
         const creditAmount = parseInt(obj.metadata?.creditAmount ?? "0", 10);
         if (creditAmount > 0) {
-          await addCredits(userId, creditAmount, "purchase", {
+          // Idempotency key = Stripe event ID, ensuring exactly-once credit grant
+          const result = await addCredits(userId, creditAmount, "purchase", {
             source: "stripe_checkout",
             stripePaymentId: obj.payment_intent ?? obj.id,
+            idempotencyKey: event.id,
           });
-          logger.info(`[StripeEvent] Added ${creditAmount} credits to ${userId}`);
+          if (result?.skipped) {
+            logger.info(`[StripeEvent] Event ${event.id} already processed — skipped`);
+          } else {
+            logger.info(`[StripeEvent] Added ${creditAmount} credits to ${userId}`);
+          }
         }
       }
 
@@ -46,31 +56,29 @@ export async function handleStripeEventForFirestore(event: StripeEvent): Promise
       if (!customerId) return;
 
       const billingReason: string = obj.billing_reason ?? "";
-      if (billingReason === "subscription_create") {
-        const userId = await getUserIdByStripeCustomer(customerId);
-        if (userId) {
-          await addCredits(userId, SUBSCRIPTION_MONTHLY_CREDITS, "subscription_grant", {
-            source: "pro_monthly",
-            stripePaymentId: obj.payment_intent ?? obj.id,
-          });
-          logger.info(
-            `[StripeEvent] Granted ${SUBSCRIPTION_MONTHLY_CREDITS} subscription credits to ${userId}`
-          );
-        }
-        return;
-      }
+      const isSubscriptionEvent =
+        billingReason === "subscription_create" || billingReason === "subscription_cycle";
+      if (!isSubscriptionEvent) return;
 
-      if (billingReason === "subscription_cycle") {
-        const userId = await getUserIdByStripeCustomer(customerId);
-        if (userId) {
-          await addCredits(userId, SUBSCRIPTION_MONTHLY_CREDITS, "subscription_grant", {
-            source: "pro_monthly_renewal",
-            stripePaymentId: obj.payment_intent ?? obj.id,
-          });
-          logger.info(
-            `[StripeEvent] Renewed ${SUBSCRIPTION_MONTHLY_CREDITS} credits to ${userId}`
-          );
-        }
+      const userId = await getUserIdByStripeCustomer(customerId);
+      if (!userId) return;
+
+      const source =
+        billingReason === "subscription_create" ? "pro_monthly_new" : "pro_monthly_renewal";
+
+      // Idempotency key = Stripe event ID (unique per invoice payment)
+      const result = await addCredits(userId, SUBSCRIPTION_MONTHLY_CREDITS, "subscription_grant", {
+        source,
+        stripePaymentId: obj.payment_intent ?? obj.id,
+        idempotencyKey: event.id,
+      });
+
+      if (result?.skipped) {
+        logger.info(`[StripeEvent] Invoice event ${event.id} already processed — skipped`);
+      } else {
+        logger.info(
+          `[StripeEvent] Granted ${SUBSCRIPTION_MONTHLY_CREDITS} credits (${source}) to ${userId}`
+        );
       }
       break;
     }
