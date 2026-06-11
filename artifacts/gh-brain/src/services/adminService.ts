@@ -118,12 +118,13 @@ export async function banUser(
   uid: string,
   banned: boolean,
   reason?: string
-): Promise<void> {
+): Promise<{ success: boolean; banned: boolean; authWarning?: string }> {
   const res = await adminFetch(`/admin/users/${uid}/ban`, {
     method: "POST",
     body: JSON.stringify({ banned, reason }),
   });
   if (!res.ok) throw new Error("Failed to update ban status");
+  return res.json();
 }
 
 export async function listAdminSessions(params?: {
@@ -191,12 +192,29 @@ export async function getFeatureFlags(): Promise<Record<string, boolean>> {
   return data.flags ?? {};
 }
 
-export async function setFeatureFlag(name: string, value: boolean): Promise<void> {
+export async function setFeatureFlag(name: string, value: boolean | string): Promise<void> {
   const res = await adminFetch(`/admin/feature-flags/${name}`, {
     method: "PUT",
     body: JSON.stringify({ value }),
   });
   if (!res.ok) throw new Error("Failed to update feature flag");
+}
+
+export async function updateAdminTemplate(
+  id: string,
+  data: {
+    title?: string;
+    description?: string;
+    isActive?: boolean;
+    systemPrompt?: string;
+    defaultSettings?: Record<string, unknown>;
+  }
+): Promise<void> {
+  const res = await adminFetch(`/admin/templates/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update template");
 }
 
 export interface SystemHealth {
@@ -296,13 +314,3 @@ export async function listAdminTemplates(): Promise<any[]> {
   return data.templates ?? [];
 }
 
-export async function updateAdminTemplate(
-  id: string,
-  updates: { title?: string; description?: string; isActive?: boolean }
-): Promise<void> {
-  const res = await adminFetch(`/admin/templates/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(updates),
-  });
-  if (!res.ok) throw new Error("Failed to update template");
-}

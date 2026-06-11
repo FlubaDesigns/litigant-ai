@@ -597,9 +597,9 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
 
-  const { value } = req.body as { value?: boolean };
-  if (typeof value !== "boolean") {
-    return res.status(400).json({ error: "value (boolean) is required" });
+  const { value } = req.body as { value?: boolean | string };
+  if (value === undefined) {
+    return res.status(400).json({ error: "value is required" });
   }
 
   try {
@@ -634,10 +634,11 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
 
-  const { title, description, isActive, defaultSettings } = req.body as {
+  const { title, description, isActive, systemPrompt, defaultSettings } = req.body as {
     title?: string;
     description?: string;
     isActive?: boolean;
+    systemPrompt?: string;
     defaultSettings?: Record<string, unknown>;
   };
 
@@ -645,6 +646,7 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   if (title !== undefined) updates["title"] = title;
   if (description !== undefined) updates["description"] = description;
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
+  if (systemPrompt !== undefined) updates["systemPrompt"] = systemPrompt;
   if (defaultSettings) updates["defaultSettings"] = defaultSettings;
 
   try {

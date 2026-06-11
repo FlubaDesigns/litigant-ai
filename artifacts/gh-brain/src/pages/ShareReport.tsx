@@ -3,12 +3,13 @@ import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   Brain, Target, Zap, Clock, Users, RotateCcw, ChevronDown,
-  ChevronUp, ExternalLink, Share2, BookOpen,
+  ChevronUp, ExternalLink, Share2, BookOpen, LayoutTemplate,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { TEMPLATES } from "@/data/templates";
 
 const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api";
 
@@ -214,6 +215,15 @@ export default function ShareReportPage() {
                 {report.litigantCount} litigant{report.litigantCount !== 1 ? "s" : ""}
               </span>
             )}
+            {report.templateId && (() => {
+              const tpl = TEMPLATES.find((t) => t.id === report.templateId);
+              return tpl ? (
+                <span className="flex items-center gap-1">
+                  <LayoutTemplate className="w-3.5 h-3.5" />
+                  {tpl.title}
+                </span>
+              ) : null;
+            })()}
             {report.createdAt && (
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />

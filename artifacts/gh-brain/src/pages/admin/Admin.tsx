@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Users, Brain, CreditCard, Activity, Flag, LayoutTemplate,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -174,10 +175,22 @@ function UsersTab() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data, isLoading, refetch } = useQuery({
+  const {
+    data: pages,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+  } = useInfiniteQuery({
     queryKey: ["admin-users", debouncedSearch],
-    queryFn: () => listAdminUsers({ search: debouncedSearch || undefined, limit: 25 }),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      listAdminUsers({ search: debouncedSearch || undefined, limit: 25, cursor: pageParam }),
+    getNextPageParam: (last) => (last.hasMore && last.nextCursor ? last.nextCursor : undefined),
+    initialPageParam: undefined as string | undefined,
   });
+
+  const users = pages?.pages.flatMap((p) => p.users) ?? [];
 
   return (
     <div className="space-y-4">
@@ -199,77 +212,101 @@ function UsersTab() {
       {isLoading ? (
         <TabSkeleton />
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>User</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Credits</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data?.users ?? []).map((user) => (
-                <TableRow key={user.id} className="hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedUid(user.id)}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-sm">{user.displayName ?? "—"}</p>
-                      <p className="text-xs text-muted-foreground">{user.email ?? user.id}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs font-mono uppercase">
-                      {user.plan ?? "free"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{user.creditBalance ?? 0}</TableCell>
-                  <TableCell>
-                    {user.banned ? (
-                      <Badge variant="destructive" className="text-xs">Banned</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-primary border-primary/30 bg-primary/10">Active</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelectedUid(user.id)}>
-                          <ChevronRight className="w-4 h-4 mr-2" />View profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setAdjustTarget(user)}>
-                          <Zap className="w-4 h-4 mr-2" />Adjust credits
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className={user.banned ? "text-primary" : "text-destructive"}
-                          onClick={() => setBanTarget({ user, banned: !user.banned })}
-                        >
-                          <Ban className="w-4 h-4 mr-2" />
-                          {user.banned ? "Unban" : "Ban"} user
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        <>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/30">
+                  <TableHead>User</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead>Credits</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
-              ))}
-              {!data?.users?.length && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-sm">
-                    No users found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedUid(user.id)}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-sm">{user.displayName ?? "—"}</p>
+                        <p className="text-xs text-muted-foreground">{user.email ?? user.id}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs font-mono uppercase">
+                        {user.plan ?? "free"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{user.creditBalance ?? 0}</TableCell>
+                    <TableCell>
+                      {user.banned ? (
+                        <Badge variant="destructive" className="text-xs">Banned</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-primary border-primary/30 bg-primary/10">Active</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setSelectedUid(user.id)}>
+                            <ChevronRight className="w-4 h-4 mr-2" />View profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setAdjustTarget(user)}>
+                            <Zap className="w-4 h-4 mr-2" />Adjust credits
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className={user.banned ? "text-primary" : "text-destructive"}
+                            onClick={() => setBanTarget({ user, banned: !user.banned })}
+                          >
+                            <Ban className="w-4 h-4 mr-2" />
+                            {user.banned ? "Unban" : "Ban"} user
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!users.length && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-sm">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {hasNextPage && (
+            <div className="flex justify-center pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="gap-2"
+              >
+                {isFetchingNextPage
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Loading…</>
+                  : "Load more users"}
+              </Button>
+            </div>
+          )}
+          {!hasNextPage && users.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-1">
+              Showing all {users.length} users
+            </p>
+          )}
+        </>
       )}
 
       {/* User Profile Sheet */}
@@ -544,17 +581,29 @@ function BanModal({
 // ─── Sessions Tab ─────────────────────────────────────────────────────────────
 function SessionsTab() {
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterUserId, setFilterUserId] = useState("");
+  const [filterTemplateId, setFilterTemplateId] = useState("");
+  const [debouncedUserId, setDebouncedUserId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const qc = useQueryClient();
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedUserId(filterUserId), 400);
+    return () => clearTimeout(t);
+  }, [filterUserId]);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["admin-sessions", filterStatus],
-    queryFn: () => listAdminSessions({ status: filterStatus || undefined, limit: 25 }),
+    queryKey: ["admin-sessions", filterStatus, debouncedUserId, filterTemplateId],
+    queryFn: () => listAdminSessions({
+      status: filterStatus || undefined,
+      userId: debouncedUserId || undefined,
+      templateId: filterTemplateId || undefined,
+      limit: 25,
+    }),
   });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -565,6 +614,18 @@ function SessionsTab() {
           <option value="incomplete">Incomplete</option>
           <option value="error">Error</option>
         </select>
+        <Input
+          value={filterUserId}
+          onChange={(e) => setFilterUserId(e.target.value)}
+          placeholder="Filter by user ID…"
+          className="h-9 w-52 text-sm font-mono"
+        />
+        <Input
+          value={filterTemplateId}
+          onChange={(e) => setFilterTemplateId(e.target.value)}
+          placeholder="Filter by template ID…"
+          className="h-9 w-48 text-sm font-mono"
+        />
         <Button variant="outline" size="icon" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
@@ -726,17 +787,28 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
 // ─── Transactions Tab ─────────────────────────────────────────────────────────
 function TransactionsTab() {
   const [filterType, setFilterType] = useState("");
+  const [filterUserId, setFilterUserId] = useState("");
+  const [debouncedUserId, setDebouncedUserId] = useState("");
   const [refundTarget, setRefundTarget] = useState<AdminTransaction | null>(null);
   const qc = useQueryClient();
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedUserId(filterUserId), 400);
+    return () => clearTimeout(t);
+  }, [filterUserId]);
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["admin-transactions", filterType],
-    queryFn: () => listAdminTransactions({ type: filterType || undefined, limit: 30 }),
+    queryKey: ["admin-transactions", filterType, debouncedUserId],
+    queryFn: () => listAdminTransactions({
+      type: filterType || undefined,
+      userId: debouncedUserId || undefined,
+      limit: 30,
+    }),
   });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
@@ -750,6 +822,12 @@ function TransactionsTab() {
           <option value="refund">Refund</option>
           <option value="admin_adjustment">Admin adjustment</option>
         </select>
+        <Input
+          value={filterUserId}
+          onChange={(e) => setFilterUserId(e.target.value)}
+          placeholder="Filter by user ID…"
+          className="h-9 w-52 text-sm font-mono"
+        />
         <Button variant="outline" size="icon" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
@@ -897,6 +975,12 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   autoRefill: "Enable auto-refill credit top-up when balance falls below threshold",
 };
 
+const PLAN_SCOPE_LABELS: Record<string, string> = {
+  all: "All plans",
+  pro: "Pro only",
+  free: "Free only",
+};
+
 function FeatureFlagsTab() {
   const qc = useQueryClient();
 
@@ -906,10 +990,14 @@ function FeatureFlagsTab() {
   });
 
   const { mutate: toggle, isPending } = useMutation({
-    mutationFn: ({ name, value }: { name: string; value: boolean }) => setFeatureFlag(name, value),
+    mutationFn: ({ name, value }: { name: string; value: boolean | string }) => setFeatureFlag(name, value),
     onSuccess: (_, { name, value }) => {
-      toast.success(`${name}: ${value ? "enabled" : "disabled"}`);
-      invalidateFeatureFlagCache();
+      if (name.endsWith("_scope")) {
+        toast.success(`Scope updated: ${PLAN_SCOPE_LABELS[value as string] ?? value}`);
+      } else {
+        toast.success(`${name}: ${value ? "enabled" : "disabled"}`);
+        invalidateFeatureFlagCache();
+      }
       qc.invalidateQueries({ queryKey: ["admin-feature-flags"] });
     },
     onError: (err: Error) => toast.error(err.message),
@@ -917,11 +1005,18 @@ function FeatureFlagsTab() {
 
   if (isLoading) return <TabSkeleton />;
 
+  const flagEntries = Object.entries(flags ?? {}).filter(([k]) => !k.endsWith("_scope"));
+
+  function getScope(name: string): string {
+    return (flags as Record<string, any>)?.[`${name}_scope`] ?? "all";
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Flags are stored in Firestore <code className="bg-secondary px-1 rounded text-xs">config/featureFlags</code> and cached client-side.
+          Flags stored in Firestore <code className="bg-secondary px-1 rounded text-xs">config/featureFlags</code>.
+          Each flag can be scoped to all users or a specific plan tier.
         </p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
@@ -929,20 +1024,33 @@ function FeatureFlagsTab() {
       </div>
 
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-        {Object.entries(flags ?? {}).map(([name, value]) => (
-          <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors">
-            <div className="space-y-0.5">
+        {flagEntries.map(([name, value]) => (
+          <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-4">
+            <div className="flex-1 space-y-0.5 min-w-0">
               <p className="font-medium text-sm font-mono">{name}</p>
               <p className="text-xs text-muted-foreground">{FLAG_DESCRIPTIONS[name] ?? ""}</p>
             </div>
-            <Switch
-              checked={value}
-              onCheckedChange={(v) => toggle({ name, value: v })}
-              disabled={isPending}
-            />
+            <div className="flex items-center gap-3 shrink-0">
+              <select
+                value={getScope(name)}
+                onChange={(e) => toggle({ name: `${name}_scope`, value: e.target.value })}
+                disabled={isPending || !value}
+                title="Plan scope"
+                className="h-7 rounded border border-input bg-background px-2 text-xs text-muted-foreground disabled:opacity-40"
+              >
+                <option value="all">All plans</option>
+                <option value="pro">Pro only</option>
+                <option value="free">Free only</option>
+              </select>
+              <Switch
+                checked={value as boolean}
+                onCheckedChange={(v) => toggle({ name, value: v })}
+                disabled={isPending}
+              />
+            </div>
           </div>
         ))}
-        {!Object.keys(flags ?? {}).length && (
+        {!flagEntries.length && (
           <div className="py-12 text-center text-sm text-muted-foreground">
             No flags found. Feature flags will appear here after first initialization.
           </div>
@@ -1035,17 +1143,18 @@ function TemplateEditModal({
 }) {
   const [title, setTitle] = useState(template.title ?? "");
   const [description, setDescription] = useState(template.description ?? "");
+  const [systemPrompt, setSystemPrompt] = useState(template.systemPrompt ?? "");
   const [isActive, setIsActive] = useState(template.isActive !== false);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => updateAdminTemplate(template.id, { title, description, isActive }),
+    mutationFn: () => updateAdminTemplate(template.id, { title, description, systemPrompt: systemPrompt || undefined, isActive }),
     onSuccess: () => { toast.success("Template updated"); onSuccess(); },
     onError: (err: Error) => toast.error(err.message),
   });
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Template</DialogTitle>
           <DialogDescription>ID: <span className="font-mono text-xs">{template.id}</span></DialogDescription>
@@ -1058,6 +1167,18 @@ function TemplateEditModal({
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Description</label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">System Prompt Override</label>
+            <Textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="Leave blank to use the built-in default for this template…"
+              className="font-mono text-xs min-h-[120px] resize-y"
+            />
+            <p className="text-xs text-muted-foreground">
+              Overrides the default system prompt sent to AI litigants for this template.
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Switch checked={isActive} onCheckedChange={setIsActive} />
