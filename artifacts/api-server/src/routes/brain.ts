@@ -62,25 +62,27 @@ router.post("/run-brain", async (req, res) => {
     // Optimistic credit reservation: deduct estimatedCost upfront atomically.
     // This prevents concurrent sessions from overdrawing the same balance.
     // Post-run: refund (estimatedCost - actualCost) when actual < estimated.
-    let reserved = false;
     try {
-      reserved = await db.runTransaction(async (txn) => {
+      const reserved = await db.runTransaction(async (txn) => {
         const userRef = db.collection("users").doc(uid!);
         const userDoc = await txn.get(userRef);
         const balance = (userDoc.data()?.creditBalance as number) ?? 0;
         if (balance < estimatedCost) return false;
+        // Atomically reserve credits; reconciled to actual cost after run completes
         txn.update(userRef, { creditBalance: FieldValue.increment(-estimatedCost) });
         return true;
       });
-    } catch {
-      // Firestore unavailable — allow run without credit accounting
-      reserved = true;
-    }
 
-    if (!reserved) {
-      res.status(402).json({
-        message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
-      });
+      if (!reserved) {
+        res.status(402).json({
+          message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
+        });
+        return;
+      }
+    } catch (err) {
+      // Firestore transaction failure — cannot guarantee credit enforcement; reject the request
+      console.error("[brain] Credit reservation failed:", err);
+      res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
       return;
     }
   } else {
