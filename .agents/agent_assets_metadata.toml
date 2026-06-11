@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "_ELkMgOlHZNCetLetYKf9"
+uri = "file://artifacts/gh-brain/src/assets/images/hero-clash.png"
+type = "image"
+title = "Abstract adversarial AI courtroom clash"
+
+[[generated]]
+id = "BaUorbiGmHs6A5waHOWVo"
+uri = "file://artifacts/gh-brain/src/assets/images/neural-court.png"
+type = "image"
+title = "Glowing green neural pathways"

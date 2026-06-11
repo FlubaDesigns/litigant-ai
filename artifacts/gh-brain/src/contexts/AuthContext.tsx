@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, isConfigured } from "@/lib/firebase";
 import { onUserProfileSnapshot, type UserProfile } from "@/services/firestoreService";
 import {
   signUpWithEmail,
@@ -17,6 +17,7 @@ interface AuthContextValue {
   userProfile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  firebaseReady: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<User>;
   signIn: (email: string, password: string) => Promise<User>;
   signInGoogle: () => Promise<User>;
@@ -31,10 +32,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isConfigured);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    if (!isConfigured) return;
+
     let profileUnsub: (() => void) | null = null;
 
     const authUnsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -46,11 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (firebaseUser) {
-        // Check admin claim
         const token = await firebaseUser.getIdTokenResult();
         setIsAdmin(token.claims["admin"] === true);
 
-        // Subscribe to profile
         profileUnsub = onUserProfileSnapshot(firebaseUser.uid, (profile) => {
           setUserProfile(profile);
         });
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userProfile,
     loading,
     isAdmin,
+    firebaseReady: isConfigured,
     signUp: signUpWithEmail,
     signIn: signInWithEmail,
     signInGoogle: signInWithGoogle,
