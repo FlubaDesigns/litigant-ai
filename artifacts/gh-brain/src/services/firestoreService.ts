@@ -9,10 +9,33 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+export type UserRole =
+  | "individual"
+  | "lawyer"
+  | "law-student"
+  | "researcher"
+  | "business"
+  | "journalist"
+  | "other";
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  "individual":  "Just curious / personal use",
+  "lawyer":      "Practicing lawyer",
+  "law-student": "Law student",
+  "researcher":  "Academic / researcher",
+  "business":    "Business professional",
+  "journalist":  "Journalist / writer",
+  "other":       "Other",
+};
+
 export interface UserProfile {
   userId?: string;
   email: string;
   displayName: string;
+  /** Self-reported role — collected at signup, editable in Settings */
+  role?: UserRole;
+  /** Firm, university, or organisation name (optional) */
+  organization?: string;
   plan: "free" | "starter" | "pro" | "team";
   creditBalance: number;
   createdAt: string;

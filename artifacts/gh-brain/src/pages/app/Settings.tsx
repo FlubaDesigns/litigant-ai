@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateUserProfile, getUserProfile } from "@/services/firestoreService";
+import { updateUserProfile, getUserProfile, USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
 import { getAllSessions, exportSessionAsMarkdown, deleteAccount } from "@/services/sessionService";
 import {
   updateProfile,
@@ -65,10 +65,17 @@ function Section({ title, description, children }: {
 }
 
 function ProfileTab({ user }: { user: User }) {
+  const { userProfile } = useAuth();
+
   const [displayName, setDisplayName] = useState(user.displayName ?? "");
   const [newEmail, setNewEmail] = useState(user.email ?? "");
   const [savingName, setSavingName] = useState(false);
   const [savedName, setSavedName] = useState(false);
+
+  // Role + organisation
+  const [role, setRole] = useState<string>(userProfile?.role ?? "");
+  const [organization, setOrganization] = useState(userProfile?.organization ?? "");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Password section
   const [reauthPassword, setReauthPassword] = useState("");
@@ -84,6 +91,21 @@ function ProfileTab({ user }: { user: User }) {
 
   const isEmailProvider = user.providerData.some((p: { providerId: string }) => p.providerId === "password");
   const isGoogleProvider = user.providerData.some((p: { providerId: string }) => p.providerId === "google.com");
+
+  async function handleSaveProfile() {
+    setSavingProfile(true);
+    try {
+      await updateUserProfile(user.uid, {
+        role: (role as UserRole) || undefined,
+        organization: organization.trim() || undefined,
+      });
+      toast.success("Profile updated.");
+    } catch {
+      toast.error("Failed to update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
 
   async function handleSaveName() {
     if (!displayName.trim()) { toast.error("Display name cannot be empty."); return; }
@@ -168,6 +190,47 @@ function ProfileTab({ user }: { user: User }) {
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shrink-0"
           >
             {savingName ? <Loader2 className="w-4 h-4 animate-spin" /> : savedName ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            Save
+          </Button>
+        </div>
+      </Section>
+
+      <Separator />
+
+      {/* Role + Organisation */}
+      <Section
+        title="About you"
+        description="Helps us tailor suggestions — both fields are optional and can be changed any time."
+      >
+        <div className="space-y-3 max-w-sm">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">How do you use Litigant AI?</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="bg-card border-border/60">
+                <SelectValue placeholder="Pick one — or leave blank" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(USER_ROLE_LABELS) as [UserRole, string][]).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Organisation (optional)</Label>
+            <Input
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              placeholder="Firm, university, company…"
+              className="bg-card border-border/60"
+            />
+          </div>
+          <Button
+            onClick={handleSaveProfile}
+            disabled={savingProfile}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+          >
+            {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
           </Button>
         </div>

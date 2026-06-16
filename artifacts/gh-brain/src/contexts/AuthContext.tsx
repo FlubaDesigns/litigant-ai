@@ -18,7 +18,7 @@ interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   firebaseReady: boolean;
-  signUp: (email: string, password: string, displayName: string) => Promise<User>;
+  signUp: (email: string, password: string, displayName: string, role?: string, organization?: string) => Promise<User>;
   signIn: (email: string, password: string) => Promise<User>;
   signInGoogle: () => Promise<User>;
   logOut: () => Promise<void>;

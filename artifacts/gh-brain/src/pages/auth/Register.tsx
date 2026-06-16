@@ -7,10 +7,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Brain, ArrowRight, Loader2, Check } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
+import { USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
 
 const PLANS = [
   {
@@ -30,10 +34,12 @@ const PLANS = [
 ];
 
 const registerSchema = z.object({
-  displayName: z.string().min(2, "Display name is required"),
+  displayName: z.string().min(2, "Name is required"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   plan: z.enum(["free", "starter"]),
+  role: z.string().optional(),
+  organization: z.string().optional(),
 });
 
 export default function RegisterPage() {
@@ -43,7 +49,7 @@ export default function RegisterPage() {
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { displayName: "", email: "", password: "", plan: "free" },
+    defaultValues: { displayName: "", email: "", password: "", plan: "free", role: "", organization: "" },
   });
 
   const selectedPlan = form.watch("plan");
@@ -51,11 +57,17 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     setIsLoading(true);
     try {
-      await signUp(values.email, values.password, values.displayName);
-      toast.success("Access requested. Please verify your communication channel.");
+      await signUp(
+        values.email,
+        values.password,
+        values.displayName,
+        values.role || undefined,
+        values.organization?.trim() || undefined,
+      );
+      toast.success("Account created — please verify your email.");
       setLocation("/verify-email");
     } catch (error: any) {
-      toast.error(error.message || "Failed to request access.");
+      toast.error(error.message || "Failed to create account.");
     } finally {
       setIsLoading(false);
     }
@@ -64,10 +76,10 @@ export default function RegisterPage() {
   async function handleGoogleSignIn() {
     try {
       await signInGoogle();
-      toast.success("Google authentication successful. Session initiated.");
+      toast.success("Signed in with Google.");
       setLocation("/session");
     } catch (error: any) {
-      toast.error(error.message || "Failed to authenticate with Google.");
+      toast.error(error.message || "Failed to sign in with Google.");
     }
   }
 
@@ -81,16 +93,16 @@ export default function RegisterPage() {
             <Brain className="w-8 h-8 text-primary" />
             <span className="text-2xl font-bold tracking-tight font-sans">Litigant AI</span>
           </Link>
-          <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Request Clearance</h1>
+          <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Create an account</h1>
           <p className="text-muted-foreground text-center text-sm">
-            Register for access to the adversarial reasoning engine.
+            Get 50 free credits to explore the adversarial reasoning engine.
           </p>
         </div>
 
         <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-xl shadow-2xl space-y-6">
           {/* Plan selection */}
           <div className="space-y-3">
-            <Label>Access Level</Label>
+            <Label>Plan</Label>
             <div className="grid grid-cols-2 gap-3">
               {PLANS.map((plan) => (
                 <button
@@ -126,11 +138,11 @@ export default function RegisterPage() {
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="displayName">Operator Designation</Label>
+              <Label htmlFor="displayName">Your name</Label>
               <Input
                 id="displayName"
-                placeholder="Analyst Name"
-                className="bg-background border-border/50 font-mono text-sm"
+                placeholder="First name, nickname, whatever you prefer"
+                className="bg-background border-border/50"
                 {...form.register("displayName")}
               />
               {form.formState.errors.displayName && (
@@ -139,12 +151,12 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Operator Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="analyst@domain.com"
-                className="bg-background border-border/50 font-mono text-sm"
+                placeholder="you@example.com"
+                className="bg-background border-border/50"
                 {...form.register("email")}
               />
               {form.formState.errors.email && (
@@ -153,17 +165,53 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Initial Passkey</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 autoComplete="new-password"
-                className="bg-background border-border/50 font-mono text-sm"
+                placeholder="At least 8 characters"
+                className="bg-background border-border/50"
                 {...form.register("password")}
               />
               {form.formState.errors.password && (
                 <p className="text-destructive text-xs">{form.formState.errors.password.message}</p>
               )}
+            </div>
+
+            {/* Role — optional, helps us tailor the experience */}
+            <div className="space-y-2">
+              <Label htmlFor="role">
+                How will you use Litigant AI?{" "}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Select
+                onValueChange={(v) => form.setValue("role", v)}
+                defaultValue=""
+              >
+                <SelectTrigger className="bg-background border-border/50">
+                  <SelectValue placeholder="Pick one — or skip" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(USER_ROLE_LABELS) as [UserRole, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Organization — fully optional */}
+            <div className="space-y-2">
+              <Label htmlFor="organization">
+                Organisation{" "}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="organization"
+                placeholder="Firm, university, company — leave blank if not applicable"
+                className="bg-background border-border/50"
+                {...form.register("organization")}
+              />
             </div>
 
             <Button
@@ -174,11 +222,11 @@ export default function RegisterPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                  Processing Request...
+                  Creating account…
                 </>
               ) : (
                 <>
-                  Submit Request
+                  Create account
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </>
               )}
@@ -187,7 +235,7 @@ export default function RegisterPage() {
 
           <div className="flex items-center gap-3">
             <div className="flex-1 border-t border-border/50" />
-            <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest">or</span>
+            <span className="text-xs text-muted-foreground uppercase tracking-widest">or</span>
             <div className="flex-1 border-t border-border/50" />
           </div>
 
@@ -198,14 +246,14 @@ export default function RegisterPage() {
             onClick={handleGoogleSignIn}
           >
             <FcGoogle className="mr-2 w-5 h-5" />
-            Authenticate with Google
+            Continue with Google
           </Button>
         </div>
 
         <p className="text-center mt-6 text-sm text-muted-foreground">
-          Clearance already granted?{" "}
+          Already have an account?{" "}
           <Link href="/sign-in" className="text-primary hover:opacity-80 transition-opacity font-medium">
-            Initiate Session
+            Sign in
           </Link>
         </p>
       </div>

@@ -41,6 +41,20 @@ router.post("/auth/provision", async (req, res) => {
   const uid = decoded.uid;
   const userRef = db.collection("users").doc(uid);
 
+  // Optional profile fields sent by the client at signup
+  const { role, organization } = (req.body ?? {}) as {
+    role?: string;
+    organization?: string;
+  };
+
+  // Whitelist accepted role values so arbitrary strings can't be stored
+  const VALID_ROLES = new Set([
+    "individual", "lawyer", "law-student",
+    "researcher", "business", "journalist", "other",
+  ]);
+  const sanitizedRole    = role && VALID_ROLES.has(role) ? role : null;
+  const sanitizedOrg     = organization?.trim().slice(0, 200) || null;
+
   try {
     // Check if user doc already exists (returning user, not a new signup)
     const existing = await userRef.get();
@@ -49,18 +63,20 @@ router.post("/auth/provision", async (req, res) => {
       // New user — create profile with neutral defaults (no credit balance set here;
       // grantSignupBonus writes it atomically via the credit ledger)
       await userRef.set({
-        email: decoded.email ?? "",
-        displayName: null,
-        plan: "free",
-        creditBalance: 0,
+        email:              decoded.email ?? "",
+        displayName:        null,
+        role:               sanitizedRole,
+        organization:       sanitizedOrg,
+        plan:               "free",
+        creditBalance:      0,
         subscriptionStatus: "none",
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+        createdAt:          FieldValue.serverTimestamp(),
+        updatedAt:          FieldValue.serverTimestamp(),
         defaultSettings: {
-          courtMode: "adversarial",
-          confidenceTarget: 85,
-          responseMode: "balanced",
-          outputFormat: "report",
+          courtMode:         "adversarial",
+          confidenceTarget:  85,
+          responseMode:      "balanced",
+          outputFormat:      "report",
         },
       });
     }
