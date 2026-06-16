@@ -1,0 +1,22 @@
+import { Router, type IRouter } from "express";
+import healthRouter from "./health";
+import authRouter from "./auth";
+import brainRouter from "./brain";
+import sessionsRouter from "./sessions";
+import templatesRouter from "./templates";
+import accountRouter from "./account";
+import adminRouter from "./admin";
+import reportRouter from "./report";
+
+const router: IRouter = Router();
+
+router.use(healthRouter);
+router.use(authRouter);
+router.use(brainRouter);
+router.use(sessionsRouter);
+router.use(templatesRouter);
+router.use(accountRouter);
+router.use(adminRouter);
+router.use(reportRouter);
+
+export default router;
