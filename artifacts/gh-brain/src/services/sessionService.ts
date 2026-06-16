@@ -224,8 +224,14 @@ export async function getAllSessions(idToken?: string): Promise<SavedSession[]> 
 }
 
 export async function generateShareLink(id: string, idToken?: string): Promise<string> {
-  const shareId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  await updateSession(id, { shared: true, shareId }, idToken);
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(getApiUrl(`/sessions/${id}/share`), { method: "POST", headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).message || `Share failed (${res.status})`);
+  }
+  const { shareId } = await res.json();
   return `${window.location.origin}/report/${shareId}`;
 }
 

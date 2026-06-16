@@ -237,6 +237,13 @@ router.post("/run-brain", async (req, res) => {
   const abortCtrl = new AbortController();
   req.on("close", () => abortCtrl.abort());
 
+  // Hard 5-minute timeout — aborts if client stays connected but session hangs
+  const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
+  const sessionTimer = setTimeout(() => {
+    console.warn("[brain] Session hard-timeout after 5 minutes — aborting.");
+    abortCtrl.abort();
+  }, SESSION_TIMEOUT_MS);
+
   let runSucceeded = false;
   let actualCost = 0;
 
@@ -333,6 +340,7 @@ router.post("/run-brain", async (req, res) => {
       await reconcileCredits(uid, estimatedCost, sessionId ?? "failed", "brain_failure_refund");
     }
 
+    clearTimeout(sessionTimer);
     if (!res.writableEnded) res.end();
   }
 });

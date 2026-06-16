@@ -143,25 +143,49 @@ router.patch("/sessions/:id", async (req, res) => {
   const decoded = await verifyIdToken(authHeader.slice(7));
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
 
-  const { title, shared, starred, archived, shareId } = req.body as {
+  // shareId is intentionally excluded from the accepted body — it is always
+  // generated server-side via POST /sessions/:id/share to prevent spoofing.
+  const { title, shared, starred, archived } = req.body as {
     title?: string;
     shared?: boolean;
     starred?: boolean;
     archived?: boolean;
-    shareId?: string;
   };
   const updates: Record<string, unknown> = {};
   if (title !== undefined) updates["title"] = title;
   if (shared !== undefined) updates["shared"] = shared;
   if (starred !== undefined) updates["starred"] = starred;
   if (archived !== undefined) updates["archived"] = archived;
-  if (shareId !== undefined) updates["shareId"] = shareId;
 
   try {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
     if (!doc.exists || doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
     await doc.ref.update(updates);
     res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ message: e?.message });
+  }
+});
+
+/** POST /sessions/:id/share — generate a server-side shareId and mark the session shared */
+router.post("/sessions/:id/share", async (req, res) => {
+  const db = getFirestoreDb();
+  const authHeader = req.headers["authorization"];
+  if (!db || !authHeader?.startsWith("Bearer ")) { res.status(401).json({ message: "Unauthorized" }); return; }
+
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
+
+  try {
+    const doc = await db.collection("sessions").doc(req.params["id"]!).get();
+    if (!doc.exists || doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
+
+    // Reuse existing shareId if already shared, otherwise generate a new one
+    const existingShareId = doc.data()!["shareId"] as string | undefined;
+    const shareId = existingShareId || crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+
+    await doc.ref.update({ shared: true, shareId });
+    res.json({ success: true, shareId });
   } catch (e: any) {
     res.status(500).json({ message: e?.message });
   }

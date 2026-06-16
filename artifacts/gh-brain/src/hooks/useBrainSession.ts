@@ -223,8 +223,14 @@ export function useBrainSession() {
     }
   }, []);
 
-  const run = useCallback(async () => {
-    if (!state.question.trim()) return;
+  const run = useCallback(async (questionOverride?: string) => {
+    const effectiveQuestion = questionOverride ?? state.question;
+    if (!effectiveQuestion.trim()) return;
+
+    // If an override is supplied, persist it into state so the running view shows it
+    if (questionOverride && questionOverride !== state.question) {
+      dispatch({ type: "SET_QUESTION", question: questionOverride });
+    }
 
     abortRef.current = new AbortController();
 
@@ -234,7 +240,7 @@ export function useBrainSession() {
     } catch { /* guest */ }
 
     const request: BrainRunRequest = {
-      question: state.question,
+      question: effectiveQuestion,
       config: state.config,
       templateId: state.template?.id,
       idToken,

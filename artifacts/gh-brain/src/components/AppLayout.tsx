@@ -96,7 +96,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="hidden sm:flex text-muted-foreground hover:text-destructive gap-1.5"
           >
             <LogOut className="w-4 h-4" />
-            Out
+            Sign out
           </Button>
 
           {/* Mobile menu toggle */}
@@ -130,6 +130,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               {label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                location === "/admin"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              <Shield className="w-4 h-4" />
+              Admin
+            </Link>
+          )}
           <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs font-mono text-primary">
               <Zap className="w-3 h-3" />

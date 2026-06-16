@@ -64,7 +64,7 @@ router.post("/auth/provision", async (req, res) => {
       // grantSignupBonus writes it atomically via the credit ledger)
       await userRef.set({
         email:              decoded.email ?? "",
-        displayName:        null,
+        displayName:        decoded.name ?? decoded.email?.split("@")[0] ?? null,
         role:               sanitizedRole,
         organization:       sanitizedOrg,
         plan:               "free",

@@ -431,10 +431,13 @@ export default function BillingPage() {
     if (didCancel) toast.info("Payment cancelled.");
   }, [didSucceed, didCancel]);
 
+  const [stripeAvailable, setStripeAvailable] = useState<boolean | null>(null);
+
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
     const data = await getProducts();
     setProducts(data);
+    setStripeAvailable(data.length > 0);
     setLoadingProducts(false);
   }, []);
 
@@ -731,6 +734,12 @@ export default function BillingPage() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Buy Credits
               </h2>
+              {!loadingProducts && stripeAvailable === false && (
+                <div className="mb-3 flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm text-yellow-400">
+                  <span className="mt-0.5 shrink-0">⚠</span>
+                  <span>Payments are not configured yet. Prices shown are indicative — contact the team to purchase credits.</span>
+                </div>
+              )}
               {loadingProducts ? (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[...Array(3)].map((_, i) => (

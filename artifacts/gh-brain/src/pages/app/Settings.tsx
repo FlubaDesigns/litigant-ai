@@ -72,10 +72,15 @@ function ProfileTab({ user }: { user: User }) {
   const [savingName, setSavingName] = useState(false);
   const [savedName, setSavedName] = useState(false);
 
-  // Role + organisation
+  // Role + organisation — synced from Firestore (arrives async after mount)
   const [role, setRole] = useState<string>(userProfile?.role ?? "");
   const [organization, setOrganization] = useState(userProfile?.organization ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    setRole(userProfile?.role ?? "");
+    setOrganization(userProfile?.organization ?? "");
+  }, [userProfile?.role, userProfile?.organization]);
 
   // Password section
   const [reauthPassword, setReauthPassword] = useState("");

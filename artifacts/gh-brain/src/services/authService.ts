@@ -60,6 +60,10 @@ export async function signUpWithEmail(
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
   const credential = await signInWithEmailAndPassword(auth, email, password);
+  // Provision is idempotent — it's safe to call on every sign-in.
+  // This ensures users who hit a provision failure during signup get their
+  // Firestore doc and credits on their next successful login.
+  await provisionUser(credential.user);
   return credential.user;
 }
 

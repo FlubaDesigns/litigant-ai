@@ -35,13 +35,14 @@ export function isFirebaseConfigured(): boolean {
 
 export async function verifyIdToken(
   idToken: string
-): Promise<{ uid: string; email?: string; admin?: boolean } | null> {
+): Promise<{ uid: string; email?: string; name?: string; admin?: boolean } | null> {
   if (!isFirebaseConfigured()) return null;
   try {
     const decoded = await getAuth().verifyIdToken(idToken);
     return {
       uid: decoded.uid,
       email: decoded.email,
+      name: decoded.name,
       admin: decoded["admin"] === true,
     };
   } catch {

@@ -27,8 +27,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import {
   getProviders, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
-  type ProviderInfo, type ModelInfo,
+  type ProviderInfo, type ModelInfo, type ModelCreditInfo,
 } from "@/services/providerService";
+import { Input } from "@/components/ui/input";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -397,7 +398,7 @@ function buildMarkdown(state: ReturnType<typeof useBrainSession>["state"]): stri
   ].filter(Boolean).join("\n");
 }
 
-function exportPDF(state: ReturnType<typeof useBrainSession>["state"]): void {
+function exportPDF(state: ReturnType<typeof useBrainSession>["state"], w: Window): void {
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -433,8 +434,6 @@ function exportPDF(state: ReturnType<typeof useBrainSession>["state"]): void {
 </body>
 </html>`;
 
-  const w = window.open("", "_blank");
-  if (!w) return;
   w.document.write(html);
   w.document.close();
   w.focus();
@@ -443,14 +442,33 @@ function exportPDF(state: ReturnType<typeof useBrainSession>["state"]): void {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function SessionPage() {
-  const { state, run, stop, pause, reset, setQuestion, setTemplate, setConfig } = useBrainSession();
+  const { state, run, stop, reset, setQuestion, setTemplate, setConfig } = useBrainSession();
   const { user, userProfile } = useAuth();
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
+  const [profileNudgeDismissed, setProfileNudgeDismissed] = useState(false);
+  // Per-field values when a template has multiple structured input fields
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  // Credit info for the selected provider/model (used for accurate estimate)
+  const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+
+  // Load provider credit info for accurate session cost estimate
+  useEffect(() => {
+    getProviders().then((data) => {
+      const prov = data.providers.find((p) => p.name === state.config.provider) ?? data.providers[0];
+      const model = prov?.models.find((m) => m.id === (state.config.model ?? prov?.defaultModel)) ?? prov?.models[0];
+      setSelectedCreditInfo(model?.creditInfo ?? null);
+    }).catch(() => {});
+  }, [state.config.provider, state.config.model]);
+
+  // Reset field values when template changes
+  useEffect(() => {
+    setFieldValues({});
+  }, [state.template?.id]);
 
   // Pre-select template from ?templateId= URL param
   useEffect(() => {
@@ -475,19 +493,39 @@ export default function SessionPage() {
   const filteredTemplates =
     activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
 
+  /** Assemble a structured question from template input field values */
+  function assembleFieldQuestion(): string {
+    if (!state.template || state.template.inputFields.length === 0) return state.question;
+    return state.template.inputFields
+      .map((f) => (fieldValues[f.id]?.trim() ? `${f.label}: ${fieldValues[f.id].trim()}` : null))
+      .filter(Boolean)
+      .join("\n");
+  }
+
   async function handleRun() {
-    if (!state.question.trim()) {
+    const hasFields = state.template && state.template.inputFields.length > 0;
+    let effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
+
+    if (hasFields) {
+      const missing = state.template!.inputFields.filter((f) => f.required && !fieldValues[f.id]?.trim());
+      if (missing.length > 0) {
+        toast.error(`Please fill in: ${missing.map((f) => f.label).join(", ")}`);
+        return;
+      }
+    }
+
+    if (!effectiveQuestion.trim()) {
       toast.error("Please enter a question first.");
       return;
     }
-    if (userProfile && userProfile.creditBalance < 10) {
-      toast.error("You need at least 10 credits to run a session. Buy credits to continue.", {
+    if (userProfile && userProfile.creditBalance < estimatedCredits) {
+      toast.error(`You need at least ${estimatedCredits} credits to run this session.`, {
         action: { label: "Buy Credits", onClick: () => navigate("/billing") },
       });
       return;
     }
     setFeedbackGiven(null);
-    await run();
+    await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined);
   }
 
   function handleReset() {
@@ -512,17 +550,17 @@ export default function SessionPage() {
   }
 
   function handleExportPDF() {
-    exportPDF(state);
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("Popup blocked — allow popups for this site to print/save as PDF.");
+      return;
+    }
+    exportPDF(state, w);
   }
 
   function handleStop() {
     stop();
     toast.info("Session stopped. Partial results are shown below.");
-  }
-
-  function handlePause() {
-    pause();
-    toast.info("Session paused — stream stopped. Review partial output below.");
   }
 
   async function handleFeedback(rating: "good" | "bad" | "warn") {
@@ -545,7 +583,13 @@ export default function SessionPage() {
   const isComplete = state.phase === "complete";
   const isError = state.phase === "error";
   const isIdle = state.phase === "idle";
-  const estimatedCredits = state.config.litigantCount * state.config.maxIterations * 3 + 6;
+  const estimatedCredits = selectedCreditInfo
+    ? estimateCredits(selectedCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
+    : state.config.litigantCount * state.config.maxIterations * 3 + 6;
+
+  // Google sign-in users who haven't set a role yet
+  const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
+  const showProfileNudge = isGoogleUser && !userProfile?.role && !profileNudgeDismissed;
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden bg-background">
@@ -567,8 +611,24 @@ export default function SessionPage() {
             className="flex-1 overflow-y-auto"
           >
             <div className="max-w-4xl mx-auto px-4 py-8">
+              {/* Google profile completion nudge */}
+              {showProfileNudge && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 flex items-center gap-3"
+                >
+                  <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
+                  <p className="text-xs text-muted-foreground flex-1">
+                    <span className="font-semibold text-blue-400">Complete your profile</span> — takes 10 seconds and helps us tailor results to you.
+                  </p>
+                  <button onClick={() => navigate("/settings")} className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 shrink-0">Set role</button>
+                  <button onClick={() => setProfileNudgeDismissed(true)} className="text-muted-foreground hover:text-foreground shrink-0"><X className="w-3.5 h-3.5" /></button>
+                </motion.div>
+              )}
+
               {/* Low-credit warning banner */}
-              {userProfile && userProfile.creditBalance < 10 && (
+              {userProfile && userProfile.creditBalance < estimatedCredits && (
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -576,9 +636,9 @@ export default function SessionPage() {
                 >
                   <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-red-400">Almost out of credits</p>
+                    <p className="text-sm font-semibold text-red-400">Insufficient credits</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      You have <span className="font-mono font-bold text-red-400">{userProfile.creditBalance}</span> credits remaining — you need at least 10 to run a session.
+                      You have <span className="font-mono font-bold text-red-400">{userProfile.creditBalance}</span> credits — this session needs ~{estimatedCredits}.
                     </p>
                   </div>
                   <Button
@@ -591,7 +651,7 @@ export default function SessionPage() {
                   </Button>
                 </motion.div>
               )}
-              {userProfile && userProfile.creditBalance >= 10 && userProfile.creditBalance < 50 && (
+              {userProfile && userProfile.creditBalance >= estimatedCredits && userProfile.creditBalance < estimatedCredits * 3 && (
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -599,7 +659,7 @@ export default function SessionPage() {
                 >
                   <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
                   <p className="text-xs text-yellow-500 flex-1">
-                    Running low — <span className="font-mono font-bold">{userProfile.creditBalance}</span> credits remaining.
+                    Running low — <span className="font-mono font-bold">{userProfile.creditBalance}</span> credits remaining (~{Math.floor(userProfile.creditBalance / estimatedCredits)} sessions left).
                   </p>
                   <button
                     onClick={() => navigate("/billing")}
@@ -637,19 +697,46 @@ export default function SessionPage() {
                     </button>
                   </div>
                 )}
-                <Textarea
-                  placeholder={
-                    state.template
-                      ? (state.template.inputFields[0]?.placeholder ?? "Describe your question or task...")
-                      : "Ask anything — business decision, technical audit, creative critique, research summary..."
-                  }
-                  value={state.question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun();
-                  }}
-                  className="min-h-[120px] resize-none bg-transparent border-0 p-0 text-base placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
+
+                {/* Multi-field form when template has structured inputs */}
+                {state.template && state.template.inputFields.length > 0 ? (
+                  <div className="space-y-3">
+                    {state.template.inputFields.map((field) => (
+                      <div key={field.id}>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                          {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
+                        </label>
+                        {field.type === "textarea" ? (
+                          <Textarea
+                            placeholder={field.placeholder}
+                            value={fieldValues[field.id] ?? ""}
+                            onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                            className="min-h-[80px] resize-none bg-background/60 border-border/60 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/50"
+                          />
+                        ) : (
+                          <Input
+                            type={field.type === "url" ? "url" : "text"}
+                            placeholder={field.placeholder}
+                            value={fieldValues[field.id] ?? ""}
+                            onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
+                            className="bg-background/60 border-border/60 text-sm placeholder:text-muted-foreground/50 h-9"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="Ask anything — business decision, technical audit, creative critique, research summary..."
+                    value={state.question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun();
+                    }}
+                    className="min-h-[120px] resize-none bg-transparent border-0 p-0 text-base placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                )}
                 <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/40">
                   <button
                     onClick={() => setConfigOpen(true)}
@@ -740,10 +827,6 @@ export default function SessionPage() {
               >
                 <Settings2 className="w-4 h-4" />
               </button>
-              <Button variant="outline" size="sm" onClick={handlePause} className="gap-1.5 h-7 text-xs shrink-0 border-yellow-500/40 text-yellow-500 hover:bg-yellow-500/10">
-                <Square className="w-3 h-3" />
-                Pause
-              </Button>
               <Button variant="destructive" size="sm" onClick={handleStop} className="gap-1.5 h-7 text-xs shrink-0">
                 <Square className="w-3 h-3" />
                 Stop
@@ -870,8 +953,8 @@ export default function SessionPage() {
                         <Button variant="outline" size="sm" onClick={handleDownloadMarkdown} className="gap-1.5 h-7 text-xs">
                           <Download className="w-3 h-3" />MD
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 h-7 text-xs">
-                          <Printer className="w-3 h-3" />PDF
+                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 h-7 text-xs" title="Print / Save as PDF">
+                          <Printer className="w-3 h-3" />Print
                         </Button>
                       </div>
                     </div>

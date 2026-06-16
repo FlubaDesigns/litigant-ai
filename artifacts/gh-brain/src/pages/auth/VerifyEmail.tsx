@@ -3,10 +3,10 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Brain, ArrowRight, Mail, Loader2 } from "lucide-react";
+import { Brain, ArrowRight, Mail, Loader2, LogOut } from "lucide-react";
 
 export default function VerifyEmailPage() {
-  const { resendVerification, user } = useAuth();
+  const { resendVerification, logOut, user } = useAuth();
   const [, setLocation] = useLocation();
   const [isResending, setIsResending] = useState(false);
 
@@ -67,7 +67,7 @@ export default function VerifyEmailPage() {
             <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
 
-          <div className="pt-4 border-t border-border/50">
+          <div className="pt-4 border-t border-border/50 space-y-2">
             <Button
               variant="outline"
               onClick={handleResend}
@@ -82,6 +82,14 @@ export default function VerifyEmailPage() {
               ) : (
                 "Re-transmit verification signal"
               )}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={async () => { await logOut(); setLocation("/register"); }}
+              className="w-full text-muted-foreground hover:text-foreground text-sm gap-2"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Wrong email? Sign out &amp; start over
             </Button>
           </div>
         </div>
