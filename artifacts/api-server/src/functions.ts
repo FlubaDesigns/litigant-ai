@@ -1,10 +1,9 @@
-import { onRequest } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions/v1";
 import app from "./app-firebase.js";
 
-export const api = onRequest(
-  { timeoutSeconds: 540, memory: "512MiB", region: "us-central1" },
-  (req, res) => {
+export const api = functions
+  .runWith({ timeoutSeconds: 540, memory: "512MB" })
+  .https.onRequest((req, res) => {
     req.url = req.url.replace(/^\/api-server/, "") || "/";
     (app as any)(req, res);
-  }
-);
+  });
