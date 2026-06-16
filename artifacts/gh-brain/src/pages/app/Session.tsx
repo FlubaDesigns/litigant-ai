@@ -5,7 +5,7 @@ import {
   Stethoscope, Scale, Search, FlaskConical, Settings2, Play, Square,
   ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download, ChevronDown,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
-  Printer, Package, ShoppingCart,
+  Printer, Package, ShoppingCart, Cpu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +21,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
-import type { CourtConfig } from "@/data/templates";
+import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import { getProviders, PROVIDER_LABELS, PROVIDER_ICONS, type ProviderInfo } from "@/services/providerService";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -96,6 +97,17 @@ function ConfigPanel({
   config: CourtConfig;
   onChange: (c: Partial<CourtConfig>) => void;
 }) {
+  const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      getProviders().then((p) => setAvailableProviders(p.providers));
+    }
+  }, [open]);
+
+  const selectedProvider = availableProviders.find((p) => p.name === config.provider)
+    ?? availableProviders[0];
+
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-80 bg-card border-l border-border overflow-y-auto">
@@ -106,6 +118,48 @@ function ConfigPanel({
           </SheetTitle>
         </SheetHeader>
         <div className="mt-6 space-y-6">
+
+          {/* ── AI Provider ── */}
+          {availableProviders.length > 0 && (
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                <Cpu className="w-3 h-3" /> AI Provider
+              </label>
+              <div className="grid grid-cols-2 gap-1.5 mb-3">
+                {availableProviders.map((p) => (
+                  <button
+                    key={p.name}
+                    onClick={() => onChange({ provider: p.name as ProviderName, model: p.defaultModel })}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-xs font-medium transition-all",
+                      config.provider === p.name || (!config.provider && p === availableProviders[0])
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/60 bg-background text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    <span>{PROVIDER_ICONS[p.name as ProviderName]}</span>
+                    {PROVIDER_LABELS[p.name as ProviderName]}
+                  </button>
+                ))}
+              </div>
+              {selectedProvider && selectedProvider.models.length > 0 && (
+                <Select
+                  value={config.model ?? selectedProvider.defaultModel}
+                  onValueChange={(v) => onChange({ model: v })}
+                >
+                  <SelectTrigger className="bg-background border-border/60 text-xs h-8">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedProvider.models.map((m) => (
+                      <SelectItem key={m.id} value={m.id} className="text-xs">{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
               Court Mode

@@ -6,6 +6,8 @@ export interface TemplateInputField {
   required: boolean;
 }
 
+export type ProviderName = "openai" | "anthropic" | "grok" | "gemini";
+
 export interface CourtConfig {
   courtMode: "adversarial" | "socratic" | "analysis" | "critique";
   litigantCount: number;
@@ -13,6 +15,8 @@ export interface CourtConfig {
   maxIterations: number;
   responseMode: "balanced" | "thorough" | "concise";
   outputFormat: "report" | "memo" | "bullets" | "verdict";
+  provider?: ProviderName;
+  model?: string;
 }
 
 export interface Template {

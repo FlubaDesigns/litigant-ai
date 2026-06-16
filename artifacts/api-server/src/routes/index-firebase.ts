@@ -7,6 +7,7 @@ import templatesRouter from "./templates";
 import accountRouter from "./account";
 import adminRouter from "./admin";
 import reportRouter from "./report";
+import providersRouter from "./providers";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(templatesRouter);
 router.use(accountRouter);
 router.use(adminRouter);
 router.use(reportRouter);
+router.use(providersRouter);
 
 export default router;

@@ -8,6 +8,7 @@ import accountRouter from "./account";
 import billingRouter from "./billing";
 import adminRouter from "./admin";
 import reportRouter from "./report";
+import providersRouter from "./providers";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(accountRouter);
 router.use(billingRouter);
 router.use(adminRouter);
 router.use(reportRouter);
+router.use(providersRouter);
 
 export default router;

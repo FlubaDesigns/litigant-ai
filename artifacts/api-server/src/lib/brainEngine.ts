@@ -1,10 +1,6 @@
-import OpenAI from "openai";
 import type { Response } from "express";
-
-const openai = new OpenAI({
-  baseURL: process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"],
-  apiKey: process.env["AI_INTEGRATIONS_OPENAI_API_KEY"] || "placeholder",
-});
+import { createProvider, getConfiguredProviders } from "./providers/index.js";
+import type { AIProvider, ChatMessage, ProviderName } from "./providers/index.js";
 
 export type CourtMode = "adversarial" | "socratic" | "analysis" | "critique";
 export type ResponseMode = "balanced" | "thorough" | "concise";
@@ -17,6 +13,8 @@ export interface CourtConfig {
   maxIterations: number;
   responseMode: ResponseMode;
   outputFormat: OutputFormat;
+  provider?: ProviderName;
+  model?: string;
 }
 
 interface RoleDefinition {
@@ -75,7 +73,7 @@ function sendSSE(res: Response, event: Record<string, unknown>): void {
 
 export function estimateCreditCost(config: CourtConfig): number {
   const litigants = Math.min(config.litigantCount, 4);
-  return litigants * config.maxIterations * 3 + 7; // +7 for Orchestrator + Verdict
+  return litigants * config.maxIterations * 3 + 7;
 }
 
 export interface BrainRunOptions {
@@ -98,10 +96,54 @@ export interface BrainRunResult {
   caveats: string;
   artifacts: string;
   turns: TurnRecord[];
+  provider: ProviderName;
+  model: string;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error("Session aborted by client");
+}
+
+/** Pick which provider to use, falling back gracefully */
+function resolveProvider(config: CourtConfig): AIProvider {
+  const configured = getConfiguredProviders();
+
+  // Use requested provider if configured
+  if (config.provider && configured.includes(config.provider)) {
+    return createProvider(config.provider, config.model);
+  }
+
+  // Fallback chain: openai → anthropic → grok → gemini
+  for (const fallback of ["openai", "anthropic", "grok", "gemini"] as ProviderName[]) {
+    if (configured.includes(fallback)) {
+      return createProvider(fallback, fallback === config.provider ? config.model : undefined);
+    }
+  }
+
+  throw new Error("No AI provider is configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY.");
+}
+
+async function streamRole(
+  provider: AIProvider,
+  messages: ChatMessage[],
+  maxTokens: number,
+  onChunk: (text: string) => void,
+  signal?: AbortSignal
+): Promise<string> {
+  let output = "";
+  try {
+    for await (const chunk of provider.streamChat(messages, maxTokens, signal)) {
+      if (signal?.aborted) break;
+      output += chunk;
+      onChunk(chunk);
+    }
+  } catch (err: any) {
+    if (err?.message === "Session aborted by client" || signal?.aborted) throw err;
+    const fallback = `[${err?.message || "Provider error"}]`;
+    output = fallback;
+    onChunk(fallback);
+  }
+  return output;
 }
 
 export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunResult> {
@@ -111,7 +153,11 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const maxTokens = getTokensForMode(config.responseMode);
   const estimatedCredits = estimateCreditCost(config);
 
-  sendSSE(res, { type: "start", sessionId, estimatedCredits });
+  const provider = resolveProvider(config);
+  const providerName = provider.name;
+  const modelName = config.model ?? "";
+
+  sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });
 
   const transcript: string[] = [];
   const turns: TurnRecord[] = [];
@@ -122,46 +168,35 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
-  // ── Orchestrator frame ──────────────────────────────────────────────────────
+  // ── Orchestrator ─────────────────────────────────────────────────────────────
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0 });
-  let orchestratorFrame = "";
+  sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
 
-  try {
-    const orchStream = await openai.chat.completions.create({
-      model: "gpt-5.4",
-      max_completion_tokens: 400,
-      stream: true,
-      messages: [
-        {
-          role: "system",
-          content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).",
-        },
-        {
-          role: "user",
-          content: `${baseContext}\n\nCourt mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`,
-        },
-      ],
-    });
+  const orchMessages: ChatMessage[] = [
+    {
+      role: "system",
+      content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).",
+    },
+    {
+      role: "user",
+      content: `${baseContext}\n\nCourt mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`,
+    },
+  ];
 
-    for await (const chunk of orchStream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        orchestratorFrame += content;
-        sendSSE(res, { type: "content", role: "Orchestrator", content });
-      }
-    }
-  } catch {
-    orchestratorFrame = `[Courtroom convened — examining: "${question}"]`;
-    sendSSE(res, { type: "content", role: "Orchestrator", content: orchestratorFrame });
-  }
+  const orchestratorFrame = await streamRole(
+    provider,
+    orchMessages,
+    400,
+    (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
+    abortSignal
+  );
 
   transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
   turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
   sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
   creditsUsed += 1;
 
-  // ── Debate rounds ───────────────────────────────────────────────────────────
+  // ── Debate rounds ─────────────────────────────────────────────────────────────
   const debateNotesList: string[] = [];
 
   for (let round = 1; round <= config.maxIterations; round++) {
@@ -174,11 +209,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       throwIfAborted(abortSignal);
 
       const role = roles[i];
-      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round });
+      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: providerName });
 
-      let roleOutput = "";
-
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      const messages: ChatMessage[] = [
         {
           role: "system",
           content: `${baseContext}\n\nYour role: ${role.persona}. ${role.instruction}\n\nBe sharp, specific, and argumentative. Do not be vague. Target: ${maxTokens} tokens.`,
@@ -192,29 +225,15 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         },
       ];
 
-      try {
-        const stream = await openai.chat.completions.create({
-          model: "gpt-5.4",
-          max_completion_tokens: maxTokens,
-          stream: true,
-          messages,
-        });
+      const roleOutput = await streamRole(
+        provider,
+        messages,
+        maxTokens,
+        (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
+        abortSignal
+      );
 
-        for await (const chunk of stream) {
-          if (abortSignal?.aborted) break;
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            roleOutput += content;
-            sendSSE(res, { type: "content", role: role.name, content });
-          }
-        }
-        throwIfAborted(abortSignal);
-      } catch (err: any) {
-        if (err?.message === "Session aborted by client") throw err;
-        const fallback = `[${role.name} unable to respond — ${err?.message || "API error"}]`;
-        roleOutput = fallback;
-        sendSSE(res, { type: "content", role: role.name, content: fallback });
-      }
+      throwIfAborted(abortSignal);
 
       transcript.push(`**${role.name} (Round ${round}):** ${roleOutput}`);
       debateNotesList.push(`### ${role.name} — Round ${round}\n${roleOutput}`);
@@ -234,13 +253,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     if (confidence >= config.confidenceTarget && round >= 2) break;
   }
 
-  // ── Final Verdict ───────────────────────────────────────────────────────────
+  // ── Final Verdict ─────────────────────────────────────────────────────────────
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99 });
-
-  let finalAnswer = "";
-  let caveats = "";
-  let artifacts = "";
+  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: providerName });
 
   const verdictPrompt = `${baseContext}
 
@@ -269,46 +284,31 @@ What assumptions underlie this analysis? What would change the verdict? What pro
 
 Output format: ${config.outputFormat}`;
 
-  try {
-    const verdictStream = await openai.chat.completions.create({
-      model: "gpt-5.4",
-      max_completion_tokens: 1600,
-      stream: true,
-      messages: [
-        {
-          role: "system",
-          content: "You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections.",
-        },
-        { role: "user", content: verdictPrompt },
-      ],
-    });
+  const verdictMessages: ChatMessage[] = [
+    {
+      role: "system",
+      content: "You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections.",
+    },
+    { role: "user", content: verdictPrompt },
+  ];
 
-    for await (const chunk of verdictStream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        finalAnswer += content;
-        sendSSE(res, { type: "content", role: "Verdict", content });
-      }
-    }
-  } catch (err: any) {
-    finalAnswer = `## Final Answer\n\nBased on the debate, "${question}" has been examined from ${roles.length} perspectives. Review the transcript for detailed arguments.\n\n## Artifacts\n\nNo structured artifact could be generated due to an error.\n\n## Sources & Caveats\n\nThis analysis is AI-generated. [Error: ${err?.message || "API error"}]`;
-    sendSSE(res, { type: "content", role: "Verdict", content: finalAnswer });
-  }
+  const finalAnswer = await streamRole(
+    provider,
+    verdictMessages,
+    1600,
+    (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
+    abortSignal
+  );
 
   // Extract sections
   const artifactsMatch = finalAnswer.match(/##\s+Artifacts\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  if (artifactsMatch) {
-    artifacts = artifactsMatch[1].trim();
-  }
+  const artifacts = artifactsMatch ? artifactsMatch[1].trim() : "";
 
   const caveatMatch = finalAnswer.match(/##\s+(?:Sources &|Sources &amp;|Caveats?|Sources)\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  if (caveatMatch) {
-    caveats = caveatMatch[1].trim();
-  } else {
-    caveats = "This analysis represents AI-generated reasoning and should not substitute for professional advice in legal, medical, financial, or safety-critical domains.";
-  }
+  const caveats = caveatMatch
+    ? caveatMatch[1].trim()
+    : "This analysis represents AI-generated reasoning and should not substitute for professional advice.";
 
-  // Extract clean final answer (up to Key Findings or Artifacts)
   const answerMatch = finalAnswer.match(/##\s+Final Answer\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const cleanFinalAnswer = answerMatch ? answerMatch[1].trim() : finalAnswer;
 
@@ -328,6 +328,8 @@ Output format: ${config.outputFormat}`;
     transcript: transcript.join("\n\n---\n\n"),
     caveats,
     artifacts,
+    provider: providerName,
+    model: modelName,
   });
 
   return {
@@ -340,5 +342,7 @@ Output format: ${config.outputFormat}`;
     caveats,
     artifacts,
     turns,
+    provider: providerName,
+    model: modelName,
   };
 }
