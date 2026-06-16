@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "_ELkMgOlHZNCetLetYKf9"
@@ -12,3 +11,9 @@ id = "BaUorbiGmHs6A5waHOWVo"
 uri = "file://artifacts/gh-brain/src/assets/images/neural-court.png"
 type = "image"
 title = "Glowing green neural pathways"
+
+[[outputs]]
+id = "oHu2SZNBZ0NyJBnLPlLe_"
+uri = "file://downloads/website.zip"
+type = "unspecified"
+title = "Litigant AI — website.zip"
