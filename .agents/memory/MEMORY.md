@@ -4,3 +4,6 @@
 - [Brain engine SSE pattern](brain-engine-sse.md) — sequential multi-role calls, each role streams to SSE; roles vary by courtMode; gpt-5.4 with `max_completion_tokens`
 - [Admin bootstrap](admin-bootstrap.md) — POST /admin/set-claim is master-secret gated (no Bearer token); user must sign out/in after claim is set; ADMIN_MASTER_SECRET env var required
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
+- [Cloud Run deployment](cloud-run-deployment.md) — use Docker + Cloud Build API to deploy; Firebase Functions buildpack ignores npm start/Procfile entirely.
+- [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
+- [Cloud Run env vars](cloud-run-env.md) — PORT is reserved (cannot set in env array); IAM allUsers must be re-granted after every redeploy; needs FIREBASE_SERVICE_ACCOUNT + AI_INTEGRATIONS_* set.

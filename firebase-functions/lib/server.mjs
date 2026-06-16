@@ -23997,8 +23997,8 @@ var require_lib3 = __commonJS({
   }
 });
 
-// src/functions.ts
-import { onRequest } from "firebase-functions/v2/https";
+// src/server-cloudrun.ts
+var import_express11 = __toESM(require_express2(), 1);
 
 // src/app-firebase.ts
 var import_express10 = __toESM(require_express2(), 1);
@@ -39038,17 +39038,17 @@ app2.use(import_express10.default.urlencoded({ extended: true }));
 app2.use("/api", index_firebase_default);
 var app_firebase_default = app2;
 
-// src/functions.ts
-var api = onRequest(
-  { timeoutSeconds: 540, memory: "512MiB", region: "us-central1", invoker: "public" },
-  (req, res) => {
-    req.url = req.url.replace(/^\/api-server/, "") || "/";
-    app_firebase_default(req, res);
-  }
-);
-export {
-  api
-};
+// src/server-cloudrun.ts
+var wrapperApp = (0, import_express11.default)();
+wrapperApp.use((req, _res, next) => {
+  req.url = req.url.replace(/^\/api-server/, "") || "/";
+  next();
+});
+wrapperApp.use(app_firebase_default);
+var port = parseInt(process.env["PORT"] || "8080", 10);
+wrapperApp.listen(port, "0.0.0.0", () => {
+  console.log(`[CloudRun] Listening on port ${port}`);
+});
 /*! Bundled license information:
 
 depd/index.js:

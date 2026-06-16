@@ -9,10 +9,57 @@ globalThis.require = createRequire(import.meta.url);
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.resolve(artifactDir, "../../firebase-functions/lib");
 
+const sharedExternal = [
+  "*.node",
+  "firebase-admin",
+  "firebase-functions",
+  "sharp", "better-sqlite3", "sqlite3", "canvas", "bcrypt", "argon2",
+  "fsevents", "re2", "farmhash", "xxhash-addon", "bufferutil",
+  "utf-8-validate", "ssh2", "cpu-features", "dtrace-provider",
+  "isolated-vm", "lightningcss", "pg-native", "oracledb",
+  "mongodb-client-encryption", "nodemailer", "handlebars",
+  "knex", "typeorm", "protobufjs", "onnxruntime-node",
+  "@tensorflow/*", "@prisma/client", "@mikro-orm/*", "@grpc/*",
+  "@swc/*", "@aws-sdk/*", "@azure/*", "@opentelemetry/*",
+  "@google-cloud/*", "@google/*", "googleapis", "@parcel/watcher",
+  "@sentry/profiling-node", "@tree-sitter/*", "aws-sdk",
+  "classic-level", "dd-trace", "ffi-napi", "grpc", "hiredis",
+  "kerberos", "leveldown", "miniflare", "mysql2", "newrelic",
+  "odbc", "piscina", "realm", "ref-napi", "rocksdb", "sass-embedded",
+  "sequelize", "serialport", "snappy", "tinypool", "usb", "workerd",
+  "wrangler", "zeromq", "zeromq-prebuilt", "playwright", "puppeteer",
+  "puppeteer-core", "electron", "stripe-replit-sync",
+  "pino", "pino-http", "pino-pretty", "thread-stream",
+];
+
+const esmBanner = {
+  js: `import { createRequire as __bannerCrReq } from 'node:module';
+import __bannerPath from 'node:path';
+import __bannerUrl from 'node:url';
+globalThis.require = __bannerCrReq(import.meta.url);
+globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
+globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
+`,
+};
+
 async function buildFunctions() {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
 
+  // Cloud Run standalone server (direct Express, no firebase-functions wrapper)
+  await esbuild({
+    entryPoints: [path.resolve(artifactDir, "src/server-cloudrun.ts")],
+    platform: "node",
+    bundle: true,
+    format: "esm",
+    outfile: path.resolve(outDir, "server.mjs"),
+    logLevel: "info",
+    external: sharedExternal,
+    sourcemap: false,
+    banner: esmBanner,
+  });
+
+  // Cloud Functions export (kept for firebase deploy compatibility)
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/functions.ts")],
     platform: "node",
@@ -20,38 +67,9 @@ async function buildFunctions() {
     format: "esm",
     outfile: path.resolve(outDir, "functions.mjs"),
     logLevel: "info",
-    external: [
-      "*.node",
-      "firebase-admin",
-      "firebase-functions",
-      "sharp", "better-sqlite3", "sqlite3", "canvas", "bcrypt", "argon2",
-      "fsevents", "re2", "farmhash", "xxhash-addon", "bufferutil",
-      "utf-8-validate", "ssh2", "cpu-features", "dtrace-provider",
-      "isolated-vm", "lightningcss", "pg-native", "oracledb",
-      "mongodb-client-encryption", "nodemailer", "handlebars",
-      "knex", "typeorm", "protobufjs", "onnxruntime-node",
-      "@tensorflow/*", "@prisma/client", "@mikro-orm/*", "@grpc/*",
-      "@swc/*", "@aws-sdk/*", "@azure/*", "@opentelemetry/*",
-      "@google-cloud/*", "@google/*", "googleapis", "@parcel/watcher",
-      "@sentry/profiling-node", "@tree-sitter/*", "aws-sdk",
-      "classic-level", "dd-trace", "ffi-napi", "grpc", "hiredis",
-      "kerberos", "leveldown", "miniflare", "mysql2", "newrelic",
-      "odbc", "piscina", "realm", "ref-napi", "rocksdb", "sass-embedded",
-      "sequelize", "serialport", "snappy", "tinypool", "usb", "workerd",
-      "wrangler", "zeromq", "zeromq-prebuilt", "playwright", "puppeteer",
-      "puppeteer-core", "electron", "stripe-replit-sync",
-      "pino", "pino-http", "pino-pretty", "thread-stream",
-    ],
+    external: sharedExternal,
     sourcemap: false,
-    banner: {
-      js: `import { createRequire as __bannerCrReq } from 'node:module';
-import __bannerPath from 'node:path';
-import __bannerUrl from 'node:url';
-globalThis.require = __bannerCrReq(import.meta.url);
-globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
-globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
-`,
-    },
+    banner: esmBanner,
   });
 }
 
