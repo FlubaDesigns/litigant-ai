@@ -25,7 +25,10 @@ import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { getProviders, PROVIDER_LABELS, PROVIDER_ICONS, type ProviderInfo } from "@/services/providerService";
+import {
+  getProviders, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
+  type ProviderInfo, type ModelInfo,
+} from "@/services/providerService";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -107,6 +110,19 @@ function ConfigPanel({
 
   const selectedProvider = availableProviders.find((p) => p.name === config.provider)
     ?? availableProviders[0];
+
+  const selectedModel: ModelInfo | undefined = selectedProvider?.models.find(
+    (m) => m.id === (config.model ?? selectedProvider.defaultModel)
+  ) ?? selectedProvider?.models[0];
+
+  const estimatedCredits = selectedModel?.creditInfo
+    ? estimateCredits(
+        selectedModel.creditInfo,
+        config.litigantCount,
+        config.maxIterations,
+        config.responseMode
+      )
+    : config.litigantCount * config.maxIterations * 3 + 6;
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -258,11 +274,19 @@ function ConfigPanel({
             </Select>
           </div>
 
-          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <div className="text-xs text-muted-foreground mb-1">Estimated credit cost</div>
-            <div className="text-lg font-bold text-primary font-mono">
-              ~{config.litigantCount * config.maxIterations * 3 + 6} credits
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1.5">
+            <div className="text-xs text-muted-foreground">Estimated credit cost</div>
+            <div className="text-2xl font-bold text-primary font-mono">
+              ~{estimatedCredits} credits
             </div>
+            <div className="text-xs text-muted-foreground">
+              = ${(estimatedCredits * 0.01).toFixed(2)} USD
+            </div>
+            {selectedModel?.creditInfo && (
+              <div className="text-xs text-muted-foreground/70 pt-1 border-t border-border/40">
+                {selectedModel.label} · {selectedModel.creditInfo.multiplier}× margin
+              </div>
+            )}
           </div>
 
           <Button onClick={onClose} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">

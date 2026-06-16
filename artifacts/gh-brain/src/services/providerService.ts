@@ -2,15 +2,31 @@ import type { ProviderName } from "@/data/templates";
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
 
+export interface ModelCreditInfo {
+  model: string;
+  multiplier: number;
+  inputRatePer1k: number;
+  outputRatePer1k: number;
+  creditValueUsd: number;
+  exampleSessionCredits: number;
+}
+
+export interface ModelInfo {
+  id: string;
+  label: string;
+  creditInfo: ModelCreditInfo;
+}
+
 export interface ProviderInfo {
   name: ProviderName;
   displayName: string;
   defaultModel: string;
-  models: { id: string; label: string }[];
+  models: ModelInfo[];
 }
 
 export interface ProvidersResponse {
   configured: ProviderName[];
+  creditValueUsd: number;
   providers: ProviderInfo[];
 }
 
@@ -24,7 +40,7 @@ export async function getProviders(): Promise<ProvidersResponse> {
     _cache = await res.json();
     return _cache!;
   } catch {
-    return { configured: ["openai"], providers: [] };
+    return { configured: ["openai"], creditValueUsd: 0.01, providers: [] };
   }
 }
 
@@ -41,3 +57,34 @@ export const PROVIDER_ICONS: Record<ProviderName, string> = {
   grok: "⚡",
   gemini: "✨",
 };
+
+export type ResponseMode = "concise" | "balanced" | "thorough";
+
+/**
+ * Estimate credit cost client-side using the same formula as the backend.
+ * Requires creditInfo from the providers response.
+ */
+export function estimateCredits(
+  creditInfo: ModelCreditInfo,
+  litigantCount: number,
+  maxIterations: number,
+  responseMode: ResponseMode
+): number {
+  const tokensPerTurn = { concise: 300, balanced: 600, thorough: 1200 }[responseMode];
+  const litigants = Math.min(litigantCount, 4);
+  const rounds = maxIterations;
+
+  // Output: orchestrator + roles × rounds + verdict
+  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 1600;
+
+  // Input grows each round as history accumulates
+  const historyPerRound = tokensPerTurn * litigants * 0.8;
+  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
+  const inputTokens = litigants * rounds * avgInputPerTurn + 8000;
+
+  const costUSD =
+    (inputTokens / 1000) * creditInfo.inputRatePer1k +
+    (outputTokens / 1000) * creditInfo.outputRatePer1k;
+
+  return Math.max(1, Math.ceil((costUSD * creditInfo.multiplier) / creditInfo.creditValueUsd));
+}

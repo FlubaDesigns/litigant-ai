@@ -1,6 +1,11 @@
 import type { Response } from "express";
 import { createProvider, getConfiguredProviders } from "./providers/index.js";
 import type { AIProvider, ChatMessage, ProviderName } from "./providers/index.js";
+import {
+  estimateSessionCredits,
+  calculateActualCredits,
+  charsToTokens,
+} from "./creditEngine.js";
 
 export type CourtMode = "adversarial" | "socratic" | "analysis" | "critique";
 export type ResponseMode = "balanced" | "thorough" | "concise";
@@ -27,6 +32,11 @@ export interface TurnRecord {
   role: string;
   round: number;
   content: string;
+}
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
 }
 
 function getRoles(config: CourtConfig): RoleDefinition[] {
@@ -61,7 +71,7 @@ function getRoles(config: CourtConfig): RoleDefinition[] {
   return allRoles.slice(0, Math.min(config.litigantCount, allRoles.length));
 }
 
-function getTokensForMode(responseMode: ResponseMode): number {
+function getMaxOutputTokens(responseMode: ResponseMode): number {
   return { balanced: 600, thorough: 1200, concise: 300 }[responseMode];
 }
 
@@ -71,9 +81,14 @@ function sendSSE(res: Response, event: Record<string, unknown>): void {
   }
 }
 
+/** Estimate credits before running — used for pre-reservation */
 export function estimateCreditCost(config: CourtConfig): number {
-  const litigants = Math.min(config.litigantCount, 4);
-  return litigants * config.maxIterations * 3 + 7;
+  return estimateSessionCredits({
+    litigantCount: config.litigantCount,
+    maxIterations: config.maxIterations,
+    responseMode: config.responseMode,
+    model: config.model,
+  });
 }
 
 export interface BrainRunOptions {
@@ -98,38 +113,42 @@ export interface BrainRunResult {
   turns: TurnRecord[];
   provider: ProviderName;
   model: string;
+  tokenUsage: TokenUsage;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error("Session aborted by client");
 }
 
-/** Pick which provider to use, falling back gracefully */
 function resolveProvider(config: CourtConfig): AIProvider {
   const configured = getConfiguredProviders();
 
-  // Use requested provider if configured
   if (config.provider && configured.includes(config.provider)) {
     return createProvider(config.provider, config.model);
   }
 
-  // Fallback chain: openai → anthropic → grok → gemini
   for (const fallback of ["openai", "anthropic", "grok", "gemini"] as ProviderName[]) {
     if (configured.includes(fallback)) {
       return createProvider(fallback, fallback === config.provider ? config.model : undefined);
     }
   }
 
-  throw new Error("No AI provider is configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY.");
+  throw new Error("No AI provider configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY.");
 }
 
+/** Stream a role's response, tracking output character count for token estimation */
 async function streamRole(
   provider: AIProvider,
   messages: ChatMessage[],
   maxTokens: number,
   onChunk: (text: string) => void,
+  usage: TokenUsage,
   signal?: AbortSignal
 ): Promise<string> {
+  // Estimate input tokens from message content length
+  const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+  usage.inputTokens += charsToTokens(inputChars);
+
   let output = "";
   try {
     for await (const chunk of provider.streamChat(messages, maxTokens, signal)) {
@@ -143,6 +162,10 @@ async function streamRole(
     output = fallback;
     onChunk(fallback);
   }
+
+  // Track actual output tokens
+  usage.outputTokens += charsToTokens(output.length);
+
   return output;
 }
 
@@ -150,18 +173,20 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const { question, config, templateSystemPrompt, res, abortSignal } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
-  const maxTokens = getTokensForMode(config.responseMode);
+  const maxTokens = getMaxOutputTokens(config.responseMode);
   const estimatedCredits = estimateCreditCost(config);
 
   const provider = resolveProvider(config);
   const providerName = provider.name;
   const modelName = config.model ?? "";
 
+  // Cumulative token tracker — passed by reference into every streamRole call
+  const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
+
   sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });
 
   const transcript: string[] = [];
   const turns: TurnRecord[] = [];
-  let creditsUsed = 0;
   let confidence = 20;
 
   const baseContext = templateSystemPrompt
@@ -184,17 +209,14 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   ];
 
   const orchestratorFrame = await streamRole(
-    provider,
-    orchMessages,
-    400,
+    provider, orchMessages, 400,
     (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
-    abortSignal
+    usage, abortSignal
   );
 
   transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
   turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
   sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
-  creditsUsed += 1;
 
   // ── Debate rounds ─────────────────────────────────────────────────────────────
   const debateNotesList: string[] = [];
@@ -214,7 +236,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `${baseContext}\n\nYour role: ${role.persona}. ${role.instruction}\n\nBe sharp, specific, and argumentative. Do not be vague. Target: ${maxTokens} tokens.`,
+          content: `${baseContext}\n\nYour role: ${role.persona}. ${role.instruction}\n\nBe sharp, specific, and argumentative. Do not be vague.`,
         },
         {
           role: "user",
@@ -226,11 +248,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       ];
 
       const roleOutput = await streamRole(
-        provider,
-        messages,
-        maxTokens,
+        provider, messages, maxTokens,
         (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
-        abortSignal
+        usage, abortSignal
       );
 
       throwIfAborted(abortSignal);
@@ -240,13 +260,15 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       turns.push({ role: role.name, round, content: roleOutput });
 
       sendSSE(res, { type: "role_end", role: role.name, fullContent: roleOutput });
-      creditsUsed += Math.ceil(maxTokens / 200);
 
       confidence = Math.min(
         config.confidenceTarget,
         20 + (round * roles.length + i + 1) * Math.floor((config.confidenceTarget - 20) / (config.maxIterations * roles.length))
       );
-      sendSSE(res, { type: "confidence_update", confidence, creditsUsed });
+
+      // Stream live credit update based on actual tokens so far
+      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-4o", usage.inputTokens, usage.outputTokens);
+      sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
     }
 
     sendSSE(res, { type: "round_end", round, confidence });
@@ -293,11 +315,9 @@ Output format: ${config.outputFormat}`;
   ];
 
   const finalAnswer = await streamRole(
-    provider,
-    verdictMessages,
-    1600,
+    provider, verdictMessages, 1600,
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
-    abortSignal
+    usage, abortSignal
   );
 
   // Extract sections
@@ -312,10 +332,16 @@ Output format: ${config.outputFormat}`;
   const answerMatch = finalAnswer.match(/##\s+Final Answer\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const cleanFinalAnswer = answerMatch ? answerMatch[1].trim() : finalAnswer;
 
-  creditsUsed += 6;
   confidence = Math.min(95, confidence + 5);
 
   turns.push({ role: "Verdict", round: 99, content: finalAnswer });
+
+  // Final actual credit calculation from real token counts
+  const creditsUsed = calculateActualCredits(
+    modelName || "gpt-4o",
+    usage.inputTokens,
+    usage.outputTokens
+  );
 
   sendSSE(res, { type: "role_end", role: "Verdict", fullContent: finalAnswer });
   sendSSE(res, {
@@ -330,6 +356,7 @@ Output format: ${config.outputFormat}`;
     artifacts,
     provider: providerName,
     model: modelName,
+    tokenUsage: usage,
   });
 
   return {
@@ -344,5 +371,6 @@ Output format: ${config.outputFormat}`;
     turns,
     provider: providerName,
     model: modelName,
+    tokenUsage: usage,
   };
 }

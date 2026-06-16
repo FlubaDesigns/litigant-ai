@@ -2,6 +2,7 @@ import { Router } from "express";
 import { runBrainSession, estimateCreditCost, type CourtConfig } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
+import { calculateActualCredits } from "../lib/creditEngine.js";
 
 const router = Router();
 
@@ -223,10 +224,22 @@ router.post("/run-brain", async (req, res) => {
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-        // Reconcile: if actual < estimated, refund the difference — this creates a ledger entry
+            // Settle with real token-based cost
+        actualCost = calculateActualCredits(
+          result.model || "gpt-4o",
+          result.tokenUsage.inputTokens,
+          result.tokenUsage.outputTokens
+        );
+
+        // Reconcile: if actual < estimated, refund the difference
         const refund = Math.max(0, estimatedCost - actualCost);
         if (refund > 0) {
           await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+        }
+        // If actual > estimated (rare edge case), charge the overage
+        if (actualCost > estimatedCost && uid) {
+          const overage = actualCost - estimatedCost;
+          await reserveCredits(uid, overage, result.sessionId).catch(() => {/* non-fatal */});
         }
 
         // Write session_turns subcollection
