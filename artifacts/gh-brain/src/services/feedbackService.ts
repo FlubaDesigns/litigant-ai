@@ -19,7 +19,7 @@ export interface FeedbackEntry {
 
 export async function submitFeedback(entry: FeedbackEntry): Promise<void> {
   if (!isConfigured) {
-    console.log("[AI Brain] Feedback (Firebase not configured):", entry);
+    console.log("[Litigant AI] Feedback (Firebase not configured):", entry);
     return;
   }
 
@@ -29,7 +29,7 @@ export async function submitFeedback(entry: FeedbackEntry): Promise<void> {
       createdAt: serverTimestamp(),
     });
   } catch (err) {
-    console.error("[AI Brain] Failed to submit feedback:", err);
+    console.error("[Litigant AI] Failed to submit feedback:", err);
     throw err;
   }
 }

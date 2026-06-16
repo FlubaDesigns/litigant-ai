@@ -26,7 +26,7 @@ if (isConfigured) {
   db = getFirestore(app);
 } else {
   console.warn(
-    "[AI Brain] Firebase env vars not set — auth and Firestore are unavailable. " +
+    "[Litigant AI] Firebase env vars not set — auth and Firestore are unavailable. " +
       "Set VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, " +
       "VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID."
   );

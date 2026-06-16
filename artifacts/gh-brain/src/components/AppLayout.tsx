@@ -36,7 +36,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50 flex items-center px-4 gap-4">
         <Link href="/session" className="flex items-center gap-2 shrink-0 group">
           <Brain className="w-5 h-5 text-primary group-hover:text-primary-glow transition-all" />
-          <span className="font-bold tracking-tight hidden sm:inline">AI Brain</span>
+          <span className="font-bold tracking-tight hidden sm:inline">Litigant AI</span>
         </Link>
 
         {/* Desktop nav */}
@@ -154,7 +154,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="border-t border-border py-4 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-muted-foreground font-mono">
-          <span>AI Brain — adversarial reasoning engine</span>
+          <span>Litigant AI — adversarial reasoning engine</span>
           <span>AI outputs are not legal, financial, or medical advice.</span>
         </div>
       </footer>

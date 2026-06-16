@@ -1,4 +1,4 @@
-# AI Brain
+# Litigant AI
 
 Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents debate, critique, and synthesize before returning a confidence-scored verdict. Slogan: "Don't just ask AI. Put the question on trial."
 

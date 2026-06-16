@@ -39,7 +39,7 @@ const HOW_IT_WORKS = [
   {
     step: "02",
     title: "The Court Convenes",
-    desc: "AI Brain assigns roles: Advocate, Skeptic, Devil's Advocate, and Analyst — each powered by a different top-tier model.",
+    desc: "Litigant AI assigns roles: Advocate, Skeptic, Devil's Advocate, and Analyst — each powered by a different top-tier model.",
   },
   {
     step: "03",
@@ -126,11 +126,11 @@ const FAQ = [
   },
   {
     q: "Which AI models are in the courtroom?",
-    a: "AI Brain routes across GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, and Llama 3 depending on your plan tier. Each model is assigned a distinct argumentative role.",
+    a: "Litigant AI routes across GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, and Llama 3 depending on your plan tier. Each model is assigned a distinct argumentative role.",
   },
   {
     q: "Can I choose which models argue which role?",
-    a: "Yes — Pro and Team plans include custom court persona configuration. You can pin specific models to specific roles or let AI Brain assign them dynamically.",
+    a: "Yes — Pro and Team plans include custom court persona configuration. You can pin specific models to specific roles or let Litigant AI assign them dynamically.",
   },
   {
     q: "Is my data used to train any models?",
@@ -138,7 +138,7 @@ const FAQ = [
   },
   {
     q: "How is this different from asking ChatGPT to 'play devil's advocate'?",
-    a: "A single model playing multiple roles still reasons from a single underlying perspective. AI Brain uses genuinely independent models with different training priors, architectures, and knowledge cutoffs — producing authentic disagreement, not theater.",
+    a: "A single model playing multiple roles still reasons from a single underlying perspective. Litigant AI uses genuinely independent models with different training priors, architectures, and knowledge cutoffs — producing authentic disagreement, not theater.",
   },
   {
     q: "Can I share a verdict report publicly?",
@@ -186,7 +186,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className="w-6 h-6 text-primary" />
-            <span className="font-bold tracking-tight text-lg">AI Brain</span>
+            <span className="font-bold tracking-tight text-lg">Litigant AI</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#use-cases" className="hover:text-foreground transition-colors">Use Cases</a>
@@ -277,7 +277,7 @@ export default function LandingPage() {
             >
               <h2 className="text-4xl font-bold tracking-tight mb-4">The Architecture of Truth</h2>
               <p className="text-lg text-muted-foreground">
-                Consensus is the enemy of insight. AI Brain pits state-of-the-art models against each other in rigorous cross-examination to eliminate hallucinations and extract hard truths.
+                Consensus is the enemy of insight. Litigant AI pits state-of-the-art models against each other in rigorous cross-examination to eliminate hallucinations and extract hard truths.
               </p>
             </motion.div>
 
@@ -342,7 +342,7 @@ export default function LandingPage() {
             >
               <h2 className="text-4xl font-bold tracking-tight mb-4">Who Convenes the Court?</h2>
               <p className="text-lg text-muted-foreground">
-                Wherever contested claims meet high stakes, AI Brain delivers adversarial clarity.
+                Wherever contested claims meet high stakes, Litigant AI delivers adversarial clarity.
               </p>
             </motion.div>
 
@@ -418,7 +418,7 @@ export default function LandingPage() {
               <div className="order-1 lg:order-2 max-w-xl">
                 <h2 className="text-4xl font-bold tracking-tight mb-6">Not theater. Genuine disagreement.</h2>
                 <p className="text-muted-foreground mb-8 leading-relaxed">
-                  A single model playing multiple roles still reasons from one perspective. AI Brain uses independently trained models with different architectures, training priors, and knowledge cutoffs — producing authentic intellectual conflict, not simulation.
+                  A single model playing multiple roles still reasons from one perspective. Litigant AI uses independently trained models with different architectures, training priors, and knowledge cutoffs — producing authentic intellectual conflict, not simulation.
                 </p>
                 <ul className="space-y-5">
                   {[
@@ -541,7 +541,7 @@ export default function LandingPage() {
             <div className="inline-flex items-start gap-3 p-4 mb-12 border border-amber-500/30 bg-amber-500/5 rounded-sm text-left text-sm text-amber-400/80 max-w-xl mx-auto">
               <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-500" />
               <span>
-                AI Brain outputs are <strong className="text-amber-300">not legal, medical, financial, or professional advice</strong>. Verdicts represent probabilistic reasoning by AI models, not expert opinion. Always apply human judgment before acting on any output.
+                Litigant AI outputs are <strong className="text-amber-300">not legal, medical, financial, or professional advice</strong>. Verdicts represent probabilistic reasoning by AI models, not expert opinion. Always apply human judgment before acting on any output.
               </span>
             </div>
 
@@ -574,7 +574,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-muted-foreground" />
-            <span className="font-mono text-sm text-muted-foreground">AI Brain © 2025</span>
+            <span className="font-mono text-sm text-muted-foreground">Litigant AI © 2025</span>
           </div>
           <p className="text-xs text-muted-foreground text-center">
             AI outputs are not legal, financial, or medical advice. Use judgment.

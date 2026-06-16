@@ -57,7 +57,7 @@ export default function SignInPage() {
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <Brain className="w-8 h-8 text-primary text-primary-glow" />
-            <span className="text-2xl font-bold tracking-tight text-foreground font-sans">AI Brain</span>
+            <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
           <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Initiate Session</h1>
           <p className="text-muted-foreground text-center">

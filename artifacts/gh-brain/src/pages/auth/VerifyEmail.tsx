@@ -36,7 +36,7 @@ export default function VerifyEmailPage() {
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <Brain className="w-8 h-8 text-primary text-primary-glow" />
-            <span className="text-2xl font-bold tracking-tight text-foreground font-sans">AI Brain</span>
+            <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
           <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-6 border border-border relative">
             <div className="absolute inset-0 border border-primary/30 rounded-full animate-ping [animation-duration:3s]" />

@@ -585,7 +585,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `ai-brain-export-${Date.now()}.json`;
+      a.download = `litigant-ai-export-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Data exported.");

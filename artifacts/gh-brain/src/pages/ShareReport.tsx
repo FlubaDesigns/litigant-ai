@@ -78,8 +78,8 @@ export default function ShareReportPage() {
   // Set document title + OG meta tags
   useEffect(() => {
     if (!report) return;
-    const title = report.title ?? report.question?.slice(0, 80) ?? "Shared AI Brain Report";
-    document.title = `${title} — AI Brain`;
+    const title = report.title ?? report.question?.slice(0, 80) ?? "Shared Litigant AI Report";
+    document.title = `${title} — Litigant AI`;
 
     const setMeta = (property: string, content: string) => {
       let el = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
@@ -97,7 +97,7 @@ export default function ShareReportPage() {
     setMeta("og:url", window.location.href);
 
     return () => {
-      document.title = "AI Brain";
+      document.title = "Litigant AI";
     };
   }, [report]);
 
@@ -134,7 +134,7 @@ export default function ShareReportPage() {
         <Link href="/">
           <Button variant="outline" className="gap-2">
             <Brain className="w-4 h-4" />
-            Try AI Brain
+            Try Litigant AI
           </Button>
         </Link>
       </div>
@@ -155,7 +155,7 @@ export default function ShareReportPage() {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <Brain className="w-5 h-5 text-primary" />
-            <span className="font-bold tracking-tight text-sm hidden sm:inline">AI Brain</span>
+            <span className="font-bold tracking-tight text-sm hidden sm:inline">Litigant AI</span>
           </Link>
           <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
             Public Report
@@ -360,13 +360,13 @@ export default function ShareReportPage() {
           <div>
             <p className="font-bold text-lg">Don't just ask AI. Put the question on trial.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              AI Brain forces your question through structured debate, critique, synthesis, and audit
+              Litigant AI forces your question through structured debate, critique, synthesis, and audit
               before returning a final answer.
             </p>
           </div>
           <Link href="/register">
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 font-semibold">
-              Try AI Brain free
+              Try Litigant AI free
               <ExternalLink className="w-4 h-4" />
             </Button>
           </Link>
@@ -377,7 +377,7 @@ export default function ShareReportPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-muted-foreground font-mono pb-8">
-          AI Brain outputs are not legal, financial, or medical advice.
+          Litigant AI outputs are not legal, financial, or medical advice.
         </p>
       </main>
     </div>

@@ -319,7 +319,7 @@ const STATIC_PRODUCTS = [
   {
     id: "starter_pack",
     name: "Starter Pack",
-    description: "100 credits — great for exploring AI Brain",
+    description: "100 credits — great for exploring Litigant AI",
     active: true,
     metadata: { type: "credit_pack", creditAmount: "100" },
     prices: [
