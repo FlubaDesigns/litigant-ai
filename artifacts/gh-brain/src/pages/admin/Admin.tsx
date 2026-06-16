@@ -6,7 +6,8 @@ import {
   Search, ChevronRight, MoreHorizontal, Loader2, Shield,
   Ban, Zap, Clock, RefreshCw, Check, Edit3,
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
-  AlertCircle, HeartCrack, ThumbsDown,
+  AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,17 +34,22 @@ import {
   listAdminSessions, getAdminSession, listAdminTransactions, issueRefund,
   getFeatureFlags, setFeatureFlag, listAdminTemplates, updateAdminTemplate,
   getSystemHealth, getApiUsage, getErrorLogs, getAbuseFlags,
+  getPricingConfig, updateModelMultiplier, resetModelMultiplier,
+  getApiKeys, saveApiKey, deleteApiKey,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
+  type PricingModel, type ProviderKeyInfo,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions"
-  | "api-usage" | "errors" | "abuse" | "flags" | "templates";
+  | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "api-keys";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
   { id: "health",       label: "System Health",  icon: Server },
+  { id: "pricing",      label: "Pricing",        icon: DollarSign },
+  { id: "api-keys",     label: "API Keys",       icon: Shield },
   { id: "users",        label: "Users",           icon: Users },
   { id: "sessions",     label: "Sessions",        icon: Brain },
   { id: "transactions", label: "Transactions",    icon: CreditCard },
@@ -1562,6 +1568,475 @@ function AbuseFlagsTab() {
   );
 }
 
+// ─── API Keys Tab ────────────────────────────────────────────────────────────
+const KNOWN_PROVIDERS: { id: string; label: string; envVar: string; baseUrl?: string; placeholder: string }[] = [
+  { id: "openai",    label: "OpenAI",           envVar: "OPENAI_API_KEY",    placeholder: "sk-..." },
+  { id: "anthropic", label: "Anthropic (Claude)",envVar: "ANTHROPIC_API_KEY", placeholder: "sk-ant-..." },
+  { id: "grok",      label: "xAI Grok",         envVar: "XAI_API_KEY",       placeholder: "xai-...", baseUrl: "https://api.x.ai/v1" },
+  { id: "gemini",    label: "Google Gemini",    envVar: "GEMINI_API_KEY",    placeholder: "AIza...", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
+];
+
+function ProviderRow({
+  info,
+  onEdit,
+  onDelete,
+}: {
+  info: ProviderKeyInfo;
+  onEdit: (info: ProviderKeyInfo) => void;
+  onDelete: (info: ProviderKeyInfo) => void;
+}) {
+  return (
+    <TableRow className="group">
+      <TableCell className="font-medium text-sm">
+        {info.label}
+        {info.source === "env" && (
+          <Badge className="ml-2 text-[10px] bg-secondary text-muted-foreground border-border">env var</Badge>
+        )}
+        {info.source === "firestore" && (
+          <Badge className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20">Firestore</Badge>
+        )}
+      </TableCell>
+      <TableCell className="font-mono text-xs text-muted-foreground">{info.maskedKey}</TableCell>
+      <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[180px]">
+        {info.baseUrl ?? "—"}
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {info.updatedAt ? new Date(info.updatedAt).toLocaleDateString() : "—"}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onEdit(info)}>
+            <Edit3 className="w-3.5 h-3.5" />
+          </Button>
+          {info.source === "firestore" && (
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => onDelete(info)}>
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+interface KeyFormState {
+  providerId: string;
+  label: string;
+  key: string;
+  baseUrl: string;
+  isCustom: boolean;
+}
+
+function ApiKeysTab() {
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editTarget, setEditTarget] = useState<ProviderKeyInfo | null>(null);
+  const [form, setForm] = useState<KeyFormState>({
+    providerId: "", label: "", key: "", baseUrl: "", isCustom: false,
+  });
+
+  const { data: keys = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-api-keys"],
+    queryFn: getApiKeys,
+    retry: false,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: () => saveApiKey(form.providerId, form.key, form.label, form.baseUrl || undefined),
+    onSuccess: () => {
+      toast.success(`${form.label} API key saved`);
+      setShowForm(false);
+      setEditTarget(null);
+      setForm({ providerId: "", label: "", key: "", baseUrl: "", isCustom: false });
+      qc.invalidateQueries({ queryKey: ["admin-api-keys"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteApiKey(id),
+    onSuccess: (_d, id) => {
+      toast.success(`${id} key removed from Firestore (env var fallback still active if set)`);
+      qc.invalidateQueries({ queryKey: ["admin-api-keys"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function openAdd(presetId?: string) {
+    const known = KNOWN_PROVIDERS.find((p) => p.id === presetId);
+    setEditTarget(null);
+    setForm({
+      providerId: presetId ?? "",
+      label: known?.label ?? "",
+      key: "",
+      baseUrl: known?.baseUrl ?? "",
+      isCustom: !presetId,
+    });
+    setShowForm(true);
+  }
+
+  function openEdit(info: ProviderKeyInfo) {
+    setEditTarget(info);
+    setForm({
+      providerId: info.id,
+      label: info.label,
+      key: "",
+      baseUrl: info.baseUrl ?? "",
+      isCustom: !KNOWN_PROVIDERS.find((p) => p.id === info.id),
+    });
+    setShowForm(true);
+  }
+
+  const configuredIds = new Set(keys.map((k) => k.id));
+  const unconfiguredKnown = KNOWN_PROVIDERS.filter((p) => !configuredIds.has(p.id));
+
+  if (isLoading) return <TabSkeleton />;
+
+  return (
+    <div className="space-y-6">
+      {isError && (
+        <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          Firebase not configured — API key management unavailable in dev mode. Keys can still be set via environment variables.
+        </div>
+      )}
+
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
+        <Shield className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <div>
+          <span className="font-medium text-foreground">Keys are stored server-side only.</span>{" "}
+          The full key is never sent to the browser — you only see a masked version here.
+          Firestore keys override env vars. Deleting a Firestore key re-activates its env var fallback.
+          Custom providers use the OpenAI-compatible API format.
+        </div>
+      </div>
+
+      {/* Configured providers */}
+      {keys.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">Configured Providers</h3>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/30">
+                  <TableHead className="text-xs">Provider</TableHead>
+                  <TableHead className="text-xs">Masked Key</TableHead>
+                  <TableHead className="text-xs">Base URL</TableHead>
+                  <TableHead className="text-xs">Updated</TableHead>
+                  <TableHead className="text-xs w-20" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {keys.map((k) => (
+                  <ProviderRow key={k.id} info={k} onEdit={openEdit} onDelete={(i) => deleteMut.mutate(i.id)} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {/* Quick-add known providers not yet configured */}
+      {unconfiguredKnown.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">Add Known Provider</h3>
+          <div className="flex flex-wrap gap-2">
+            {unconfiguredKnown.map((p) => (
+              <Button key={p.id} variant="outline" size="sm" className="gap-2" onClick={() => openAdd(p.id)}>
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                {p.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add custom / new provider */}
+      <div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => openAdd()}>
+          <DollarSign className="w-3.5 h-3.5 text-primary" />
+          Add Custom Provider
+        </Button>
+        <p className="text-xs text-muted-foreground mt-1.5">
+          Any OpenAI-compatible API — add future providers here without redeploying.
+        </p>
+      </div>
+
+      {/* Add / Edit form */}
+      {showForm && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h3 className="text-sm font-semibold">
+            {editTarget ? `Update key for ${editTarget.label}` : "Add Provider"}
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Provider ID — locked if known */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Provider ID</label>
+              <Input
+                value={form.providerId}
+                onChange={(e) => setForm((f) => ({ ...f, providerId: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-") }))}
+                placeholder="e.g. my-gpt, mistral, together-ai"
+                disabled={!!editTarget}
+                className="font-mono text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Lowercase letters, numbers, hyphens. Cannot change after creation.</p>
+            </div>
+
+            {/* Display label */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Display Label</label>
+              <Input
+                value={form.label}
+                onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+                placeholder="e.g. Mistral Large"
+              />
+            </div>
+
+            {/* API Key */}
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                API Key {editTarget && <span className="text-[10px]">(leave blank to keep existing)</span>}
+              </label>
+              <Input
+                type="password"
+                value={form.key}
+                onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
+                placeholder={
+                  editTarget
+                    ? `Current: ${editTarget.maskedKey} — paste new key to replace`
+                    : KNOWN_PROVIDERS.find((p) => p.id === form.providerId)?.placeholder ?? "Paste your API key"
+                }
+                className="font-mono text-sm"
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Base URL — always shown for custom, optional for known */}
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Base URL <span className="text-[10px] font-normal">(OpenAI-compatible endpoint — required for custom providers)</span>
+              </label>
+              <Input
+                value={form.baseUrl}
+                onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
+                placeholder="https://api.example.com/v1"
+                className="font-mono text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                if (editTarget && !form.key.trim()) {
+                  toast.error("Paste a new key to update, or cancel");
+                  return;
+                }
+                saveMut.mutate();
+              }}
+              disabled={saveMut.isPending || !form.providerId || !form.label}
+            >
+              {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+              {editTarget ? "Update Key" : "Save Key"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setShowForm(false); setEditTarget(null); }}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Pricing Tab ─────────────────────────────────────────────────────────────
+const PROVIDER_ORDER = ["openai", "anthropic", "grok", "gemini"];
+const PROVIDER_LABELS: Record<string, string> = {
+  openai: "🤖 OpenAI", anthropic: "🔮 Anthropic", grok: "⚡ xAI Grok", gemini: "✨ Google Gemini",
+};
+
+function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(row.effectiveMultiplier));
+  const qc = useQueryClient();
+
+  const saveMut = useMutation({
+    mutationFn: () => updateModelMultiplier(row.model, Number(draft)),
+    onSuccess: () => {
+      toast.success(`${row.label} → ${draft}× saved`);
+      setEditing(false);
+      onSaved();
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const resetMut = useMutation({
+    mutationFn: () => resetModelMultiplier(row.model),
+    onSuccess: () => {
+      toast.success(`${row.label} reset to default (${row.defaultMultiplier}×)`);
+      onSaved();
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Input
+          type="number" min={1} max={100} step={0.5}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="h-7 w-20 text-xs font-mono"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") saveMut.mutate();
+            if (e.key === "Escape") setEditing(false);
+          }}
+        />
+        <Button size="sm" className="h-7 px-2 text-xs" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          {saveMut.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditing(false)}>✕</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={cn("text-sm font-mono font-bold", row.isOverridden ? "text-primary" : "text-foreground")}>
+        {row.effectiveMultiplier}×
+      </span>
+      {row.isOverridden && (
+        <span className="text-xs text-muted-foreground">(default: {row.defaultMultiplier}×)</span>
+      )}
+      <button onClick={() => { setDraft(String(row.effectiveMultiplier)); setEditing(true); }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-muted-foreground hover:text-foreground">
+        <Edit3 className="w-3.5 h-3.5" />
+      </button>
+      {row.isOverridden && (
+        <button onClick={() => resetMut.mutate()} disabled={resetMut.isPending}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-amber-400">
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PricingTab() {
+  const qc = useQueryClient();
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-pricing"],
+    queryFn: getPricingConfig,
+    retry: false,
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        Firebase not configured — pricing config unavailable in dev mode.
+      </div>
+    );
+  }
+
+  const byProvider = PROVIDER_ORDER.map((p) => ({
+    provider: p,
+    models: data.models.filter((m) => m.provider === p),
+  })).filter((g) => g.models.length > 0);
+
+  const totalModels = data.models.length;
+  const overriddenCount = data.models.filter((m) => m.isOverridden).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Credit Value</p>
+          <p className="text-2xl font-bold font-mono text-primary">${data.creditValueUsd.toFixed(2)}</p>
+          <p className="text-xs text-muted-foreground">per credit (fixed)</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Models</p>
+          <p className="text-2xl font-bold font-mono">{totalModels}</p>
+          <p className="text-xs text-muted-foreground">across 4 providers</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Overrides Active</p>
+          <p className={cn("text-2xl font-bold font-mono", overriddenCount > 0 ? "text-primary" : "text-foreground")}>
+            {overriddenCount}
+          </p>
+          <p className="text-xs text-muted-foreground">custom multipliers</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
+        <DollarSign className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <div>
+          <span className="font-medium text-foreground">How pricing works: </span>
+          Credit cost = (input tokens × input rate + output tokens × output rate) × <strong>your multiplier</strong> ÷ $0.01.
+          Edit any multiplier inline — changes take effect within 60 seconds (cache TTL).
+          The <em>Example</em> column shows credits for a default session (3 litigants, 2 rounds, balanced).
+        </div>
+      </div>
+
+      {byProvider.map(({ provider, models }) => (
+        <div key={provider} className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">{PROVIDER_LABELS[provider] ?? provider}</h3>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/30">
+                  <TableHead className="text-xs">Model</TableHead>
+                  <TableHead className="text-xs text-right">Input /1K</TableHead>
+                  <TableHead className="text-xs text-right">Output /1K</TableHead>
+                  <TableHead className="text-xs">Your Multiplier</TableHead>
+                  <TableHead className="text-xs text-right">Example Credits</TableHead>
+                  <TableHead className="text-xs text-right">Example Cost to User</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {models.map((m) => (
+                  <TableRow key={m.model} className="group">
+                    <TableCell className="font-medium text-sm">
+                      {m.label}
+                      {m.isOverridden && (
+                        <Badge className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20">custom</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      ${(m.inputRatePer1k * 1000).toFixed(4)}/M
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      ${(m.outputRatePer1k * 1000).toFixed(4)}/M
+                    </TableCell>
+                    <TableCell>
+                      <MultiplierCell row={m} onSaved={() => refetch()} />
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold text-primary">
+                      {m.exampleCredits}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      ${(m.exampleCredits * data.creditValueUsd).toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function TabSkeleton() {
   return (
@@ -1635,6 +2110,8 @@ export default function AdminPage() {
         >
           {activeTab === "overview"     && <OverviewTab />}
           {activeTab === "health"       && <SystemHealthTab />}
+          {activeTab === "pricing"      && <PricingTab />}
+          {activeTab === "api-keys"     && <ApiKeysTab />}
           {activeTab === "users"        && <UsersTab />}
           {activeTab === "sessions"     && <SessionsTab />}
           {activeTab === "transactions" && <TransactionsTab />}

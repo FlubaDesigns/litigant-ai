@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { createProvider, getConfiguredProviders } from "./providers/index.js";
+import { createProviderAsync, getConfiguredProvidersAsync } from "./providers/index.js";
 import type { AIProvider, ChatMessage, ProviderName } from "./providers/index.js";
 import {
   estimateSessionCredits,
@@ -120,20 +120,27 @@ function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error("Session aborted by client");
 }
 
-function resolveProvider(config: CourtConfig): AIProvider {
-  const configured = getConfiguredProviders();
+async function resolveProvider(config: CourtConfig): Promise<AIProvider> {
+  const configured = await getConfiguredProvidersAsync();
 
-  if (config.provider && configured.includes(config.provider)) {
-    return createProvider(config.provider, config.model);
+  const requested = config.provider as string | undefined;
+  if (requested && configured.includes(requested)) {
+    return createProviderAsync(requested, config.model);
   }
 
-  for (const fallback of ["openai", "anthropic", "grok", "gemini"] as ProviderName[]) {
+  for (const fallback of ["openai", "anthropic", "grok", "gemini"]) {
     if (configured.includes(fallback)) {
-      return createProvider(fallback, fallback === config.provider ? config.model : undefined);
+      return createProviderAsync(fallback, fallback === requested ? config.model : undefined);
     }
   }
 
-  throw new Error("No AI provider configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY.");
+  if (configured.length > 0) {
+    return createProviderAsync(configured[0]!, config.model);
+  }
+
+  throw new Error(
+    "No AI provider configured. Add an API key in Admin → API Keys, or set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY."
+  );
 }
 
 /** Stream a role's response, tracking output character count for token estimation */
@@ -176,7 +183,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const maxTokens = getMaxOutputTokens(config.responseMode);
   const estimatedCredits = estimateCreditCost(config);
 
-  const provider = resolveProvider(config);
+  const provider = await resolveProvider(config);
   const providerName = provider.name;
   const modelName = config.model ?? "";
 

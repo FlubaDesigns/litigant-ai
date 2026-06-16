@@ -314,3 +314,91 @@ export async function listAdminTemplates(): Promise<any[]> {
   return data.templates ?? [];
 }
 
+// ── Pricing ───────────────────────────────────────────────────────────────────
+
+export interface PricingModel {
+  model: string;
+  provider: string;
+  label: string;
+  inputRatePer1k: number;
+  outputRatePer1k: number;
+  defaultMultiplier: number;
+  effectiveMultiplier: number;
+  isOverridden: boolean;
+  exampleCostUsd: number;
+  exampleCredits: number;
+}
+
+export interface PricingConfig {
+  creditValueUsd: number;
+  models: PricingModel[];
+}
+
+export async function getPricingConfig(): Promise<PricingConfig> {
+  const res = await adminFetch("/admin/pricing");
+  if (!res.ok) throw new Error("Failed to load pricing config");
+  return res.json();
+}
+
+export async function updateModelMultiplier(
+  model: string,
+  multiplier: number
+): Promise<void> {
+  const res = await adminFetch(`/admin/pricing/${encodeURIComponent(model)}`, {
+    method: "PUT",
+    body: JSON.stringify({ multiplier }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update multiplier");
+  }
+}
+
+export async function resetModelMultiplier(model: string): Promise<void> {
+  const res = await adminFetch(`/admin/pricing/${encodeURIComponent(model)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to reset multiplier");
+}
+
+// ── API Key Management ────────────────────────────────────────────────────────
+
+export interface ProviderKeyInfo {
+  id: string;
+  label: string;
+  maskedKey: string;
+  baseUrl?: string;
+  source: "firestore" | "env";
+  updatedAt?: string;
+}
+
+export async function getApiKeys(): Promise<ProviderKeyInfo[]> {
+  const res = await adminFetch("/admin/api-keys");
+  if (!res.ok) throw new Error("Failed to load API keys");
+  const data = await res.json();
+  return data.providers as ProviderKeyInfo[];
+}
+
+export async function saveApiKey(
+  providerId: string,
+  key: string,
+  label: string,
+  baseUrl?: string
+): Promise<void> {
+  const res = await adminFetch(`/admin/api-keys/${encodeURIComponent(providerId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ key, label, baseUrl }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to save API key");
+  }
+}
+
+export async function deleteApiKey(providerId: string): Promise<void> {
+  const res = await adminFetch(`/admin/api-keys/${encodeURIComponent(providerId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete API key");
+}
+

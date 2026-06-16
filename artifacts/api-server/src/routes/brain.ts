@@ -1,13 +1,51 @@
+/**
+ * Brain route — POST /run-brain
+ *
+ * This file owns the credit lifecycle for every AI session:
+ *
+ *   1. Pre-run reservation  (reserveCredits)
+ *      Estimates cost → atomically deducts from balance → writes a
+ *      credit_transactions ledger entry (type="usage", source="brain_reservation").
+ *      Rejected with HTTP 402 if balance is insufficient.
+ *
+ *   2. AI run  (runBrainSession from brainEngine.ts)
+ *      Streams SSE to the client. Token counts are accumulated in the result.
+ *
+ *   3. Post-run settlement  (reconcileCredits)
+ *      Calculates the ACTUAL cost from real token counts using the live
+ *      Firestore multiplier (calculateLiveCredits from pricingConfig.ts).
+ *      - actual < estimated → refund the difference (type="refund", source="brain_reconcile")
+ *      - actual > estimated → charge the overage (a second reserveCredits call)
+ *      - run failed         → full refund of the reservation (source="brain_failure_refund")
+ *
+ * ## Guest mode
+ *   Requests without a Bearer token get one free session per server IP.
+ *   Tracked in-memory (guestSessionIPs); resets on restart by design.
+ *
+ * ## Why reserveCredits / reconcileCredits are local functions
+ *   They are intentionally NOT in creditLedger.ts because they are
+ *   session-scoped (they carry a sessionId, use specific source labels,
+ *   and are called on the hot path of the streaming response). Keeping
+ *   them local avoids coupling the general ledger to brain-session details.
+ *
+ * See docs/credits.md §5 for the full lifecycle diagram.
+ */
 import { Router } from "express";
 import { runBrainSession, estimateCreditCost, type CourtConfig } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { calculateActualCredits } from "../lib/creditEngine.js";
+import { calculateLiveCredits } from "../lib/pricingConfig.js";
 
 const router = Router();
 
-// In-memory guest session tracking (resets on server restart)
-// When Firebase is configured, use Firestore `guest_sessions` collection instead.
+/**
+ * In-memory guest session tracking.
+ * One free session is allowed per client IP. The Set resets on server restart —
+ * intentional, since guests are only meant for quick trials.
+ * TODO: replace with Firestore `guest_sessions` collection for durability
+ * across restarts when Firebase is configured.
+ */
 const guestSessionIPs = new Set<string>();
 
 function getClientIp(req: import("express").Request): string {
@@ -17,11 +55,21 @@ function getClientIp(req: import("express").Request): string {
 }
 
 /**
- * Atomically reserve credits by writing both the balance deduction AND the
- * ledger entry in a single Firestore transaction.
+ * Atomically reserves credits for an upcoming session.
  *
- * Returns `true` if reservation succeeded, `false` if insufficient balance.
- * Throws if the transaction itself fails.
+ * In a single Firestore transaction:
+ *   - Reads the current balance.
+ *   - Returns false (without writing anything) if balance < amount.
+ *   - Otherwise deducts `amount` from the balance AND writes an immutable
+ *     credit_transactions entry (type="usage", source="brain_reservation").
+ *
+ * Throwing vs returning false:
+ *   - Returns false  → insufficient balance (caller sends HTTP 402).
+ *   - Throws         → Firestore failure (caller sends HTTP 503).
+ *
+ * @param uid       - Firebase UID of the user.
+ * @param amount    - Credits to reserve (from estimateSessionCredits).
+ * @param sessionId - Used to link the ledger entry to the session document.
  */
 async function reserveCredits(
   uid: string,
@@ -59,8 +107,21 @@ async function reserveCredits(
 }
 
 /**
- * Write a reconciliation ledger entry + update balance atomically.
- * Used for both over-estimate refunds and full failure refunds.
+ * Atomically returns credits to a user's balance and writes a ledger entry.
+ *
+ * Used in two scenarios:
+ *   "brain_reconcile"      — post-session, refund the difference between
+ *                            the upfront estimate and the actual cost.
+ *   "brain_failure_refund" — session failed before completing; refund the
+ *                            full reservation so the user loses nothing.
+ *
+ * Errors are caught and logged but not re-thrown — the session result has
+ * already been streamed to the client, so a reconcile failure is non-fatal.
+ *
+ * @param uid          - Firebase UID of the user.
+ * @param refundAmount - Credits to return (always positive).
+ * @param sessionId    - Links the ledger entry to the session document.
+ * @param source       - Distinguishes reconcile vs failure refund in the ledger.
  */
 async function reconcileCredits(
   uid: string,
@@ -224,8 +285,8 @@ router.post("/run-brain", async (req, res) => {
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-            // Settle with real token-based cost
-        actualCost = calculateActualCredits(
+            // Settle with real token-based cost using live (Firestore-backed) multiplier
+        actualCost = await calculateLiveCredits(
           result.model || "gpt-4o",
           result.tokenUsage.inputTokens,
           result.tokenUsage.outputTokens

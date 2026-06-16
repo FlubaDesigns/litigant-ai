@@ -1,20 +1,26 @@
+/**
+ * CustomProvider — any OpenAI-compatible API endpoint.
+ * Used for future providers added via Admin → API Keys.
+ */
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName } from "./types.js";
 
-export class GeminiProvider implements AIProvider {
-  readonly name: ProviderName = "gemini";
-  readonly displayName = "Google Gemini";
+export class CustomProvider implements AIProvider {
+  readonly name: ProviderName = "openai"; // uses openai-compat wire format
+  readonly displayName: string;
   private model: string;
   private client: OpenAI;
 
-  constructor(model = "gemini-2.5-pro", credentials?: { key: string; baseUrl?: string }) {
+  constructor(
+    id: string,
+    label: string,
+    model: string,
+    credentials: { key: string; baseUrl: string }
+  ) {
+    this.name = id as ProviderName;
+    this.displayName = label;
     this.model = model;
-    const apiKey = credentials?.key ?? process.env["GEMINI_API_KEY"];
-    if (!apiKey) throw new Error("Gemini not configured — set GEMINI_API_KEY or add key in Admin → API Keys");
-    this.client = new OpenAI({
-      baseURL: credentials?.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta/openai",
-      apiKey,
-    });
+    this.client = new OpenAI({ apiKey: credentials.key, baseURL: credentials.baseUrl });
   }
 
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {

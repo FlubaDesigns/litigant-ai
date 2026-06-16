@@ -3,6 +3,16 @@ import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/fire
 import { addCredits } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+import {
+  getAdminPricingTable,
+  saveMultiplierOverride,
+  resetMultiplierToDefault,
+} from "../lib/pricingConfig.js";
+import {
+  getAllConfiguredProviders,
+  saveApiKey,
+  deleteApiKey,
+} from "../lib/apiKeyStore.js";
 
 const router = Router();
 
@@ -652,6 +662,96 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   try {
     await db.collection("templates").doc(req.params["id"]!).set(updates, { merge: true });
     return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Pricing / Multiplier Config ───────────────────────────────────────────────
+
+router.get("/admin/pricing", requireAdmin, async (_req, res) => {
+  try {
+    const table = await getAdminPricingTable();
+    return res.json(table);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/admin/pricing/:model", requireAdmin, async (req, res) => {
+  const { model } = req.params as { model: string };
+  const { multiplier } = req.body as { multiplier?: number };
+
+  if (multiplier === undefined || isNaN(Number(multiplier))) {
+    return res.status(400).json({ error: "multiplier (number) is required" });
+  }
+  const value = Number(multiplier);
+  if (value < 1 || value > 100) {
+    return res.status(400).json({ error: "multiplier must be between 1 and 100" });
+  }
+
+  try {
+    await saveMultiplierOverride(model, value);
+    return res.json({ success: true, model, multiplier: value });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/admin/pricing/:model", requireAdmin, async (req, res) => {
+  const { model } = req.params as { model: string };
+  try {
+    await resetMultiplierToDefault(model);
+    return res.json({ success: true, model, reset: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── API Key Management ────────────────────────────────────────────────────────
+
+/** GET /admin/api-keys — list all configured providers (masked keys only) */
+router.get("/admin/api-keys", requireAdmin, async (_req, res) => {
+  try {
+    const providers = await getAllConfiguredProviders();
+    return res.json({ providers });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/** PUT /admin/api-keys/:providerId — save or update a provider's API key */
+router.put("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
+  const { providerId } = req.params as { providerId: string };
+  const { key, label, baseUrl } = req.body as {
+    key?: string;
+    label?: string;
+    baseUrl?: string;
+  };
+
+  if (!key || typeof key !== "string" || key.trim().length < 8) {
+    return res.status(400).json({ error: "key must be a non-empty string (min 8 chars)" });
+  }
+  if (!label || typeof label !== "string" || label.trim().length === 0) {
+    return res.status(400).json({ error: "label is required" });
+  }
+
+  const sanitizedId = providerId.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+
+  try {
+    await saveApiKey(sanitizedId, key.trim(), label.trim(), baseUrl?.trim() || undefined);
+    return res.json({ success: true, providerId: sanitizedId });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/** DELETE /admin/api-keys/:providerId — remove Firestore override (env var fallback still applies) */
+router.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
+  const { providerId } = req.params as { providerId: string };
+  try {
+    await deleteApiKey(providerId);
+    return res.json({ success: true, providerId, note: "env var fallback still applies if set" });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
