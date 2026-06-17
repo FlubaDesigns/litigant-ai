@@ -442,8 +442,18 @@ function exportPDF(state: ReturnType<typeof useBrainSession>["state"], w: Window
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function SessionPage() {
-  const { state, run, stop, reset, setQuestion, setTemplate, setConfig } = useBrainSession();
   const { user, userProfile } = useAuth();
+  const savedConfig = userProfile?.defaultSettings
+    ? {
+        courtMode:        userProfile.defaultSettings.courtMode as CourtConfig["courtMode"],
+        litigantCount:    userProfile.defaultSettings.litigantCount ?? 3,
+        confidenceTarget: userProfile.defaultSettings.confidenceTarget ?? 80,
+        responseMode:     userProfile.defaultSettings.responseMode as CourtConfig["responseMode"],
+        outputFormat:     userProfile.defaultSettings.outputFormat as CourtConfig["outputFormat"],
+        provider:         (userProfile.defaultSettings.provider as CourtConfig["provider"]) ?? undefined,
+      }
+    : undefined;
+  const { state, run, stop, reset, setQuestion, setTemplate, setConfig } = useBrainSession(savedConfig);
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);

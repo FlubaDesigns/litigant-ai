@@ -68,25 +68,27 @@ type Action =
   | { type: "ERROR"; message: string }
   | { type: "RESET" };
 
-const initialState: SessionState = {
-  phase: "idle",
-  question: "",
-  template: null,
-  config: DEFAULT_CONFIG,
-  sessionId: null,
-  runtimeFeed: [],
-  activeRole: null,
-  confidence: 0,
-  creditsUsed: 0,
-  estimatedCredits: 0,
-  currentRound: 0,
-  finalAnswer: "",
-  debateNotes: "",
-  transcript: "",
-  caveats: "",
-  artifacts: "",
-  errorMessage: null,
-};
+function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
+  return {
+    phase: "idle",
+    question: "",
+    template: null,
+    config: { ...DEFAULT_CONFIG, ...initialConfig },
+    sessionId: null,
+    runtimeFeed: [],
+    activeRole: null,
+    confidence: 0,
+    creditsUsed: 0,
+    estimatedCredits: 0,
+    currentRound: 0,
+    finalAnswer: "",
+    debateNotes: "",
+    transcript: "",
+    caveats: "",
+    artifacts: "",
+    errorMessage: null,
+  };
+}
 
 function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
@@ -171,14 +173,14 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
     case "RESET":
-      return { ...initialState };
+      return makeInitialState();
     default:
       return state;
   }
 }
 
-export function useBrainSession() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
+  const [state, dispatch] = useReducer(reducer, initialConfig, makeInitialState);
   const abortRef = useRef<AbortController | null>(null);
   const { user } = useAuth();
 

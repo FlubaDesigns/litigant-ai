@@ -42,12 +42,14 @@ export interface UserProfile {
   lastLoginAt: string;
   subscriptionStatus: "none" | "active" | "cancelled" | "past_due";
   stripeCustomerId?: string;
+  onboardingComplete?: boolean;
   defaultSettings: {
     courtMode: string;
+    litigantCount: number;
     confidenceTarget: number;
     responseMode: string;
     outputFormat: string;
-    preferredTemplates?: string[];
+    provider?: string;
   };
   notifications?: {
     sessionComplete: boolean;

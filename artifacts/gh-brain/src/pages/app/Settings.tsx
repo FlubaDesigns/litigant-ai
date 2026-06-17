@@ -37,7 +37,6 @@ import {
   reauthenticateWithCredential,
   type User,
 } from "firebase/auth";
-import { TEMPLATES, TEMPLATE_CATEGORIES } from "@/data/templates";
 
 type TabId = "profile" | "preferences" | "notifications" | "danger";
 
@@ -360,19 +359,19 @@ function ProfileTab({ user }: { user: User }) {
 
 interface DefaultSettings {
   courtMode: string;
+  litigantCount: number;
   confidenceTarget: number;
   responseMode: string;
   outputFormat: string;
-  preferredTemplates: string[];
 }
 
 function PreferencesTab({ user }: { user: User }) {
   const [settings, setSettings] = useState<DefaultSettings>({
     courtMode: "adversarial",
-    confidenceTarget: 85,
+    litigantCount: 3,
+    confidenceTarget: 80,
     responseMode: "balanced",
     outputFormat: "report",
-    preferredTemplates: [],
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -382,23 +381,14 @@ function PreferencesTab({ user }: { user: User }) {
       if (profile?.defaultSettings) {
         setSettings({
           courtMode: profile.defaultSettings.courtMode ?? "adversarial",
-          confidenceTarget: profile.defaultSettings.confidenceTarget ?? 85,
+          litigantCount: profile.defaultSettings.litigantCount ?? 3,
+          confidenceTarget: profile.defaultSettings.confidenceTarget ?? 80,
           responseMode: profile.defaultSettings.responseMode ?? "balanced",
           outputFormat: profile.defaultSettings.outputFormat ?? "report",
-          preferredTemplates: profile.defaultSettings.preferredTemplates ?? [],
         });
       }
     }).catch(() => {});
   }, [user.uid]);
-
-  function toggleTemplate(id: string) {
-    setSettings((s) => ({
-      ...s,
-      preferredTemplates: s.preferredTemplates.includes(id)
-        ? s.preferredTemplates.filter((t) => t !== id)
-        : [...s.preferredTemplates, id],
-    }));
-  }
 
   async function handleSave() {
     setSaving(true);
@@ -474,44 +464,28 @@ function PreferencesTab({ user }: { user: User }) {
 
       <Separator />
 
-      <Section title="Preferred templates" description="Pin templates to the top of your session template grid for quick access.">
+      <Section title="Default panel size" description="How many AI litigants debate each session. More minds = deeper analysis = more credits.">
         <div className="space-y-3">
-          {TEMPLATE_CATEGORIES.map(({ id: catId, label }) => {
-            const catTemplates = TEMPLATES.filter((t) => t.category === catId);
-            return (
-              <div key={catId}>
-                <p className="text-xs font-medium text-muted-foreground mb-1.5">{label}</p>
-                <div className="flex flex-wrap gap-2">
-                  {catTemplates.map((t) => {
-                    const selected = settings.preferredTemplates.includes(t.id);
-                    return (
-                      <button
-                        key={t.id}
-                        onClick={() => toggleTemplate(t.id)}
-                        className={cn(
-                          "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                          selected
-                            ? "bg-primary/10 text-primary border-primary/30"
-                            : "bg-transparent text-muted-foreground border-border/50 hover:border-border hover:text-foreground"
-                        )}
-                      >
-                        {selected && <Check className="w-3 h-3 inline-block mr-1" />}
-                        {t.title}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          {settings.preferredTemplates.length > 0 && (
-            <button
-              onClick={() => setSettings((s) => ({ ...s, preferredTemplates: [] }))}
-              className="text-xs text-muted-foreground hover:text-foreground underline"
-            >
-              Clear all ({settings.preferredTemplates.length} selected)
-            </button>
-          )}
+          <div className="grid grid-cols-6 gap-2">
+            {[2, 3, 4, 5, 6, 8].map((n) => (
+              <button
+                key={n}
+                onClick={() => setSettings((s) => ({ ...s, litigantCount: n }))}
+                className={cn(
+                  "rounded-xl border py-3 font-bold text-lg transition-all",
+                  "hover:border-primary/60 hover:bg-primary/5",
+                  settings.litigantCount === n
+                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/40"
+                    : "border-border/60 bg-card/40 text-foreground"
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Selected: <strong className="text-foreground">{settings.litigantCount} litigants</strong>. You can override this for any individual session from the config panel.
+          </p>
         </div>
       </Section>
 

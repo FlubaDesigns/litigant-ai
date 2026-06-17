@@ -6,6 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 
 const navItems = [
   { href: "/session", label: "New Session", icon: Brain },
@@ -17,9 +18,17 @@ const navItems = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logOut, isAdmin } = useAuth();
+  const { user, logOut, isAdmin, userProfile, firebaseReady } = useAuth();
   const { credits, plan } = useUserProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [wizardDismissed, setWizardDismissed] = useState(false);
+
+  const showWizard =
+    firebaseReady &&
+    !!user &&
+    userProfile !== null &&
+    !userProfile.onboardingComplete &&
+    !wizardDismissed;
 
   async function handleLogout() {
     try {
@@ -162,6 +171,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
+
+      {/* Onboarding wizard — shown once after first login */}
+      {showWizard && <OnboardingWizard onComplete={() => setWizardDismissed(true)} />}
 
       {/* Page content */}
       <main className="flex-1">{children}</main>
