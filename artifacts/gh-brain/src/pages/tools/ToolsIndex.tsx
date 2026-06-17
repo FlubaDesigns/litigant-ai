@@ -20,10 +20,24 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function ToolsIndexPage() {
-  usePageMeta(
-    "AI Analysis Tools — Litigant AI | Multi-Model Adversarial Reasoning",
-    "Free AI-powered analysis tools for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
-  );
+  usePageMeta({
+    title: "AI Analysis Tools — Litigant AI | Multi-Model Adversarial Reasoning",
+    description: "Free AI-powered analysis tools for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
+    canonicalPath: "/tools",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "AI Analysis Tools — Litigant AI",
+      "url": "https://litigant.ai/tools",
+      "description": "Free AI-powered analysis tools. Multiple AI models debate your question and deliver a confidence-scored verdict.",
+      "hasPart": TOOL_PAGES.map((t) => ({
+        "@type": "WebPage",
+        "name": t.metaTitle,
+        "url": `https://litigant.ai/tools/${t.slug}`,
+        "description": t.metaDescription,
+      })),
+    },
+  });
 
   const [activeCategory, setActiveCategory] = useState("all");
 

@@ -27,7 +27,47 @@ export default function ToolPage() {
   const { slug } = useParams<{ slug: string }>();
   const tool = getToolBySlug(slug);
 
-  usePageMeta(tool?.metaTitle ?? "Tool Not Found | Litigant AI", tool?.metaDescription);
+  usePageMeta({
+    title: tool?.metaTitle ?? "Tool Not Found | Litigant AI",
+    description: tool?.metaDescription,
+    canonicalPath: tool ? `/tools/${tool.slug}` : undefined,
+    jsonLd: tool
+      ? [
+          {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": tool.metaTitle,
+            "url": `https://litigant.ai/tools/${tool.slug}`,
+            "description": tool.metaDescription,
+            "isPartOf": { "@type": "WebSite", "url": "https://litigant.ai" },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            "name": tool.headline,
+            "description": tool.subheadline,
+            "step": tool.howItWorks.map((s) => ({
+              "@type": "HowToStep",
+              "name": s.title,
+              "text": s.desc,
+              "position": parseInt(s.step, 10) || undefined,
+            })),
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": tool.faqs.map((faq) => ({
+              "@type": "Question",
+              "name": faq.q,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.a,
+              },
+            })),
+          },
+        ]
+      : undefined,
+  });
 
   if (!tool) return <NotFoundPage />;
 

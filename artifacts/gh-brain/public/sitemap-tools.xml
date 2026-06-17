@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dedicated tools sitemap — submitted separately to help AI crawlers find tool pages -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://litigant.ai/tools/business-plan-analyzer</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/website-audit</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/marketing-strategy</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/code-review</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/contract-review</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/decision-analysis</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/medical-appointment-prep</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/product-validator</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/manuscript-critique</loc><priority>1.0</priority></url>
+  <url><loc>https://litigant.ai/tools/research-summarizer</loc><priority>1.0</priority></url>
+</urlset>
