@@ -11,10 +11,11 @@ import SignInPage from "@/pages/auth/SignIn";
 import RegisterPage from "@/pages/auth/Register";
 import ForgotPasswordPage from "@/pages/auth/ForgotPassword";
 import VerifyEmailPage from "@/pages/auth/VerifyEmail";
+import ToolsIndexPage from "@/pages/tools/ToolsIndex";
+import ToolPage from "@/pages/tools/ToolPage";
 
 // App pages (protected)
 import SessionPage from "@/pages/app/Session";
-import TemplatesPage from "@/pages/app/Templates";
 import HistoryPage from "@/pages/app/History";
 import BillingPage from "@/pages/app/Billing";
 import SettingsPage from "@/pages/app/Settings";
@@ -80,11 +81,9 @@ function AppRoutes() {
           <SessionPage />
         </ProtectedWithLayout>
       </Route>
-      <Route path="/templates">
-        <ProtectedWithLayout>
-          <TemplatesPage />
-        </ProtectedWithLayout>
-      </Route>
+      {/* Public SEO tool pages */}
+      <Route path="/tools" component={ToolsIndexPage} />
+      <Route path="/tools/:slug" component={ToolPage} />
       <Route path="/history">
         <ProtectedWithLayout>
           <HistoryPage />

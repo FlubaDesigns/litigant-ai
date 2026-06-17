@@ -10,7 +10,7 @@ import { OnboardingWizard } from "@/components/OnboardingWizard";
 
 const navItems = [
   { href: "/session", label: "New Session", icon: Brain },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/tools", label: "Tools", icon: LayoutTemplate },
   { href: "/history", label: "History", icon: History },
   { href: "/billing", label: "Credits", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
