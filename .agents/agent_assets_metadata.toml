@@ -23,3 +23,9 @@ id = "QbJP2Es5b6trsYureqy2p"
 uri = "file://artifacts/gh-brain/public/downloads/website.zip"
 type = "unspecified"
 title = "website.zip — Litigant AI full source (3.16 MB)"
+
+[[outputs]]
+id = "jnqWCHMOqK0nt8gc4o7GK"
+uri = "file://artifacts/gh-brain/public/downloads/litigant-ai-source.zip"
+type = "unspecified"
+title = "litigant-ai-source.zip — full source with images (3.16 MB)"
