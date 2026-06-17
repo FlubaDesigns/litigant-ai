@@ -6,74 +6,74 @@
 
   <!-- Core pages -->
   <url>
-    <loc>https://litigant.ai/</loc>
+    <loc>https://litigant-ai.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools</loc>
+    <loc>https://litigant-ai.com/tools</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/register</loc>
+    <loc>https://litigant-ai.com/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/sign-in</loc>
+    <loc>https://litigant-ai.com/sign-in</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
 
   <!-- Tool landing pages -->
   <url>
-    <loc>https://litigant.ai/tools/business-plan-analyzer</loc>
+    <loc>https://litigant-ai.com/tools/business-plan-analyzer</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/website-audit</loc>
+    <loc>https://litigant-ai.com/tools/website-audit</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/marketing-strategy</loc>
+    <loc>https://litigant-ai.com/tools/marketing-strategy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/code-review</loc>
+    <loc>https://litigant-ai.com/tools/code-review</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/contract-review</loc>
+    <loc>https://litigant-ai.com/tools/contract-review</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/decision-analysis</loc>
+    <loc>https://litigant-ai.com/tools/decision-analysis</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/medical-appointment-prep</loc>
+    <loc>https://litigant-ai.com/tools/medical-appointment-prep</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/product-validator</loc>
+    <loc>https://litigant-ai.com/tools/product-validator</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/manuscript-critique</loc>
+    <loc>https://litigant-ai.com/tools/manuscript-critique</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant.ai/tools/research-summarizer</loc>
+    <loc>https://litigant-ai.com/tools/research-summarizer</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>

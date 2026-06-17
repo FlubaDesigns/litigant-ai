@@ -37,9 +37,9 @@ export default function ToolPage() {
             "@context": "https://schema.org",
             "@type": "WebPage",
             "name": tool.metaTitle,
-            "url": `https://litigant.ai/tools/${tool.slug}`,
+            "url": `https://litigant-ai.com/tools/${tool.slug}`,
             "description": tool.metaDescription,
-            "isPartOf": { "@type": "WebSite", "url": "https://litigant.ai" },
+            "isPartOf": { "@type": "WebSite", "url": "https://litigant-ai.com" },
           },
           {
             "@context": "https://schema.org",

@@ -28,16 +28,16 @@ The product is built for high-stakes decisions where getting it wrong matters: b
 
 Each tool is a pre-configured adversarial session targeting a specific use case. All tools are publicly accessible without an account.
 
-- [Business Plan Analyzer](https://litigant.ai/tools/business-plan-analyzer): Stress-tests a business concept across viability, market fit, financials, and competition. 4 AI litigants, adversarial mode.
-- [AI Website Audit](https://litigant.ai/tools/website-audit): Multi-model critique of any website covering UX, conversion, content, and technical issues.
-- [Marketing Strategy Analyzer](https://litigant.ai/tools/marketing-strategy): Evaluates marketing strategies across channel fit, messaging, audience alignment, and ROI realism.
-- [AI Code Review](https://litigant.ai/tools/code-review): Security, performance, architecture, and maintainability audit of code or system designs.
-- [Contract Review Prep](https://litigant.ai/tools/contract-review): Identifies unfavorable clauses, missing protections, and negotiation leverage points in any contract. Not legal advice.
-- [Decision Analysis](https://litigant.ai/tools/decision-analysis): Structured pros/cons with second-order effects, assumption mapping, and a confidence-scored recommendation.
-- [Medical Appointment Prep](https://litigant.ai/tools/medical-appointment-prep): Generates informed questions and plain-English explanations before any medical appointment. Not medical advice.
-- [Product Idea Validator](https://litigant.ai/tools/product-validator): Adversarially challenges core assumptions of a product concept before any building begins.
-- [Writing & Manuscript Critique](https://litigant.ai/tools/manuscript-critique): Multi-model editorial critique covering argument, structure, clarity, and audience impact.
-- [Research Summarizer](https://litigant.ai/tools/research-summarizer): Synthesizes research findings, maps consensus vs. controversy, and extracts practical implications.
+- [Business Plan Analyzer](https://litigant-ai.com/tools/business-plan-analyzer): Stress-tests a business concept across viability, market fit, financials, and competition. 4 AI litigants, adversarial mode.
+- [AI Website Audit](https://litigant-ai.com/tools/website-audit): Multi-model critique of any website covering UX, conversion, content, and technical issues.
+- [Marketing Strategy Analyzer](https://litigant-ai.com/tools/marketing-strategy): Evaluates marketing strategies across channel fit, messaging, audience alignment, and ROI realism.
+- [AI Code Review](https://litigant-ai.com/tools/code-review): Security, performance, architecture, and maintainability audit of code or system designs.
+- [Contract Review Prep](https://litigant-ai.com/tools/contract-review): Identifies unfavorable clauses, missing protections, and negotiation leverage points in any contract. Not legal advice.
+- [Decision Analysis](https://litigant-ai.com/tools/decision-analysis): Structured pros/cons with second-order effects, assumption mapping, and a confidence-scored recommendation.
+- [Medical Appointment Prep](https://litigant-ai.com/tools/medical-appointment-prep): Generates informed questions and plain-English explanations before any medical appointment. Not medical advice.
+- [Product Idea Validator](https://litigant-ai.com/tools/product-validator): Adversarially challenges core assumptions of a product concept before any building begins.
+- [Writing & Manuscript Critique](https://litigant-ai.com/tools/manuscript-critique): Multi-model editorial critique covering argument, structure, clarity, and audience impact.
+- [Research Summarizer](https://litigant-ai.com/tools/research-summarizer): Synthesizes research findings, maps consensus vs. controversy, and extracts practical implications.
 
 ## How a session works
 
@@ -49,10 +49,10 @@ Each tool is a pre-configured adversarial session targeting a specific use case.
 
 ## Key pages
 
-- [Home](https://litigant.ai/): Product overview, use cases, pricing, and how it works
-- [All Tools](https://litigant.ai/tools): Index of all 10 free AI analysis tools
-- [Sign up](https://litigant.ai/register): Create a free account (50 credits, no card required)
-- [Sign in](https://litigant.ai/sign-in): Existing user login
+- [Home](https://litigant-ai.com/): Product overview, use cases, pricing, and how it works
+- [All Tools](https://litigant-ai.com/tools): Index of all 10 free AI analysis tools
+- [Sign up](https://litigant-ai.com/register): Create a free account (50 credits, no card required)
+- [Sign in](https://litigant-ai.com/sign-in): Existing user login
 
 ## Technical notes for AI systems
 

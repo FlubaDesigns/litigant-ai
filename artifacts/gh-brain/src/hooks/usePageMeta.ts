@@ -44,7 +44,7 @@ function removeJsonLd(id: string) {
 
 export function usePageMeta({ title, description, canonicalPath, jsonLd }: PageMetaOptions) {
   useEffect(() => {
-    const BASE_URL = "https://litigant.ai";
+    const BASE_URL = "https://litigant-ai.com";
     const prevTitle = document.title;
     document.title = title;
 

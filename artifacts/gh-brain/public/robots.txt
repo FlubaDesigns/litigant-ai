@@ -1,5 +1,5 @@
 # Litigant AI — robots.txt
-# https://litigant.ai
+# https://litigant-ai.com
 
 # ── Standard crawlers ─────────────────────────────────────────────────────────
 User-agent: *
@@ -109,5 +109,5 @@ Allow: /
 Allow: /tools/
 
 # ── Sitemaps ──────────────────────────────────────────────────────────────────
-Sitemap: https://litigant.ai/sitemap.xml
-Sitemap: https://litigant.ai/sitemap-tools.xml
+Sitemap: https://litigant-ai.com/sitemap.xml
+Sitemap: https://litigant-ai.com/sitemap-tools.xml
