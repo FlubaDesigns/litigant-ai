@@ -4,8 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 import { initFirebaseAdmin } from "./lib/firebaseAdmin.js";
-import { WebhookHandlers } from "./lib/webhookHandlers.js";
-import { handleStripeEventForFirestore } from "./lib/stripeEventHandler.js";
+import { verifySquareWebhook, handleSquareEvent } from "./lib/squareEventHandler.js";
 
 initFirebaseAdmin();
 
@@ -33,40 +32,40 @@ app.use(
 
 app.use(cors());
 
+/**
+ * POST /api/square/webhook
+ * Receives Square webhook events. Must be registered BEFORE express.json()
+ * so we can read the raw body for signature verification.
+ */
 app.post(
-  "/api/stripe/webhook",
+  "/api/square/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    const signature = req.headers["stripe-signature"];
+    const signature = req.headers["x-square-hmacsha256-signature"] as string | undefined;
 
     if (!signature) {
-      res.status(400).json({ error: "Missing stripe-signature" });
+      logger.warn("[SquareWebhook] Missing x-square-hmacsha256-signature header");
+      res.status(400).json({ error: "Missing signature" });
       return;
     }
 
-    const sig = Array.isArray(signature) ? signature[0] : signature;
+    const rawBody = (req.body as Buffer).toString("utf8");
 
-    if (!Buffer.isBuffer(req.body)) {
-      logger.error(
-        "STRIPE WEBHOOK ERROR: req.body is not a Buffer — ensure this route is registered BEFORE express.json()"
-      );
-      res.status(500).json({ error: "Webhook processing error" });
-      return;
-    }
+    const notificationUrl =
+      `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}/api/square/webhook`;
 
-    try {
-      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
-    } catch (err: any) {
-      logger.error({ err }, "Stripe webhook processWebhook error");
-      res.status(400).json({ error: "Webhook processing error" });
+    const valid = verifySquareWebhook(rawBody, signature, notificationUrl);
+    if (!valid) {
+      logger.warn("[SquareWebhook] Invalid signature — rejected");
+      res.status(401).json({ error: "Invalid signature" });
       return;
     }
 
     try {
-      const event = JSON.parse((req.body as Buffer).toString("utf8"));
-      await handleStripeEventForFirestore(event);
+      const event = JSON.parse(rawBody);
+      await handleSquareEvent(event);
     } catch (err: any) {
-      logger.warn({ err }, "Stripe Firestore event handler error (non-fatal)");
+      logger.warn({ err }, "Square event handler error (non-fatal)");
     }
 
     res.status(200).json({ received: true });

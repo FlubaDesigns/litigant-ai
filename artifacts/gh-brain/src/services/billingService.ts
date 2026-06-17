@@ -24,11 +24,11 @@ export interface CreditTransaction {
   balanceAfter?: number;
   source?: string;
   sessionId?: string | null;
-  stripePaymentId?: string | null;
+  paymentId?: string | null;
   createdAt: string;
 }
 
-export interface StripePrice {
+export interface BillingPrice {
   id: string;
   product: string;
   unit_amount: number | null;
@@ -44,14 +44,7 @@ export interface BillingProduct {
   description: string | null;
   active: boolean;
   metadata: Record<string, string>;
-  prices: StripePrice[];
-}
-
-export interface StripeSubscription {
-  id: string;
-  status: string;
-  current_period_end: number | null;
-  cancel_at_period_end: boolean;
+  prices: BillingPrice[];
 }
 
 export interface PaymentHistoryItem {
@@ -128,22 +121,13 @@ export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
   }
 }
 
-export async function getSubscription(): Promise<StripeSubscription | null> {
-  try {
-    const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/billing/subscription`, { headers });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.subscription ?? null;
-  } catch {
-    return null;
-  }
+export async function getSubscription(): Promise<null> {
+  return null;
 }
 
 /**
  * Called by authService after new user creation.
- * The server grants 50 trial credits idempotently — the amount is entirely
- * controlled server-side and protected by an idempotency key.
+ * The server grants 50 trial credits idempotently.
  */
 export async function grantSignupBonus(user: User): Promise<void> {
   try {
@@ -177,6 +161,10 @@ export async function setAutoRefill(opts: {
   }
 }
 
+/**
+ * Creates a Square Payment Link and returns the checkout URL.
+ * The user is redirected to Square's hosted checkout page.
+ */
 export async function createCheckoutSession(priceId: string): Promise<string | null> {
   try {
     const headers = await authHeaders();
@@ -187,7 +175,7 @@ export async function createCheckoutSession(priceId: string): Promise<string | n
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).error ?? "Failed to create checkout session");
+      throw new Error((err as any).error ?? "Failed to create checkout link");
     }
     const data = await res.json();
     return data.url ?? null;
@@ -196,20 +184,10 @@ export async function createCheckoutSession(priceId: string): Promise<string | n
   }
 }
 
+/**
+ * Not available — Square does not have a hosted billing portal.
+ * Returns null so the UI can hide the portal button gracefully.
+ */
 export async function createPortalSession(): Promise<string | null> {
-  try {
-    const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/billing/portal`, {
-      method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err as any).error ?? "Failed to create portal session");
-    }
-    const data = await res.json();
-    return data.url ?? null;
-  } catch (err: any) {
-    throw err;
-  }
+  return null;
 }

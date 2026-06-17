@@ -1,28 +1,15 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
-import { getUncachableStripeClient } from "../lib/stripeClient.js";
-import {
-  listProductsWithPrices,
-  findCustomerByUserId,
-  getSubscriptionByCustomerId,
-  getPaymentHistory,
-} from "../lib/stripeStorage.js";
+import { isSquareConfigured, createPaymentLink } from "../lib/squareClient.js";
 import {
   getTransactions,
   updateUserPlan,
   grantSignupBonus,
   setAutoRefillPreference,
 } from "../lib/creditLedger.js";
-import { getFirestoreDb } from "../lib/firebaseAdmin.js";
 
 const router = Router();
-
-function isStripeConfigured(): boolean {
-  return !!(
-    process.env["REPLIT_CONNECTORS_HOSTNAME"] &&
-    (process.env["REPL_IDENTITY"] || process.env["WEB_REPL_RENEWAL"])
-  );
-}
 
 async function requireAuth(
   req: any,
@@ -41,44 +28,9 @@ async function requireAuth(
   return decoded;
 }
 
-async function getOrCreateStripeCustomer(
-  uid: string,
-  email: string | undefined
-): Promise<string> {
-  const existing = await findCustomerByUserId(uid);
-  if (existing) {
-    const db = isFirebaseConfigured() ? getFirestoreDb() : null;
-    if (db) {
-      await db
-        .collection("users")
-        .doc(uid)
-        .set({ stripeCustomerId: existing.id }, { merge: true });
-    }
-    return existing.id;
-  }
-
-  const stripe = await getUncachableStripeClient();
-  const customer = await stripe.customers.create({
-    email: email ?? undefined,
-    metadata: { userId: uid },
-  });
-
-  const db = isFirebaseConfigured() ? getFirestoreDb() : null;
-  if (db) {
-    await db
-      .collection("users")
-      .doc(uid)
-      .set({ stripeCustomerId: customer.id }, { merge: true });
-  }
-
-  return customer.id;
-}
-
 /**
  * POST /billing/signup-grant
  * Idempotently grants 50 trial credits to a new user.
- * Server-controlled and guarded by an idempotency key — safe to call on
- * every signup even if called more than once.
  */
 router.post("/billing/signup-grant", async (req, res) => {
   const user = await requireAuth(req, res);
@@ -118,7 +70,7 @@ router.patch("/billing/auto-refill", async (req, res) => {
   await setAutoRefillPreference(user.uid, {
     enabled,
     thresholdCredits: thresholdCredits ?? 20,
-    packPriceId: packPriceId ?? "price_starter",
+    packPriceId: packPriceId ?? "starter_pack",
   });
 
   return res.json({ success: true });
@@ -126,23 +78,10 @@ router.patch("/billing/auto-refill", async (req, res) => {
 
 /**
  * GET /billing/products
- * Returns all active Stripe products with their prices.
- * Falls back to static list when Stripe is not configured.
+ * Returns available credit packs.
  */
 router.get("/billing/products", async (_req, res) => {
-  if (!isStripeConfigured()) {
-    return res.json({ data: STATIC_PRODUCTS });
-  }
-  try {
-    const products = await listProductsWithPrices();
-    if (!products.length) {
-      return res.json({ data: STATIC_PRODUCTS });
-    }
-    return res.json({ data: products });
-  } catch (err: any) {
-    console.warn("[Billing] products fallback:", err.message);
-    return res.json({ data: STATIC_PRODUCTS });
-  }
+  return res.json({ data: STATIC_PRODUCTS });
 });
 
 /**
@@ -162,59 +101,47 @@ router.get("/billing/transactions", async (req, res) => {
 
 /**
  * GET /billing/payment-history
- * Returns Stripe payment intent history (succeeded payments) for the user.
+ * Returns purchase transactions from Firestore (replaces Stripe payment intent history).
  */
 router.get("/billing/payment-history", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  if (!isStripeConfigured()) {
-    return res.json({ data: [] });
-  }
+  const { items } = await getTransactions(user.uid, 20);
+  const purchases = items
+    .filter((t) => t.type === "purchase")
+    .map((t) => ({
+      id: t.transactionId ?? t.paymentId ?? "",
+      amount: t.amount,
+      currency: "usd",
+      status: "completed",
+      created: Math.floor(new Date(t.createdAt).getTime() / 1000),
+      description: `${t.amount} credits`,
+    }));
 
-  try {
-    const customer = await findCustomerByUserId(user.uid);
-    if (!customer) return res.json({ data: [] });
-
-    const history = await getPaymentHistory(customer.id);
-    return res.json({ data: history });
-  } catch (err: any) {
-    console.warn("[Billing] payment-history error:", err.message);
-    return res.json({ data: [] });
-  }
+  return res.json({ data: purchases });
 });
 
 /**
  * GET /billing/subscription
+ * Square does not manage subscriptions — returns null.
  */
 router.get("/billing/subscription", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
-
-  if (!isStripeConfigured()) {
-    return res.json({ subscription: null });
-  }
-
-  try {
-    const customer = await findCustomerByUserId(user.uid);
-    if (!customer) return res.json({ subscription: null });
-
-    const sub = await getSubscriptionByCustomerId(customer.id);
-    return res.json({ subscription: sub });
-  } catch {
-    return res.json({ subscription: null });
-  }
+  return res.json({ subscription: null });
 });
 
 /**
  * POST /billing/checkout
+ * Creates a Square Payment Link for the requested credit pack.
  */
 router.post("/billing/checkout", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  if (!isStripeConfigured()) {
-    return res.status(503).json({ error: "Stripe not configured" });
+  if (!isSquareConfigured()) {
+    return res.status(503).json({ error: "Square not configured" });
   }
 
   const { priceId } = req.body as { priceId?: string };
@@ -222,97 +149,54 @@ router.post("/billing/checkout", async (req, res) => {
     return res.status(400).json({ error: "priceId is required" });
   }
 
-  try {
-    const customerId = await getOrCreateStripeCustomer(user.uid, user.email);
-    const stripe = await getUncachableStripeClient();
+  const product = STATIC_PRODUCTS.find((p) =>
+    p.prices.some((pr) => pr.id === priceId)
+  );
+  const price = product?.prices.find((pr) => pr.id === priceId);
 
-    const origin =
-      req.headers["origin"] ||
-      `https://${process.env["REPLIT_DOMAINS"]?.split(",")[0]}`;
-
-    const price = await stripe.prices.retrieve(priceId);
-    const isSubscription = price.recurring !== null;
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: isSubscription ? "subscription" : "payment",
-      success_url: `${origin}/gh-brain/billing?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${origin}/gh-brain/billing?cancelled=true`,
-      metadata: {
-        userId: user.uid,
-        creditAmount: (price.metadata?.creditAmount as string) ?? "",
-        plan: (price.metadata?.plan as string) ?? "",
-      },
-    });
-
-    return res.json({ url: session.url });
-  } catch (err: any) {
-    console.error("[Billing] checkout error:", err.message);
-    return res.status(500).json({ error: "Failed to create checkout session" });
-  }
-});
-
-/**
- * POST /billing/portal
- */
-router.post("/billing/portal", async (req, res) => {
-  const user = await requireAuth(req, res);
-  if (!user) return;
-
-  if (!isStripeConfigured()) {
-    return res.status(503).json({ error: "Stripe not configured" });
+  if (!product || !price || !price.unit_amount) {
+    return res.status(404).json({ error: "Unknown price ID" });
   }
 
+  const creditAmount = parseInt(
+    price.metadata?.creditAmount ?? product.metadata?.creditAmount ?? "0",
+    10
+  );
+
+  if (!creditAmount) {
+    return res.status(400).json({ error: "Credit amount not configured for this product" });
+  }
+
+  const origin =
+    (req.headers["origin"] as string | undefined) ||
+    `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
+
   try {
-    const customer = await findCustomerByUserId(user.uid);
-    if (!customer) {
-      return res.status(404).json({ error: "No billing account found" });
-    }
+    const idempotencyKey = crypto.randomUUID();
+    const note = `LITIGANT:userId=${user.uid},creditAmount=${creditAmount},pack=${product.id}`;
 
-    const stripe = await getUncachableStripeClient();
-    const origin =
-      req.headers["origin"] ||
-      `https://${process.env["REPLIT_DOMAINS"]?.split(",")[0]}`;
-
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customer.id,
-      return_url: `${origin}/gh-brain/billing`,
+    const link = await createPaymentLink({
+      name: `${product.name} — ${creditAmount} Credits`,
+      amountCents: price.unit_amount,
+      note,
+      redirectUrl: `${origin}/gh-brain/billing?success=true`,
+      buyerEmail: user.email,
+      idempotencyKey,
     });
 
-    return res.json({ url: session.url });
+    return res.json({ url: link.url });
   } catch (err: any) {
-    console.error("[Billing] portal error:", err.message);
-    return res.status(500).json({ error: "Failed to create portal session" });
+    console.error("[Billing] Square checkout error:", err.message);
+    return res.status(500).json({ error: "Failed to create checkout link" });
   }
 });
 
 /**
  * POST /billing/cancel-subscription
+ * Not applicable — Square does not manage subscriptions here.
  */
-router.post("/billing/cancel-subscription", async (req, res) => {
-  const user = await requireAuth(req, res);
-  if (!user) return;
-
-  if (!isStripeConfigured()) {
-    return res.status(503).json({ error: "Stripe not configured" });
-  }
-
-  try {
-    const customer = await findCustomerByUserId(user.uid);
-    if (!customer) return res.status(404).json({ error: "No billing account" });
-
-    const sub = await getSubscriptionByCustomerId(customer.id);
-    if (!sub) return res.status(404).json({ error: "No active subscription" });
-
-    const stripe = await getUncachableStripeClient();
-    await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
-
-    return res.json({ success: true });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+router.post("/billing/cancel-subscription", async (_req, res) => {
+  return res.status(501).json({ error: "Subscriptions are not available" });
 });
 
 const STATIC_PRODUCTS = [
@@ -367,24 +251,6 @@ const STATIC_PRODUCTS = [
         recurring: null,
         active: true,
         metadata: { creditAmount: "1000" },
-      },
-    ],
-  },
-  {
-    id: "pro_subscription",
-    name: "Pro Plan",
-    description: "2,000 credits per month + priority access",
-    active: true,
-    metadata: { type: "subscription", plan: "pro" },
-    prices: [
-      {
-        id: "price_pro_monthly",
-        product: "pro_subscription",
-        unit_amount: 2900,
-        currency: "usd",
-        recurring: { interval: "month", interval_count: 1 },
-        active: true,
-        metadata: { creditAmount: "2000", plan: "pro" },
       },
     ],
   },

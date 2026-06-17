@@ -10,8 +10,8 @@
  *   transaction.
  *
  * ## Transaction types (CreditTxType)
- *   purchase           — Stripe one-time credit pack checkout
- *   subscription_grant — Stripe subscription renewal top-up
+ *   purchase           — Square one-time credit pack checkout
+ *   subscription_grant — Subscription renewal top-up
  *   signup_bonus       — 50 free credits on first verified login
  *   usage              — session credit reservation (negative amount)
  *   refund             — post-session reconciliation or failure refund (positive)
@@ -19,8 +19,8 @@
  *
  * ## Idempotency
  *   addCredits() accepts an idempotencyKey. When provided, the key is written
- *   atomically to stripe_events. A second call with the same key is a no-op
- *   that returns { skipped: true }. Used for Stripe webhook deduplication.
+ *   atomically to payment_events. A second call with the same key is a no-op
+ *   that returns { skipped: true }. Used for Square webhook deduplication.
  *
  * See docs/credits.md §6 for the full transaction type reference.
  */
@@ -50,10 +50,10 @@ export interface CreditTransaction {
   amount: number;
   /** Balance AFTER this transaction was applied */
   balanceAfter?: number;
-  /** Human-readable event source (e.g. "brain_reservation", "stripe_checkout") */
+  /** Human-readable event source (e.g. "brain_reservation", "square_checkout") */
   source?: string;
   sessionId?: string | null;
-  stripePaymentId?: string | null;
+  paymentId?: string | null;
   createdAt: string;
 }
 
@@ -83,10 +83,10 @@ function toIsoString(v: unknown): string {
  * @param type   - Transaction category (see CreditTxType).
  * @param opts.source           - Optional human-readable source label.
  * @param opts.sessionId        - Brain session ID for usage transactions.
- * @param opts.stripePaymentId  - Stripe payment intent / charge ID.
+ * @param opts.paymentId        - Square payment ID (or other processor reference).
  * @param opts.idempotencyKey   - If provided, this key is written to
- *   stripe_events on first call and the operation is skipped on subsequent
- *   calls with the same key. Use Stripe event IDs or "signup_bonus_{uid}".
+ *   payment_events on first call and the operation is skipped on subsequent
+ *   calls with the same key. Use Square event IDs or "signup_bonus_{uid}".
  *
  * @returns `{ newBalance }` on success, `{ newBalance: 0, skipped: true }` if
  *          the idempotency key was already present, or `null` if Firebase is
@@ -99,7 +99,7 @@ export async function addCredits(
   opts: {
     source?: string;
     sessionId?: string;
-    stripePaymentId?: string;
+    paymentId?: string;
     idempotencyKey?: string;
   } = {}
 ): Promise<{ newBalance: number; skipped?: boolean } | null> {
@@ -116,7 +116,7 @@ export async function addCredits(
   return db.runTransaction(async (tx) => {
     // ── Idempotency guard ─────────────────────────────────────────────────────
     if (opts.idempotencyKey) {
-      const dedupRef  = db.collection("stripe_events").doc(opts.idempotencyKey);
+      const dedupRef  = db.collection("payment_events").doc(opts.idempotencyKey);
       const dedupSnap = await tx.get(dedupRef);
       if (dedupSnap.exists) {
         // Already processed — safe to return without any balance mutation
@@ -144,14 +144,14 @@ export async function addCredits(
     // ── Immutable ledger entry ────────────────────────────────────────────────
     const txRef = db.collection("credit_transactions").doc();
     tx.set(txRef, {
-      userId:           uid,
+      userId:       uid,
       type,
       amount,
-      balanceAfter:     newBalance,
-      source:           opts.source ?? type,
-      sessionId:        opts.sessionId ?? null,
-      stripePaymentId:  opts.stripePaymentId ?? null,
-      createdAt:        FieldValue.serverTimestamp(),
+      balanceAfter: newBalance,
+      source:       opts.source ?? type,
+      sessionId:    opts.sessionId ?? null,
+      paymentId:    opts.paymentId ?? null,
+      createdAt:    FieldValue.serverTimestamp(),
     });
 
     return { newBalance };
@@ -195,15 +195,15 @@ export async function getTransactions(
     const items = docs.slice(0, limit).map((d) => {
       const data = d.data();
       return {
-        transactionId:  d.id,
-        userId:         data["userId"]         as string,
-        type:           data["type"]           as CreditTxType,
-        amount:         data["amount"]         as number,
-        balanceAfter:   data["balanceAfter"]   as number | undefined,
-        source:         data["source"]         as string | undefined,
-        sessionId:      (data["sessionId"]     as string | null) ?? null,
-        stripePaymentId:(data["stripePaymentId"]as string | null) ?? null,
-        createdAt:      toIsoString(data["createdAt"]),
+        transactionId: d.id,
+        userId:        data["userId"]       as string,
+        type:          data["type"]         as CreditTxType,
+        amount:        data["amount"]       as number,
+        balanceAfter:  data["balanceAfter"] as number | undefined,
+        source:        data["source"]       as string | undefined,
+        sessionId:     (data["sessionId"]   as string | null) ?? null,
+        paymentId:     (data["paymentId"]   as string | null) ?? null,
+        createdAt:     toIsoString(data["createdAt"]),
       } satisfies CreditTransaction;
     });
 

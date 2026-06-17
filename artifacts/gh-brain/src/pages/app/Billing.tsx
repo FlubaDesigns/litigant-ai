@@ -19,11 +19,9 @@ import {
   getPaymentHistory,
   setAutoRefill,
   createCheckoutSession,
-  createPortalSession,
   PLAN_LIMITS,
   type BillingProduct,
   type CreditTransaction,
-  type StripeSubscription,
   type PaymentHistoryItem,
 } from "@/services/billingService";
 
@@ -407,7 +405,7 @@ export default function BillingPage() {
   const [products, setProducts] = useState<BillingProduct[]>([]);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txNextCursor, setTxNextCursor] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<StripeSubscription | null>(null);
+  const [subscription, setSubscription] = useState<null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [historyTab, setHistoryTab] = useState<HistoryTab>("credits");
 
@@ -420,7 +418,7 @@ export default function BillingPage() {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [loadingMoreTx, setLoadingMoreTx] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalLoading] = useState(false);
 
   const [params] = useState(() => new URLSearchParams(window.location.search));
   const didSucceed = params.get("success") === "true";
@@ -431,13 +429,13 @@ export default function BillingPage() {
     if (didCancel) toast.info("Payment cancelled.");
   }, [didSucceed, didCancel]);
 
-  const [stripeAvailable, setStripeAvailable] = useState<boolean | null>(null);
+  const [paymentsAvailable, setPaymentsAvailable] = useState<boolean | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
     const data = await getProducts();
     setProducts(data);
-    setStripeAvailable(data.length > 0);
+    setPaymentsAvailable(data.length > 0);
     setLoadingProducts(false);
   }, []);
 
@@ -547,21 +545,8 @@ export default function BillingPage() {
     }
   }
 
-  async function handleManageSubscription() {
-    if (!user) return;
-    setPortalLoading(true);
-    try {
-      const url = await createPortalSession();
-      if (url) {
-        window.location.href = url;
-      } else {
-        toast.error("No billing account found. Purchase a plan first.");
-      }
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to open billing portal.");
-    } finally {
-      setPortalLoading(false);
-    }
+  function handleManageSubscription() {
+    toast.info("Subscription management is handled via Square. Contact support if you need help.");
   }
 
   const balance = userProfile?.creditBalance ?? 0;
@@ -667,20 +652,6 @@ export default function BillingPage() {
                       {subscriptionStatus}
                     </Badge>
                   </div>
-                  {subscription?.current_period_end && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Renews</span>
-                      <span>
-                        {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  {subscription?.cancel_at_period_end && (
-                    <p className="text-xs text-yellow-400 flex items-center gap-1">
-                      <Info className="w-3 h-3" />
-                      Cancels at period end
-                    </p>
-                  )}
                 </div>
                 <Button
                   size="sm"
@@ -734,7 +705,7 @@ export default function BillingPage() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Buy Credits
               </h2>
-              {!loadingProducts && stripeAvailable === false && (
+              {!loadingProducts && paymentsAvailable === false && (
                 <div className="mb-3 flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm text-yellow-400">
                   <span className="mt-0.5 shrink-0">⚠</span>
                   <span>Payments are not configured yet. Prices shown are indicative — contact the team to purchase credits.</span>
