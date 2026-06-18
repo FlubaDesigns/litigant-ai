@@ -2,6 +2,7 @@ import { Router } from "express";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { grantSignupBonus } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
+import { sendVerificationEmail, sendPasswordResetEmail, isResendConfigured } from "../lib/emailService.js";
 
 const router = Router();
 
@@ -144,6 +145,57 @@ router.patch("/auth/preferences", async (req, res) => {
   } catch (err: any) {
     console.error("[Auth] preferences save error:", err.message);
     return res.status(500).json({ error: "Failed to save preferences" });
+  }
+});
+
+/**
+ * POST /auth/send-verification
+ * Generates a Firebase email verification link and sends it via Resend.
+ * Requires a valid Bearer token (the user must be signed in).
+ */
+router.post("/auth/send-verification", async (req, res) => {
+  const authHeader = req.headers["authorization"] as string | undefined;
+  if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) return res.status(401).json({ error: "Unauthorized" });
+
+  if (!isResendConfigured()) {
+    return res.status(503).json({ error: "Email service not configured" });
+  }
+
+  try {
+    await sendVerificationEmail(decoded.uid);
+    return res.json({ sent: true });
+  } catch (err: any) {
+    console.error("[Auth] send-verification error:", err.message);
+    return res.status(500).json({ error: "Failed to send verification email" });
+  }
+});
+
+/**
+ * POST /auth/send-password-reset
+ * Generates a Firebase password reset link and sends it via Resend.
+ * Body: { email: string }
+ * Public endpoint — no auth required.
+ */
+router.post("/auth/send-password-reset", async (req, res) => {
+  const { email } = (req.body ?? {}) as { email?: string };
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "email is required" });
+  }
+
+  if (!isResendConfigured()) {
+    return res.status(503).json({ error: "Email service not configured" });
+  }
+
+  try {
+    await sendPasswordResetEmail(email.trim().toLowerCase());
+    // Always return success — don't reveal whether the email exists
+    return res.json({ sent: true });
+  } catch (err: any) {
+    console.error("[Auth] send-password-reset error:", err.message);
+    return res.status(500).json({ error: "Failed to send password reset email" });
   }
 });
 

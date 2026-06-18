@@ -4,8 +4,6 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
-  sendPasswordResetEmail as firebaseSendPasswordResetEmail,
-  sendEmailVerification as firebaseSendEmailVerification,
   updateProfile,
   deleteUser,
   type User,
@@ -20,9 +18,6 @@ const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/ap
  * Server-side equivalent of a Firebase Auth onCreate Cloud Function.
  * Called after signup/first login — the server creates the user doc and
  * grants the 50-credit bonus atomically (amount & logic are server-controlled).
- *
- * @param extra  Optional profile fields collected at signup (role, organization).
- *               Ignored for returning users (server checks doc existence).
  */
 async function provisionUser(
   user: User,
@@ -43,6 +38,29 @@ async function provisionUser(
   }
 }
 
+/**
+ * Send email verification via the server (Resend), falling back to
+ * Firebase's built-in sender if the server endpoint is unavailable.
+ */
+async function sendVerificationViaServer(user: User): Promise<void> {
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch(`${API_BASE}/auth/send-verification`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.warn("[AuthService] server verification email failed, falling back to Firebase:", err);
+    // Fallback: use Firebase's built-in sender
+    const { sendEmailVerification } = await import("firebase/auth");
+    await sendEmailVerification(user);
+  }
+}
+
 export async function signUpWithEmail(
   email: string,
   password: string,
@@ -52,17 +70,13 @@ export async function signUpWithEmail(
 ): Promise<User> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName });
-  await firebaseSendEmailVerification(credential.user);
-  // Server creates user doc + grants 50 trial credits (idempotent, server-controlled)
+  await sendVerificationViaServer(credential.user);
   await provisionUser(credential.user, { role, organization });
   return credential.user;
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
   const credential = await signInWithEmailAndPassword(auth, email, password);
-  // Provision is idempotent — it's safe to call on every sign-in.
-  // This ensures users who hit a provision failure during signup get their
-  // Firestore doc and credits on their next successful login.
   await provisionUser(credential.user);
   return credential.user;
 }
@@ -72,7 +86,6 @@ export async function signInWithGoogle(): Promise<User> {
   const isNew =
     credential.user.metadata.creationTime === credential.user.metadata.lastSignInTime;
   if (isNew) {
-    // Server creates user doc + grants 50 trial credits (idempotent, server-controlled)
     await provisionUser(credential.user);
   }
   return credential.user;
@@ -82,13 +95,34 @@ export async function signOut(): Promise<void> {
   await firebaseSignOut(auth);
 }
 
+/**
+ * Send password reset email via the server (Resend).
+ * Falls back to Firebase's built-in sender on failure.
+ */
 export async function sendPasswordResetEmail(email: string): Promise<void> {
-  await firebaseSendPasswordResetEmail(auth, email);
+  try {
+    const res = await fetch(`${API_BASE}/auth/send-password-reset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.warn("[AuthService] server password reset failed, falling back to Firebase:", err);
+    const { sendPasswordResetEmail: firebaseReset } = await import("firebase/auth");
+    await firebaseReset(auth, email);
+  }
 }
 
+/**
+ * Re-send email verification for the current user.
+ */
 export async function sendEmailVerification(): Promise<void> {
   if (auth.currentUser) {
-    await firebaseSendEmailVerification(auth.currentUser);
+    await sendVerificationViaServer(auth.currentUser);
   }
 }
 
