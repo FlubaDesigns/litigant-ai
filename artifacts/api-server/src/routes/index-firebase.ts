@@ -8,6 +8,8 @@ import accountRouter from "./account";
 import adminRouter from "./admin";
 import reportRouter from "./report";
 import providersRouter from "./providers";
+import billingRouter from "./billing";
+import webhookRouter from "./webhook";
 
 const router: IRouter = Router();
 
@@ -20,5 +22,7 @@ router.use(accountRouter);
 router.use(adminRouter);
 router.use(reportRouter);
 router.use(providersRouter);
+router.use(billingRouter);
+router.use(webhookRouter);
 
 export default router;

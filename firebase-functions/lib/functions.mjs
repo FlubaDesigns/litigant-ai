@@ -17,8 +17,15 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
   if (typeof require !== "undefined") return require.apply(this, arguments);
   throw Error('Dynamic require of "' + x + '" is not supported');
 });
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __commonJS = (cb, mod) => function __require2() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -50,7 +57,7 @@ var require_ms = __commonJS({
       options = options || {};
       var type = typeof val;
       if (type === "string" && val.length > 0) {
-        return parse(val);
+        return parse2(val);
       } else if (type === "number" && isFinite(val)) {
         return options.long ? fmtLong(val) : fmtShort(val);
       }
@@ -58,7 +65,7 @@ var require_ms = __commonJS({
         "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
       );
     };
-    function parse(str2) {
+    function parse2(str2) {
       str2 = String(str2);
       if (str2.length > 100) {
         return;
@@ -246,8 +253,8 @@ var require_common = __commonJS({
         }
         return debug;
       }
-      function extend(namespace, delimiter) {
-        const newDebug = createDebug(this.namespace + (typeof delimiter === "undefined" ? ":" : delimiter) + namespace);
+      function extend(namespace, delimiter2) {
+        const newDebug = createDebug(this.namespace + (typeof delimiter2 === "undefined" ? ":" : delimiter2) + namespace);
         newDebug.log = this.log;
         return newDebug;
       }
@@ -489,8 +496,8 @@ var require_browser = __commonJS({
       }
     }
     module.exports = require_common()(exports);
-    var { formatters: formatters2 } = module.exports;
-    formatters2.j = function(v) {
+    var { formatters: formatters3 } = module.exports;
+    formatters3.j = function(v) {
       try {
         return JSON.stringify(v);
       } catch (error) {
@@ -777,12 +784,12 @@ var require_node = __commonJS({
       }
     }
     module.exports = require_common()(exports);
-    var { formatters: formatters2 } = module.exports;
-    formatters2.o = function(v) {
+    var { formatters: formatters3 } = module.exports;
+    formatters3.o = function(v) {
       this.inspectOpts.colors = this.useColors;
       return util2.inspect(v, this.inspectOpts).split("\n").map((str2) => str2.trim()).join(" ");
     };
-    formatters2.O = function(v) {
+    formatters3.O = function(v) {
       this.inspectOpts.colors = this.useColors;
       return util2.inspect(v, this.inspectOpts);
     };
@@ -803,7 +810,7 @@ var require_src = __commonJS({
 // ../../node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js
 var require_depd = __commonJS({
   "../../node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js"(exports, module) {
-    var relative = __require("path").relative;
+    var relative2 = __require("path").relative;
     module.exports = depd;
     var basePath = process.cwd();
     function containsNamespace(str2, namespace) {
@@ -995,18 +1002,18 @@ var require_depd = __commonJS({
       return formatted;
     }
     function formatLocation(callSite) {
-      return relative(basePath, callSite[0]) + ":" + callSite[1] + ":" + callSite[2];
+      return relative2(basePath, callSite[0]) + ":" + callSite[1] + ":" + callSite[2];
     }
     function getStack() {
-      var limit2 = Error.stackTraceLimit;
+      var limit3 = Error.stackTraceLimit;
       var obj = {};
       var prep = Error.prepareStackTrace;
       Error.prepareStackTrace = prepareObjectStackTrace;
-      Error.stackTraceLimit = Math.max(10, limit2);
+      Error.stackTraceLimit = Math.max(10, limit3);
       Error.captureStackTrace(obj);
       var stack = obj.stack.slice(1);
       Error.prepareStackTrace = prep;
-      Error.stackTraceLimit = limit2;
+      Error.stackTraceLimit = limit3;
       return stack;
     }
     function prepareObjectStackTrace(obj, stack) {
@@ -1497,7 +1504,7 @@ var require_bytes = __commonJS({
     "use strict";
     module.exports = bytes;
     module.exports.format = format;
-    module.exports.parse = parse;
+    module.exports.parse = parse2;
     var formatThousandsRegExp = /\B(?=(\d{3})+(?!\d))/g;
     var formatDecimalsRegExp = /(?:\.0*|(\.[^0]+)0+)$/;
     var map = {
@@ -1511,7 +1518,7 @@ var require_bytes = __commonJS({
     var parseRegExp = /^((-|\+)?(\d+(?:\.\d+)?)) *(kb|mb|gb|tb|pb)$/i;
     function bytes(value, options) {
       if (typeof value === "string") {
-        return parse(value);
+        return parse2(value);
       }
       if (typeof value === "number") {
         return format(value, options);
@@ -1555,7 +1562,7 @@ var require_bytes = __commonJS({
       }
       return str2 + unitSeparator + unit;
     }
-    function parse(val) {
+    function parse2(val) {
       if (typeof val === "number" && !isNaN(val)) {
         return val;
       }
@@ -1654,8 +1661,8 @@ var require_bom_handling = __commonJS({
     "use strict";
     var BOMChar = "\uFEFF";
     exports.PrependBOM = PrependBOMWrapper;
-    function PrependBOMWrapper(encoder, options) {
-      this.encoder = encoder;
+    function PrependBOMWrapper(encoder2, options) {
+      this.encoder = encoder2;
       this.addBOM = true;
     }
     PrependBOMWrapper.prototype.write = function(str2) {
@@ -1698,10 +1705,10 @@ var require_bom_handling = __commonJS({
 var require_merge_exports = __commonJS({
   "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/helpers/merge-exports.js"(exports, module) {
     "use strict";
-    var hasOwn2 = typeof Object.hasOwn === "undefined" ? Function.call.bind(Object.prototype.hasOwnProperty) : Object.hasOwn;
+    var hasOwn3 = typeof Object.hasOwn === "undefined" ? Function.call.bind(Object.prototype.hasOwnProperty) : Object.hasOwn;
     function mergeModules(target, module2) {
       for (var key in module2) {
-        if (hasOwn2(module2, key)) {
+        if (hasOwn3(module2, key)) {
           target[key] = module2[key];
         }
       }
@@ -5240,11 +5247,11 @@ var require_lib = __commonJS({
     module.exports.encodings = null;
     module.exports.defaultCharUnicode = "\uFFFD";
     module.exports.defaultCharSingleByte = "?";
-    module.exports.encode = function encode2(str2, encoding, options) {
+    module.exports.encode = function encode3(str2, encoding, options) {
       str2 = "" + (str2 || "");
-      var encoder = module.exports.getEncoder(encoding, options);
-      var res = encoder.write(str2);
-      var trail = encoder.end();
+      var encoder2 = module.exports.getEncoder(encoding, options);
+      var res = encoder2.write(str2);
+      var trail = encoder2.end();
       return trail && trail.length > 0 ? Buffer2.concat([res, trail]) : res;
     };
     module.exports.decode = function decode(buf, encoding, options) {
@@ -5315,11 +5322,11 @@ var require_lib = __commonJS({
     };
     module.exports.getEncoder = function getEncoder(encoding, options) {
       var codec = module.exports.getCodec(encoding);
-      var encoder = new codec.encoder(options, codec);
+      var encoder2 = new codec.encoder(options, codec);
       if (codec.bomAware && options && options.addBOM) {
-        encoder = new bomHandling.PrependBOM(encoder, options);
+        encoder2 = new bomHandling.PrependBOM(encoder2, options);
       }
-      return encoder;
+      return encoder2;
     };
     module.exports.getDecoder = function getDecoder(encoding, options) {
       var codec = module.exports.getCodec(encoding);
@@ -5447,15 +5454,15 @@ var require_raw_body = __commonJS({
         throw new TypeError("argument callback is required");
       }
       var encoding = opts.encoding !== true ? opts.encoding : "utf-8";
-      var limit2 = bytes.parse(opts.limit);
+      var limit3 = bytes.parse(opts.limit);
       var length = opts.length != null && !isNaN(opts.length) ? parseInt(opts.length, 10) : null;
       if (done) {
-        return readStream(stream, encoding, length, limit2, wrap(done));
+        return readStream(stream, encoding, length, limit3, wrap(done));
       }
-      return new Promise(function executor(resolve, reject) {
-        readStream(stream, encoding, length, limit2, function onRead(err, buf) {
+      return new Promise(function executor(resolve4, reject) {
+        readStream(stream, encoding, length, limit3, function onRead(err, buf) {
           if (err) return reject(err);
-          resolve(buf);
+          resolve4(buf);
         });
       });
     }
@@ -5465,14 +5472,14 @@ var require_raw_body = __commonJS({
         stream.pause();
       }
     }
-    function readStream(stream, encoding, length, limit2, callback) {
+    function readStream(stream, encoding, length, limit3, callback) {
       var complete = false;
       var sync = true;
-      if (limit2 !== null && length !== null && length > limit2) {
+      if (limit3 !== null && length !== null && length > limit3) {
         return done(createError(413, "request entity too large", {
           expected: length,
           length,
-          limit: limit2,
+          limit: limit3,
           type: "entity.too.large"
         }));
       }
@@ -5533,9 +5540,9 @@ var require_raw_body = __commonJS({
       function onData(chunk) {
         if (complete) return;
         received += chunk.length;
-        if (limit2 !== null && received > limit2) {
+        if (limit3 !== null && received > limit3) {
           done(createError(413, "request entity too large", {
-            limit: limit2,
+            limit: limit3,
             received,
             type: "entity.too.large"
           }));
@@ -5760,7 +5767,7 @@ var require_content_type = __commonJS({
     var QUOTE_REGEXP = /([\\"])/g;
     var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
     exports.format = format;
-    exports.parse = parse;
+    exports.parse = parse2;
     function format(obj) {
       if (!obj || typeof obj !== "object") {
         throw new TypeError("argument obj is required");
@@ -5784,7 +5791,7 @@ var require_content_type = __commonJS({
       }
       return string;
     }
-    function parse(string) {
+    function parse2(string) {
       if (!string) {
         throw new TypeError("argument string is required");
       }
@@ -15309,11 +15316,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path2) {
-      if (!path2 || typeof path2 !== "string") {
+    function lookup(path6) {
+      if (!path6 || typeof path6 !== "string") {
         return false;
       }
-      var extension2 = extname("x." + path2).toLowerCase().slice(1);
+      var extension2 = extname("x." + path6).toLowerCase().slice(1);
       if (!extension2) {
         return false;
       }
@@ -15366,7 +15373,7 @@ var require_media_typer = __commonJS({
     var TYPE_NAME_REGEXP = /^[A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126}$/;
     var TYPE_REGEXP = /^ *([A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126})\/([A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}) *$/;
     exports.format = format;
-    exports.parse = parse;
+    exports.parse = parse2;
     exports.test = test;
     function format(obj) {
       if (!obj || typeof obj !== "object") {
@@ -15399,7 +15406,7 @@ var require_media_typer = __commonJS({
       }
       return TYPE_REGEXP.test(string.toLowerCase());
     }
-    function parse(string) {
+    function parse2(string) {
       if (!string) {
         throw new TypeError("argument string is required");
       }
@@ -15551,7 +15558,7 @@ var require_utils = __commonJS({
         throw new TypeError("defaultType must be provided");
       }
       var inflate = options?.inflate !== false;
-      var limit2 = typeof options?.limit !== "number" ? bytes.parse(options?.limit || "100kb") : options?.limit;
+      var limit3 = typeof options?.limit !== "number" ? bytes.parse(options?.limit || "100kb") : options?.limit;
       var type = options?.type || defaultType;
       var verify = options?.verify || false;
       var defaultCharset = options?.defaultCharset || "utf-8";
@@ -15561,7 +15568,7 @@ var require_utils = __commonJS({
       var shouldParse = typeof type !== "function" ? typeChecker(type) : type;
       return {
         inflate,
-        limit: limit2,
+        limit: limit3,
         verify,
         defaultCharset,
         shouldParse
@@ -15585,7 +15592,7 @@ var require_read = __commonJS({
     var hasBody = require_type_is().hasBody;
     var { getCharset } = require_utils();
     module.exports = read;
-    function read(req, res, next, parse, debug, options) {
+    function read(req, res, next, parse2, debug, options) {
       if (onFinished.isFinished(req)) {
         debug("body already parsed");
         next();
@@ -15673,7 +15680,7 @@ var require_read = __commonJS({
         try {
           debug("parse body");
           str2 = typeof body !== "string" && encoding !== null ? iconv.decode(body, encoding) : body;
-          req.body = parse(str2, encoding);
+          req.body = parse2(str2, encoding);
         } catch (err) {
           next(createError(400, err, {
             body: str2,
@@ -15746,7 +15753,7 @@ var require_json = __commonJS({
       const normalizedOptions = normalizeOptions(options, "application/json");
       var reviver = options?.reviver;
       var strict = options?.strict !== false;
-      function parse(body) {
+      function parse2(body) {
         if (body.length === 0) {
           return {};
         }
@@ -15773,7 +15780,7 @@ var require_json = __commonJS({
         isValidCharset: (charset) => charset.slice(0, 4) === "utf-"
       };
       return function jsonParser(req, res, next) {
-        read(req, res, next, parse, debug, readOptions);
+        read(req, res, next, parse2, debug, readOptions);
       };
     }
     function createStrictSyntaxError(str2, char) {
@@ -15936,20 +15943,20 @@ var require_object_inspect = __commonJS({
     };
     module.exports = function inspect_(obj, options, depth, seen) {
       var opts = options || {};
-      if (has2(opts, "quoteStyle") && !has2(quotes, opts.quoteStyle)) {
+      if (has3(opts, "quoteStyle") && !has3(quotes, opts.quoteStyle)) {
         throw new TypeError('option "quoteStyle" must be "single" or "double"');
       }
-      if (has2(opts, "maxStringLength") && (typeof opts.maxStringLength === "number" ? opts.maxStringLength < 0 && opts.maxStringLength !== Infinity : opts.maxStringLength !== null)) {
+      if (has3(opts, "maxStringLength") && (typeof opts.maxStringLength === "number" ? opts.maxStringLength < 0 && opts.maxStringLength !== Infinity : opts.maxStringLength !== null)) {
         throw new TypeError('option "maxStringLength", if provided, must be a positive integer, Infinity, or `null`');
       }
-      var customInspect = has2(opts, "customInspect") ? opts.customInspect : true;
+      var customInspect = has3(opts, "customInspect") ? opts.customInspect : true;
       if (typeof customInspect !== "boolean" && customInspect !== "symbol") {
         throw new TypeError("option \"customInspect\", if provided, must be `true`, `false`, or `'symbol'`");
       }
-      if (has2(opts, "indent") && opts.indent !== null && opts.indent !== "	" && !(parseInt(opts.indent, 10) === opts.indent && opts.indent > 0)) {
+      if (has3(opts, "indent") && opts.indent !== null && opts.indent !== "	" && !(parseInt(opts.indent, 10) === opts.indent && opts.indent > 0)) {
         throw new TypeError('option "indent" must be "\\t", an integer > 0, or `null`');
       }
-      if (has2(opts, "numericSeparator") && typeof opts.numericSeparator !== "boolean") {
+      if (has3(opts, "numericSeparator") && typeof opts.numericSeparator !== "boolean") {
         throw new TypeError('option "numericSeparator", if provided, must be `true` or `false`');
       }
       var numericSeparator = opts.numericSeparator;
@@ -15981,7 +15988,7 @@ var require_object_inspect = __commonJS({
         depth = 0;
       }
       if (depth >= maxDepth && maxDepth > 0 && typeof obj === "object") {
-        return isArray2(obj) ? "[Array]" : "[Object]";
+        return isArray3(obj) ? "[Array]" : "[Object]";
       }
       var indent = getIndent(opts, depth);
       if (typeof seen === "undefined") {
@@ -15998,7 +16005,7 @@ var require_object_inspect = __commonJS({
           var newOpts = {
             depth: opts.depth
           };
-          if (has2(opts, "quoteStyle")) {
+          if (has3(opts, "quoteStyle")) {
             newOpts.quoteStyle = opts.quoteStyle;
           }
           return inspect_(value, newOpts, depth + 1, seen);
@@ -16027,7 +16034,7 @@ var require_object_inspect = __commonJS({
         s += "</" + $toLowerCase.call(String(obj.nodeName)) + ">";
         return s;
       }
-      if (isArray2(obj)) {
+      if (isArray3(obj)) {
         if (obj.length === 0) {
           return "[]";
         }
@@ -16127,7 +16134,7 @@ var require_object_inspect = __commonJS({
     function canTrustToString(obj) {
       return !toStringTag || !(typeof obj === "object" && (toStringTag in obj || typeof obj[toStringTag] !== "undefined"));
     }
-    function isArray2(obj) {
+    function isArray3(obj) {
       return toStr(obj) === "[object Array]" && canTrustToString(obj);
     }
     function isDate(obj) {
@@ -16176,11 +16183,11 @@ var require_object_inspect = __commonJS({
       }
       return false;
     }
-    var hasOwn2 = Object.prototype.hasOwnProperty || function(key) {
+    var hasOwn3 = Object.prototype.hasOwnProperty || function(key) {
       return key in this;
     };
-    function has2(obj, key) {
-      return hasOwn2.call(obj, key);
+    function has3(obj, key) {
+      return hasOwn3.call(obj, key);
     }
     function toStr(obj) {
       return objectToString.call(obj);
@@ -16355,12 +16362,12 @@ var require_object_inspect = __commonJS({
       return lineJoiner + $join.call(xs, "," + lineJoiner) + "\n" + indent.prev;
     }
     function arrObjKeys(obj, inspect) {
-      var isArr = isArray2(obj);
+      var isArr = isArray3(obj);
       var xs = [];
       if (isArr) {
         xs.length = obj.length;
         for (var i = 0; i < obj.length; i++) {
-          xs[i] = has2(obj, i) ? inspect(obj[i], obj) : "";
+          xs[i] = has3(obj, i) ? inspect(obj[i], obj) : "";
         }
       }
       var syms = typeof gOPS === "function" ? gOPS(obj) : [];
@@ -16372,7 +16379,7 @@ var require_object_inspect = __commonJS({
         }
       }
       for (var key in obj) {
-        if (!has2(obj, key)) {
+        if (!has3(obj, key)) {
           continue;
         }
         if (isArr && String(Number(key)) === key && key < obj.length) {
@@ -17177,7 +17184,7 @@ var require_get_intrinsic = __commonJS({
       "%WeakSetPrototype%": ["WeakSet", "prototype"]
     };
     var bind = require_function_bind();
-    var hasOwn2 = require_hasown();
+    var hasOwn3 = require_hasown();
     var $concat = bind.call($call, Array.prototype.concat);
     var $spliceApply = bind.call($apply, Array.prototype.splice);
     var $replace = bind.call($call, String.prototype.replace);
@@ -17202,11 +17209,11 @@ var require_get_intrinsic = __commonJS({
     var getBaseIntrinsic = function getBaseIntrinsic2(name, allowMissing) {
       var intrinsicName = name;
       var alias;
-      if (hasOwn2(LEGACY_ALIASES, intrinsicName)) {
+      if (hasOwn3(LEGACY_ALIASES, intrinsicName)) {
         alias = LEGACY_ALIASES[intrinsicName];
         intrinsicName = "%" + alias[0] + "%";
       }
-      if (hasOwn2(INTRINSICS, intrinsicName)) {
+      if (hasOwn3(INTRINSICS, intrinsicName)) {
         var value = INTRINSICS[intrinsicName];
         if (value === needsEval) {
           value = doEval(intrinsicName);
@@ -17255,7 +17262,7 @@ var require_get_intrinsic = __commonJS({
         }
         intrinsicBaseName += "." + part;
         intrinsicRealName = "%" + intrinsicBaseName + "%";
-        if (hasOwn2(INTRINSICS, intrinsicRealName)) {
+        if (hasOwn3(INTRINSICS, intrinsicRealName)) {
           value = INTRINSICS[intrinsicRealName];
         } else if (value != null) {
           if (!(part in value)) {
@@ -17273,7 +17280,7 @@ var require_get_intrinsic = __commonJS({
               value = value[part];
             }
           } else {
-            isOwn = hasOwn2(value, part);
+            isOwn = hasOwn3(value, part);
             value = value[part];
           }
           if (isOwn && !skipFurtherCaching) {
@@ -17509,8 +17516,8 @@ var require_utils2 = __commonJS({
     "use strict";
     var formats = require_formats();
     var getSideChannel = require_side_channel();
-    var has2 = Object.prototype.hasOwnProperty;
-    var isArray2 = Array.isArray;
+    var has3 = Object.prototype.hasOwnProperty;
+    var isArray3 = Array.isArray;
     var overflowChannel = getSideChannel();
     var markOverflow = function markOverflow2(obj, maxIndex) {
       overflowChannel.set(obj, maxIndex);
@@ -17536,7 +17543,7 @@ var require_utils2 = __commonJS({
       while (queue.length > 1) {
         var item = queue.pop();
         var obj = item.obj[item.prop];
-        if (isArray2(obj)) {
+        if (isArray3(obj)) {
           var compacted = [];
           for (var j = 0; j < obj.length; ++j) {
             if (typeof obj[j] !== "undefined") {
@@ -17561,7 +17568,7 @@ var require_utils2 = __commonJS({
         return target;
       }
       if (typeof source !== "object" && typeof source !== "function") {
-        if (isArray2(target)) {
+        if (isArray3(target)) {
           var nextIndex = target.length;
           if (options && typeof options.arrayLimit === "number" && nextIndex > options.arrayLimit) {
             return markOverflow(arrayToObject(target.concat(source), options), nextIndex);
@@ -17574,7 +17581,7 @@ var require_utils2 = __commonJS({
             setMaxIndex(target, newIndex);
           } else if (options && options.strictMerge) {
             return [target, source];
-          } else if (options && (options.plainObjects || options.allowPrototypes) || !has2.call(Object.prototype, source)) {
+          } else if (options && (options.plainObjects || options.allowPrototypes) || !has3.call(Object.prototype, source)) {
             target[source] = true;
           }
         } else {
@@ -17599,12 +17606,12 @@ var require_utils2 = __commonJS({
         return combined;
       }
       var mergeTarget = target;
-      if (isArray2(target) && !isArray2(source)) {
+      if (isArray3(target) && !isArray3(source)) {
         mergeTarget = arrayToObject(target, options);
       }
-      if (isArray2(target) && isArray2(source)) {
+      if (isArray3(target) && isArray3(source)) {
         source.forEach(function(item, i) {
-          if (has2.call(target, i)) {
+          if (has3.call(target, i)) {
             var targetItem = target[i];
             if (targetItem && typeof targetItem === "object" && item && typeof item === "object") {
               target[i] = merge2(targetItem, item, options);
@@ -17619,7 +17626,7 @@ var require_utils2 = __commonJS({
       }
       return Object.keys(source).reduce(function(acc, key) {
         var value = source[key];
-        if (has2.call(acc, key)) {
+        if (has3.call(acc, key)) {
           acc[key] = merge2(acc[key], value, options);
         } else {
           acc[key] = value;
@@ -17653,8 +17660,8 @@ var require_utils2 = __commonJS({
         return strWithoutPlus;
       }
     };
-    var limit2 = 1024;
-    var encode2 = function encode3(str2, defaultEncoder, charset, kind, format) {
+    var limit3 = 1024;
+    var encode3 = function encode4(str2, defaultEncoder, charset, kind, format) {
       if (str2.length === 0) {
         return str2;
       }
@@ -17670,8 +17677,8 @@ var require_utils2 = __commonJS({
         });
       }
       var out = "";
-      for (var j = 0; j < string.length; j += limit2) {
-        var segment = string.length >= limit2 ? string.slice(j, j + limit2) : string;
+      for (var j = 0; j < string.length; j += limit3) {
+        var segment = string.length >= limit3 ? string.slice(j, j + limit3) : string;
         var arr = [];
         for (var i = 0; i < segment.length; ++i) {
           var c = segment.charCodeAt(i);
@@ -17741,7 +17748,7 @@ var require_utils2 = __commonJS({
       return result;
     };
     var maybeMap = function maybeMap2(val, fn) {
-      if (isArray2(val)) {
+      if (isArray3(val)) {
         var mapped = [];
         for (var i = 0; i < val.length; i += 1) {
           mapped[mapped.length] = fn(val[i]);
@@ -17756,7 +17763,7 @@ var require_utils2 = __commonJS({
       combine,
       compact,
       decode,
-      encode: encode2,
+      encode: encode3,
       isBuffer,
       isOverflow,
       isRegExp,
@@ -17774,7 +17781,7 @@ var require_stringify = __commonJS({
     var getSideChannel = require_side_channel();
     var utils = require_utils2();
     var formats = require_formats();
-    var has2 = Object.prototype.hasOwnProperty;
+    var has3 = Object.prototype.hasOwnProperty;
     var arrayPrefixGenerators = {
       brackets: function brackets(prefix) {
         return prefix + "[]";
@@ -17787,14 +17794,14 @@ var require_stringify = __commonJS({
         return prefix;
       }
     };
-    var isArray2 = Array.isArray;
+    var isArray3 = Array.isArray;
     var push = Array.prototype.push;
     var pushToArray = function(arr, valueOrArray) {
-      push.apply(arr, isArray2(valueOrArray) ? valueOrArray : [valueOrArray]);
+      push.apply(arr, isArray3(valueOrArray) ? valueOrArray : [valueOrArray]);
     };
     var toISO = Date.prototype.toISOString;
     var defaultFormat = formats["default"];
-    var defaults2 = {
+    var defaults3 = {
       addQueryPrefix: false,
       allowDots: false,
       allowEmptyArrays: false,
@@ -17821,13 +17828,13 @@ var require_stringify = __commonJS({
     var isNonNullishPrimitive = function isNonNullishPrimitive2(v) {
       return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
     };
-    var sentinel2 = {};
-    var stringify2 = function stringify3(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+    var sentinel3 = {};
+    var stringify3 = function stringify4(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
       var obj = object;
       var tmpSc = sideChannel;
       var step = 0;
       var findFlag = false;
-      while ((tmpSc = tmpSc.get(sentinel2)) !== void 0 && !findFlag) {
+      while ((tmpSc = tmpSc.get(sentinel3)) !== void 0 && !findFlag) {
         var pos = tmpSc.get(object);
         step += 1;
         if (typeof pos !== "undefined") {
@@ -17837,7 +17844,7 @@ var require_stringify = __commonJS({
             findFlag = true;
           }
         }
-        if (typeof tmpSc.get(sentinel2) === "undefined") {
+        if (typeof tmpSc.get(sentinel3) === "undefined") {
           step = 0;
         }
       }
@@ -17845,7 +17852,7 @@ var require_stringify = __commonJS({
         obj = filter(prefix, obj);
       } else if (obj instanceof Date) {
         obj = serializeDate(obj);
-      } else if (generateArrayPrefix === "comma" && isArray2(obj)) {
+      } else if (generateArrayPrefix === "comma" && isArray3(obj)) {
         obj = utils.maybeMap(obj, function(value2) {
           if (value2 instanceof Date) {
             return serializeDate(value2);
@@ -17855,14 +17862,14 @@ var require_stringify = __commonJS({
       }
       if (obj === null) {
         if (strictNullHandling) {
-          return encoder && !encodeValuesOnly ? encoder(prefix, defaults2.encoder, charset, "key", format) : prefix;
+          return encoder2 && !encodeValuesOnly ? encoder2(prefix, defaults3.encoder, charset, "key", format) : prefix;
         }
         obj = "";
       }
       if (isNonNullishPrimitive(obj) || utils.isBuffer(obj)) {
-        if (encoder) {
-          var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults2.encoder, charset, "key", format);
-          return [formatter(keyValue) + "=" + formatter(encoder(obj, defaults2.encoder, charset, "value", format))];
+        if (encoder2) {
+          var keyValue = encodeValuesOnly ? prefix : encoder2(prefix, defaults3.encoder, charset, "key", format);
+          return [formatter(keyValue) + "=" + formatter(encoder2(obj, defaults3.encoder, charset, "value", format))];
         }
         return [formatter(prefix) + "=" + formatter(String(obj))];
       }
@@ -17871,20 +17878,20 @@ var require_stringify = __commonJS({
         return values;
       }
       var objKeys;
-      if (generateArrayPrefix === "comma" && isArray2(obj)) {
-        if (encodeValuesOnly && encoder) {
-          obj = utils.maybeMap(obj, encoder);
+      if (generateArrayPrefix === "comma" && isArray3(obj)) {
+        if (encodeValuesOnly && encoder2) {
+          obj = utils.maybeMap(obj, encoder2);
         }
         objKeys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
-      } else if (isArray2(filter)) {
+      } else if (isArray3(filter)) {
         objKeys = filter;
       } else {
         var keys = Object.keys(obj);
         objKeys = sort ? keys.sort(sort) : keys;
       }
       var encodedPrefix = encodeDotInKeys ? String(prefix).replace(/\./g, "%2E") : String(prefix);
-      var adjustedPrefix = commaRoundTrip && isArray2(obj) && obj.length === 1 ? encodedPrefix + "[]" : encodedPrefix;
-      if (allowEmptyArrays && isArray2(obj) && obj.length === 0) {
+      var adjustedPrefix = commaRoundTrip && isArray3(obj) && obj.length === 1 ? encodedPrefix + "[]" : encodedPrefix;
+      if (allowEmptyArrays && isArray3(obj) && obj.length === 0) {
         return adjustedPrefix + "[]";
       }
       for (var j = 0; j < objKeys.length; ++j) {
@@ -17894,11 +17901,11 @@ var require_stringify = __commonJS({
           continue;
         }
         var encodedKey = allowDots && encodeDotInKeys ? String(key).replace(/\./g, "%2E") : String(key);
-        var keyPrefix = isArray2(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjustedPrefix, encodedKey) : adjustedPrefix : adjustedPrefix + (allowDots ? "." + encodedKey : "[" + encodedKey + "]");
+        var keyPrefix = isArray3(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjustedPrefix, encodedKey) : adjustedPrefix : adjustedPrefix + (allowDots ? "." + encodedKey : "[" + encodedKey + "]");
         sideChannel.set(object, step);
         var valueSideChannel = getSideChannel();
-        valueSideChannel.set(sentinel2, sideChannel);
-        pushToArray(values, stringify3(
+        valueSideChannel.set(sentinel3, sideChannel);
+        pushToArray(values, stringify4(
           value,
           keyPrefix,
           generateArrayPrefix,
@@ -17907,7 +17914,7 @@ var require_stringify = __commonJS({
           strictNullHandling,
           skipNulls,
           encodeDotInKeys,
-          generateArrayPrefix === "comma" && encodeValuesOnly && isArray2(obj) ? null : encoder,
+          generateArrayPrefix === "comma" && encodeValuesOnly && isArray3(obj) ? null : encoder2,
           filter,
           sort,
           allowDots,
@@ -17923,7 +17930,7 @@ var require_stringify = __commonJS({
     };
     var normalizeStringifyOptions = function normalizeStringifyOptions2(opts) {
       if (!opts) {
-        return defaults2;
+        return defaults3;
       }
       if (typeof opts.allowEmptyArrays !== "undefined" && typeof opts.allowEmptyArrays !== "boolean") {
         throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
@@ -17934,20 +17941,20 @@ var require_stringify = __commonJS({
       if (opts.encoder !== null && typeof opts.encoder !== "undefined" && typeof opts.encoder !== "function") {
         throw new TypeError("Encoder has to be a function.");
       }
-      var charset = opts.charset || defaults2.charset;
+      var charset = opts.charset || defaults3.charset;
       if (typeof opts.charset !== "undefined" && opts.charset !== "utf-8" && opts.charset !== "iso-8859-1") {
         throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
       }
       var format = formats["default"];
       if (typeof opts.format !== "undefined") {
-        if (!has2.call(formats.formatters, opts.format)) {
+        if (!has3.call(formats.formatters, opts.format)) {
           throw new TypeError("Unknown format option provided.");
         }
         format = opts.format;
       }
       var formatter = formats.formatters[format];
-      var filter = defaults2.filter;
-      if (typeof opts.filter === "function" || isArray2(opts.filter)) {
+      var filter = defaults3.filter;
+      if (typeof opts.filter === "function" || isArray3(opts.filter)) {
         filter = opts.filter;
       }
       var arrayFormat;
@@ -17956,32 +17963,32 @@ var require_stringify = __commonJS({
       } else if ("indices" in opts) {
         arrayFormat = opts.indices ? "indices" : "repeat";
       } else {
-        arrayFormat = defaults2.arrayFormat;
+        arrayFormat = defaults3.arrayFormat;
       }
       if ("commaRoundTrip" in opts && typeof opts.commaRoundTrip !== "boolean") {
         throw new TypeError("`commaRoundTrip` must be a boolean, or absent");
       }
-      var allowDots = typeof opts.allowDots === "undefined" ? opts.encodeDotInKeys === true ? true : defaults2.allowDots : !!opts.allowDots;
+      var allowDots = typeof opts.allowDots === "undefined" ? opts.encodeDotInKeys === true ? true : defaults3.allowDots : !!opts.allowDots;
       return {
-        addQueryPrefix: typeof opts.addQueryPrefix === "boolean" ? opts.addQueryPrefix : defaults2.addQueryPrefix,
+        addQueryPrefix: typeof opts.addQueryPrefix === "boolean" ? opts.addQueryPrefix : defaults3.addQueryPrefix,
         allowDots,
-        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults2.allowEmptyArrays,
+        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults3.allowEmptyArrays,
         arrayFormat,
         charset,
-        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults2.charsetSentinel,
+        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults3.charsetSentinel,
         commaRoundTrip: !!opts.commaRoundTrip,
-        delimiter: typeof opts.delimiter === "undefined" ? defaults2.delimiter : opts.delimiter,
-        encode: typeof opts.encode === "boolean" ? opts.encode : defaults2.encode,
-        encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults2.encodeDotInKeys,
-        encoder: typeof opts.encoder === "function" ? opts.encoder : defaults2.encoder,
-        encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults2.encodeValuesOnly,
+        delimiter: typeof opts.delimiter === "undefined" ? defaults3.delimiter : opts.delimiter,
+        encode: typeof opts.encode === "boolean" ? opts.encode : defaults3.encode,
+        encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults3.encodeDotInKeys,
+        encoder: typeof opts.encoder === "function" ? opts.encoder : defaults3.encoder,
+        encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults3.encodeValuesOnly,
         filter,
         format,
         formatter,
-        serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults2.serializeDate,
-        skipNulls: typeof opts.skipNulls === "boolean" ? opts.skipNulls : defaults2.skipNulls,
+        serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults3.serializeDate,
+        skipNulls: typeof opts.skipNulls === "boolean" ? opts.skipNulls : defaults3.skipNulls,
         sort: typeof opts.sort === "function" ? opts.sort : null,
-        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling
+        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults3.strictNullHandling
       };
     };
     module.exports = function(object, opts) {
@@ -17992,7 +17999,7 @@ var require_stringify = __commonJS({
       if (typeof options.filter === "function") {
         filter = options.filter;
         obj = filter("", obj);
-      } else if (isArray2(options.filter)) {
+      } else if (isArray3(options.filter)) {
         filter = options.filter;
         objKeys = filter;
       }
@@ -18015,7 +18022,7 @@ var require_stringify = __commonJS({
         if (options.skipNulls && value === null) {
           continue;
         }
-        pushToArray(keys, stringify2(
+        pushToArray(keys, stringify3(
           value,
           key,
           generateArrayPrefix,
@@ -18055,9 +18062,9 @@ var require_parse = __commonJS({
   "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/parse.js"(exports, module) {
     "use strict";
     var utils = require_utils2();
-    var has2 = Object.prototype.hasOwnProperty;
-    var isArray2 = Array.isArray;
-    var defaults2 = {
+    var has3 = Object.prototype.hasOwnProperty;
+    var isArray3 = Array.isArray;
+    var defaults3 = {
       allowDots: false,
       allowEmptyArrays: false,
       allowPrototypes: false,
@@ -18101,13 +18108,13 @@ var require_parse = __commonJS({
       var obj = { __proto__: null };
       var cleanStr = options.ignoreQueryPrefix ? str2.replace(/^\?/, "") : str2;
       cleanStr = cleanStr.replace(/%5B/gi, "[").replace(/%5D/gi, "]");
-      var limit2 = options.parameterLimit === Infinity ? void 0 : options.parameterLimit;
+      var limit3 = options.parameterLimit === Infinity ? void 0 : options.parameterLimit;
       var parts = cleanStr.split(
         options.delimiter,
-        options.throwOnLimitExceeded && typeof limit2 !== "undefined" ? limit2 + 1 : limit2
+        options.throwOnLimitExceeded && typeof limit3 !== "undefined" ? limit3 + 1 : limit3
       );
-      if (options.throwOnLimitExceeded && typeof limit2 !== "undefined" && parts.length > limit2) {
-        throw new RangeError("Parameter limit exceeded. Only " + limit2 + " parameter" + (limit2 === 1 ? "" : "s") + " allowed.");
+      if (options.throwOnLimitExceeded && typeof limit3 !== "undefined" && parts.length > limit3) {
+        throw new RangeError("Parameter limit exceeded. Only " + limit3 + " parameter" + (limit3 === 1 ? "" : "s") + " allowed.");
       }
       var skipIndex = -1;
       var i;
@@ -18135,19 +18142,19 @@ var require_parse = __commonJS({
         var key;
         var val;
         if (pos === -1) {
-          key = options.decoder(part, defaults2.decoder, charset, "key");
+          key = options.decoder(part, defaults3.decoder, charset, "key");
           val = options.strictNullHandling ? null : "";
         } else {
-          key = options.decoder(part.slice(0, pos), defaults2.decoder, charset, "key");
+          key = options.decoder(part.slice(0, pos), defaults3.decoder, charset, "key");
           if (key !== null) {
             val = utils.maybeMap(
               parseArrayValue(
                 part.slice(pos + 1),
                 options,
-                isArray2(obj[key]) ? obj[key].length : 0
+                isArray3(obj[key]) ? obj[key].length : 0
               ),
               function(encodedVal) {
-                return options.decoder(encodedVal, defaults2.decoder, charset, "value");
+                return options.decoder(encodedVal, defaults3.decoder, charset, "value");
               }
             );
           }
@@ -18156,16 +18163,16 @@ var require_parse = __commonJS({
           val = interpretNumericEntities(String(val));
         }
         if (part.indexOf("[]=") > -1) {
-          val = isArray2(val) ? [val] : val;
+          val = isArray3(val) ? [val] : val;
         }
-        if (options.comma && isArray2(val) && val.length > options.arrayLimit) {
+        if (options.comma && isArray3(val) && val.length > options.arrayLimit) {
           if (options.throwOnLimitExceeded) {
             throw new RangeError("Array limit exceeded. Only " + options.arrayLimit + " element" + (options.arrayLimit === 1 ? "" : "s") + " allowed in an array.");
           }
           val = utils.combine([], val, options.arrayLimit, options.plainObjects);
         }
         if (key !== null) {
-          var existing = has2.call(obj, key);
+          var existing = has3.call(obj, key);
           if (existing && (options.duplicates === "combine" || part.indexOf("[]=") > -1)) {
             obj[key] = utils.combine(
               obj[key],
@@ -18228,7 +18235,7 @@ var require_parse = __commonJS({
     var splitKeyIntoSegments = function splitKeyIntoSegments2(givenKey, options) {
       var key = options.allowDots ? givenKey.replace(/\.([^.[]+)/g, "[$1]") : givenKey;
       if (options.depth <= 0) {
-        if (!options.plainObjects && has2.call(Object.prototype, key)) {
+        if (!options.plainObjects && has3.call(Object.prototype, key)) {
           if (!options.allowPrototypes) {
             return;
           }
@@ -18241,7 +18248,7 @@ var require_parse = __commonJS({
       var parent = segment ? key.slice(0, segment.index) : key;
       var keys = [];
       if (parent) {
-        if (!options.plainObjects && has2.call(Object.prototype, parent)) {
+        if (!options.plainObjects && has3.call(Object.prototype, parent)) {
           if (!options.allowPrototypes) {
             return;
           }
@@ -18252,7 +18259,7 @@ var require_parse = __commonJS({
       while ((segment = child.exec(key)) !== null && i < options.depth) {
         i += 1;
         var segmentContent = segment[1].slice(1, -1);
-        if (!options.plainObjects && has2.call(Object.prototype, segmentContent)) {
+        if (!options.plainObjects && has3.call(Object.prototype, segmentContent)) {
           if (!options.allowPrototypes) {
             return;
           }
@@ -18279,7 +18286,7 @@ var require_parse = __commonJS({
     };
     var normalizeParseOptions = function normalizeParseOptions2(opts) {
       if (!opts) {
-        return defaults2;
+        return defaults3;
       }
       if (typeof opts.allowEmptyArrays !== "undefined" && typeof opts.allowEmptyArrays !== "boolean") {
         throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
@@ -18296,35 +18303,35 @@ var require_parse = __commonJS({
       if (typeof opts.throwOnLimitExceeded !== "undefined" && typeof opts.throwOnLimitExceeded !== "boolean") {
         throw new TypeError("`throwOnLimitExceeded` option must be a boolean");
       }
-      var charset = typeof opts.charset === "undefined" ? defaults2.charset : opts.charset;
-      var duplicates = typeof opts.duplicates === "undefined" ? defaults2.duplicates : opts.duplicates;
+      var charset = typeof opts.charset === "undefined" ? defaults3.charset : opts.charset;
+      var duplicates = typeof opts.duplicates === "undefined" ? defaults3.duplicates : opts.duplicates;
       if (duplicates !== "combine" && duplicates !== "first" && duplicates !== "last") {
         throw new TypeError("The duplicates option must be either combine, first, or last");
       }
-      var allowDots = typeof opts.allowDots === "undefined" ? opts.decodeDotInKeys === true ? true : defaults2.allowDots : !!opts.allowDots;
+      var allowDots = typeof opts.allowDots === "undefined" ? opts.decodeDotInKeys === true ? true : defaults3.allowDots : !!opts.allowDots;
       return {
         allowDots,
-        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults2.allowEmptyArrays,
-        allowPrototypes: typeof opts.allowPrototypes === "boolean" ? opts.allowPrototypes : defaults2.allowPrototypes,
-        allowSparse: typeof opts.allowSparse === "boolean" ? opts.allowSparse : defaults2.allowSparse,
-        arrayLimit: typeof opts.arrayLimit === "number" ? opts.arrayLimit : defaults2.arrayLimit,
+        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults3.allowEmptyArrays,
+        allowPrototypes: typeof opts.allowPrototypes === "boolean" ? opts.allowPrototypes : defaults3.allowPrototypes,
+        allowSparse: typeof opts.allowSparse === "boolean" ? opts.allowSparse : defaults3.allowSparse,
+        arrayLimit: typeof opts.arrayLimit === "number" ? opts.arrayLimit : defaults3.arrayLimit,
         charset,
-        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults2.charsetSentinel,
-        comma: typeof opts.comma === "boolean" ? opts.comma : defaults2.comma,
-        decodeDotInKeys: typeof opts.decodeDotInKeys === "boolean" ? opts.decodeDotInKeys : defaults2.decodeDotInKeys,
-        decoder: typeof opts.decoder === "function" ? opts.decoder : defaults2.decoder,
-        delimiter: typeof opts.delimiter === "string" || utils.isRegExp(opts.delimiter) ? opts.delimiter : defaults2.delimiter,
+        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults3.charsetSentinel,
+        comma: typeof opts.comma === "boolean" ? opts.comma : defaults3.comma,
+        decodeDotInKeys: typeof opts.decodeDotInKeys === "boolean" ? opts.decodeDotInKeys : defaults3.decodeDotInKeys,
+        decoder: typeof opts.decoder === "function" ? opts.decoder : defaults3.decoder,
+        delimiter: typeof opts.delimiter === "string" || utils.isRegExp(opts.delimiter) ? opts.delimiter : defaults3.delimiter,
         // eslint-disable-next-line no-implicit-coercion, no-extra-parens
-        depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : defaults2.depth,
+        depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : defaults3.depth,
         duplicates,
         ignoreQueryPrefix: opts.ignoreQueryPrefix === true,
-        interpretNumericEntities: typeof opts.interpretNumericEntities === "boolean" ? opts.interpretNumericEntities : defaults2.interpretNumericEntities,
-        parameterLimit: typeof opts.parameterLimit === "number" ? opts.parameterLimit : defaults2.parameterLimit,
+        interpretNumericEntities: typeof opts.interpretNumericEntities === "boolean" ? opts.interpretNumericEntities : defaults3.interpretNumericEntities,
+        parameterLimit: typeof opts.parameterLimit === "number" ? opts.parameterLimit : defaults3.parameterLimit,
         parseArrays: opts.parseArrays !== false,
-        plainObjects: typeof opts.plainObjects === "boolean" ? opts.plainObjects : defaults2.plainObjects,
-        strictDepth: typeof opts.strictDepth === "boolean" ? !!opts.strictDepth : defaults2.strictDepth,
-        strictMerge: typeof opts.strictMerge === "boolean" ? !!opts.strictMerge : defaults2.strictMerge,
-        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling,
+        plainObjects: typeof opts.plainObjects === "boolean" ? opts.plainObjects : defaults3.plainObjects,
+        strictDepth: typeof opts.strictDepth === "boolean" ? !!opts.strictDepth : defaults3.strictDepth,
+        strictMerge: typeof opts.strictMerge === "boolean" ? !!opts.strictMerge : defaults3.strictMerge,
+        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults3.strictNullHandling,
         throwOnLimitExceeded: typeof opts.throwOnLimitExceeded === "boolean" ? opts.throwOnLimitExceeded : false
       };
     };
@@ -18353,13 +18360,13 @@ var require_parse = __commonJS({
 var require_lib2 = __commonJS({
   "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/index.js"(exports, module) {
     "use strict";
-    var stringify2 = require_stringify();
-    var parse = require_parse();
+    var stringify3 = require_stringify();
+    var parse2 = require_parse();
     var formats = require_formats();
     module.exports = {
       formats,
-      parse,
-      stringify: stringify2
+      parse: parse2,
+      stringify: stringify3
     };
   }
 });
@@ -18380,7 +18387,7 @@ var require_urlencoded = __commonJS({
         throw new TypeError("option defaultCharset must be either utf-8 or iso-8859-1");
       }
       var queryparse = createQueryParser(options);
-      function parse(body, encoding) {
+      function parse2(body, encoding) {
         return body.length ? queryparse(body, encoding) : {};
       }
       const readOptions = {
@@ -18389,7 +18396,7 @@ var require_urlencoded = __commonJS({
         isValidCharset: (charset) => charset === "utf-8" || charset === "iso-8859-1"
       };
       return function urlencodedParser(req, res, next) {
-        read(req, res, next, parse, debug, readOptions);
+        read(req, res, next, parse2, debug, readOptions);
       };
     }
     function createQueryParser(options) {
@@ -18439,12 +18446,12 @@ var require_urlencoded = __commonJS({
         }
       };
     }
-    function parameterCount(body, limit2) {
+    function parameterCount(body, limit3) {
       let count = 0;
       let index = -1;
       do {
         count++;
-        if (count > limit2) return void 0;
+        if (count > limit3) return void 0;
         index = body.indexOf("&", index + 1);
       } while (index !== -1);
       return count;
@@ -18573,7 +18580,7 @@ var require_parseurl = __commonJS({
   "../../node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl/index.js"(exports, module) {
     "use strict";
     var url = __require("url");
-    var parse = url.parse;
+    var parse2 = url.parse;
     var Url = url.Url;
     module.exports = parseurl;
     module.exports.original = originalurl;
@@ -18605,7 +18612,7 @@ var require_parseurl = __commonJS({
     }
     function fastparse(str2) {
       if (typeof str2 !== "string" || str2.charCodeAt(0) !== 47) {
-        return parse(str2);
+        return parse2(str2);
       }
       var pathname = str2;
       var query = null;
@@ -18633,7 +18640,7 @@ var require_parseurl = __commonJS({
           /* #  */
           case 160:
           case 65279:
-            return parse(str2);
+            return parse2(str2);
         }
       }
       var url2 = Url !== void 0 ? new Url() : {};
@@ -18784,13 +18791,13 @@ var require_view = __commonJS({
   "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/view.js"(exports, module) {
     "use strict";
     var debug = require_src()("express:view");
-    var path2 = __require("node:path");
-    var fs = __require("node:fs");
-    var dirname = path2.dirname;
-    var basename = path2.basename;
-    var extname = path2.extname;
-    var join = path2.join;
-    var resolve = path2.resolve;
+    var path6 = __require("node:path");
+    var fs4 = __require("node:fs");
+    var dirname4 = path6.dirname;
+    var basename3 = path6.basename;
+    var extname = path6.extname;
+    var join4 = path6.join;
+    var resolve4 = path6.resolve;
     module.exports = View;
     function View(name, options) {
       var opts = options || {};
@@ -18819,17 +18826,17 @@ var require_view = __commonJS({
       this.path = this.lookup(fileName);
     }
     View.prototype.lookup = function lookup(name) {
-      var path3;
+      var path7;
       var roots = [].concat(this.root);
       debug('lookup "%s"', name);
-      for (var i = 0; i < roots.length && !path3; i++) {
+      for (var i = 0; i < roots.length && !path7; i++) {
         var root = roots[i];
-        var loc = resolve(root, name);
-        var dir = dirname(loc);
-        var file = basename(loc);
-        path3 = this.resolve(dir, file);
+        var loc = resolve4(root, name);
+        var dir = dirname4(loc);
+        var file = basename3(loc);
+        path7 = this.resolve(dir, file);
       }
-      return path3;
+      return path7;
     };
     View.prototype.render = function render(options, callback) {
       var sync = true;
@@ -18849,23 +18856,23 @@ var require_view = __commonJS({
       });
       sync = false;
     };
-    View.prototype.resolve = function resolve2(dir, file) {
+    View.prototype.resolve = function resolve5(dir, file) {
       var ext = this.ext;
-      var path3 = join(dir, file);
-      var stat = tryStat(path3);
-      if (stat && stat.isFile()) {
-        return path3;
+      var path7 = join4(dir, file);
+      var stat2 = tryStat(path7);
+      if (stat2 && stat2.isFile()) {
+        return path7;
       }
-      path3 = join(dir, basename(file, ext), "index" + ext);
-      stat = tryStat(path3);
-      if (stat && stat.isFile()) {
-        return path3;
+      path7 = join4(dir, basename3(file, ext), "index" + ext);
+      stat2 = tryStat(path7);
+      if (stat2 && stat2.isFile()) {
+        return path7;
       }
     };
-    function tryStat(path3) {
-      debug('stat "%s"', path3);
+    function tryStat(path7) {
+      debug('stat "%s"', path7);
       try {
-        return fs.statSync(path3);
+        return fs4.statSync(path7);
       } catch (e) {
         return void 0;
       }
@@ -18878,14 +18885,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
-    var crypto2 = __require("crypto");
+    var crypto5 = __require("crypto");
     var Stats = __require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto2.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto5.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -18907,9 +18914,9 @@ var require_etag = __commonJS({
       }
       return obj && typeof obj === "object" && "ctime" in obj && toString.call(obj.ctime) === "[object Date]" && "mtime" in obj && toString.call(obj.mtime) === "[object Date]" && "ino" in obj && typeof obj.ino === "number" && "size" in obj && typeof obj.size === "number";
     }
-    function stattag(stat) {
-      var mtime = stat.mtime.getTime().toString(16);
-      var size = stat.size.toString(16);
+    function stattag(stat2) {
+      var mtime = stat2.mtime.getTime().toString(16);
+      var size = stat2.size.toString(16);
       return '"' + size + "-" + mtime + '"';
     }
   }
@@ -18924,7 +18931,7 @@ var require_forwarded = __commonJS({
       if (!req) {
         throw new TypeError("argument req is required");
       }
-      var proxyAddrs = parse(req.headers["x-forwarded-for"] || "");
+      var proxyAddrs = parse2(req.headers["x-forwarded-for"] || "");
       var socketAddr = getSocketAddr(req);
       var addrs = [socketAddr].concat(proxyAddrs);
       return addrs;
@@ -18932,7 +18939,7 @@ var require_forwarded = __commonJS({
     function getSocketAddr(req) {
       return req.socket ? req.socket.remoteAddress : req.connection.remoteAddress;
     }
-    function parse(header) {
+    function parse2(header) {
       var end = header.length;
       var list = [];
       var start = header.length;
@@ -19961,11 +19968,11 @@ var require_dist = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PathError = exports.TokenData = void 0;
-    exports.parse = parse;
+    exports.parse = parse2;
     exports.compile = compile;
     exports.match = match;
     exports.pathToRegexp = pathToRegexp;
-    exports.stringify = stringify2;
+    exports.stringify = stringify3;
     var DEFAULT_DELIMITER = "/";
     var NOOP_VALUE = (value) => value;
     var ID_START = /^[$_\p{ID_Start}]$/u;
@@ -19995,21 +20002,21 @@ var require_dist = __commonJS({
       }
     };
     exports.PathError = PathError;
-    function parse(str2, options = {}) {
+    function parse2(str2, options = {}) {
       const { encodePath = NOOP_VALUE } = options;
       const chars = [...str2];
       let index = 0;
       function consumeUntil(end) {
         const output = [];
-        let path2 = "";
+        let path6 = "";
         function writePath() {
-          if (!path2)
+          if (!path6)
             return;
           output.push({
             type: "text",
-            value: encodePath(path2)
+            value: encodePath(path6)
           });
-          path2 = "";
+          path6 = "";
         }
         while (index < chars.length) {
           const value = chars[index++];
@@ -20021,7 +20028,7 @@ var require_dist = __commonJS({
             if (index === chars.length) {
               throw new PathError(`Unexpected end after \\ at index ${index}`, str2);
             }
-            path2 += chars[index++];
+            path6 += chars[index++];
             continue;
           }
           if (value === ":" || value === "*") {
@@ -20065,7 +20072,7 @@ var require_dist = __commonJS({
           if (value === "}" || value === "(" || value === ")" || value === "[" || value === "]" || value === "+" || value === "?" || value === "!") {
             throw new PathError(`Unexpected ${value} at index ${index - 1}`, str2);
           }
-          path2 += value;
+          path6 += value;
         }
         if (end) {
           throw new PathError(`Unexpected end at index ${index}, expected ${end}`, str2);
@@ -20075,34 +20082,34 @@ var require_dist = __commonJS({
       }
       return new TokenData(consumeUntil(""), str2);
     }
-    function compile(path2, options = {}) {
-      const { encode: encode2 = encodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const data = typeof path2 === "object" ? path2 : parse(path2, options);
-      const fn = tokensToFunction(data.tokens, delimiter, encode2);
-      return function path3(params = {}) {
+    function compile(path6, options = {}) {
+      const { encode: encode3 = encodeURIComponent, delimiter: delimiter2 = DEFAULT_DELIMITER } = options;
+      const data = typeof path6 === "object" ? path6 : parse2(path6, options);
+      const fn = tokensToFunction(data.tokens, delimiter2, encode3);
+      return function path7(params = {}) {
         const missing = [];
-        const path4 = fn(params, missing);
+        const path8 = fn(params, missing);
         if (missing.length) {
           throw new TypeError(`Missing parameters: ${missing.join(", ")}`);
         }
-        return path4;
+        return path8;
       };
     }
-    function tokensToFunction(tokens, delimiter, encode2) {
-      const encoders = tokens.map((token) => tokenToFunction(token, delimiter, encode2));
+    function tokensToFunction(tokens, delimiter2, encode3) {
+      const encoders = tokens.map((token) => tokenToFunction(token, delimiter2, encode3));
       return (data, missing) => {
         let result = "";
-        for (const encoder of encoders) {
-          result += encoder(data, missing);
+        for (const encoder2 of encoders) {
+          result += encoder2(data, missing);
         }
         return result;
       };
     }
-    function tokenToFunction(token, delimiter, encode2) {
+    function tokenToFunction(token, delimiter2, encode3) {
       if (token.type === "text")
         return () => token.value;
       if (token.type === "group") {
-        const fn = tokensToFunction(token.tokens, delimiter, encode2);
+        const fn = tokensToFunction(token.tokens, delimiter2, encode3);
         return (data, missing) => {
           const len = missing.length;
           const value = fn(data, missing);
@@ -20112,8 +20119,8 @@ var require_dist = __commonJS({
           return "";
         };
       }
-      const encodeValue = encode2 || NOOP_VALUE;
-      if (token.type === "wildcard" && encode2 !== false) {
+      const encodeValue = encode3 || NOOP_VALUE;
+      if (token.type === "wildcard" && encode3 !== false) {
         return (data, missing) => {
           const value = data[token.name];
           if (value == null) {
@@ -20129,7 +20136,7 @@ var require_dist = __commonJS({
               throw new TypeError(`Expected "${token.name}/${i}" to be a string`);
             }
             if (i > 0)
-              result += delimiter;
+              result += delimiter2;
             result += encodeValue(value[i]);
           }
           return result;
@@ -20147,21 +20154,21 @@ var require_dist = __commonJS({
         return encodeValue(value);
       };
     }
-    function match(path2, options = {}) {
-      const { decode = decodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const { regexp, keys } = pathToRegexp(path2, options);
+    function match(path6, options = {}) {
+      const { decode = decodeURIComponent, delimiter: delimiter2 = DEFAULT_DELIMITER } = options;
+      const { regexp, keys } = pathToRegexp(path6, options);
       const decoders = keys.map((key) => {
         if (decode === false)
           return NOOP_VALUE;
         if (key.type === "param")
           return decode;
-        return (value) => value.split(delimiter).map(decode);
+        return (value) => value.split(delimiter2).map(decode);
       });
       return function match2(input) {
         const m = regexp.exec(input);
         if (!m)
           return false;
-        const path3 = m[0];
+        const path7 = m[0];
         const params = /* @__PURE__ */ Object.create(null);
         for (let i = 1; i < m.length; i++) {
           if (m[i] === void 0)
@@ -20170,36 +20177,36 @@ var require_dist = __commonJS({
           const decoder = decoders[i - 1];
           params[key.name] = decoder(m[i]);
         }
-        return { path: path3, params };
+        return { path: path7, params };
       };
     }
-    function pathToRegexp(path2, options = {}) {
-      const { delimiter = DEFAULT_DELIMITER, end = true, sensitive = false, trailing = true } = options;
+    function pathToRegexp(path6, options = {}) {
+      const { delimiter: delimiter2 = DEFAULT_DELIMITER, end = true, sensitive = false, trailing = true } = options;
       const keys = [];
       let source = "";
       let combinations = 0;
-      function process2(path3) {
-        if (Array.isArray(path3)) {
-          for (const p of path3)
+      function process2(path7) {
+        if (Array.isArray(path7)) {
+          for (const p of path7)
             process2(p);
           return;
         }
-        const data = typeof path3 === "object" ? path3 : parse(path3, options);
+        const data = typeof path7 === "object" ? path7 : parse2(path7, options);
         flatten(data.tokens, 0, [], (tokens) => {
           if (combinations >= 256) {
             throw new PathError("Too many path combinations", data.originalPath);
           }
           if (combinations > 0)
             source += "|";
-          source += toRegExpSource(tokens, delimiter, keys, data.originalPath);
+          source += toRegExpSource(tokens, delimiter2, keys, data.originalPath);
           combinations++;
         });
       }
-      process2(path2);
+      process2(path6);
       let pattern = `^(?:${source})`;
       if (trailing)
-        pattern += "(?:" + escape2(delimiter) + "$)?";
-      pattern += end ? "$" : "(?=" + escape2(delimiter) + "|$)";
+        pattern += "(?:" + escape2(delimiter2) + "$)?";
+      pattern += end ? "$" : "(?=" + escape2(delimiter2) + "|$)";
       return { regexp: new RegExp(pattern, sensitive ? "" : "i"), keys };
     }
     function flatten(tokens, index, result, callback) {
@@ -20215,7 +20222,7 @@ var require_dist = __commonJS({
       }
       callback(result);
     }
-    function toRegExpSource(tokens, delimiter, keys, originalPath) {
+    function toRegExpSource(tokens, delimiter2, keys, originalPath) {
       let result = "";
       let backtrack = "";
       let wildcardBacktrack = "";
@@ -20228,7 +20235,7 @@ var require_dist = __commonJS({
           if (token.type === type)
             return true;
           if (token.type === "text") {
-            if (token.value.includes(delimiter))
+            if (token.value.includes(delimiter2))
               break;
           }
         }
@@ -20251,7 +20258,7 @@ var require_dist = __commonJS({
           backtrack += token.value;
           if (prevCaptureType === 2)
             wildcardBacktrack += token.value;
-          if (token.value.includes(delimiter))
+          if (token.value.includes(delimiter2))
             hasSegmentCapture = 0;
           continue;
         }
@@ -20260,10 +20267,10 @@ var require_dist = __commonJS({
             throw new PathError(`Missing text before "${token.name}" ${token.type}`, originalPath);
           }
           if (token.type === "param") {
-            result += hasSegmentCapture & 2 ? `(${negate(delimiter, backtrack)}+)` : hasInSegment(index, "wildcard") ? `(${negate(delimiter, peekText(index))}+)` : hasSegmentCapture & 1 ? `(${negate(delimiter, backtrack)}+|${escape2(backtrack)})` : `(${negate(delimiter, "")}+)`;
+            result += hasSegmentCapture & 2 ? `(${negate(delimiter2, backtrack)}+)` : hasInSegment(index, "wildcard") ? `(${negate(delimiter2, peekText(index))}+)` : hasSegmentCapture & 1 ? `(${negate(delimiter2, backtrack)}+|${escape2(backtrack)})` : `(${negate(delimiter2, "")}+)`;
             hasSegmentCapture |= prevCaptureType = 1;
           } else {
-            result += hasSegmentCapture & 2 ? `(${negate(backtrack, "")}+)` : wildcardBacktrack ? `(${negate(wildcardBacktrack, "")}+|${negate(delimiter, "")}+)` : `([^]+)`;
+            result += hasSegmentCapture & 2 ? `(${negate(backtrack, "")}+)` : wildcardBacktrack ? `(${negate(wildcardBacktrack, "")}+|${negate(delimiter2, "")}+)` : `([^]+)`;
             wildcardBacktrack = "";
             hasSegmentCapture |= prevCaptureType = 2;
           }
@@ -20310,7 +20317,7 @@ var require_dist = __commonJS({
       }
       return value;
     }
-    function stringify2(data) {
+    function stringify3(data) {
       return stringifyTokens(data.tokens, 0);
     }
     function stringifyName(name, next) {
@@ -20335,18 +20342,18 @@ var require_layer = __commonJS({
     var TRAILING_SLASH_REGEXP = /\/+$/;
     var MATCHING_GROUP_REGEXP = /\((?:\?<(.*?)>)?(?!\?)/g;
     module.exports = Layer;
-    function Layer(path2, options, fn) {
+    function Layer(path6, options, fn) {
       if (!(this instanceof Layer)) {
-        return new Layer(path2, options, fn);
+        return new Layer(path6, options, fn);
       }
-      debug("new %o", path2);
+      debug("new %o", path6);
       const opts = options || {};
       this.handle = fn;
       this.keys = [];
       this.name = fn.name || "<anonymous>";
       this.params = void 0;
       this.path = void 0;
-      this.slash = path2 === "/" && opts.end === false;
+      this.slash = path6 === "/" && opts.end === false;
       function matcher(_path) {
         if (_path instanceof RegExp) {
           const keys = [];
@@ -20385,7 +20392,7 @@ var require_layer = __commonJS({
           decode: decodeParam
         });
       }
-      this.matchers = Array.isArray(path2) ? path2.map(matcher) : [matcher(path2)];
+      this.matchers = Array.isArray(path6) ? path6.map(matcher) : [matcher(path6)];
     }
     Layer.prototype.handleError = function handleError(error, req, res, next) {
       const fn = this.handle;
@@ -20425,9 +20432,9 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.match = function match(path2) {
+    Layer.prototype.match = function match(path6) {
       let match2;
-      if (path2 != null) {
+      if (path6 != null) {
         if (this.slash) {
           this.params = {};
           this.path = "";
@@ -20435,7 +20442,7 @@ var require_layer = __commonJS({
         }
         let i = 0;
         while (!match2 && i < this.matchers.length) {
-          match2 = this.matchers[i](path2);
+          match2 = this.matchers[i](path6);
           i++;
         }
       }
@@ -20463,13 +20470,13 @@ var require_layer = __commonJS({
         throw err;
       }
     }
-    function loosen(path2) {
-      if (path2 instanceof RegExp || path2 === "/") {
-        return path2;
+    function loosen(path6) {
+      if (path6 instanceof RegExp || path6 === "/") {
+        return path6;
       }
-      return Array.isArray(path2) ? path2.map(function(p) {
+      return Array.isArray(path6) ? path6.map(function(p) {
         return loosen(p);
-      }) : String(path2).replace(TRAILING_SLASH_REGEXP, "");
+      }) : String(path6).replace(TRAILING_SLASH_REGEXP, "");
     }
   }
 });
@@ -20485,9 +20492,9 @@ var require_route = __commonJS({
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
     module.exports = Route;
-    function Route(path2) {
-      debug("new %o", path2);
-      this.path = path2;
+    function Route(path6) {
+      debug("new %o", path6);
+      this.path = path6;
       this.stack = [];
       this.methods = /* @__PURE__ */ Object.create(null);
     }
@@ -20608,27 +20615,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router10;
+    module.exports = Router13;
     module.exports.Route = Route;
-    function Router10(options) {
-      if (!(this instanceof Router10)) {
-        return new Router10(options);
+    function Router13(options) {
+      if (!(this instanceof Router13)) {
+        return new Router13(options);
       }
       const opts = options || {};
-      function router10(req, res, next) {
-        router10.handle(req, res, next);
+      function router13(req, res, next) {
+        router13.handle(req, res, next);
       }
-      Object.setPrototypeOf(router10, this);
-      router10.caseSensitive = opts.caseSensitive;
-      router10.mergeParams = opts.mergeParams;
-      router10.params = {};
-      router10.strict = opts.strict;
-      router10.stack = [];
-      return router10;
+      Object.setPrototypeOf(router13, this);
+      router13.caseSensitive = opts.caseSensitive;
+      router13.mergeParams = opts.mergeParams;
+      router13.params = {};
+      router13.strict = opts.strict;
+      router13.stack = [];
+      return router13;
     }
-    Router10.prototype = function() {
+    Router13.prototype = function() {
     };
-    Router10.prototype.param = function param(name, fn) {
+    Router13.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20648,7 +20655,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router10.prototype.handle = function handle(req, res, callback) {
+    Router13.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20695,8 +20702,8 @@ var require_router = __commonJS({
         if (++sync > 100) {
           return setImmediate(next, err);
         }
-        const path2 = getPathname(req);
-        if (path2 == null) {
+        const path6 = getPathname(req);
+        if (path6 == null) {
           return done(layerError);
         }
         let layer;
@@ -20704,7 +20711,7 @@ var require_router = __commonJS({
         let route;
         while (match !== true && idx < stack.length) {
           layer = stack[idx++];
-          match = matchLayer(layer, path2);
+          match = matchLayer(layer, path6);
           route = layer.route;
           if (typeof match !== "boolean") {
             layerError = layerError || match;
@@ -20742,18 +20749,18 @@ var require_router = __commonJS({
           } else if (route) {
             layer.handleRequest(req, res, next);
           } else {
-            trimPrefix(layer, layerError, layerPath, path2);
+            trimPrefix(layer, layerError, layerPath, path6);
           }
           sync = 0;
         });
       }
-      function trimPrefix(layer, layerError, layerPath, path2) {
+      function trimPrefix(layer, layerError, layerPath, path6) {
         if (layerPath.length !== 0) {
-          if (layerPath !== path2.substring(0, layerPath.length)) {
+          if (layerPath !== path6.substring(0, layerPath.length)) {
             next(layerError);
             return;
           }
-          const c = path2[layerPath.length];
+          const c = path6[layerPath.length];
           if (c && c !== "/") {
             next(layerError);
             return;
@@ -20775,9 +20782,9 @@ var require_router = __commonJS({
         }
       }
     };
-    Router10.prototype.use = function use(handler) {
+    Router13.prototype.use = function use(handler) {
       let offset = 0;
-      let path2 = "/";
+      let path6 = "/";
       if (typeof handler !== "function") {
         let arg = handler;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -20785,7 +20792,7 @@ var require_router = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path2 = handler;
+          path6 = handler;
         }
       }
       const callbacks = flatten.call(slice.call(arguments, offset), Infinity);
@@ -20797,8 +20804,8 @@ var require_router = __commonJS({
         if (typeof fn !== "function") {
           throw new TypeError("argument handler must be a function");
         }
-        debug("use %o %s", path2, fn.name || "<anonymous>");
-        const layer = new Layer(path2, {
+        debug("use %o %s", path6, fn.name || "<anonymous>");
+        const layer = new Layer(path6, {
           sensitive: this.caseSensitive,
           strict: false,
           end: false
@@ -20808,9 +20815,9 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router10.prototype.route = function route(path2) {
-      const route2 = new Route(path2);
-      const layer = new Layer(path2, {
+    Router13.prototype.route = function route(path6) {
+      const route2 = new Route(path6);
+      const layer = new Layer(path6, {
         sensitive: this.caseSensitive,
         strict: this.strict,
         end: true
@@ -20823,8 +20830,8 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router10.prototype[method] = function(path2) {
-        const route = this.route(path2);
+      Router13.prototype[method] = function(path6) {
+        const route = this.route(path6);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
@@ -20853,9 +20860,9 @@ var require_router = __commonJS({
       const fqdnIndex = url.substring(0, pathLength).indexOf("://");
       return fqdnIndex !== -1 ? url.substring(0, url.indexOf("/", 3 + fqdnIndex)) : void 0;
     }
-    function matchLayer(layer, path2) {
+    function matchLayer(layer, path6) {
       try {
-        return layer.match(path2);
+        return layer.match(path6);
       } catch (err) {
         return err;
       }
@@ -21004,15 +21011,15 @@ var require_application = __commonJS({
     var compileETag = require_utils3().compileETag;
     var compileQueryParser = require_utils3().compileQueryParser;
     var compileTrust = require_utils3().compileTrust;
-    var resolve = __require("node:path").resolve;
+    var resolve4 = __require("node:path").resolve;
     var once = require_once();
-    var Router10 = require_router();
+    var Router13 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app3 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app3.init = function init() {
-      var router10 = null;
+      var router13 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21021,13 +21028,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router10 === null) {
-            router10 = new Router10({
+          if (router13 === null) {
+            router13 = new Router13({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router10;
+          return router13;
         }
       });
     };
@@ -21058,7 +21065,7 @@ var require_application = __commonJS({
       this.mountpath = "/";
       this.locals.settings = this.settings;
       this.set("view", View);
-      this.set("views", resolve("views"));
+      this.set("views", resolve4("views"));
       this.set("jsonp callback name", "callback");
       if (env === "production") {
         this.enable("view cache");
@@ -21083,7 +21090,7 @@ var require_application = __commonJS({
     };
     app3.use = function use(fn) {
       var offset = 0;
-      var path2 = "/";
+      var path6 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -21091,22 +21098,22 @@ var require_application = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path2 = fn;
+          path6 = fn;
         }
       }
       var fns = flatten.call(slice.call(arguments, offset), Infinity);
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router10 = this.router;
+      var router13 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router10.use(path2, fn2);
+          return router13.use(path6, fn2);
         }
-        debug(".use app under %s", path2);
-        fn2.mountpath = path2;
+        debug(".use app under %s", path6);
+        fn2.mountpath = path6;
         fn2.parent = this;
-        router10.use(path2, function mounted_app(req, res, next) {
+        router13.use(path6, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -21118,8 +21125,8 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app3.route = function route(path2) {
-      return this.router.route(path2);
+    app3.route = function route(path6) {
+      return this.router.route(path6);
     };
     app3.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
@@ -21162,7 +21169,7 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app3.path = function path2() {
+    app3.path = function path6() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
     app3.enabled = function enabled(setting) {
@@ -21178,17 +21185,17 @@ var require_application = __commonJS({
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app3[method] = function(path2) {
+      app3[method] = function(path6) {
         if (method === "get" && arguments.length === 1) {
-          return this.set(path2);
+          return this.set(path6);
         }
-        var route = this.route(path2);
+        var route = this.route(path6);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
     });
-    app3.all = function all(path2) {
-      var route = this.route(path2);
+    app3.all = function all(path6) {
+      var route = this.route(path6);
       var args = slice.call(arguments, 1);
       for (var i = 0; i < methods.length; i++) {
         route[methods[i]].apply(route, args);
@@ -22010,7 +22017,7 @@ var require_request = __commonJS({
     var http = __require("node:http");
     var fresh = require_fresh();
     var parseRange = require_range_parser();
-    var parse = require_parseurl();
+    var parse2 = require_parseurl();
     var proxyaddr = require_proxy_addr();
     var req = Object.create(http.IncomingMessage.prototype);
     module.exports = req;
@@ -22055,7 +22062,7 @@ var require_request = __commonJS({
       if (!queryparse) {
         return /* @__PURE__ */ Object.create(null);
       }
-      var querystring = parse(this).query;
+      var querystring = parse2(this).query;
       return queryparse(querystring);
     });
     req.is = function is(types) {
@@ -22098,8 +22105,8 @@ var require_request = __commonJS({
       var subdomains2 = !isIP(hostname) ? hostname.split(".").reverse() : [hostname];
       return subdomains2.slice(offset);
     });
-    defineGetter(req, "path", function path2() {
-      return parse(this).pathname;
+    defineGetter(req, "path", function path6() {
+      return parse2(this).pathname;
     });
     defineGetter(req, "host", function host() {
       var trust = this.app.get("trust proxy fn");
@@ -22153,7 +22160,7 @@ var require_content_disposition = __commonJS({
   "../../node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition/index.js"(exports, module) {
     "use strict";
     module.exports = contentDisposition;
-    module.exports.parse = parse;
+    module.exports.parse = parse2;
     var utf8Decoder = new TextDecoder("utf-8");
     var ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g;
     var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g;
@@ -22187,9 +22194,9 @@ var require_content_disposition = __commonJS({
       if (typeof fallback === "string" && NON_LATIN1_REGEXP.test(fallback)) {
         throw new TypeError("fallback must be ISO-8859-1 string");
       }
-      var name = basename(filename);
+      var name = basename3(filename);
       var isQuotedString = TEXT_REGEXP.test(name);
-      var fallbackName = typeof fallback !== "string" ? fallback && getlatin1(name) : basename(fallback);
+      var fallbackName = typeof fallback !== "string" ? fallback && getlatin1(name) : basename3(fallback);
       var hasFallback = typeof fallbackName === "string" && fallbackName !== name;
       if (hasFallback || !isQuotedString || hasHexEscape(name)) {
         params["filename*"] = name;
@@ -22248,7 +22255,7 @@ var require_content_disposition = __commonJS({
     function getlatin1(val) {
       return String(val).replace(NON_LATIN1_REGEXP, "?");
     }
-    function parse(string) {
+    function parse2(string) {
       if (!string || typeof string !== "string") {
         throw new TypeError("argument string is required");
       }
@@ -22309,8 +22316,8 @@ var require_content_disposition = __commonJS({
       this.type = type;
       this.parameters = parameters;
     }
-    function basename(path2) {
-      const normalized = path2.replaceAll("\\", "/");
+    function basename3(path6) {
+      const normalized = path6.replaceAll("\\", "/");
       let end = normalized.length;
       while (end > 0 && normalized[end - 1] === "/") {
         end--;
@@ -22360,17 +22367,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
-    var crypto2 = __require("crypto");
+    var crypto5 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto2.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto5.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto2.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto5.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -22379,7 +22386,7 @@ var require_cookie_signature = __commonJS({
 var require_cookie = __commonJS({
   "../../node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js"(exports) {
     "use strict";
-    exports.parse = parse;
+    exports.parse = parse2;
     exports.serialize = serialize;
     var __toString = Object.prototype.toString;
     var __hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -22387,7 +22394,7 @@ var require_cookie = __commonJS({
     var cookieValueRegExp = /^("?)[\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]*\1$/;
     var domainValueRegExp = /^([.]?[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)([.][a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
     var pathValueRegExp = /^[\u0020-\u003A\u003D-\u007E]*$/;
-    function parse(str2, opt) {
+    function parse2(str2, opt) {
       if (typeof str2 !== "string") {
         throw new TypeError("argument str must be a string");
       }
@@ -22551,32 +22558,32 @@ var require_send = __commonJS({
     var escapeHtml = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
-    var fs = __require("fs");
+    var fs4 = __require("fs");
     var mime = require_mime_types();
     var ms = require_ms();
     var onFinished = require_on_finished();
     var parseRange = require_range_parser();
-    var path2 = __require("path");
+    var path6 = __require("path");
     var statuses = require_statuses();
-    var Stream2 = __require("stream");
+    var Stream3 = __require("stream");
     var util2 = __require("util");
-    var extname = path2.extname;
-    var join = path2.join;
-    var normalize = path2.normalize;
-    var resolve = path2.resolve;
-    var sep = path2.sep;
+    var extname = path6.extname;
+    var join4 = path6.join;
+    var normalize = path6.normalize;
+    var resolve4 = path6.resolve;
+    var sep4 = path6.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
     module.exports = send;
-    function send(req, path3, options) {
-      return new SendStream(req, path3, options);
+    function send(req, path7, options) {
+      return new SendStream(req, path7, options);
     }
-    function SendStream(req, path3, options) {
-      Stream2.call(this);
+    function SendStream(req, path7, options) {
+      Stream3.call(this);
       var opts = options || {};
       this.options = opts;
-      this.path = path3;
+      this.path = path7;
       this.req = req;
       this._acceptRanges = opts.acceptRanges !== void 0 ? Boolean(opts.acceptRanges) : true;
       this._cacheControl = opts.cacheControl !== void 0 ? Boolean(opts.cacheControl) : true;
@@ -22592,9 +22599,9 @@ var require_send = __commonJS({
       this._maxage = opts.maxAge || opts.maxage;
       this._maxage = typeof this._maxage === "string" ? ms(this._maxage) : Number(this._maxage);
       this._maxage = !isNaN(this._maxage) ? Math.min(Math.max(0, this._maxage), MAX_MAXAGE) : 0;
-      this._root = opts.root ? resolve(opts.root) : null;
+      this._root = opts.root ? resolve4(opts.root) : null;
     }
-    util2.inherits(SendStream, Stream2);
+    util2.inherits(SendStream, Stream3);
     SendStream.prototype.error = function error(status, err) {
       if (hasListeners(this, "error")) {
         return this.emit("error", createHttpError(status, err));
@@ -22690,10 +22697,10 @@ var require_send = __commonJS({
       var lastModified = this.res.getHeader("Last-Modified");
       return parseHttpDate(lastModified) <= parseHttpDate(ifRange);
     };
-    SendStream.prototype.redirect = function redirect(path3) {
+    SendStream.prototype.redirect = function redirect(path7) {
       var res = this.res;
       if (hasListeners(this, "directory")) {
-        this.emit("directory", res, path3);
+        this.emit("directory", res, path7);
         return;
       }
       if (this.hasTrailingSlash()) {
@@ -22713,38 +22720,38 @@ var require_send = __commonJS({
     SendStream.prototype.pipe = function pipe(res) {
       var root = this._root;
       this.res = res;
-      var path3 = decode(this.path);
-      if (path3 === -1) {
+      var path7 = decode(this.path);
+      if (path7 === -1) {
         this.error(400);
         return res;
       }
-      if (~path3.indexOf("\0")) {
+      if (~path7.indexOf("\0")) {
         this.error(400);
         return res;
       }
       var parts;
       if (root !== null) {
-        if (path3) {
-          path3 = normalize("." + sep + path3);
+        if (path7) {
+          path7 = normalize("." + sep4 + path7);
         }
-        if (UP_PATH_REGEXP.test(path3)) {
-          debug('malicious path "%s"', path3);
+        if (UP_PATH_REGEXP.test(path7)) {
+          debug('malicious path "%s"', path7);
           this.error(403);
           return res;
         }
-        parts = path3.split(sep);
-        path3 = normalize(join(root, path3));
+        parts = path7.split(sep4);
+        path7 = normalize(join4(root, path7));
       } else {
-        if (UP_PATH_REGEXP.test(path3)) {
-          debug('malicious path "%s"', path3);
+        if (UP_PATH_REGEXP.test(path7)) {
+          debug('malicious path "%s"', path7);
           this.error(403);
           return res;
         }
-        parts = normalize(path3).split(sep);
-        path3 = resolve(path3);
+        parts = normalize(path7).split(sep4);
+        path7 = resolve4(path7);
       }
       if (containsDotFile(parts)) {
-        debug('%s dotfile "%s"', this._dotfiles, path3);
+        debug('%s dotfile "%s"', this._dotfiles, path7);
         switch (this._dotfiles) {
           case "allow":
             break;
@@ -22758,14 +22765,14 @@ var require_send = __commonJS({
         }
       }
       if (this._index.length && this.hasTrailingSlash()) {
-        this.sendIndex(path3);
+        this.sendIndex(path7);
         return res;
       }
-      this.sendFile(path3);
+      this.sendFile(path7);
       return res;
     };
-    SendStream.prototype.send = function send2(path3, stat) {
-      var len = stat.size;
+    SendStream.prototype.send = function send2(path7, stat2) {
+      var len = stat2.size;
       var options = this.options;
       var opts = {};
       var res = this.res;
@@ -22776,9 +22783,9 @@ var require_send = __commonJS({
         this.headersAlreadySent();
         return;
       }
-      debug('pipe "%s"', path3);
-      this.setHeader(path3, stat);
-      this.type(path3);
+      debug('pipe "%s"', path7);
+      this.setHeader(path7, stat2);
+      this.type(path7);
       if (this.isConditionalGET()) {
         if (this.isPreconditionFailure()) {
           this.error(412);
@@ -22827,38 +22834,38 @@ var require_send = __commonJS({
         res.end();
         return;
       }
-      this.stream(path3, opts);
+      this.stream(path7, opts);
     };
-    SendStream.prototype.sendFile = function sendFile(path3) {
+    SendStream.prototype.sendFile = function sendFile(path7) {
       var i = 0;
       var self = this;
-      debug('stat "%s"', path3);
-      fs.stat(path3, function onstat(err, stat) {
-        var pathEndsWithSep = path3[path3.length - 1] === sep;
-        if (err && err.code === "ENOENT" && !extname(path3) && !pathEndsWithSep) {
+      debug('stat "%s"', path7);
+      fs4.stat(path7, function onstat(err, stat2) {
+        var pathEndsWithSep = path7[path7.length - 1] === sep4;
+        if (err && err.code === "ENOENT" && !extname(path7) && !pathEndsWithSep) {
           return next(err);
         }
         if (err) return self.onStatError(err);
-        if (stat.isDirectory()) return self.redirect(path3);
+        if (stat2.isDirectory()) return self.redirect(path7);
         if (pathEndsWithSep) return self.error(404);
-        self.emit("file", path3, stat);
-        self.send(path3, stat);
+        self.emit("file", path7, stat2);
+        self.send(path7, stat2);
       });
       function next(err) {
         if (self._extensions.length <= i) {
           return err ? self.onStatError(err) : self.error(404);
         }
-        var p = path3 + "." + self._extensions[i++];
+        var p = path7 + "." + self._extensions[i++];
         debug('stat "%s"', p);
-        fs.stat(p, function(err2, stat) {
+        fs4.stat(p, function(err2, stat2) {
           if (err2) return next(err2);
-          if (stat.isDirectory()) return next();
-          self.emit("file", p, stat);
-          self.send(p, stat);
+          if (stat2.isDirectory()) return next();
+          self.emit("file", p, stat2);
+          self.send(p, stat2);
         });
       }
     };
-    SendStream.prototype.sendIndex = function sendIndex(path3) {
+    SendStream.prototype.sendIndex = function sendIndex(path7) {
       var i = -1;
       var self = this;
       function next(err) {
@@ -22866,21 +22873,21 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join(path3, self._index[i]);
+        var p = join4(path7, self._index[i]);
         debug('stat "%s"', p);
-        fs.stat(p, function(err2, stat) {
+        fs4.stat(p, function(err2, stat2) {
           if (err2) return next(err2);
-          if (stat.isDirectory()) return next();
-          self.emit("file", p, stat);
-          self.send(p, stat);
+          if (stat2.isDirectory()) return next();
+          self.emit("file", p, stat2);
+          self.send(p, stat2);
         });
       }
       next();
     };
-    SendStream.prototype.stream = function stream(path3, options) {
+    SendStream.prototype.stream = function stream(path7, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs.createReadStream(path3, options);
+      var stream2 = fs4.createReadStream(path7, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -22895,17 +22902,17 @@ var require_send = __commonJS({
         self.emit("end");
       });
     };
-    SendStream.prototype.type = function type(path3) {
+    SendStream.prototype.type = function type(path7) {
       var res = this.res;
       if (res.getHeader("Content-Type")) return;
-      var ext = extname(path3);
+      var ext = extname(path7);
       var type2 = mime.contentType(ext) || "application/octet-stream";
       debug("content-type %s", type2);
       res.setHeader("Content-Type", type2);
     };
-    SendStream.prototype.setHeader = function setHeader(path3, stat) {
+    SendStream.prototype.setHeader = function setHeader(path7, stat2) {
       var res = this.res;
-      this.emit("headers", res, path3, stat);
+      this.emit("headers", res, path7, stat2);
       if (this._acceptRanges && !res.getHeader("Accept-Ranges")) {
         debug("accept ranges");
         res.setHeader("Accept-Ranges", "bytes");
@@ -22919,12 +22926,12 @@ var require_send = __commonJS({
         res.setHeader("Cache-Control", cacheControl);
       }
       if (this._lastModified && !res.getHeader("Last-Modified")) {
-        var modified = stat.mtime.toUTCString();
+        var modified = stat2.mtime.toUTCString();
         debug("modified %s", modified);
         res.setHeader("Last-Modified", modified);
       }
       if (this._etag && !res.getHeader("ETag")) {
-        var val = etag(stat);
+        var val = etag(stat2);
         debug("etag %s", val);
         res.setHeader("ETag", val);
       }
@@ -22963,9 +22970,9 @@ var require_send = __commonJS({
       }
       return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
-    function decode(path3) {
+    function decode(path7) {
       try {
-        return decodeURIComponent(path3);
+        return decodeURIComponent(path7);
       } catch (err) {
         return -1;
       }
@@ -23038,7 +23045,7 @@ var require_vary = __commonJS({
       if (!field) {
         throw new TypeError("field argument is required");
       }
-      var fields = !Array.isArray(field) ? parse(String(field)) : field;
+      var fields = !Array.isArray(field) ? parse2(String(field)) : field;
       for (var j = 0; j < fields.length; j++) {
         if (!FIELD_NAME_REGEXP.test(fields[j])) {
           throw new TypeError("field argument contains an invalid header name");
@@ -23048,7 +23055,7 @@ var require_vary = __commonJS({
         return header;
       }
       var val = header;
-      var vals = parse(header.toLowerCase());
+      var vals = parse2(header.toLowerCase());
       if (fields.indexOf("*") !== -1 || vals.indexOf("*") !== -1) {
         return "*";
       }
@@ -23061,7 +23068,7 @@ var require_vary = __commonJS({
       }
       return val;
     }
-    function parse(header) {
+    function parse2(header) {
       var end = 0;
       var list = [];
       var start = 0;
@@ -23109,7 +23116,7 @@ var require_response = __commonJS({
     var http = __require("node:http");
     var onFinished = require_on_finished();
     var mime = require_mime_types();
-    var path2 = __require("node:path");
+    var path6 = __require("node:path");
     var pathIsAbsolute = __require("node:path").isAbsolute;
     var statuses = require_statuses();
     var sign = require_cookie_signature().sign;
@@ -23118,8 +23125,8 @@ var require_response = __commonJS({
     var setCharset = require_utils3().setCharset;
     var cookie = require_cookie();
     var send = require_send();
-    var extname = path2.extname;
-    var resolve = path2.resolve;
+    var extname = path6.extname;
+    var resolve4 = path6.resolve;
     var vary = require_vary();
     var { Buffer: Buffer2 } = __require("node:buffer");
     var res = Object.create(http.ServerResponse.prototype);
@@ -23226,7 +23233,7 @@ var require_response = __commonJS({
       var escape2 = app3.get("json escape");
       var replacer = app3.get("json replacer");
       var spaces = app3.get("json spaces");
-      var body = stringify2(obj, replacer, spaces, escape2);
+      var body = stringify3(obj, replacer, spaces, escape2);
       if (!this.get("Content-Type")) {
         this.set("Content-Type", "application/json");
       }
@@ -23237,7 +23244,7 @@ var require_response = __commonJS({
       var escape2 = app3.get("json escape");
       var replacer = app3.get("json replacer");
       var spaces = app3.get("json spaces");
-      var body = stringify2(obj, replacer, spaces, escape2);
+      var body = stringify3(obj, replacer, spaces, escape2);
       var callback = this.req.query[app3.get("jsonp callback name")];
       if (!this.get("Content-Type")) {
         this.set("X-Content-Type-Options", "nosniff");
@@ -23265,26 +23272,26 @@ var require_response = __commonJS({
       this.type("txt");
       return this.send(body);
     };
-    res.sendFile = function sendFile(path3, options, callback) {
+    res.sendFile = function sendFile(path7, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
       var next = req.next;
       var opts = options || {};
-      if (!path3) {
+      if (!path7) {
         throw new TypeError("path argument is required to res.sendFile");
       }
-      if (typeof path3 !== "string") {
+      if (typeof path7 !== "string") {
         throw new TypeError("path must be a string to res.sendFile");
       }
       if (typeof options === "function") {
         done = options;
         opts = {};
       }
-      if (!opts.root && !pathIsAbsolute(path3)) {
+      if (!opts.root && !pathIsAbsolute(path7)) {
         throw new TypeError("path must be absolute or specify root to res.sendFile");
       }
-      var pathname = encodeURI(path3);
+      var pathname = encodeURI(path7);
       opts.etag = this.app.enabled("etag");
       var file = send(req, pathname, opts);
       sendfile(res2, file, opts, function(err) {
@@ -23295,7 +23302,7 @@ var require_response = __commonJS({
         }
       });
     };
-    res.download = function download(path3, filename, options, callback) {
+    res.download = function download(path7, filename, options, callback) {
       var done = callback;
       var name = filename;
       var opts = options || null;
@@ -23312,7 +23319,7 @@ var require_response = __commonJS({
         opts = filename;
       }
       var headers = {
-        "Content-Disposition": contentDisposition(name || path3)
+        "Content-Disposition": contentDisposition(name || path7)
       };
       if (opts && opts.headers) {
         var keys = Object.keys(opts.headers);
@@ -23325,7 +23332,7 @@ var require_response = __commonJS({
       }
       opts = Object.create(opts);
       opts.headers = headers;
-      var fullPath = !opts.root ? resolve(path3) : path3;
+      var fullPath = !opts.root ? resolve4(path7) : path7;
       return this.sendFile(fullPath, opts, done);
     };
     res.contentType = res.type = function contentType(type) {
@@ -23545,7 +23552,7 @@ var require_response = __commonJS({
       }
       file.pipe(res2);
     }
-    function stringify2(value, replacer, spaces, escape2) {
+    function stringify3(value, replacer, spaces, escape2) {
       var json = replacer || spaces ? JSON.stringify(value, replacer, spaces) : JSON.stringify(value);
       if (escape2 && typeof json === "string") {
         json = json.replace(/[<>&]/g, function(c) {
@@ -23574,7 +23581,7 @@ var require_serve_static = __commonJS({
     var encodeUrl = require_encodeurl();
     var escapeHtml = require_escape_html();
     var parseUrl = require_parseurl();
-    var resolve = __require("path").resolve;
+    var resolve4 = __require("path").resolve;
     var send = require_send();
     var url = __require("url");
     module.exports = serveStatic;
@@ -23593,7 +23600,7 @@ var require_serve_static = __commonJS({
         throw new TypeError("option setHeaders must be function");
       }
       opts.maxage = opts.maxage || opts.maxAge || 0;
-      opts.root = resolve(root);
+      opts.root = resolve4(root);
       var onDirectory = redirect ? createRedirectDirectoryListener() : createNotFoundDirectoryListener();
       return function serveStatic2(req, res, next) {
         if (req.method !== "GET" && req.method !== "HEAD") {
@@ -23608,11 +23615,11 @@ var require_serve_static = __commonJS({
         }
         var forwardError = !fallthrough;
         var originalUrl = parseUrl.original(req);
-        var path2 = parseUrl(req).pathname;
-        if (path2 === "/" && originalUrl.pathname.substr(-1) !== "/") {
-          path2 = "";
+        var path6 = parseUrl(req).pathname;
+        if (path6 === "/" && originalUrl.pathname.substr(-1) !== "/") {
+          path6 = "";
         }
-        var stream = send(req, path2, opts);
+        var stream = send(req, path6, opts);
         stream.on("directory", onDirectory);
         if (setHeaders) {
           stream.on("headers", setHeaders);
@@ -23679,7 +23686,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router10 = require_router();
+    var Router13 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23701,8 +23708,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router10.Route;
-    exports.Router = Router10;
+    exports.Route = Router13.Route;
+    exports.Router = Router13;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -23796,7 +23803,7 @@ var require_lib3 = __commonJS({
       "use strict";
       var assign = require_object_assign();
       var vary = require_vary();
-      var defaults2 = {
+      var defaults3 = {
         origin: "*",
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         preflightContinue: false,
@@ -23967,7 +23974,7 @@ var require_lib3 = __commonJS({
             if (err) {
               next(err);
             } else {
-              var corsOptions = assign({}, defaults2, options);
+              var corsOptions = assign({}, defaults3, options);
               var originCallback = null;
               if (corsOptions.origin && typeof corsOptions.origin === "function") {
                 originCallback = corsOptions.origin;
@@ -23997,15 +24004,11696 @@ var require_lib3 = __commonJS({
   }
 });
 
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
+function __classPrivateFieldSet2(receiver, state, value, kind, f) {
+  if (kind === "m")
+    throw new TypeError("Private method is not writable");
+  if (kind === "a" && !f)
+    throw new TypeError("Private accessor was defined without a setter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+    throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+}
+function __classPrivateFieldGet2(receiver, state, kind, f) {
+  if (kind === "a" && !f)
+    throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+    throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+var init_tslib = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/tslib.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
+var uuid42;
+var init_uuid = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
+    uuid42 = function() {
+      const { crypto: crypto5 } = globalThis;
+      if (crypto5?.randomUUID) {
+        uuid42 = crypto5.randomUUID.bind(crypto5);
+        return crypto5.randomUUID();
+      }
+      const u8 = new Uint8Array(1);
+      const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+      return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/errors.mjs
+function isAbortError2(err) {
+  return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
+  ("name" in err && err.name === "AbortError" || // Expo fetch
+  "message" in err && String(err.message).includes("FetchRequestCanceledException"));
+}
+var castToError2;
+var init_errors = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/errors.mjs"() {
+    castToError2 = (err) => {
+      if (err instanceof Error)
+        return err;
+      if (typeof err === "object" && err !== null) {
+        try {
+          if (Object.prototype.toString.call(err) === "[object Error]") {
+            const error = new Error(err.message, err.cause ? { cause: err.cause } : {});
+            if (err.stack)
+              error.stack = err.stack;
+            if (err.cause && !error.cause)
+              error.cause = err.cause;
+            if (err.name)
+              error.name = err.name;
+            return error;
+          }
+        } catch {
+        }
+        try {
+          return new Error(JSON.stringify(err));
+        } catch {
+        }
+      }
+      return new Error(err);
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/error.mjs
+var AnthropicError, APIError2, APIUserAbortError2, APIConnectionError2, APIConnectionTimeoutError2, RetryableError, BadRequestError2, AuthenticationError2, PermissionDeniedError2, NotFoundError2, ConflictError2, UnprocessableEntityError2, RateLimitError2, InternalServerError2;
+var init_error = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/error.mjs"() {
+    init_errors();
+    AnthropicError = class extends Error {
+    };
+    APIError2 = class _APIError extends AnthropicError {
+      constructor(status, error, message, headers, type) {
+        super(`${_APIError.makeMessage(status, error, message)}`);
+        this.status = status;
+        this.headers = headers;
+        this.requestID = headers?.get("request-id");
+        this.error = error;
+        this.type = type ?? null;
+      }
+      static makeMessage(status, error, message) {
+        const msg = error?.message ? typeof error.message === "string" ? error.message : JSON.stringify(error.message) : error ? JSON.stringify(error) : message;
+        if (status && msg) {
+          return `${status} ${msg}`;
+        }
+        if (status) {
+          return `${status} status code (no body)`;
+        }
+        if (msg) {
+          return msg;
+        }
+        return "(no status code or body)";
+      }
+      static generate(status, errorResponse, message, headers) {
+        if (!status || !headers) {
+          return new APIConnectionError2({ message, cause: castToError2(errorResponse) });
+        }
+        const error = errorResponse;
+        const type = error?.["error"]?.["type"];
+        if (status === 400) {
+          return new BadRequestError2(status, error, message, headers, type);
+        }
+        if (status === 401) {
+          return new AuthenticationError2(status, error, message, headers, type);
+        }
+        if (status === 403) {
+          return new PermissionDeniedError2(status, error, message, headers, type);
+        }
+        if (status === 404) {
+          return new NotFoundError2(status, error, message, headers, type);
+        }
+        if (status === 409) {
+          return new ConflictError2(status, error, message, headers, type);
+        }
+        if (status === 422) {
+          return new UnprocessableEntityError2(status, error, message, headers, type);
+        }
+        if (status === 429) {
+          return new RateLimitError2(status, error, message, headers, type);
+        }
+        if (status >= 500) {
+          return new InternalServerError2(status, error, message, headers, type);
+        }
+        return new _APIError(status, error, message, headers, type);
+      }
+    };
+    APIUserAbortError2 = class extends APIError2 {
+      constructor({ message } = {}) {
+        super(void 0, void 0, message || "Request was aborted.", void 0);
+      }
+    };
+    APIConnectionError2 = class extends APIError2 {
+      constructor({ message, cause }) {
+        super(void 0, void 0, message || "Connection error.", void 0);
+        if (cause)
+          this.cause = cause;
+      }
+    };
+    APIConnectionTimeoutError2 = class extends APIConnectionError2 {
+      constructor({ message } = {}) {
+        super({ message: message ?? "Request timed out." });
+      }
+    };
+    RetryableError = class extends AnthropicError {
+      constructor(message, { cause } = {}) {
+        super(message ?? "Retryable error.");
+        if (cause !== void 0)
+          this.cause = cause;
+      }
+    };
+    BadRequestError2 = class extends APIError2 {
+    };
+    AuthenticationError2 = class extends APIError2 {
+    };
+    PermissionDeniedError2 = class extends APIError2 {
+    };
+    NotFoundError2 = class extends APIError2 {
+    };
+    ConflictError2 = class extends APIError2 {
+    };
+    UnprocessableEntityError2 = class extends APIError2 {
+    };
+    RateLimitError2 = class extends APIError2 {
+    };
+    InternalServerError2 = class extends APIError2 {
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
+function maybeObj2(x) {
+  if (typeof x !== "object") {
+    return {};
+  }
+  return x ?? {};
+}
+function isEmptyObj2(obj) {
+  if (!obj)
+    return true;
+  for (const _k in obj)
+    return false;
+  return true;
+}
+function hasOwn2(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+var startsWithSchemeRegexp2, isAbsoluteURL2, isArray2, isReadonlyArray2, validatePositiveInteger2, safeJSON2;
+var init_values = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs"() {
+    init_error();
+    startsWithSchemeRegexp2 = /^[a-z][a-z0-9+.-]*:/i;
+    isAbsoluteURL2 = (url) => {
+      return startsWithSchemeRegexp2.test(url);
+    };
+    isArray2 = (val) => (isArray2 = Array.isArray, isArray2(val));
+    isReadonlyArray2 = isArray2;
+    validatePositiveInteger2 = (name, n) => {
+      if (typeof n !== "number" || !Number.isInteger(n)) {
+        throw new AnthropicError(`${name} must be an integer`);
+      }
+      if (n < 0) {
+        throw new AnthropicError(`${name} must be a positive integer`);
+      }
+      return n;
+    };
+    safeJSON2 = (text) => {
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        return void 0;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
+var sleep2;
+var init_sleep = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs"() {
+    sleep2 = (ms, signal) => new Promise((resolve4) => {
+      if (signal?.aborted)
+        return resolve4();
+      const onAbort = () => {
+        clearTimeout(timer);
+        resolve4();
+      };
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve4();
+      }, ms);
+      signal?.addEventListener("abort", onAbort, { once: true });
+    });
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/version.mjs
+var VERSION2;
+var init_version = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/version.mjs"() {
+    VERSION2 = "0.104.2";
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
+function getDetectedPlatform2() {
+  if (typeof Deno !== "undefined" && Deno.build != null) {
+    return "deno";
+  }
+  if (typeof EdgeRuntime !== "undefined") {
+    return "edge";
+  }
+  if (Object.prototype.toString.call(typeof globalThis.process !== "undefined" ? globalThis.process : 0) === "[object process]") {
+    return "node";
+  }
+  return "unknown";
+}
+function getBrowserInfo2() {
+  if (typeof navigator === "undefined" || !navigator) {
+    return null;
+  }
+  const browserPatterns = [
+    { key: "edge", pattern: /Edge(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "ie", pattern: /MSIE(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "ie", pattern: /Trident(?:.*rv\:(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "chrome", pattern: /Chrome(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "firefox", pattern: /Firefox(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "safari", pattern: /(?:Version\W+(\d+)\.(\d+)(?:\.(\d+))?)?(?:\W+Mobile\S*)?\W+Safari/ }
+  ];
+  for (const { key, pattern } of browserPatterns) {
+    const match = pattern.exec(navigator.userAgent);
+    if (match) {
+      const major = match[1] || 0;
+      const minor = match[2] || 0;
+      const patch = match[3] || 0;
+      return { browser: key, version: `${major}.${minor}.${patch}` };
+    }
+  }
+  return null;
+}
+var isRunningInBrowser2, getPlatformProperties2, normalizeArch2, normalizePlatform2, _platformHeaders2, getPlatformHeaders2;
+var init_detect_platform = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs"() {
+    init_version();
+    isRunningInBrowser2 = () => {
+      return (
+        // @ts-ignore
+        typeof window !== "undefined" && // @ts-ignore
+        typeof window.document !== "undefined" && // @ts-ignore
+        typeof navigator !== "undefined"
+      );
+    };
+    getPlatformProperties2 = () => {
+      const detectedPlatform = getDetectedPlatform2();
+      if (detectedPlatform === "deno") {
+        return {
+          "X-Stainless-Lang": "js",
+          "X-Stainless-Package-Version": VERSION2,
+          "X-Stainless-OS": normalizePlatform2(Deno.build.os),
+          "X-Stainless-Arch": normalizeArch2(Deno.build.arch),
+          "X-Stainless-Runtime": "deno",
+          "X-Stainless-Runtime-Version": typeof Deno.version === "string" ? Deno.version : Deno.version?.deno ?? "unknown"
+        };
+      }
+      if (typeof EdgeRuntime !== "undefined") {
+        return {
+          "X-Stainless-Lang": "js",
+          "X-Stainless-Package-Version": VERSION2,
+          "X-Stainless-OS": "Unknown",
+          "X-Stainless-Arch": `other:${EdgeRuntime}`,
+          "X-Stainless-Runtime": "edge",
+          "X-Stainless-Runtime-Version": globalThis.process.version
+        };
+      }
+      if (detectedPlatform === "node") {
+        return {
+          "X-Stainless-Lang": "js",
+          "X-Stainless-Package-Version": VERSION2,
+          "X-Stainless-OS": normalizePlatform2(globalThis.process.platform ?? "unknown"),
+          "X-Stainless-Arch": normalizeArch2(globalThis.process.arch ?? "unknown"),
+          "X-Stainless-Runtime": "node",
+          "X-Stainless-Runtime-Version": globalThis.process.version ?? "unknown"
+        };
+      }
+      const browserInfo = getBrowserInfo2();
+      if (browserInfo) {
+        return {
+          "X-Stainless-Lang": "js",
+          "X-Stainless-Package-Version": VERSION2,
+          "X-Stainless-OS": "Unknown",
+          "X-Stainless-Arch": "unknown",
+          "X-Stainless-Runtime": `browser:${browserInfo.browser}`,
+          "X-Stainless-Runtime-Version": browserInfo.version
+        };
+      }
+      return {
+        "X-Stainless-Lang": "js",
+        "X-Stainless-Package-Version": VERSION2,
+        "X-Stainless-OS": "Unknown",
+        "X-Stainless-Arch": "unknown",
+        "X-Stainless-Runtime": "unknown",
+        "X-Stainless-Runtime-Version": "unknown"
+      };
+    };
+    normalizeArch2 = (arch) => {
+      if (arch === "x32")
+        return "x32";
+      if (arch === "x86_64" || arch === "x64")
+        return "x64";
+      if (arch === "arm")
+        return "arm";
+      if (arch === "aarch64" || arch === "arm64")
+        return "arm64";
+      if (arch)
+        return `other:${arch}`;
+      return "unknown";
+    };
+    normalizePlatform2 = (platform) => {
+      platform = platform.toLowerCase();
+      if (platform.includes("ios"))
+        return "iOS";
+      if (platform === "android")
+        return "Android";
+      if (platform === "darwin")
+        return "MacOS";
+      if (platform === "win32")
+        return "Windows";
+      if (platform === "freebsd")
+        return "FreeBSD";
+      if (platform === "openbsd")
+        return "OpenBSD";
+      if (platform === "linux")
+        return "Linux";
+      if (platform)
+        return `Other:${platform}`;
+      return "Unknown";
+    };
+    getPlatformHeaders2 = () => {
+      return _platformHeaders2 ?? (_platformHeaders2 = getPlatformProperties2());
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/shims.mjs
+function getDefaultFetch2() {
+  if (typeof fetch !== "undefined") {
+    return fetch;
+  }
+  throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new Anthropic({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
+}
+function makeReadableStream2(...args) {
+  const ReadableStream2 = globalThis.ReadableStream;
+  if (typeof ReadableStream2 === "undefined") {
+    throw new Error("`ReadableStream` is not defined as a global; You will need to polyfill it, `globalThis.ReadableStream = ReadableStream`");
+  }
+  return new ReadableStream2(...args);
+}
+function ReadableStreamFrom2(iterable) {
+  let iter = Symbol.asyncIterator in iterable ? iterable[Symbol.asyncIterator]() : iterable[Symbol.iterator]();
+  return makeReadableStream2({
+    start() {
+    },
+    async pull(controller) {
+      const { done, value } = await iter.next();
+      if (done) {
+        controller.close();
+      } else {
+        controller.enqueue(value);
+      }
+    },
+    async cancel() {
+      await iter.return?.();
+    }
+  });
+}
+function ReadableStreamToAsyncIterable2(stream) {
+  if (stream[Symbol.asyncIterator])
+    return stream;
+  const reader = stream.getReader();
+  return {
+    async next() {
+      try {
+        const result = await reader.read();
+        if (result?.done)
+          reader.releaseLock();
+        return result;
+      } catch (e) {
+        reader.releaseLock();
+        throw e;
+      }
+    },
+    async return() {
+      const cancelPromise = reader.cancel();
+      reader.releaseLock();
+      await cancelPromise;
+      return { done: true, value: void 0 };
+    },
+    [Symbol.asyncIterator]() {
+      return this;
+    }
+  };
+}
+async function CancelReadableStream2(stream) {
+  if (stream === null || typeof stream !== "object")
+    return;
+  if (stream[Symbol.asyncIterator]) {
+    await stream[Symbol.asyncIterator]().return?.();
+    return;
+  }
+  const reader = stream.getReader();
+  const cancelPromise = reader.cancel();
+  reader.releaseLock();
+  await cancelPromise;
+}
+var init_shims = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/shims.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
+var FallbackEncoder2;
+var init_request_options = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/request-options.mjs"() {
+    FallbackEncoder2 = ({ headers, body }) => {
+      return {
+        bodyHeaders: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(body)
+      };
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs
+var default_format2, default_formatter2, formatters2, RFC17382;
+var init_formats = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs"() {
+    default_format2 = "RFC3986";
+    default_formatter2 = (v) => String(v);
+    formatters2 = {
+      RFC1738: (v) => String(v).replace(/%20/g, "+"),
+      RFC3986: default_formatter2
+    };
+    RFC17382 = "RFC1738";
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs
+function is_buffer2(obj) {
+  if (!obj || typeof obj !== "object") {
+    return false;
+  }
+  return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
+}
+function maybe_map2(val, fn) {
+  if (isArray2(val)) {
+    const mapped = [];
+    for (let i = 0; i < val.length; i += 1) {
+      mapped.push(fn(val[i]));
+    }
+    return mapped;
+  }
+  return fn(val);
+}
+var has2, hex_table2, limit2, encode2;
+var init_utils = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs"() {
+    init_formats();
+    init_values();
+    has2 = (obj, key) => (has2 = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has2(obj, key));
+    hex_table2 = /* @__PURE__ */ (() => {
+      const array = [];
+      for (let i = 0; i < 256; ++i) {
+        array.push("%" + ((i < 16 ? "0" : "") + i.toString(16)).toUpperCase());
+      }
+      return array;
+    })();
+    limit2 = 1024;
+    encode2 = (str2, _defaultEncoder, charset, _kind, format) => {
+      if (str2.length === 0) {
+        return str2;
+      }
+      let string = str2;
+      if (typeof str2 === "symbol") {
+        string = Symbol.prototype.toString.call(str2);
+      } else if (typeof str2 !== "string") {
+        string = String(str2);
+      }
+      if (charset === "iso-8859-1") {
+        return escape(string).replace(/%u[0-9a-f]{4}/gi, function($0) {
+          return "%26%23" + parseInt($0.slice(2), 16) + "%3B";
+        });
+      }
+      let out = "";
+      for (let j = 0; j < string.length; j += limit2) {
+        const segment = string.length >= limit2 ? string.slice(j, j + limit2) : string;
+        const arr = [];
+        for (let i = 0; i < segment.length; ++i) {
+          let c = segment.charCodeAt(i);
+          if (c === 45 || // -
+          c === 46 || // .
+          c === 95 || // _
+          c === 126 || // ~
+          c >= 48 && c <= 57 || // 0-9
+          c >= 65 && c <= 90 || // a-z
+          c >= 97 && c <= 122 || // A-Z
+          format === RFC17382 && (c === 40 || c === 41)) {
+            arr[arr.length] = segment.charAt(i);
+            continue;
+          }
+          if (c < 128) {
+            arr[arr.length] = hex_table2[c];
+            continue;
+          }
+          if (c < 2048) {
+            arr[arr.length] = hex_table2[192 | c >> 6] + hex_table2[128 | c & 63];
+            continue;
+          }
+          if (c < 55296 || c >= 57344) {
+            arr[arr.length] = hex_table2[224 | c >> 12] + hex_table2[128 | c >> 6 & 63] + hex_table2[128 | c & 63];
+            continue;
+          }
+          i += 1;
+          c = 65536 + ((c & 1023) << 10 | segment.charCodeAt(i) & 1023);
+          arr[arr.length] = hex_table2[240 | c >> 18] + hex_table2[128 | c >> 12 & 63] + hex_table2[128 | c >> 6 & 63] + hex_table2[128 | c & 63];
+        }
+        out += arr.join("");
+      }
+      return out;
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs
+function is_non_nullish_primitive2(v) {
+  return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
+}
+function inner_stringify2(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+  let obj = object;
+  let tmp_sc = sideChannel;
+  let step = 0;
+  let find_flag = false;
+  while ((tmp_sc = tmp_sc.get(sentinel2)) !== void 0 && !find_flag) {
+    const pos = tmp_sc.get(object);
+    step += 1;
+    if (typeof pos !== "undefined") {
+      if (pos === step) {
+        throw new RangeError("Cyclic object value");
+      } else {
+        find_flag = true;
+      }
+    }
+    if (typeof tmp_sc.get(sentinel2) === "undefined") {
+      step = 0;
+    }
+  }
+  if (typeof filter === "function") {
+    obj = filter(prefix, obj);
+  } else if (obj instanceof Date) {
+    obj = serializeDate?.(obj);
+  } else if (generateArrayPrefix === "comma" && isArray2(obj)) {
+    obj = maybe_map2(obj, function(value) {
+      if (value instanceof Date) {
+        return serializeDate?.(value);
+      }
+      return value;
+    });
+  }
+  if (obj === null) {
+    if (strictNullHandling) {
+      return encoder2 && !encodeValuesOnly ? (
+        // @ts-expect-error
+        encoder2(prefix, defaults2.encoder, charset, "key", format)
+      ) : prefix;
+    }
+    obj = "";
+  }
+  if (is_non_nullish_primitive2(obj) || is_buffer2(obj)) {
+    if (encoder2) {
+      const key_value = encodeValuesOnly ? prefix : encoder2(prefix, defaults2.encoder, charset, "key", format);
+      return [
+        formatter?.(key_value) + "=" + // @ts-expect-error
+        formatter?.(encoder2(obj, defaults2.encoder, charset, "value", format))
+      ];
+    }
+    return [formatter?.(prefix) + "=" + formatter?.(String(obj))];
+  }
+  const values = [];
+  if (typeof obj === "undefined") {
+    return values;
+  }
+  let obj_keys;
+  if (generateArrayPrefix === "comma" && isArray2(obj)) {
+    if (encodeValuesOnly && encoder2) {
+      obj = maybe_map2(obj, encoder2);
+    }
+    obj_keys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
+  } else if (isArray2(filter)) {
+    obj_keys = filter;
+  } else {
+    const keys = Object.keys(obj);
+    obj_keys = sort ? keys.sort(sort) : keys;
+  }
+  const encoded_prefix = encodeDotInKeys ? String(prefix).replace(/\./g, "%2E") : String(prefix);
+  const adjusted_prefix = commaRoundTrip && isArray2(obj) && obj.length === 1 ? encoded_prefix + "[]" : encoded_prefix;
+  if (allowEmptyArrays && isArray2(obj) && obj.length === 0) {
+    return adjusted_prefix + "[]";
+  }
+  for (let j = 0; j < obj_keys.length; ++j) {
+    const key = obj_keys[j];
+    const value = (
+      // @ts-ignore
+      typeof key === "object" && typeof key.value !== "undefined" ? key.value : obj[key]
+    );
+    if (skipNulls && value === null) {
+      continue;
+    }
+    const encoded_key = allowDots && encodeDotInKeys ? key.replace(/\./g, "%2E") : key;
+    const key_prefix = isArray2(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjusted_prefix, encoded_key) : adjusted_prefix : adjusted_prefix + (allowDots ? "." + encoded_key : "[" + encoded_key + "]");
+    sideChannel.set(object, step);
+    const valueSideChannel = /* @__PURE__ */ new WeakMap();
+    valueSideChannel.set(sentinel2, sideChannel);
+    push_to_array2(values, inner_stringify2(
+      value,
+      key_prefix,
+      generateArrayPrefix,
+      commaRoundTrip,
+      allowEmptyArrays,
+      strictNullHandling,
+      skipNulls,
+      encodeDotInKeys,
+      // @ts-ignore
+      generateArrayPrefix === "comma" && encodeValuesOnly && isArray2(obj) ? null : encoder2,
+      filter,
+      sort,
+      allowDots,
+      serializeDate,
+      format,
+      formatter,
+      encodeValuesOnly,
+      charset,
+      valueSideChannel
+    ));
+  }
+  return values;
+}
+function normalize_stringify_options2(opts = defaults2) {
+  if (typeof opts.allowEmptyArrays !== "undefined" && typeof opts.allowEmptyArrays !== "boolean") {
+    throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
+  }
+  if (typeof opts.encodeDotInKeys !== "undefined" && typeof opts.encodeDotInKeys !== "boolean") {
+    throw new TypeError("`encodeDotInKeys` option can only be `true` or `false`, when provided");
+  }
+  if (opts.encoder !== null && typeof opts.encoder !== "undefined" && typeof opts.encoder !== "function") {
+    throw new TypeError("Encoder has to be a function.");
+  }
+  const charset = opts.charset || defaults2.charset;
+  if (typeof opts.charset !== "undefined" && opts.charset !== "utf-8" && opts.charset !== "iso-8859-1") {
+    throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
+  }
+  let format = default_format2;
+  if (typeof opts.format !== "undefined") {
+    if (!has2(formatters2, opts.format)) {
+      throw new TypeError("Unknown format option provided.");
+    }
+    format = opts.format;
+  }
+  const formatter = formatters2[format];
+  let filter = defaults2.filter;
+  if (typeof opts.filter === "function" || isArray2(opts.filter)) {
+    filter = opts.filter;
+  }
+  let arrayFormat;
+  if (opts.arrayFormat && opts.arrayFormat in array_prefix_generators2) {
+    arrayFormat = opts.arrayFormat;
+  } else if ("indices" in opts) {
+    arrayFormat = opts.indices ? "indices" : "repeat";
+  } else {
+    arrayFormat = defaults2.arrayFormat;
+  }
+  if ("commaRoundTrip" in opts && typeof opts.commaRoundTrip !== "boolean") {
+    throw new TypeError("`commaRoundTrip` must be a boolean, or absent");
+  }
+  const allowDots = typeof opts.allowDots === "undefined" ? !!opts.encodeDotInKeys === true ? true : defaults2.allowDots : !!opts.allowDots;
+  return {
+    addQueryPrefix: typeof opts.addQueryPrefix === "boolean" ? opts.addQueryPrefix : defaults2.addQueryPrefix,
+    // @ts-ignore
+    allowDots,
+    allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults2.allowEmptyArrays,
+    arrayFormat,
+    charset,
+    charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults2.charsetSentinel,
+    commaRoundTrip: !!opts.commaRoundTrip,
+    delimiter: typeof opts.delimiter === "undefined" ? defaults2.delimiter : opts.delimiter,
+    encode: typeof opts.encode === "boolean" ? opts.encode : defaults2.encode,
+    encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults2.encodeDotInKeys,
+    encoder: typeof opts.encoder === "function" ? opts.encoder : defaults2.encoder,
+    encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults2.encodeValuesOnly,
+    filter,
+    format,
+    formatter,
+    serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults2.serializeDate,
+    skipNulls: typeof opts.skipNulls === "boolean" ? opts.skipNulls : defaults2.skipNulls,
+    // @ts-ignore
+    sort: typeof opts.sort === "function" ? opts.sort : null,
+    strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling
+  };
+}
+function stringify2(object, opts = {}) {
+  let obj = object;
+  const options = normalize_stringify_options2(opts);
+  let obj_keys;
+  let filter;
+  if (typeof options.filter === "function") {
+    filter = options.filter;
+    obj = filter("", obj);
+  } else if (isArray2(options.filter)) {
+    filter = options.filter;
+    obj_keys = filter;
+  }
+  const keys = [];
+  if (typeof obj !== "object" || obj === null) {
+    return "";
+  }
+  const generateArrayPrefix = array_prefix_generators2[options.arrayFormat];
+  const commaRoundTrip = generateArrayPrefix === "comma" && options.commaRoundTrip;
+  if (!obj_keys) {
+    obj_keys = Object.keys(obj);
+  }
+  if (options.sort) {
+    obj_keys.sort(options.sort);
+  }
+  const sideChannel = /* @__PURE__ */ new WeakMap();
+  for (let i = 0; i < obj_keys.length; ++i) {
+    const key = obj_keys[i];
+    if (options.skipNulls && obj[key] === null) {
+      continue;
+    }
+    push_to_array2(keys, inner_stringify2(
+      obj[key],
+      key,
+      // @ts-expect-error
+      generateArrayPrefix,
+      commaRoundTrip,
+      options.allowEmptyArrays,
+      options.strictNullHandling,
+      options.skipNulls,
+      options.encodeDotInKeys,
+      options.encode ? options.encoder : null,
+      options.filter,
+      options.sort,
+      options.allowDots,
+      options.serializeDate,
+      options.format,
+      options.formatter,
+      options.encodeValuesOnly,
+      options.charset,
+      sideChannel
+    ));
+  }
+  const joined = keys.join(options.delimiter);
+  let prefix = options.addQueryPrefix === true ? "?" : "";
+  if (options.charsetSentinel) {
+    if (options.charset === "iso-8859-1") {
+      prefix += "utf8=%26%2310003%3B&";
+    } else {
+      prefix += "utf8=%E2%9C%93&";
+    }
+  }
+  return joined.length > 0 ? prefix + joined : "";
+}
+var array_prefix_generators2, push_to_array2, toISOString2, defaults2, sentinel2;
+var init_stringify = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs"() {
+    init_utils();
+    init_formats();
+    init_values();
+    array_prefix_generators2 = {
+      brackets(prefix) {
+        return String(prefix) + "[]";
+      },
+      comma: "comma",
+      indices(prefix, key) {
+        return String(prefix) + "[" + key + "]";
+      },
+      repeat(prefix) {
+        return String(prefix);
+      }
+    };
+    push_to_array2 = function(arr, value_or_array) {
+      Array.prototype.push.apply(arr, isArray2(value_or_array) ? value_or_array : [value_or_array]);
+    };
+    defaults2 = {
+      addQueryPrefix: false,
+      allowDots: false,
+      allowEmptyArrays: false,
+      arrayFormat: "indices",
+      charset: "utf-8",
+      charsetSentinel: false,
+      delimiter: "&",
+      encode: true,
+      encodeDotInKeys: false,
+      encoder: encode2,
+      encodeValuesOnly: false,
+      format: default_format2,
+      formatter: default_formatter2,
+      /** @deprecated */
+      indices: false,
+      serializeDate(date) {
+        return (toISOString2 ?? (toISOString2 = Function.prototype.call.bind(Date.prototype.toISOString)))(date);
+      },
+      skipNulls: false,
+      strictNullHandling: false
+    };
+    sentinel2 = {};
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs
+function stringifyQuery2(query) {
+  return stringify2(query, { arrayFormat: "brackets" });
+}
+var init_query = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs"() {
+    init_stringify();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs
+function requireSecureTokenEndpoint(baseURL) {
+  if (!baseURL)
+    return;
+  let u;
+  try {
+    u = new URL(baseURL);
+  } catch (err) {
+    throw new WorkloadIdentityError(`Invalid token endpoint base URL "${baseURL}": ${err}`);
+  }
+  if (u.protocol === "https:")
+    return;
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (u.protocol === "http:" && (host === "localhost" || host === "127.0.0.1" || host === "::1")) {
+    return;
+  }
+  throw new WorkloadIdentityError(`Refusing to send credential over non-https token endpoint "${baseURL}"`);
+}
+async function parseTokenResponse(resp, requestId) {
+  const text = await readLimitedText(resp);
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new WorkloadIdentityError(`Token endpoint returned non-JSON response (status ${resp.status})`, resp.status, redactSensitive(text), requestId);
+  }
+  if (!data.access_token) {
+    throw new WorkloadIdentityError(`Token endpoint response missing access_token: ${JSON.stringify(redactSensitive(data))}`, resp.status, redactSensitive(data), requestId);
+  }
+  if (data.token_type && data.token_type.toLowerCase() !== "bearer") {
+    throw new WorkloadIdentityError(`Token endpoint response: unsupported token_type "${data.token_type}" (want Bearer)`, resp.status, redactSensitive(data), requestId);
+  }
+  return data;
+}
+function redactSensitive(body) {
+  if (body == null)
+    return body;
+  if (typeof body === "string") {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      if (body.length <= MAX_ERROR_BODY_CHARS)
+        return body;
+      return body.slice(0, MAX_ERROR_BODY_CHARS) + `... <${body.length - MAX_ERROR_BODY_CHARS} more chars>`;
+    }
+    return JSON.stringify(redactSensitive(parsed));
+  }
+  if (typeof body === "object" && !Array.isArray(body)) {
+    const out = {};
+    for (const [k, v] of Object.entries(body)) {
+      if (SAFE_ERROR_KEYS.has(k))
+        out[k] = v;
+    }
+    return out;
+  }
+  return null;
+}
+async function checkCredentialsFileSafety(path6, onWarn = (m) => console.warn(`anthropic-sdk: ${m}`)) {
+  if (typeof process === "undefined" || process.platform === "win32")
+    return;
+  const fs4 = await import("node:fs");
+  let resolved = path6;
+  let st;
+  try {
+    resolved = await fs4.promises.realpath(path6);
+    st = await fs4.promises.stat(resolved);
+  } catch {
+    return;
+  }
+  const mode = st.mode & 511;
+  if (mode & 18) {
+    throw new WorkloadIdentityError(`Credentials file at ${resolved} is group/world-writable (mode 0o${mode.toString(8)}); this allows other local users to plant tokens. Run \`chmod 600 ${resolved}\`.`);
+  }
+  if (mode & 36) {
+    throw new WorkloadIdentityError(`Credentials file at ${resolved} is group/world-readable (mode 0o${mode.toString(8)}); run \`chmod 600 ${resolved}\` before retrying.`);
+  }
+  if (typeof process.getuid === "function" && st.uid !== process.getuid()) {
+    onWarn(`credentials file at ${resolved} is owned by uid ${st.uid} (current process uid ${process.getuid()}); verify this is intentional.`);
+  }
+}
+async function writeCredentialsFileAtomic(targetPath, data) {
+  const fs4 = await import("node:fs");
+  const path6 = await import("node:path");
+  const dir = path6.dirname(targetPath);
+  await fs4.promises.mkdir(dir, { recursive: true, mode: 448 });
+  const tmpPath = `${targetPath}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+  try {
+    const fh = await fs4.promises.open(tmpPath, "w", 384);
+    try {
+      await fh.writeFile(JSON.stringify(data, null, 2));
+      await fh.sync();
+    } finally {
+      await fh.close();
+    }
+    await fs4.promises.rename(tmpPath, targetPath);
+  } catch (err) {
+    await fs4.promises.unlink(tmpPath).catch(() => {
+    });
+    throw err;
+  }
+  try {
+    const dirFh = await fs4.promises.open(dir, "r");
+    try {
+      await dirFh.sync();
+    } finally {
+      await dirFh.close();
+    }
+  } catch {
+  }
+}
+async function readLimitedText(resp) {
+  if (!resp.body) {
+    return "";
+  }
+  const reader = resp.body.getReader();
+  const chunks = [];
+  let received = 0;
+  for (; ; ) {
+    const { done, value } = await reader.read();
+    if (done)
+      break;
+    if (received + value.length > MAX_TOKEN_RESPONSE_BYTES) {
+      const remaining = MAX_TOKEN_RESPONSE_BYTES - received;
+      if (remaining > 0)
+        chunks.push(value.subarray(0, remaining));
+      await reader.cancel();
+      break;
+    }
+    chunks.push(value);
+    received += value.length;
+  }
+  let merged;
+  if (chunks.length === 1) {
+    merged = chunks[0];
+  } else {
+    merged = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+    let offset = 0;
+    for (const c of chunks) {
+      merged.set(c, offset);
+      offset += c.length;
+    }
+  }
+  return new TextDecoder("utf-8").decode(merged);
+}
+var GRANT_TYPE_JWT_BEARER, GRANT_TYPE_REFRESH_TOKEN, TOKEN_ENDPOINT, OAUTH_API_BETA_HEADER, FEDERATION_BETA_HEADER, ADVISORY_REFRESH_THRESHOLD_IN_SECONDS, MANDATORY_REFRESH_THRESHOLD_IN_SECONDS, ADVISORY_REFRESH_BACKOFF_IN_SECONDS, MAX_TOKEN_RESPONSE_BYTES, MAX_ERROR_BODY_CHARS, SAFE_ERROR_KEYS, WorkloadIdentityError;
+var init_types = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs"() {
+    init_error();
+    GRANT_TYPE_JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+    GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
+    TOKEN_ENDPOINT = "/v1/oauth/token";
+    OAUTH_API_BETA_HEADER = "oauth-2025-04-20";
+    FEDERATION_BETA_HEADER = "oidc-federation-2026-04-01";
+    ADVISORY_REFRESH_THRESHOLD_IN_SECONDS = 120;
+    MANDATORY_REFRESH_THRESHOLD_IN_SECONDS = 30;
+    ADVISORY_REFRESH_BACKOFF_IN_SECONDS = 5;
+    MAX_TOKEN_RESPONSE_BYTES = 1 << 20;
+    MAX_ERROR_BODY_CHARS = 2e3;
+    SAFE_ERROR_KEYS = /* @__PURE__ */ new Set(["error", "error_description", "error_uri"]);
+    WorkloadIdentityError = class extends AnthropicError {
+      constructor(message, statusCode = null, body = null, requestId = null) {
+        super(message);
+        this.statusCode = statusCode;
+        this.body = body;
+        this.requestId = requestId;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs
+function nowAsSeconds() {
+  return Math.floor(Date.now() / 1e3);
+}
+var init_time = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs
+var TokenCache;
+var init_token_cache = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs"() {
+    init_types();
+    init_time();
+    TokenCache = class {
+      constructor(provider, onAdvisoryRefreshError) {
+        this.cached = null;
+        this.pendingRefresh = null;
+        this.nextForce = false;
+        this.lastAdvisoryError = 0;
+        this.provider = provider;
+        this.onAdvisoryRefreshError = onAdvisoryRefreshError;
+      }
+      async getToken() {
+        const force = this.nextForce;
+        this.nextForce = false;
+        const cached = this.cached;
+        if (force || cached == null) {
+          const token2 = await this.refresh(force);
+          return token2.token;
+        }
+        if (cached.expiresAt == null) {
+          return cached.token;
+        }
+        const remaining = cached.expiresAt - nowAsSeconds();
+        if (remaining > ADVISORY_REFRESH_THRESHOLD_IN_SECONDS) {
+          return cached.token;
+        }
+        if (remaining > MANDATORY_REFRESH_THRESHOLD_IN_SECONDS) {
+          this.backgroundRefresh();
+          return cached.token;
+        }
+        const token = await this.refresh();
+        return token.token;
+      }
+      /**
+       * Clears the cached token and marks the next {@link getToken} as a forced
+       * refresh, so the underlying provider bypasses any on-disk freshness check.
+       * Called after a 401 — the server has just told us the token is bad even
+       * if its `expires_at` still looks fresh.
+       */
+      invalidate() {
+        this.cached = null;
+        this.nextForce = true;
+      }
+      /**
+       * Mandatory refresh. Joins any in-flight refresh unless forced — a forced
+       * refresh must not coalesce into a non-forced one that may re-serve the
+       * same stale disk token.
+       */
+      refresh(force = false) {
+        if (this.pendingRefresh && !force) {
+          return this.pendingRefresh;
+        }
+        return this.doRefresh(force);
+      }
+      /**
+       * Advisory background refresh. Shares the same in-flight promise as
+       * mandatory refreshes for deduplication, but swallows errors so the
+       * stale cached token keeps being served. Backs off for
+       * {@link ADVISORY_REFRESH_BACKOFF_IN_SECONDS} after a failure so an
+       * outage during the advisory window doesn't hammer the token endpoint.
+       */
+      backgroundRefresh() {
+        if (this.pendingRefresh) {
+          return;
+        }
+        if (nowAsSeconds() - this.lastAdvisoryError < ADVISORY_REFRESH_BACKOFF_IN_SECONDS) {
+          return;
+        }
+        this.doRefresh().catch((err) => {
+          this.lastAdvisoryError = nowAsSeconds();
+          this.onAdvisoryRefreshError?.(err);
+        });
+      }
+      /**
+       * Core refresh. Sets {@link pendingRefresh} so concurrent callers
+       * (both advisory and mandatory) coalesce into a single provider call.
+       */
+      doRefresh(force = false) {
+        this.pendingRefresh = this.provider(force ? { forceRefresh: true } : void 0).then((token) => {
+          this.cached = token;
+          this.pendingRefresh = null;
+          return token;
+        }, (err) => {
+          this.pendingRefresh = null;
+          throw err;
+        });
+        return this.pendingRefresh;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
+var readEnv2;
+var init_env = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs"() {
+    readEnv2 = (env) => {
+      if (typeof globalThis.process !== "undefined") {
+        return globalThis.process.env?.[env]?.trim() || void 0;
+      }
+      if (typeof globalThis.Deno !== "undefined") {
+        return globalThis.Deno.env?.get?.(env)?.trim() || void 0;
+      }
+      return void 0;
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
+function concatBytes2(buffers) {
+  let length = 0;
+  for (const buffer of buffers) {
+    length += buffer.length;
+  }
+  const output = new Uint8Array(length);
+  let index = 0;
+  for (const buffer of buffers) {
+    output.set(buffer, index);
+    index += buffer.length;
+  }
+  return output;
+}
+function encodeUTF82(str2) {
+  let encoder2;
+  return (encodeUTF8_2 ?? (encoder2 = new globalThis.TextEncoder(), encodeUTF8_2 = encoder2.encode.bind(encoder2)))(str2);
+}
+function decodeUTF82(bytes) {
+  let decoder;
+  return (decodeUTF8_2 ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_2 = decoder.decode.bind(decoder)))(bytes);
+}
+var encodeUTF8_2, decodeUTF8_2;
+var init_bytes = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs
+var init_base64 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs"() {
+    init_error();
+    init_bytes();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
+function noop2() {
+}
+function makeLogFn2(fnLevel, logger2, logLevel) {
+  if (!logger2 || levelNumbers2[fnLevel] > levelNumbers2[logLevel]) {
+    return noop2;
+  } else {
+    return logger2[fnLevel].bind(logger2);
+  }
+}
+function filterLogger(logger2, logLevel) {
+  const cachedLogger = cachedLoggers2.get(logger2);
+  if (cachedLogger && cachedLogger[0] === logLevel) {
+    return cachedLogger[1];
+  }
+  const levelLogger = {
+    error: makeLogFn2("error", logger2, logLevel),
+    warn: makeLogFn2("warn", logger2, logLevel),
+    info: makeLogFn2("info", logger2, logLevel),
+    debug: makeLogFn2("debug", logger2, logLevel)
+  };
+  cachedLoggers2.set(logger2, [logLevel, levelLogger]);
+  return levelLogger;
+}
+function loggerFor2(client) {
+  const logger2 = client.logger;
+  const logLevel = client.logLevel ?? "off";
+  if (!logger2) {
+    return noopLogger2;
+  }
+  return filterLogger(logger2, logLevel);
+}
+function defaultLogger() {
+  const envLevel = readEnv2("ANTHROPIC_LOG");
+  if (!cachedDefaultLogger || envLevel !== lastEnvLevel) {
+    lastEnvLevel = envLevel;
+    cachedDefaultLogger = filterLogger(console, parseLogLevel2(envLevel, "process.env['ANTHROPIC_LOG']", filterLogger(console, defaultLogLevel)) ?? defaultLogLevel);
+  }
+  return cachedDefaultLogger;
+}
+var defaultLogLevel, levelNumbers2, parseLogLevel2, noopLogger2, cachedLoggers2, lastEnvLevel, cachedDefaultLogger, formatRequestDetails2;
+var init_log = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs"() {
+    init_values();
+    init_env();
+    defaultLogLevel = "warn";
+    levelNumbers2 = {
+      off: 0,
+      error: 200,
+      warn: 300,
+      info: 400,
+      debug: 500
+    };
+    parseLogLevel2 = (maybeLevel, sourceName, logger2) => {
+      if (!maybeLevel) {
+        return void 0;
+      }
+      if (hasOwn2(levelNumbers2, maybeLevel)) {
+        return maybeLevel;
+      }
+      logger2.warn(`${sourceName} was set to ${JSON.stringify(maybeLevel)}, expected one of ${JSON.stringify(Object.keys(levelNumbers2))}`);
+      return void 0;
+    };
+    noopLogger2 = {
+      error: noop2,
+      warn: noop2,
+      info: noop2,
+      debug: noop2
+    };
+    cachedLoggers2 = /* @__PURE__ */ new WeakMap();
+    formatRequestDetails2 = (details) => {
+      if (details.options) {
+        details.options = { ...details.options };
+        delete details.options["headers"];
+      }
+      if (details.headers) {
+        details.headers = Object.fromEntries((details.headers instanceof Headers ? [...details.headers] : Object.entries(details.headers)).map(([name, value]) => [
+          name,
+          name.toLowerCase() === "authorization" || name.toLowerCase() === "api-key" || name.toLowerCase() === "x-api-key" || name.toLowerCase() === "cookie" || name.toLowerCase() === "set-cookie" ? "***" : value
+        ]));
+      }
+      if ("retryOfRequestLogID" in details) {
+        if (details.retryOfRequestLogID) {
+          details.retryOf = details.retryOfRequestLogID;
+        }
+        delete details.retryOfRequestLogID;
+      }
+      return details;
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils.mjs
+var init_utils2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils.mjs"() {
+    init_values();
+    init_base64();
+    init_env();
+    init_log();
+    init_uuid();
+    init_sleep();
+    init_query();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/credentials.mjs
+function validateProfileName(name) {
+  if (!name) {
+    throw new Error("profile name is empty");
+  }
+  if (name === "." || name === "..") {
+    throw new Error(`profile name "${name}" is not allowed`);
+  }
+  if (name.includes("/") || name.includes("\\")) {
+    throw new Error(`profile name "${name}" must not contain path separators`);
+  }
+  if (!PROFILE_NAME_PATTERN.test(name)) {
+    throw new Error(`profile name "${name}" contains disallowed characters (allowed: letters, digits, '_', '.', '-')`);
+  }
+}
+var CREDENTIALS_FILE_VERSION, PROFILE_NAME_PATTERN, loadConfigWithSource, getCredentialsPath, getRootConfigPath, supportsLocalConfigFiles, getActiveProfileName;
+var init_credentials = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/credentials.mjs"() {
+    init_detect_platform();
+    init_utils2();
+    CREDENTIALS_FILE_VERSION = "1.0";
+    PROFILE_NAME_PATTERN = /^[A-Za-z0-9_.-]+$/;
+    loadConfigWithSource = async (profile) => {
+      var _a4, _b;
+      const rootConfigPath = await getRootConfigPath();
+      if (rootConfigPath === null) {
+        return null;
+      }
+      const profileName = profile ?? await getActiveProfileName();
+      if (profileName === null) {
+        return null;
+      }
+      validateProfileName(profileName);
+      const fs4 = await import("node:fs");
+      const path6 = await import("node:path");
+      const configPath = path6.join(rootConfigPath, "configs", `${profileName}.json`);
+      let configRaw;
+      try {
+        configRaw = await fs4.promises.readFile(configPath, "utf-8");
+      } catch (err) {
+        if (err?.code !== "ENOENT") {
+          throw new Error(`failed to read config file ${configPath}: ${err}`);
+        }
+        configRaw = null;
+      }
+      if (configRaw === null) {
+        const organizationId = readEnv2("ANTHROPIC_ORGANIZATION_ID");
+        const identityTokenFile = readEnv2("ANTHROPIC_IDENTITY_TOKEN_FILE");
+        const federationRuleId = readEnv2("ANTHROPIC_FEDERATION_RULE_ID");
+        if (federationRuleId && organizationId) {
+          return {
+            fromFile: false,
+            config: {
+              organization_id: organizationId,
+              // A defaulted-but-empty CI variable (`ANTHROPIC_WORKSPACE_ID=""`) is
+              // treated as unset — readEnv coerces empty to undefined, and the body
+              // builder's truthy check skips it — so `"workspace_id": ""` never goes
+              // on the wire.
+              workspace_id: readEnv2("ANTHROPIC_WORKSPACE_ID"),
+              base_url: readEnv2("ANTHROPIC_BASE_URL"),
+              authentication: {
+                type: "oidc_federation",
+                federation_rule_id: federationRuleId,
+                service_account_id: readEnv2("ANTHROPIC_SERVICE_ACCOUNT_ID"),
+                identity_token: identityTokenFile ? { source: "file", path: identityTokenFile } : void 0,
+                scope: readEnv2("ANTHROPIC_SCOPE")
+              }
+            }
+          };
+        }
+        return null;
+      }
+      let config;
+      try {
+        config = JSON.parse(configRaw);
+      } catch (err) {
+        throw new Error(`failed to parse config file ${configPath}: ${err}`);
+      }
+      if (!config.authentication) {
+        throw new Error(`config file ${configPath} is missing "authentication"`);
+      }
+      const authType = config.authentication.type;
+      if (authType !== "oidc_federation" && authType !== "user_oauth") {
+        throw new Error(`authentication.type "${authType}" is not a known authentication type`);
+      }
+      config.organization_id ?? (config.organization_id = readEnv2("ANTHROPIC_ORGANIZATION_ID"));
+      config.workspace_id ?? (config.workspace_id = readEnv2("ANTHROPIC_WORKSPACE_ID"));
+      config.base_url ?? (config.base_url = readEnv2("ANTHROPIC_BASE_URL"));
+      (_a4 = config.authentication).scope ?? (_a4.scope = readEnv2("ANTHROPIC_SCOPE"));
+      if (config.authentication.type === "oidc_federation") {
+        if (!config.authentication.identity_token) {
+          const identityTokenFile = readEnv2("ANTHROPIC_IDENTITY_TOKEN_FILE");
+          if (identityTokenFile) {
+            config.authentication.identity_token = {
+              source: "file",
+              path: identityTokenFile
+            };
+          }
+        }
+        if (!config.authentication.federation_rule_id) {
+          config.authentication.federation_rule_id = readEnv2("ANTHROPIC_FEDERATION_RULE_ID") ?? "";
+        }
+        (_b = config.authentication).service_account_id ?? (_b.service_account_id = readEnv2("ANTHROPIC_SERVICE_ACCOUNT_ID"));
+      }
+      return { config, fromFile: true };
+    };
+    getCredentialsPath = async (config, profile) => {
+      if (config?.authentication.credentials_path) {
+        return config.authentication.credentials_path;
+      }
+      const rootConfigPath = await getRootConfigPath();
+      if (!rootConfigPath) {
+        return null;
+      }
+      const profileName = profile ?? await getActiveProfileName();
+      if (!profileName) {
+        return null;
+      }
+      validateProfileName(profileName);
+      const path6 = await import("node:path");
+      return path6.join(rootConfigPath, "credentials", `${profileName}.json`);
+    };
+    getRootConfigPath = async () => {
+      if (!supportsLocalConfigFiles()) {
+        return null;
+      }
+      const path6 = await import("node:path");
+      const configDir = readEnv2("ANTHROPIC_CONFIG_DIR");
+      if (configDir) {
+        return configDir;
+      }
+      const os = getPlatformHeaders2()["X-Stainless-OS"];
+      if (os === "Windows") {
+        const appData = readEnv2("APPDATA");
+        if (appData) {
+          return path6.join(appData, "Anthropic");
+        }
+        const userProfile = readEnv2("USERPROFILE");
+        if (userProfile) {
+          return path6.join(userProfile, "AppData", "Roaming", "Anthropic");
+        }
+        return null;
+      }
+      const xdgConfigHome = readEnv2("XDG_CONFIG_HOME");
+      if (xdgConfigHome) {
+        return path6.join(xdgConfigHome, "anthropic");
+      }
+      const home = readEnv2("HOME");
+      if (home) {
+        return path6.join(home, ".config", "anthropic");
+      }
+      return null;
+    };
+    supportsLocalConfigFiles = () => {
+      const runtime = getPlatformHeaders2()["X-Stainless-Runtime"];
+      return runtime === "node" || runtime === "deno";
+    };
+    getActiveProfileName = async () => {
+      const rootConfigPath = await getRootConfigPath();
+      if (!rootConfigPath) {
+        return null;
+      }
+      const profileName = readEnv2("ANTHROPIC_PROFILE");
+      if (profileName) {
+        return profileName;
+      }
+      const fs4 = await import("node:fs");
+      const path6 = await import("node:path");
+      const filePath = path6.join(rootConfigPath, "active_config");
+      try {
+        return (await fs4.promises.readFile(filePath, "utf-8")).trim() || "default";
+      } catch (err) {
+        if (err?.code !== "ENOENT") {
+          throw new Error(`failed to read ${filePath}: ${err}`);
+        }
+        return "default";
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs
+function identityTokenFromFile(path6) {
+  if (!path6) {
+    throw new AnthropicError("Identity token file path is empty");
+  }
+  return async () => {
+    const fs4 = await import("node:fs");
+    let content;
+    try {
+      content = await fs4.promises.readFile(path6, "utf-8");
+    } catch (err) {
+      throw new AnthropicError(`Failed to read identity token file at ${path6}: ${err}`);
+    }
+    const token = content.trim();
+    if (!token) {
+      throw new AnthropicError(`Identity token file at ${path6} is empty`);
+    }
+    return token;
+  };
+}
+function identityTokenFromValue(token) {
+  if (!token) {
+    throw new AnthropicError("Identity token value is empty");
+  }
+  return () => token;
+}
+var init_identity_token = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs"() {
+    init_error();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs
+function oidcFederationProvider(config) {
+  return async () => {
+    requireSecureTokenEndpoint(config.baseURL);
+    const jwt = await config.identityTokenProvider();
+    if (jwt.length > 16 * 1024) {
+      throw new WorkloadIdentityError(`Identity token is ${Math.ceil(jwt.length / 1024)} KiB, exceeds the 16 KiB assertion limit`);
+    }
+    const body = {
+      grant_type: GRANT_TYPE_JWT_BEARER,
+      assertion: jwt,
+      federation_rule_id: config.federationRuleId,
+      organization_id: config.organizationId
+    };
+    if (config.serviceAccountId) {
+      body["service_account_id"] = config.serviceAccountId;
+    }
+    if (config.workspaceId) {
+      body["workspace_id"] = config.workspaceId;
+    }
+    const url = `${config.baseURL}${TOKEN_ENDPOINT}`;
+    let resp;
+    try {
+      resp = await config.fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-beta": `${OAUTH_API_BETA_HEADER},${FEDERATION_BETA_HEADER}`,
+          "User-Agent": config.userAgent || `anthropic-sdk-typescript/${VERSION2} oidcFederationProvider`
+        },
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      throw new WorkloadIdentityError(`Failed to reach token endpoint ${url}: ${err}`);
+    }
+    const requestId = resp.headers.get("Request-Id");
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      const redacted = redactSensitive(text);
+      let hint = "";
+      if (resp.status === 401) {
+        const hintMiddle = config.workspaceId ? "" : "If your federation rule is scoped to multiple workspaces, set the ANTHROPIC_WORKSPACE_ID environment variable, the 'workspace_id' config key, or the `workspaceId` option. ";
+        hint = ` Ensure your federation rule matches your identity token. ${hintMiddle}View your authentication events in the Workload identity page of Claude Console for more details.`;
+      }
+      throw new WorkloadIdentityError(`Token exchange failed with status ${resp.status}${requestId ? ` (request-id ${requestId})` : ""}: ${redacted}${hint}`, resp.status, redacted, requestId);
+    }
+    const data = await parseTokenResponse(resp, requestId);
+    const expiresIn = Number(data.expires_in);
+    if (!Number.isFinite(expiresIn)) {
+      throw new WorkloadIdentityError(`Token endpoint response missing required fields: ${JSON.stringify(redactSensitive(data))}`, resp.status, redactSensitive(data), requestId);
+    }
+    return {
+      token: data.access_token,
+      expiresAt: nowAsSeconds() + expiresIn
+    };
+  };
+}
+var init_oidc_federation = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs"() {
+    init_types();
+    init_time();
+    init_version();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs
+function userOAuthProvider(config) {
+  return async (opts) => {
+    const fs4 = await import("node:fs");
+    await checkCredentialsFileSafety(config.credentialsPath, config.onSafetyWarning);
+    let raw;
+    try {
+      raw = await fs4.promises.readFile(config.credentialsPath, "utf-8");
+    } catch (err) {
+      throw new WorkloadIdentityError(`Credentials file not found at ${config.credentialsPath}: ${err}`);
+    }
+    let creds;
+    try {
+      creds = JSON.parse(raw);
+    } catch (err) {
+      throw new WorkloadIdentityError(`Credentials file at ${config.credentialsPath} is not valid JSON: ${err}`);
+    }
+    const accessToken = creds.access_token;
+    if (!accessToken) {
+      throw new WorkloadIdentityError(`Credentials file at ${config.credentialsPath} must include 'access_token'`);
+    }
+    const expiresAt = creds.expires_at;
+    if (!opts?.forceRefresh && (expiresAt == null || nowAsSeconds() < expiresAt - MANDATORY_REFRESH_THRESHOLD_IN_SECONDS)) {
+      return { token: accessToken, expiresAt: expiresAt ?? null };
+    }
+    const refreshToken = creds.refresh_token;
+    if (!config.clientId || !refreshToken) {
+      throw new WorkloadIdentityError(`Access token at ${config.credentialsPath} has expired and no refresh is available (client_id ${config.clientId ? "set" : "empty"}, refresh_token ${refreshToken ? "set" : "empty"})`);
+    }
+    requireSecureTokenEndpoint(config.baseURL);
+    const body = {
+      grant_type: GRANT_TYPE_REFRESH_TOKEN,
+      refresh_token: refreshToken,
+      client_id: config.clientId
+    };
+    const url = `${config.baseURL}${TOKEN_ENDPOINT}`;
+    let resp;
+    try {
+      resp = await config.fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-beta": OAUTH_API_BETA_HEADER,
+          "User-Agent": config.userAgent || `anthropic-sdk-typescript/${VERSION2} userOAuthProvider`
+        },
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      throw new WorkloadIdentityError(`User OAuth refresh failed to reach token endpoint: ${err}`);
+    }
+    const requestId = resp.headers.get("Request-Id");
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new WorkloadIdentityError(`User OAuth refresh failed (HTTP ${resp.status}): ${redactSensitive(text)}`, resp.status, redactSensitive(text), requestId);
+    }
+    const data = await parseTokenResponse(resp, requestId);
+    const expiresIn = Number(data.expires_in);
+    if (!Number.isFinite(expiresIn)) {
+      throw new WorkloadIdentityError(`User OAuth refresh response missing or invalid expires_in: ${JSON.stringify(redactSensitive(data))}`, resp.status, redactSensitive(data), requestId);
+    }
+    const newExpiresAt = nowAsSeconds() + expiresIn;
+    const newRefreshToken = data.refresh_token || refreshToken;
+    await writeCredentialsFileAtomic(config.credentialsPath, {
+      ...creds,
+      version: CREDENTIALS_FILE_VERSION,
+      type: "oauth_token",
+      access_token: data.access_token,
+      expires_at: newExpiresAt,
+      refresh_token: newRefreshToken
+    });
+    return { token: data.access_token, expiresAt: newExpiresAt };
+  };
+}
+var init_user_oauth = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs"() {
+    init_credentials();
+    init_types();
+    init_time();
+    init_version();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs
+function resolveCredentialsFromConfig(config, options) {
+  const credentialsPath = config.authentication.credentials_path ?? null;
+  const effectiveBaseURL = (config.base_url || options.baseURL).replace(/\/+$/, "");
+  const provider = buildProvider(config, credentialsPath, effectiveBaseURL, options);
+  const extraHeaders = {};
+  if (config.workspace_id && config.authentication.type === "user_oauth") {
+    extraHeaders["anthropic-workspace-id"] = config.workspace_id;
+  }
+  return { provider, extraHeaders, baseURL: config.base_url || void 0 };
+}
+async function defaultCredentials(options, profile) {
+  const loaded = await loadConfigWithSource(profile);
+  if (!loaded) {
+    return null;
+  }
+  const { config, fromFile } = loaded;
+  const withPath = config.authentication.credentials_path || !fromFile ? config : {
+    ...config,
+    authentication: {
+      ...config.authentication,
+      credentials_path: await getCredentialsPath(config, profile) ?? void 0
+    }
+  };
+  return resolveCredentialsFromConfig(withPath, options);
+}
+function buildProvider(config, credentialsPath, baseURL, options) {
+  switch (config.authentication.type) {
+    case "oidc_federation": {
+      const auth = config.authentication;
+      const identityProvider = resolveIdentityTokenProvider(auth);
+      if (!identityProvider) {
+        throw new WorkloadIdentityError("oidc_federation config requires an identity token (set authentication.identity_token, ANTHROPIC_IDENTITY_TOKEN_FILE, or ANTHROPIC_IDENTITY_TOKEN)");
+      }
+      if (!auth.federation_rule_id) {
+        throw new WorkloadIdentityError("oidc_federation config requires 'federation_rule_id'. Set it in authentication.federation_rule_id in your profile, or via ANTHROPIC_FEDERATION_RULE_ID (profile takes precedence).");
+      }
+      if (!config.organization_id) {
+        throw new WorkloadIdentityError("oidc_federation config requires organization_id (set ANTHROPIC_ORGANIZATION_ID or config.organization_id)");
+      }
+      const exchange = oidcFederationProvider({
+        identityTokenProvider: identityProvider,
+        federationRuleId: auth.federation_rule_id,
+        organizationId: config.organization_id,
+        serviceAccountId: auth.service_account_id,
+        workspaceId: config.workspace_id,
+        baseURL,
+        fetch: options.fetch,
+        userAgent: options.userAgent
+      });
+      if (credentialsPath) {
+        return cachedExchangeProvider(exchange, credentialsPath, options.onCacheWriteError, options.onSafetyWarning);
+      }
+      return exchange;
+    }
+    case "user_oauth": {
+      if (!credentialsPath) {
+        throw new WorkloadIdentityError("user_oauth config requires authentication.credentials_path (or load via a profile so it defaults to <config_dir>/credentials/<profile>.json)");
+      }
+      return userOAuthProvider({
+        credentialsPath,
+        clientId: config.authentication.client_id,
+        baseURL,
+        fetch: options.fetch,
+        userAgent: options.userAgent,
+        onSafetyWarning: options.onSafetyWarning
+      });
+    }
+    default: {
+      const t = config.authentication.type;
+      throw new WorkloadIdentityError(`authentication.type "${t}" is not a known authentication type`);
+    }
+  }
+}
+function resolveIdentityTokenProvider(auth) {
+  if (auth.identity_token) {
+    const source = auth.identity_token.source;
+    if (source !== "file") {
+      throw new WorkloadIdentityError(`identity_token.source "${source}" is not supported by this SDK version (only "file")`);
+    }
+    if (!auth.identity_token.path) {
+      throw new WorkloadIdentityError(`identity_token.source "file" requires a non-empty path`);
+    }
+    return identityTokenFromFile(auth.identity_token.path);
+  }
+  const tokenFile = readEnv2("ANTHROPIC_IDENTITY_TOKEN_FILE");
+  if (tokenFile) {
+    return identityTokenFromFile(tokenFile);
+  }
+  const tokenValue = readEnv2("ANTHROPIC_IDENTITY_TOKEN");
+  if (tokenValue) {
+    return identityTokenFromValue(tokenValue);
+  }
+  return null;
+}
+function cachedExchangeProvider(exchange, credentialsPath, onCacheWriteError, onSafetyWarning) {
+  return async (opts) => {
+    const fs4 = await import("node:fs");
+    await checkCredentialsFileSafety(credentialsPath, onSafetyWarning);
+    let existing;
+    try {
+      const raw = await fs4.promises.readFile(credentialsPath, "utf-8");
+      existing = JSON.parse(raw);
+      const token = existing?.["access_token"];
+      if (token && !opts?.forceRefresh) {
+        const expiresAt = existing?.["expires_at"];
+        if (expiresAt == null || nowAsSeconds() < expiresAt - MANDATORY_REFRESH_THRESHOLD_IN_SECONDS) {
+          return { token, expiresAt: expiresAt ?? null };
+        }
+      }
+    } catch (err) {
+      const code = err?.code;
+      if (code !== "ENOENT" && !(err instanceof SyntaxError)) {
+        onCacheWriteError?.(err);
+      }
+    }
+    const result = await exchange(opts);
+    try {
+      await writeCredentialsFileAtomic(credentialsPath, {
+        ...existing ?? {},
+        version: CREDENTIALS_FILE_VERSION,
+        type: "oauth_token",
+        access_token: result.token,
+        expires_at: result.expiresAt
+      });
+    } catch (err) {
+      onCacheWriteError?.(err);
+    }
+    return result;
+  };
+}
+var init_credential_chain = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs"() {
+    init_env();
+    init_credentials();
+    init_types();
+    init_time();
+    init_identity_token();
+    init_oidc_federation();
+    init_user_oauth();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
+function findNewlineIndex2(buffer, startIndex) {
+  const newline = 10;
+  const carriage = 13;
+  for (let i = startIndex ?? 0; i < buffer.length; i++) {
+    if (buffer[i] === newline) {
+      return { preceding: i, index: i + 1, carriage: false };
+    }
+    if (buffer[i] === carriage) {
+      return { preceding: i, index: i + 1, carriage: true };
+    }
+  }
+  return null;
+}
+function findDoubleNewlineIndex2(buffer) {
+  const newline = 10;
+  const carriage = 13;
+  for (let i = 0; i < buffer.length - 1; i++) {
+    if (buffer[i] === newline && buffer[i + 1] === newline) {
+      return i + 2;
+    }
+    if (buffer[i] === carriage && buffer[i + 1] === carriage) {
+      return i + 2;
+    }
+    if (buffer[i] === carriage && buffer[i + 1] === newline && i + 3 < buffer.length && buffer[i + 2] === carriage && buffer[i + 3] === newline) {
+      return i + 4;
+    }
+  }
+  return -1;
+}
+var _LineDecoder_buffer2, _LineDecoder_carriageReturnIndex2, LineDecoder2;
+var init_line = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs"() {
+    init_tslib();
+    init_bytes();
+    LineDecoder2 = class {
+      constructor() {
+        _LineDecoder_buffer2.set(this, void 0);
+        _LineDecoder_carriageReturnIndex2.set(this, void 0);
+        __classPrivateFieldSet2(this, _LineDecoder_buffer2, new Uint8Array(), "f");
+        __classPrivateFieldSet2(this, _LineDecoder_carriageReturnIndex2, null, "f");
+      }
+      decode(chunk) {
+        if (chunk == null) {
+          return [];
+        }
+        const binaryChunk = chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : typeof chunk === "string" ? encodeUTF82(chunk) : chunk;
+        __classPrivateFieldSet2(this, _LineDecoder_buffer2, concatBytes2([__classPrivateFieldGet2(this, _LineDecoder_buffer2, "f"), binaryChunk]), "f");
+        const lines = [];
+        let patternIndex;
+        while ((patternIndex = findNewlineIndex2(__classPrivateFieldGet2(this, _LineDecoder_buffer2, "f"), __classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f"))) != null) {
+          if (patternIndex.carriage && __classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f") == null) {
+            __classPrivateFieldSet2(this, _LineDecoder_carriageReturnIndex2, patternIndex.index, "f");
+            continue;
+          }
+          if (__classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f") != null && (patternIndex.index !== __classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f") + 1 || patternIndex.carriage)) {
+            lines.push(decodeUTF82(__classPrivateFieldGet2(this, _LineDecoder_buffer2, "f").subarray(0, __classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f") - 1)));
+            __classPrivateFieldSet2(this, _LineDecoder_buffer2, __classPrivateFieldGet2(this, _LineDecoder_buffer2, "f").subarray(__classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f")), "f");
+            __classPrivateFieldSet2(this, _LineDecoder_carriageReturnIndex2, null, "f");
+            continue;
+          }
+          const endIndex = __classPrivateFieldGet2(this, _LineDecoder_carriageReturnIndex2, "f") !== null ? patternIndex.preceding - 1 : patternIndex.preceding;
+          const line = decodeUTF82(__classPrivateFieldGet2(this, _LineDecoder_buffer2, "f").subarray(0, endIndex));
+          lines.push(line);
+          __classPrivateFieldSet2(this, _LineDecoder_buffer2, __classPrivateFieldGet2(this, _LineDecoder_buffer2, "f").subarray(patternIndex.index), "f");
+          __classPrivateFieldSet2(this, _LineDecoder_carriageReturnIndex2, null, "f");
+        }
+        return lines;
+      }
+      flush() {
+        if (!__classPrivateFieldGet2(this, _LineDecoder_buffer2, "f").length) {
+          return [];
+        }
+        return this.decode("\n");
+      }
+    };
+    _LineDecoder_buffer2 = /* @__PURE__ */ new WeakMap(), _LineDecoder_carriageReturnIndex2 = /* @__PURE__ */ new WeakMap();
+    LineDecoder2.NEWLINE_CHARS = /* @__PURE__ */ new Set(["\n", "\r"]);
+    LineDecoder2.NEWLINE_REGEXP = /\r\n|[\n\r]/g;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/streaming.mjs
+async function* _iterSSEMessages2(response, controller) {
+  if (!response.body) {
+    controller.abort();
+    if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.product === "ReactNative") {
+      throw new AnthropicError(`The default react-native fetch implementation does not support streaming. Please use expo/fetch: https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api`);
+    }
+    throw new AnthropicError(`Attempted to iterate over a response with no body`);
+  }
+  const sseDecoder = new SSEDecoder2();
+  const lineDecoder = new LineDecoder2();
+  const iter = ReadableStreamToAsyncIterable2(response.body);
+  for await (const sseChunk of iterSSEChunks2(iter)) {
+    for (const line of lineDecoder.decode(sseChunk)) {
+      const sse = sseDecoder.decode(line);
+      if (sse)
+        yield sse;
+    }
+  }
+  for (const line of lineDecoder.flush()) {
+    const sse = sseDecoder.decode(line);
+    if (sse)
+      yield sse;
+  }
+}
+async function* iterSSEChunks2(iterator) {
+  let data = new Uint8Array();
+  for await (const chunk of iterator) {
+    if (chunk == null) {
+      continue;
+    }
+    const binaryChunk = chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : typeof chunk === "string" ? encodeUTF82(chunk) : chunk;
+    let newData = new Uint8Array(data.length + binaryChunk.length);
+    newData.set(data);
+    newData.set(binaryChunk, data.length);
+    data = newData;
+    let patternIndex;
+    while ((patternIndex = findDoubleNewlineIndex2(data)) !== -1) {
+      yield data.slice(0, patternIndex);
+      data = data.slice(patternIndex);
+    }
+  }
+  if (data.length > 0) {
+    yield data;
+  }
+}
+function partition2(str2, delimiter2) {
+  const index = str2.indexOf(delimiter2);
+  if (index !== -1) {
+    return [str2.substring(0, index), delimiter2, str2.substring(index + delimiter2.length)];
+  }
+  return [str2, "", ""];
+}
+var _Stream_client2, Stream2, SSEDecoder2;
+var init_streaming = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/streaming.mjs"() {
+    init_tslib();
+    init_error();
+    init_shims();
+    init_line();
+    init_shims();
+    init_errors();
+    init_values();
+    init_bytes();
+    init_log();
+    init_error();
+    Stream2 = class _Stream {
+      constructor(iterator, controller, client) {
+        this.iterator = iterator;
+        _Stream_client2.set(this, void 0);
+        this.controller = controller;
+        __classPrivateFieldSet2(this, _Stream_client2, client, "f");
+      }
+      /**
+       * Iterate the raw Server-Sent Events from `response` — `{event, data, raw}`
+       * objects, before any JSON parsing or event-name filtering.
+       *
+       * This reads `response.body` directly (not a clone), so the response is
+       * consumed. Use this in middleware that fully replaces the stream body; for
+       * read-only observation of parsed events, use `ctx.parse()` instead.
+       */
+      static rawEvents(response, controller = new AbortController()) {
+        return _iterSSEMessages2(response, controller);
+      }
+      static fromSSEResponse(response, controller, client) {
+        let consumed = false;
+        const logger2 = client ? loggerFor2(client) : console;
+        async function* iterator() {
+          if (consumed) {
+            throw new AnthropicError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
+          }
+          consumed = true;
+          let done = false;
+          try {
+            for await (const sse of _iterSSEMessages2(response, controller)) {
+              if (sse.event === "completion") {
+                try {
+                  yield JSON.parse(sse.data);
+                } catch (e) {
+                  logger2.error(`Could not parse message into JSON:`, sse.data);
+                  logger2.error(`From chunk:`, sse.raw);
+                  throw e;
+                }
+              }
+              if (sse.event === "message_start" || sse.event === "message_delta" || sse.event === "message_stop" || sse.event === "content_block_start" || sse.event === "content_block_delta" || sse.event === "content_block_stop" || sse.event === "message" || sse.event === "user.message" || sse.event === "user.interrupt" || sse.event === "user.tool_confirmation" || sse.event === "user.custom_tool_result" || sse.event === "user.tool_result" || sse.event === "agent.message" || sse.event === "agent.thinking" || sse.event === "agent.tool_use" || sse.event === "agent.tool_result" || sse.event === "agent.mcp_tool_use" || sse.event === "agent.mcp_tool_result" || sse.event === "agent.custom_tool_use" || sse.event === "agent.thread_context_compacted" || sse.event === "session.status_running" || sse.event === "session.status_idle" || sse.event === "session.status_rescheduled" || sse.event === "session.status_terminated" || sse.event === "session.error" || sse.event === "session.deleted" || sse.event === "session.updated" || sse.event === "span.model_request_start" || sse.event === "span.model_request_end" || sse.event === "span.outcome_evaluation_start" || sse.event === "span.outcome_evaluation_ongoing" || sse.event === "span.outcome_evaluation_end" || sse.event === "user.define_outcome" || sse.event === "agent.thread_message_received" || sse.event === "agent.thread_message_sent" || sse.event === "agent.session_thread_message_received" || sse.event === "agent.session_thread_message_sent" || sse.event === "session.thread_created" || sse.event === "session.thread_status_created" || sse.event === "session.thread_status_running" || sse.event === "session.thread_status_idle" || sse.event === "session.thread_status_rescheduled" || sse.event === "session.thread_status_terminated") {
+                try {
+                  yield JSON.parse(sse.data);
+                } catch (e) {
+                  logger2.error(`Could not parse message into JSON:`, sse.data);
+                  logger2.error(`From chunk:`, sse.raw);
+                  throw e;
+                }
+              }
+              if (sse.event === "ping") {
+                continue;
+              }
+              if (sse.event === "error") {
+                const body = safeJSON2(sse.data) ?? sse.data;
+                const type = body?.error?.type;
+                throw new APIError2(void 0, body, void 0, response.headers, type);
+              }
+            }
+            done = true;
+          } catch (e) {
+            if (isAbortError2(e))
+              return;
+            throw e;
+          } finally {
+            if (!done)
+              controller.abort();
+          }
+        }
+        return new _Stream(iterator, controller, client);
+      }
+      /**
+       * Generates a Stream from a newline-separated ReadableStream
+       * where each item is a JSON value.
+       */
+      static fromReadableStream(readableStream, controller, client) {
+        let consumed = false;
+        async function* iterLines() {
+          const lineDecoder = new LineDecoder2();
+          const iter = ReadableStreamToAsyncIterable2(readableStream);
+          for await (const chunk of iter) {
+            for (const line of lineDecoder.decode(chunk)) {
+              yield line;
+            }
+          }
+          for (const line of lineDecoder.flush()) {
+            yield line;
+          }
+        }
+        async function* iterator() {
+          if (consumed) {
+            throw new AnthropicError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
+          }
+          consumed = true;
+          let done = false;
+          try {
+            for await (const line of iterLines()) {
+              if (done)
+                continue;
+              if (line)
+                yield JSON.parse(line);
+            }
+            done = true;
+          } catch (e) {
+            if (isAbortError2(e))
+              return;
+            throw e;
+          } finally {
+            if (!done)
+              controller.abort();
+          }
+        }
+        return new _Stream(iterator, controller, client);
+      }
+      [(_Stream_client2 = /* @__PURE__ */ new WeakMap(), Symbol.asyncIterator)]() {
+        return this.iterator();
+      }
+      /**
+       * Splits the stream into two streams which can be
+       * independently read from at different speeds.
+       */
+      tee() {
+        const left = [];
+        const right = [];
+        const iterator = this.iterator();
+        const teeIterator = (queue) => {
+          return {
+            next: () => {
+              if (queue.length === 0) {
+                const result = iterator.next();
+                left.push(result);
+                right.push(result);
+              }
+              return queue.shift();
+            }
+          };
+        };
+        return [
+          new _Stream(() => teeIterator(left), this.controller, __classPrivateFieldGet2(this, _Stream_client2, "f")),
+          new _Stream(() => teeIterator(right), this.controller, __classPrivateFieldGet2(this, _Stream_client2, "f"))
+        ];
+      }
+      /**
+       * Converts this stream to a newline-separated ReadableStream of
+       * JSON stringified values in the stream
+       * which can be turned back into a Stream with `Stream.fromReadableStream()`.
+       */
+      toReadableStream() {
+        const self = this;
+        let iter;
+        return makeReadableStream2({
+          async start() {
+            iter = self[Symbol.asyncIterator]();
+          },
+          async pull(ctrl) {
+            try {
+              const { value, done } = await iter.next();
+              if (done)
+                return ctrl.close();
+              const bytes = encodeUTF82(JSON.stringify(value) + "\n");
+              ctrl.enqueue(bytes);
+            } catch (err) {
+              ctrl.error(err);
+            }
+          },
+          async cancel() {
+            await iter.return?.();
+          }
+        });
+      }
+    };
+    SSEDecoder2 = class {
+      constructor() {
+        this.event = null;
+        this.data = [];
+        this.chunks = [];
+      }
+      decode(line) {
+        if (line.endsWith("\r")) {
+          line = line.substring(0, line.length - 1);
+        }
+        if (!line) {
+          if (!this.event && !this.data.length)
+            return null;
+          const sse = {
+            event: this.event,
+            data: this.data.join("\n"),
+            raw: this.chunks
+          };
+          this.event = null;
+          this.data = [];
+          this.chunks = [];
+          return sse;
+        }
+        this.chunks.push(line);
+        if (line.startsWith(":")) {
+          return null;
+        }
+        let [fieldname, _, value] = partition2(line, ":");
+        if (value.startsWith(" ")) {
+          value = value.substring(1);
+        }
+        if (fieldname === "event") {
+          this.event = value;
+        } else if (fieldname === "data") {
+          this.data.push(value);
+        }
+        return null;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/parse.mjs
+async function defaultParseResponse2(client, props) {
+  const { response, requestLogID, retryOfRequestLogID, startTime } = props;
+  const body = await (async () => {
+    if (props.options.stream) {
+      loggerFor2(client).debug("response", response.status, response.url, response.headers, response.body);
+      return Stream2.fromSSEResponse(response, props.controller);
+    }
+    if (response.status === 204) {
+      return null;
+    }
+    if (props.options.__binaryResponse) {
+      return response;
+    }
+    const contentType = response.headers.get("content-type");
+    const mediaType = contentType?.split(";")[0]?.trim();
+    const isJSON = mediaType?.includes("application/json") || mediaType?.endsWith("+json");
+    if (isJSON) {
+      const contentLength = response.headers.get("content-length");
+      if (contentLength === "0") {
+        return void 0;
+      }
+      const json = await response.json();
+      return addRequestID2(json, response);
+    }
+    const text = await response.text();
+    return text;
+  })();
+  loggerFor2(client).debug(`[${requestLogID}] response parsed`, formatRequestDetails2({
+    retryOfRequestLogID,
+    url: response.url,
+    status: response.status,
+    body,
+    durationMs: Date.now() - startTime
+  }));
+  return body;
+}
+function addRequestID2(value, response) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+  return Object.defineProperty(value, "_request_id", {
+    value: response.headers.get("request-id"),
+    enumerable: false
+  });
+}
+var init_parse = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/parse.mjs"() {
+    init_streaming();
+    init_log();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/middleware.mjs
+function isFetchOriginError(err) {
+  return typeof err === "object" && err !== null && fetchOriginErrors.has(err);
+}
+function isRetryableError(err) {
+  const seen = /* @__PURE__ */ new Set();
+  while (typeof err === "object" && err !== null && !seen.has(err)) {
+    seen.add(err);
+    if (isFetchOriginError(err) || isAbortError2(err) || err instanceof APIConnectionError2 || err instanceof RetryableError) {
+      return true;
+    }
+    err = err.cause;
+  }
+  return false;
+}
+function wrapFetchWithMiddleware(fetchFn, middleware, options, client) {
+  return async (url, init = {}) => {
+    if (middleware.length === 0) {
+      return fetchFn.call(void 0, url, init);
+    }
+    const headers = init.headers instanceof Headers ? init.headers : new Headers(init.headers);
+    const response = await applyMiddleware(fetchFn, middleware, options, client)({
+      ...init,
+      headers,
+      url: typeof url === "string" ? url : url instanceof URL ? url.href : url.url
+    });
+    if (response.bodyUsed || response.body?.locked) {
+      throw new AnthropicError("middleware consumed the response body; use response.clone() to inspect it, or return new Response(body, response) to consume and replace it");
+    }
+    return response;
+  };
+}
+function createMiddlewareContext(options, client) {
+  const cache = /* @__PURE__ */ new WeakMap();
+  return {
+    options,
+    // Resolved per chain, so changes to the client's `logLevel`/`logger`
+    // apply to subsequent requests.
+    logger: client ? loggerFor2(client) : defaultLogger(),
+    parse(response) {
+      if (options?.stream && response.ok) {
+        return parseMiddlewareResponse(response, options);
+      }
+      let parsed = cache.get(response);
+      if (!parsed) {
+        parsed = parseMiddlewareResponse(response, options);
+        cache.set(response, parsed);
+      }
+      return parsed;
+    }
+  };
+}
+async function parseMiddlewareResponse(response, options) {
+  if (response.bodyUsed || response.body?.locked) {
+    throw new AnthropicError("cannot ctx.parse() a response whose body was already consumed; call ctx.parse() instead of reading the body, or read via response.clone()");
+  }
+  if (options?.stream && response.ok) {
+    return Stream2.fromSSEResponse(response.clone(), new AbortController());
+  }
+  if (response.status === 204) {
+    return null;
+  }
+  if (options?.__binaryResponse) {
+    return response;
+  }
+  const contentType = response.headers.get("content-type");
+  const mediaType = contentType?.split(";")[0]?.trim();
+  const isJSON = mediaType?.includes("application/json") || mediaType?.endsWith("+json");
+  if (isJSON) {
+    if (response.headers.get("content-length") === "0") {
+      return void 0;
+    }
+    return addRequestID2(await response.clone().json(), response);
+  }
+  return await response.clone().text();
+}
+function applyMiddleware(fetchFn, middleware, options, client) {
+  let next = async ({ url, ...init }) => {
+    try {
+      return await fetchFn.call(void 0, url, init);
+    } catch (err) {
+      const error = castToError2(err);
+      fetchOriginErrors.add(error);
+      throw error;
+    }
+  };
+  const ctx = createMiddlewareContext(options, client);
+  for (let i = middleware.length - 1; i >= 0; i--) {
+    const mw = middleware[i];
+    const nextInner = next;
+    next = async (request) => mw(request, nextInner, ctx);
+  }
+  return next;
+}
+var fetchOriginErrors;
+var init_middleware = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/middleware.mjs"() {
+    init_errors();
+    init_parse();
+    init_log();
+    init_error();
+    init_streaming();
+    fetchOriginErrors = /* @__PURE__ */ new WeakSet();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
+var _APIPromise_client2, APIPromise2;
+var init_api_promise = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/api-promise.mjs"() {
+    init_tslib();
+    init_parse();
+    APIPromise2 = class _APIPromise extends Promise {
+      constructor(client, responsePromise, parseResponse2 = defaultParseResponse2) {
+        super((resolve4) => {
+          resolve4(null);
+        });
+        this.responsePromise = responsePromise;
+        this.parseResponse = parseResponse2;
+        _APIPromise_client2.set(this, void 0);
+        __classPrivateFieldSet2(this, _APIPromise_client2, client, "f");
+      }
+      _thenUnwrap(transform) {
+        return new _APIPromise(__classPrivateFieldGet2(this, _APIPromise_client2, "f"), this.responsePromise, async (client, props) => addRequestID2(transform(await this.parseResponse(client, props), props), props.response));
+      }
+      /**
+       * Gets the raw `Response` instance instead of parsing the response
+       * data.
+       *
+       * If you want to parse the response body but still get the `Response`
+       * instance, you can use {@link withResponse()}.
+       *
+       * 👋 Getting the wrong TypeScript type for `Response`?
+       * Try setting `"moduleResolution": "NodeNext"` or add `"lib": ["DOM"]`
+       * to your `tsconfig.json`.
+       */
+      asResponse() {
+        return this.responsePromise.then((p) => p.response);
+      }
+      /**
+       * Gets the parsed response data, the raw `Response` instance and the ID of the request,
+       * returned via the `request-id` header which is useful for debugging requests and resporting
+       * issues to Anthropic.
+       *
+       * If you just want to get the raw `Response` instance without parsing it,
+       * you can use {@link asResponse()}.
+       *
+       * 👋 Getting the wrong TypeScript type for `Response`?
+       * Try setting `"moduleResolution": "NodeNext"` or add `"lib": ["DOM"]`
+       * to your `tsconfig.json`.
+       */
+      async withResponse() {
+        const [data, response] = await Promise.all([this.parse(), this.asResponse()]);
+        return { data, response, request_id: response.headers.get("request-id") };
+      }
+      parse() {
+        if (!this.parsedPromise) {
+          this.parsedPromise = this.responsePromise.then((data) => this.parseResponse(__classPrivateFieldGet2(this, _APIPromise_client2, "f"), data));
+        }
+        return this.parsedPromise;
+      }
+      then(onfulfilled, onrejected) {
+        return this.parse().then(onfulfilled, onrejected);
+      }
+      catch(onrejected) {
+        return this.parse().catch(onrejected);
+      }
+      finally(onfinally) {
+        return this.parse().finally(onfinally);
+      }
+    };
+    _APIPromise_client2 = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/pagination.mjs
+var _AbstractPage_client2, AbstractPage2, PagePromise2, Page2, PageCursor;
+var init_pagination = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/pagination.mjs"() {
+    init_tslib();
+    init_error();
+    init_parse();
+    init_api_promise();
+    init_values();
+    AbstractPage2 = class {
+      constructor(client, response, body, options) {
+        _AbstractPage_client2.set(this, void 0);
+        __classPrivateFieldSet2(this, _AbstractPage_client2, client, "f");
+        this.options = options;
+        this.response = response;
+        this.body = body;
+      }
+      hasNextPage() {
+        const items = this.getPaginatedItems();
+        if (!items.length)
+          return false;
+        return this.nextPageRequestOptions() != null;
+      }
+      async getNextPage() {
+        const nextOptions = this.nextPageRequestOptions();
+        if (!nextOptions) {
+          throw new AnthropicError("No next page expected; please check `.hasNextPage()` before calling `.getNextPage()`.");
+        }
+        return await __classPrivateFieldGet2(this, _AbstractPage_client2, "f").requestAPIList(this.constructor, nextOptions);
+      }
+      async *iterPages() {
+        let page = this;
+        yield page;
+        while (page.hasNextPage()) {
+          page = await page.getNextPage();
+          yield page;
+        }
+      }
+      async *[(_AbstractPage_client2 = /* @__PURE__ */ new WeakMap(), Symbol.asyncIterator)]() {
+        for await (const page of this.iterPages()) {
+          for (const item of page.getPaginatedItems()) {
+            yield item;
+          }
+        }
+      }
+    };
+    PagePromise2 = class extends APIPromise2 {
+      constructor(client, request, Page3) {
+        super(client, request, async (client2, props) => new Page3(client2, props.response, await defaultParseResponse2(client2, props), props.options));
+      }
+      /**
+       * Allow auto-paginating iteration on an unawaited list call, eg:
+       *
+       *    for await (const item of client.items.list()) {
+       *      console.log(item)
+       *    }
+       */
+      async *[Symbol.asyncIterator]() {
+        const page = await this;
+        for await (const item of page) {
+          yield item;
+        }
+      }
+    };
+    Page2 = class extends AbstractPage2 {
+      constructor(client, response, body, options) {
+        super(client, response, body, options);
+        this.data = body.data || [];
+        this.has_more = body.has_more || false;
+        this.first_id = body.first_id || null;
+        this.last_id = body.last_id || null;
+      }
+      getPaginatedItems() {
+        return this.data ?? [];
+      }
+      hasNextPage() {
+        if (this.has_more === false) {
+          return false;
+        }
+        return super.hasNextPage();
+      }
+      nextPageRequestOptions() {
+        if (this.options.query?.["before_id"]) {
+          const first_id = this.first_id;
+          if (!first_id) {
+            return null;
+          }
+          return {
+            ...this.options,
+            query: {
+              ...maybeObj2(this.options.query),
+              before_id: first_id
+            }
+          };
+        }
+        const cursor = this.last_id;
+        if (!cursor) {
+          return null;
+        }
+        return {
+          ...this.options,
+          query: {
+            ...maybeObj2(this.options.query),
+            after_id: cursor
+          }
+        };
+      }
+    };
+    PageCursor = class extends AbstractPage2 {
+      constructor(client, response, body, options) {
+        super(client, response, body, options);
+        this.data = body.data || [];
+        this.next_page = body.next_page || null;
+      }
+      getPaginatedItems() {
+        return this.data ?? [];
+      }
+      nextPageRequestOptions() {
+        const cursor = this.next_page;
+        if (!cursor) {
+          return null;
+        }
+        return {
+          ...this.options,
+          query: {
+            ...maybeObj2(this.options.query),
+            page: cursor
+          }
+        };
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
+function makeFile2(fileBits, fileName, options) {
+  checkFileSupport2();
+  return new File(fileBits, fileName ?? "unknown_file", options);
+}
+function getName2(value, stripPath) {
+  const val = typeof value === "object" && value !== null && ("name" in value && value.name && String(value.name) || "url" in value && value.url && String(value.url) || "filename" in value && value.filename && String(value.filename) || "path" in value && value.path && String(value.path)) || "";
+  return stripPath ? val.split(/[\\/]/).pop() || void 0 : val;
+}
+function supportsFormData2(fetchObject) {
+  const fetch2 = typeof fetchObject === "function" ? fetchObject : fetchObject.fetch;
+  const cached = supportsFormDataMap2.get(fetch2);
+  if (cached)
+    return cached;
+  const promise = (async () => {
+    try {
+      const FetchResponse = "Response" in fetch2 ? fetch2.Response : (await fetch2("data:,")).constructor;
+      const data = new FormData();
+      if (data.toString() === await new FetchResponse(data).text()) {
+        return false;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  })();
+  supportsFormDataMap2.set(fetch2, promise);
+  return promise;
+}
+var checkFileSupport2, isAsyncIterable2, multipartFormRequestOptions2, supportsFormDataMap2, createForm2, isNamedBlob2, addFormValue2;
+var init_uploads = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/uploads.mjs"() {
+    init_shims();
+    checkFileSupport2 = () => {
+      if (typeof File === "undefined") {
+        const { process: process2 } = globalThis;
+        const isOldNode = typeof process2?.versions?.node === "string" && parseInt(process2.versions.node.split(".")) < 20;
+        throw new Error("`File` is not defined as a global, which is required for file uploads." + (isOldNode ? " Update to Node 20 LTS or newer, or set `globalThis.File` to `import('node:buffer').File`." : ""));
+      }
+    };
+    isAsyncIterable2 = (value) => value != null && typeof value === "object" && typeof value[Symbol.asyncIterator] === "function";
+    multipartFormRequestOptions2 = async (opts, fetch2, stripFilenames = true) => {
+      return { ...opts, body: await createForm2(opts.body, fetch2, stripFilenames) };
+    };
+    supportsFormDataMap2 = /* @__PURE__ */ new WeakMap();
+    createForm2 = async (body, fetch2, stripFilenames = true) => {
+      if (!await supportsFormData2(fetch2)) {
+        throw new TypeError("The provided fetch function does not support file uploads with the current global FormData class.");
+      }
+      const form = new FormData();
+      await Promise.all(Object.entries(body || {}).map(([key, value]) => addFormValue2(form, key, value, stripFilenames)));
+      return form;
+    };
+    isNamedBlob2 = (value) => value instanceof Blob && "name" in value;
+    addFormValue2 = async (form, key, value, stripFilenames) => {
+      if (value === void 0)
+        return;
+      if (value == null) {
+        throw new TypeError(`Received null for "${key}"; to pass null in FormData, you must use the string 'null'`);
+      }
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        form.append(key, String(value));
+      } else if (value instanceof Response) {
+        let options = {};
+        const contentType = value.headers.get("Content-Type");
+        if (contentType) {
+          options = { type: contentType };
+        }
+        form.append(key, makeFile2([await value.blob()], getName2(value, stripFilenames), options));
+      } else if (isAsyncIterable2(value)) {
+        form.append(key, makeFile2([await new Response(ReadableStreamFrom2(value)).blob()], getName2(value, stripFilenames)));
+      } else if (isNamedBlob2(value)) {
+        form.append(key, makeFile2([value], getName2(value, stripFilenames), { type: value.type }));
+      } else if (Array.isArray(value)) {
+        await Promise.all(value.map((entry) => addFormValue2(form, key + "[]", entry, stripFilenames)));
+      } else if (typeof value === "object") {
+        await Promise.all(Object.entries(value).map(([name, prop]) => addFormValue2(form, `${key}[${name}]`, prop, stripFilenames)));
+      } else {
+        throw new TypeError(`Invalid value given to form, expected a string, number, boolean, object, Array, File or Blob but got ${value} instead`);
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
+async function toFile2(value, name, options) {
+  checkFileSupport2();
+  value = await value;
+  name || (name = getName2(value, true));
+  if (isFileLike2(value)) {
+    if (value instanceof File && name == null && options == null) {
+      return value;
+    }
+    return makeFile2([await value.arrayBuffer()], name ?? value.name, {
+      type: value.type,
+      lastModified: value.lastModified,
+      ...options
+    });
+  }
+  if (isResponseLike2(value)) {
+    const blob = await value.blob();
+    name || (name = new URL(value.url).pathname.split(/[\\/]/).pop());
+    return makeFile2(await getBytes2(blob), name, options);
+  }
+  const parts = await getBytes2(value);
+  if (!options?.type) {
+    const type = parts.find((part) => typeof part === "object" && "type" in part && part.type);
+    if (typeof type === "string") {
+      options = { ...options, type };
+    }
+  }
+  return makeFile2(parts, name, options);
+}
+async function getBytes2(value) {
+  let parts = [];
+  if (typeof value === "string" || ArrayBuffer.isView(value) || // includes Uint8Array, Buffer, etc.
+  value instanceof ArrayBuffer) {
+    parts.push(value);
+  } else if (isBlobLike2(value)) {
+    parts.push(value instanceof Blob ? value : await value.arrayBuffer());
+  } else if (isAsyncIterable2(value)) {
+    for await (const chunk of value) {
+      parts.push(...await getBytes2(chunk));
+    }
+  } else {
+    const constructor = value?.constructor?.name;
+    throw new Error(`Unexpected data type: ${typeof value}${constructor ? `; constructor: ${constructor}` : ""}${propsForError2(value)}`);
+  }
+  return parts;
+}
+function propsForError2(value) {
+  if (typeof value !== "object" || value === null)
+    return "";
+  const props = Object.getOwnPropertyNames(value);
+  return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
+}
+var isBlobLike2, isFileLike2, isResponseLike2;
+var init_to_file = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/to-file.mjs"() {
+    init_uploads();
+    init_uploads();
+    isBlobLike2 = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
+    isFileLike2 = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike2(value);
+    isResponseLike2 = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/uploads.mjs
+var init_uploads2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/uploads.mjs"() {
+    init_to_file();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/shared.mjs
+var init_shared = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/shared.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/resource.mjs
+var APIResource2;
+var init_resource = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/resource.mjs"() {
+    APIResource2 = class {
+      constructor(client) {
+        this._client = client;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/headers.mjs
+function* iterateHeaders2(headers) {
+  if (!headers)
+    return;
+  if (brand_privateNullableHeaders2 in headers) {
+    const { values, nulls } = headers;
+    yield* values.entries();
+    for (const name of nulls) {
+      yield [name, null];
+    }
+    return;
+  }
+  let shouldClear = false;
+  let iter;
+  if (headers instanceof Headers) {
+    iter = headers.entries();
+  } else if (isReadonlyArray2(headers)) {
+    iter = headers;
+  } else {
+    shouldClear = true;
+    iter = Object.entries(headers ?? {});
+  }
+  for (let row of iter) {
+    const name = row[0];
+    if (typeof name !== "string")
+      throw new TypeError("expected header name to be a string");
+    const values = isReadonlyArray2(row[1]) ? row[1] : [row[1]];
+    let didClear = false;
+    for (const value of values) {
+      if (value === void 0)
+        continue;
+      if (shouldClear && !didClear) {
+        didClear = true;
+        yield [name, null];
+      }
+      yield [name, value];
+    }
+  }
+}
+var brand_privateNullableHeaders2, buildHeaders2;
+var init_headers = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/headers.mjs"() {
+    init_values();
+    brand_privateNullableHeaders2 = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
+    buildHeaders2 = (newHeaders) => {
+      const targetHeaders = new Headers();
+      const nullHeaders = /* @__PURE__ */ new Set();
+      for (const headers of newHeaders) {
+        const seenHeaders = /* @__PURE__ */ new Set();
+        for (const [name, value] of iterateHeaders2(headers)) {
+          const lowerName = name.toLowerCase();
+          if (!seenHeaders.has(lowerName)) {
+            targetHeaders.delete(name);
+            seenHeaders.add(lowerName);
+          }
+          if (value === null) {
+            targetHeaders.delete(name);
+            nullHeaders.add(lowerName);
+          } else {
+            targetHeaders.append(name, value);
+            nullHeaders.delete(lowerName);
+          }
+        }
+      }
+      return { [brand_privateNullableHeaders2]: true, values: targetHeaders, nulls: nullHeaders };
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
+function encodeURIPath2(str2) {
+  return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
+}
+var EMPTY2, createPathTagFunction2, path2;
+var init_path = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs"() {
+    init_error();
+    EMPTY2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
+    createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path6(statics, ...params) {
+      if (statics.length === 1)
+        return statics[0];
+      let postPath = false;
+      const invalidSegments = [];
+      const path7 = statics.reduce((previousValue, currentValue, index) => {
+        if (/[?#]/.test(currentValue)) {
+          postPath = true;
+        }
+        const value = params[index];
+        let encoded = (postPath ? encodeURIComponent : pathEncoder)("" + value);
+        if (index !== params.length && (value == null || typeof value === "object" && // handle values from other realms
+        value.toString === Object.getPrototypeOf(Object.getPrototypeOf(value.hasOwnProperty ?? EMPTY2) ?? EMPTY2)?.toString)) {
+          encoded = value + "";
+          invalidSegments.push({
+            start: previousValue.length + currentValue.length,
+            length: encoded.length,
+            error: `Value of type ${Object.prototype.toString.call(value).slice(8, -1)} is not a valid path parameter`
+          });
+        }
+        return previousValue + currentValue + (index === params.length ? "" : encoded);
+      }, "");
+      const pathOnly = path7.split(/[?#]/, 1)[0];
+      const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
+      let match;
+      while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
+        invalidSegments.push({
+          start: match.index,
+          length: match[0].length,
+          error: `Value "${match[0]}" can't be safely passed as a path parameter`
+        });
+      }
+      invalidSegments.sort((a, b) => a.start - b.start);
+      if (invalidSegments.length > 0) {
+        let lastEnd = 0;
+        const underline = invalidSegments.reduce((acc, segment) => {
+          const spaces = " ".repeat(segment.start - lastEnd);
+          const arrows = "^".repeat(segment.length);
+          lastEnd = segment.start + segment.length;
+          return acc + spaces + arrows;
+        }, "");
+        throw new AnthropicError(`Path parameters result in path with invalid segments:
+${invalidSegments.map((e) => e.error).join("\n")}
+${path7}
+${underline}`);
+      }
+      return path7;
+    };
+    path2 = /* @__PURE__ */ createPathTagFunction2(encodeURIPath2);
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs
+var DeploymentRuns;
+var init_deployment_runs = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    DeploymentRuns = class extends APIResource2 {
+      /**
+       * Get Deployment Run
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeploymentRun =
+       *   await client.beta.deploymentRuns.retrieve(
+       *     'deployment_run_id',
+       *   );
+       * ```
+       */
+      retrieve(deploymentRunID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/deployment_runs/${deploymentRunID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Deployment Runs
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsDeploymentRun of client.beta.deploymentRuns.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/deployment_runs?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs
+var Deployments;
+var init_deployments = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Deployments = class extends APIResource2 {
+      /**
+       * Create Deployment
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeployment =
+       *   await client.beta.deployments.create({
+       *     agent: 'string',
+       *     environment_id: 'x',
+       *     initial_events: [
+       *       {
+       *         content: [
+       *           {
+       *             text: 'Where is my order #1234?',
+       *             type: 'text',
+       *           },
+       *         ],
+       *         type: 'user.message',
+       *       },
+       *     ],
+       *     name: 'x',
+       *   });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/deployments?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get Deployment
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeployment =
+       *   await client.beta.deployments.retrieve('deployment_id');
+       * ```
+       */
+      retrieve(deploymentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/deployments/${deploymentID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update Deployment
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeployment =
+       *   await client.beta.deployments.update('deployment_id');
+       * ```
+       */
+      update(deploymentID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/deployments/${deploymentID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Deployments
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsDeployment of client.beta.deployments.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/deployments?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive Deployment
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeployment =
+       *   await client.beta.deployments.archive('deployment_id');
+       * ```
+       */
+      archive(deploymentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/deployments/${deploymentID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Pause Deployment
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeployment =
+       *   await client.beta.deployments.pause('deployment_id');
+       * ```
+       */
+      pause(deploymentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/deployments/${deploymentID}/pause?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Run Deployment Now
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeploymentRun =
+       *   await client.beta.deployments.run('deployment_id');
+       * ```
+       */
+      run(deploymentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/deployments/${deploymentID}/run?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Unpause Deployment
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeployment =
+       *   await client.beta.deployments.unpause('deployment_id');
+       * ```
+       */
+      unpause(deploymentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/deployments/${deploymentID}/unpause?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs
+function wasCreatedByStainlessHelper(value) {
+  return typeof value === "object" && value !== null && SDK_HELPER_SYMBOL in value;
+}
+function collectStainlessHelpers(tools, messages) {
+  const helpers = /* @__PURE__ */ new Set();
+  if (tools) {
+    for (const tool of tools) {
+      if (wasCreatedByStainlessHelper(tool)) {
+        helpers.add(tool[SDK_HELPER_SYMBOL]);
+      }
+    }
+  }
+  if (messages) {
+    for (const message of messages) {
+      if (wasCreatedByStainlessHelper(message)) {
+        helpers.add(message[SDK_HELPER_SYMBOL]);
+      }
+      if (Array.isArray(message.content)) {
+        for (const block of message.content) {
+          if (wasCreatedByStainlessHelper(block)) {
+            helpers.add(block[SDK_HELPER_SYMBOL]);
+          }
+        }
+      }
+    }
+  }
+  return Array.from(helpers);
+}
+function stainlessHelperHeader(tools, messages) {
+  const helpers = collectStainlessHelpers(tools, messages);
+  if (helpers.length === 0)
+    return {};
+  return { "x-stainless-helper": helpers.join(", ") };
+}
+function stainlessHelperHeaderFromFile(file) {
+  if (wasCreatedByStainlessHelper(file)) {
+    return { "x-stainless-helper": file[SDK_HELPER_SYMBOL] };
+  }
+  return {};
+}
+var SDK_HELPER_SYMBOL;
+var init_stainless_helper_header = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs"() {
+    SDK_HELPER_SYMBOL = /* @__PURE__ */ Symbol("anthropic.sdk.stainlessHelper");
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs
+var Files4;
+var init_files = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_stainless_helper_header();
+    init_uploads();
+    init_path();
+    Files4 = class extends APIResource2 {
+      /**
+       * List Files
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const fileMetadata of client.beta.files.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/files?beta=true", Page2, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete File
+       *
+       * @example
+       * ```ts
+       * const deletedFile = await client.beta.files.delete(
+       *   'file_id',
+       * );
+       * ```
+       */
+      delete(fileID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/files/${fileID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Download File
+       *
+       * @example
+       * ```ts
+       * const response = await client.beta.files.download(
+       *   'file_id',
+       * );
+       *
+       * const content = await response.blob();
+       * console.log(content);
+       * ```
+       */
+      download(fileID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/files/${fileID}/content?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            {
+              "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString(),
+              Accept: "application/binary"
+            },
+            options?.headers
+          ]),
+          __binaryResponse: true
+        });
+      }
+      /**
+       * Get File Metadata
+       *
+       * @example
+       * ```ts
+       * const fileMetadata =
+       *   await client.beta.files.retrieveMetadata('file_id');
+       * ```
+       */
+      retrieveMetadata(fileID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/files/${fileID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Upload File
+       *
+       * @example
+       * ```ts
+       * const fileMetadata = await client.beta.files.upload({
+       *   file: fs.createReadStream('path/to/file'),
+       * });
+       * ```
+       */
+      upload(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/files?beta=true", multipartFormRequestOptions2({
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
+            stainlessHelperHeaderFromFile(body.file),
+            options?.headers
+          ])
+        }, this._client));
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs
+var Models2;
+var init_models = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Models2 = class extends APIResource2 {
+      /**
+       * Get a specific model.
+       *
+       * The Models API response can be used to determine information about a specific
+       * model or resolve a model alias to a model ID.
+       *
+       * @example
+       * ```ts
+       * const betaModelInfo = await client.beta.models.retrieve(
+       *   'model_id',
+       * );
+       * ```
+       */
+      retrieve(modelID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/models/${modelID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List available models.
+       *
+       * The Models API response can be used to determine which models are available for
+       * use in the API. More recently released models are listed first.
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaModelInfo of client.beta.models.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/models?beta=true", Page2, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs
+var UserProfiles;
+var init_user_profiles = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    UserProfiles = class extends APIResource2 {
+      /**
+       * Create User Profile
+       *
+       * @example
+       * ```ts
+       * const betaUserProfile =
+       *   await client.beta.userProfiles.create();
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/user_profiles?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "user-profiles-2026-03-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get User Profile
+       *
+       * @example
+       * ```ts
+       * const betaUserProfile =
+       *   await client.beta.userProfiles.retrieve(
+       *     'uprof_011CZkZCu8hGbp5mYRQgUmz9',
+       *   );
+       * ```
+       */
+      retrieve(userProfileID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/user_profiles/${userProfileID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "user-profiles-2026-03-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update User Profile
+       *
+       * @example
+       * ```ts
+       * const betaUserProfile =
+       *   await client.beta.userProfiles.update(
+       *     'uprof_011CZkZCu8hGbp5mYRQgUmz9',
+       *   );
+       * ```
+       */
+      update(userProfileID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/user_profiles/${userProfileID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "user-profiles-2026-03-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List User Profiles
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaUserProfile of client.beta.userProfiles.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/user_profiles?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "user-profiles-2026-03-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Create Enrollment URL
+       *
+       * @example
+       * ```ts
+       * const betaUserProfileEnrollmentURL =
+       *   await client.beta.userProfiles.createEnrollmentURL(
+       *     'uprof_011CZkZCu8hGbp5mYRQgUmz9',
+       *   );
+       * ```
+       */
+      createEnrollmentURL(userProfileID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/user_profiles/${userProfileID}/enrollment_url?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "user-profiles-2026-03-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/timing_safe_equal.js
+var require_timing_safe_equal = __commonJS({
+  "../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/timing_safe_equal.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.timingSafeEqual = void 0;
+    function assert(expr, msg = "") {
+      if (!expr) {
+        throw new Error(msg);
+      }
+    }
+    function timingSafeEqual(a, b) {
+      if (a.byteLength !== b.byteLength) {
+        return false;
+      }
+      if (!(a instanceof DataView)) {
+        a = new DataView(ArrayBuffer.isView(a) ? a.buffer : a);
+      }
+      if (!(b instanceof DataView)) {
+        b = new DataView(ArrayBuffer.isView(b) ? b.buffer : b);
+      }
+      assert(a instanceof DataView);
+      assert(b instanceof DataView);
+      const length = a.byteLength;
+      let out = 0;
+      let i = -1;
+      while (++i < length) {
+        out |= a.getUint8(i) ^ b.getUint8(i);
+      }
+      return out === 0;
+    }
+    exports.timingSafeEqual = timingSafeEqual;
+  }
+});
+
+// ../../node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64/lib/base64.js
+var require_base64 = __commonJS({
+  "../../node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64/lib/base64.js"(exports) {
+    "use strict";
+    var __extends = exports && exports.__extends || /* @__PURE__ */ (function() {
+      var extendStatics = function(d, b) {
+        extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+          d2.__proto__ = b2;
+        } || function(d2, b2) {
+          for (var p in b2) if (b2.hasOwnProperty(p)) d2[p] = b2[p];
+        };
+        return extendStatics(d, b);
+      };
+      return function(d, b) {
+        extendStatics(d, b);
+        function __() {
+          this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+      };
+    })();
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var INVALID_BYTE = 256;
+    var Coder = (
+      /** @class */
+      (function() {
+        function Coder2(_paddingCharacter) {
+          if (_paddingCharacter === void 0) {
+            _paddingCharacter = "=";
+          }
+          this._paddingCharacter = _paddingCharacter;
+        }
+        Coder2.prototype.encodedLength = function(length) {
+          if (!this._paddingCharacter) {
+            return (length * 8 + 5) / 6 | 0;
+          }
+          return (length + 2) / 3 * 4 | 0;
+        };
+        Coder2.prototype.encode = function(data) {
+          var out = "";
+          var i = 0;
+          for (; i < data.length - 2; i += 3) {
+            var c = data[i] << 16 | data[i + 1] << 8 | data[i + 2];
+            out += this._encodeByte(c >>> 3 * 6 & 63);
+            out += this._encodeByte(c >>> 2 * 6 & 63);
+            out += this._encodeByte(c >>> 1 * 6 & 63);
+            out += this._encodeByte(c >>> 0 * 6 & 63);
+          }
+          var left = data.length - i;
+          if (left > 0) {
+            var c = data[i] << 16 | (left === 2 ? data[i + 1] << 8 : 0);
+            out += this._encodeByte(c >>> 3 * 6 & 63);
+            out += this._encodeByte(c >>> 2 * 6 & 63);
+            if (left === 2) {
+              out += this._encodeByte(c >>> 1 * 6 & 63);
+            } else {
+              out += this._paddingCharacter || "";
+            }
+            out += this._paddingCharacter || "";
+          }
+          return out;
+        };
+        Coder2.prototype.maxDecodedLength = function(length) {
+          if (!this._paddingCharacter) {
+            return (length * 6 + 7) / 8 | 0;
+          }
+          return length / 4 * 3 | 0;
+        };
+        Coder2.prototype.decodedLength = function(s) {
+          return this.maxDecodedLength(s.length - this._getPaddingLength(s));
+        };
+        Coder2.prototype.decode = function(s) {
+          if (s.length === 0) {
+            return new Uint8Array(0);
+          }
+          var paddingLength = this._getPaddingLength(s);
+          var length = s.length - paddingLength;
+          var out = new Uint8Array(this.maxDecodedLength(length));
+          var op = 0;
+          var i = 0;
+          var haveBad = 0;
+          var v0 = 0, v1 = 0, v2 = 0, v3 = 0;
+          for (; i < length - 4; i += 4) {
+            v0 = this._decodeChar(s.charCodeAt(i + 0));
+            v1 = this._decodeChar(s.charCodeAt(i + 1));
+            v2 = this._decodeChar(s.charCodeAt(i + 2));
+            v3 = this._decodeChar(s.charCodeAt(i + 3));
+            out[op++] = v0 << 2 | v1 >>> 4;
+            out[op++] = v1 << 4 | v2 >>> 2;
+            out[op++] = v2 << 6 | v3;
+            haveBad |= v0 & INVALID_BYTE;
+            haveBad |= v1 & INVALID_BYTE;
+            haveBad |= v2 & INVALID_BYTE;
+            haveBad |= v3 & INVALID_BYTE;
+          }
+          if (i < length - 1) {
+            v0 = this._decodeChar(s.charCodeAt(i));
+            v1 = this._decodeChar(s.charCodeAt(i + 1));
+            out[op++] = v0 << 2 | v1 >>> 4;
+            haveBad |= v0 & INVALID_BYTE;
+            haveBad |= v1 & INVALID_BYTE;
+          }
+          if (i < length - 2) {
+            v2 = this._decodeChar(s.charCodeAt(i + 2));
+            out[op++] = v1 << 4 | v2 >>> 2;
+            haveBad |= v2 & INVALID_BYTE;
+          }
+          if (i < length - 3) {
+            v3 = this._decodeChar(s.charCodeAt(i + 3));
+            out[op++] = v2 << 6 | v3;
+            haveBad |= v3 & INVALID_BYTE;
+          }
+          if (haveBad !== 0) {
+            throw new Error("Base64Coder: incorrect characters for decoding");
+          }
+          return out;
+        };
+        Coder2.prototype._encodeByte = function(b) {
+          var result = b;
+          result += 65;
+          result += 25 - b >>> 8 & 0 - 65 - 26 + 97;
+          result += 51 - b >>> 8 & 26 - 97 - 52 + 48;
+          result += 61 - b >>> 8 & 52 - 48 - 62 + 43;
+          result += 62 - b >>> 8 & 62 - 43 - 63 + 47;
+          return String.fromCharCode(result);
+        };
+        Coder2.prototype._decodeChar = function(c) {
+          var result = INVALID_BYTE;
+          result += (42 - c & c - 44) >>> 8 & -INVALID_BYTE + c - 43 + 62;
+          result += (46 - c & c - 48) >>> 8 & -INVALID_BYTE + c - 47 + 63;
+          result += (47 - c & c - 58) >>> 8 & -INVALID_BYTE + c - 48 + 52;
+          result += (64 - c & c - 91) >>> 8 & -INVALID_BYTE + c - 65 + 0;
+          result += (96 - c & c - 123) >>> 8 & -INVALID_BYTE + c - 97 + 26;
+          return result;
+        };
+        Coder2.prototype._getPaddingLength = function(s) {
+          var paddingLength = 0;
+          if (this._paddingCharacter) {
+            for (var i = s.length - 1; i >= 0; i--) {
+              if (s[i] !== this._paddingCharacter) {
+                break;
+              }
+              paddingLength++;
+            }
+            if (s.length < 4 || paddingLength > 2) {
+              throw new Error("Base64Coder: incorrect padding");
+            }
+          }
+          return paddingLength;
+        };
+        return Coder2;
+      })()
+    );
+    exports.Coder = Coder;
+    var stdCoder = new Coder();
+    function encode3(data) {
+      return stdCoder.encode(data);
+    }
+    exports.encode = encode3;
+    function decode(s) {
+      return stdCoder.decode(s);
+    }
+    exports.decode = decode;
+    var URLSafeCoder = (
+      /** @class */
+      (function(_super) {
+        __extends(URLSafeCoder2, _super);
+        function URLSafeCoder2() {
+          return _super !== null && _super.apply(this, arguments) || this;
+        }
+        URLSafeCoder2.prototype._encodeByte = function(b) {
+          var result = b;
+          result += 65;
+          result += 25 - b >>> 8 & 0 - 65 - 26 + 97;
+          result += 51 - b >>> 8 & 26 - 97 - 52 + 48;
+          result += 61 - b >>> 8 & 52 - 48 - 62 + 45;
+          result += 62 - b >>> 8 & 62 - 45 - 63 + 95;
+          return String.fromCharCode(result);
+        };
+        URLSafeCoder2.prototype._decodeChar = function(c) {
+          var result = INVALID_BYTE;
+          result += (44 - c & c - 46) >>> 8 & -INVALID_BYTE + c - 45 + 62;
+          result += (94 - c & c - 96) >>> 8 & -INVALID_BYTE + c - 95 + 63;
+          result += (47 - c & c - 58) >>> 8 & -INVALID_BYTE + c - 48 + 52;
+          result += (64 - c & c - 91) >>> 8 & -INVALID_BYTE + c - 65 + 0;
+          result += (96 - c & c - 123) >>> 8 & -INVALID_BYTE + c - 97 + 26;
+          return result;
+        };
+        return URLSafeCoder2;
+      })(Coder)
+    );
+    exports.URLSafeCoder = URLSafeCoder;
+    var urlSafeCoder = new URLSafeCoder();
+    function encodeURLSafe(data) {
+      return urlSafeCoder.encode(data);
+    }
+    exports.encodeURLSafe = encodeURLSafe;
+    function decodeURLSafe(s) {
+      return urlSafeCoder.decode(s);
+    }
+    exports.decodeURLSafe = decodeURLSafe;
+    exports.encodedLength = function(length) {
+      return stdCoder.encodedLength(length);
+    };
+    exports.maxDecodedLength = function(length) {
+      return stdCoder.maxDecodedLength(length);
+    };
+    exports.decodedLength = function(s) {
+      return stdCoder.decodedLength(s);
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256/sha256.js
+var require_sha256 = __commonJS({
+  "../../node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256/sha256.js"(exports, module) {
+    (function(root, factory) {
+      var exports2 = {};
+      factory(exports2);
+      var sha256 = exports2["default"];
+      for (var k in exports2) {
+        sha256[k] = exports2[k];
+      }
+      if (typeof module === "object" && typeof module.exports === "object") {
+        module.exports = sha256;
+      } else if (typeof define === "function" && define.amd) {
+        define(function() {
+          return sha256;
+        });
+      } else {
+        root.sha256 = sha256;
+      }
+    })(exports, function(exports2) {
+      "use strict";
+      exports2.__esModule = true;
+      exports2.digestLength = 32;
+      exports2.blockSize = 64;
+      var K = new Uint32Array([
+        1116352408,
+        1899447441,
+        3049323471,
+        3921009573,
+        961987163,
+        1508970993,
+        2453635748,
+        2870763221,
+        3624381080,
+        310598401,
+        607225278,
+        1426881987,
+        1925078388,
+        2162078206,
+        2614888103,
+        3248222580,
+        3835390401,
+        4022224774,
+        264347078,
+        604807628,
+        770255983,
+        1249150122,
+        1555081692,
+        1996064986,
+        2554220882,
+        2821834349,
+        2952996808,
+        3210313671,
+        3336571891,
+        3584528711,
+        113926993,
+        338241895,
+        666307205,
+        773529912,
+        1294757372,
+        1396182291,
+        1695183700,
+        1986661051,
+        2177026350,
+        2456956037,
+        2730485921,
+        2820302411,
+        3259730800,
+        3345764771,
+        3516065817,
+        3600352804,
+        4094571909,
+        275423344,
+        430227734,
+        506948616,
+        659060556,
+        883997877,
+        958139571,
+        1322822218,
+        1537002063,
+        1747873779,
+        1955562222,
+        2024104815,
+        2227730452,
+        2361852424,
+        2428436474,
+        2756734187,
+        3204031479,
+        3329325298
+      ]);
+      function hashBlocks(w, v, p, pos, len) {
+        var a, b, c, d, e, f, g, h, u, i, j, t1, t2;
+        while (len >= 64) {
+          a = v[0];
+          b = v[1];
+          c = v[2];
+          d = v[3];
+          e = v[4];
+          f = v[5];
+          g = v[6];
+          h = v[7];
+          for (i = 0; i < 16; i++) {
+            j = pos + i * 4;
+            w[i] = (p[j] & 255) << 24 | (p[j + 1] & 255) << 16 | (p[j + 2] & 255) << 8 | p[j + 3] & 255;
+          }
+          for (i = 16; i < 64; i++) {
+            u = w[i - 2];
+            t1 = (u >>> 17 | u << 32 - 17) ^ (u >>> 19 | u << 32 - 19) ^ u >>> 10;
+            u = w[i - 15];
+            t2 = (u >>> 7 | u << 32 - 7) ^ (u >>> 18 | u << 32 - 18) ^ u >>> 3;
+            w[i] = (t1 + w[i - 7] | 0) + (t2 + w[i - 16] | 0);
+          }
+          for (i = 0; i < 64; i++) {
+            t1 = (((e >>> 6 | e << 32 - 6) ^ (e >>> 11 | e << 32 - 11) ^ (e >>> 25 | e << 32 - 25)) + (e & f ^ ~e & g) | 0) + (h + (K[i] + w[i] | 0) | 0) | 0;
+            t2 = ((a >>> 2 | a << 32 - 2) ^ (a >>> 13 | a << 32 - 13) ^ (a >>> 22 | a << 32 - 22)) + (a & b ^ a & c ^ b & c) | 0;
+            h = g;
+            g = f;
+            f = e;
+            e = d + t1 | 0;
+            d = c;
+            c = b;
+            b = a;
+            a = t1 + t2 | 0;
+          }
+          v[0] += a;
+          v[1] += b;
+          v[2] += c;
+          v[3] += d;
+          v[4] += e;
+          v[5] += f;
+          v[6] += g;
+          v[7] += h;
+          pos += 64;
+          len -= 64;
+        }
+        return pos;
+      }
+      var Hash = (
+        /** @class */
+        (function() {
+          function Hash2() {
+            this.digestLength = exports2.digestLength;
+            this.blockSize = exports2.blockSize;
+            this.state = new Int32Array(8);
+            this.temp = new Int32Array(64);
+            this.buffer = new Uint8Array(128);
+            this.bufferLength = 0;
+            this.bytesHashed = 0;
+            this.finished = false;
+            this.reset();
+          }
+          Hash2.prototype.reset = function() {
+            this.state[0] = 1779033703;
+            this.state[1] = 3144134277;
+            this.state[2] = 1013904242;
+            this.state[3] = 2773480762;
+            this.state[4] = 1359893119;
+            this.state[5] = 2600822924;
+            this.state[6] = 528734635;
+            this.state[7] = 1541459225;
+            this.bufferLength = 0;
+            this.bytesHashed = 0;
+            this.finished = false;
+            return this;
+          };
+          Hash2.prototype.clean = function() {
+            for (var i = 0; i < this.buffer.length; i++) {
+              this.buffer[i] = 0;
+            }
+            for (var i = 0; i < this.temp.length; i++) {
+              this.temp[i] = 0;
+            }
+            this.reset();
+          };
+          Hash2.prototype.update = function(data, dataLength) {
+            if (dataLength === void 0) {
+              dataLength = data.length;
+            }
+            if (this.finished) {
+              throw new Error("SHA256: can't update because hash was finished.");
+            }
+            var dataPos = 0;
+            this.bytesHashed += dataLength;
+            if (this.bufferLength > 0) {
+              while (this.bufferLength < 64 && dataLength > 0) {
+                this.buffer[this.bufferLength++] = data[dataPos++];
+                dataLength--;
+              }
+              if (this.bufferLength === 64) {
+                hashBlocks(this.temp, this.state, this.buffer, 0, 64);
+                this.bufferLength = 0;
+              }
+            }
+            if (dataLength >= 64) {
+              dataPos = hashBlocks(this.temp, this.state, data, dataPos, dataLength);
+              dataLength %= 64;
+            }
+            while (dataLength > 0) {
+              this.buffer[this.bufferLength++] = data[dataPos++];
+              dataLength--;
+            }
+            return this;
+          };
+          Hash2.prototype.finish = function(out) {
+            if (!this.finished) {
+              var bytesHashed = this.bytesHashed;
+              var left = this.bufferLength;
+              var bitLenHi = bytesHashed / 536870912 | 0;
+              var bitLenLo = bytesHashed << 3;
+              var padLength = bytesHashed % 64 < 56 ? 64 : 128;
+              this.buffer[left] = 128;
+              for (var i = left + 1; i < padLength - 8; i++) {
+                this.buffer[i] = 0;
+              }
+              this.buffer[padLength - 8] = bitLenHi >>> 24 & 255;
+              this.buffer[padLength - 7] = bitLenHi >>> 16 & 255;
+              this.buffer[padLength - 6] = bitLenHi >>> 8 & 255;
+              this.buffer[padLength - 5] = bitLenHi >>> 0 & 255;
+              this.buffer[padLength - 4] = bitLenLo >>> 24 & 255;
+              this.buffer[padLength - 3] = bitLenLo >>> 16 & 255;
+              this.buffer[padLength - 2] = bitLenLo >>> 8 & 255;
+              this.buffer[padLength - 1] = bitLenLo >>> 0 & 255;
+              hashBlocks(this.temp, this.state, this.buffer, 0, padLength);
+              this.finished = true;
+            }
+            for (var i = 0; i < 8; i++) {
+              out[i * 4 + 0] = this.state[i] >>> 24 & 255;
+              out[i * 4 + 1] = this.state[i] >>> 16 & 255;
+              out[i * 4 + 2] = this.state[i] >>> 8 & 255;
+              out[i * 4 + 3] = this.state[i] >>> 0 & 255;
+            }
+            return this;
+          };
+          Hash2.prototype.digest = function() {
+            var out = new Uint8Array(this.digestLength);
+            this.finish(out);
+            return out;
+          };
+          Hash2.prototype._saveState = function(out) {
+            for (var i = 0; i < this.state.length; i++) {
+              out[i] = this.state[i];
+            }
+          };
+          Hash2.prototype._restoreState = function(from, bytesHashed) {
+            for (var i = 0; i < this.state.length; i++) {
+              this.state[i] = from[i];
+            }
+            this.bytesHashed = bytesHashed;
+            this.finished = false;
+            this.bufferLength = 0;
+          };
+          return Hash2;
+        })()
+      );
+      exports2.Hash = Hash;
+      var HMAC = (
+        /** @class */
+        (function() {
+          function HMAC2(key) {
+            this.inner = new Hash();
+            this.outer = new Hash();
+            this.blockSize = this.inner.blockSize;
+            this.digestLength = this.inner.digestLength;
+            var pad = new Uint8Array(this.blockSize);
+            if (key.length > this.blockSize) {
+              new Hash().update(key).finish(pad).clean();
+            } else {
+              for (var i = 0; i < key.length; i++) {
+                pad[i] = key[i];
+              }
+            }
+            for (var i = 0; i < pad.length; i++) {
+              pad[i] ^= 54;
+            }
+            this.inner.update(pad);
+            for (var i = 0; i < pad.length; i++) {
+              pad[i] ^= 54 ^ 92;
+            }
+            this.outer.update(pad);
+            this.istate = new Uint32Array(8);
+            this.ostate = new Uint32Array(8);
+            this.inner._saveState(this.istate);
+            this.outer._saveState(this.ostate);
+            for (var i = 0; i < pad.length; i++) {
+              pad[i] = 0;
+            }
+          }
+          HMAC2.prototype.reset = function() {
+            this.inner._restoreState(this.istate, this.inner.blockSize);
+            this.outer._restoreState(this.ostate, this.outer.blockSize);
+            return this;
+          };
+          HMAC2.prototype.clean = function() {
+            for (var i = 0; i < this.istate.length; i++) {
+              this.ostate[i] = this.istate[i] = 0;
+            }
+            this.inner.clean();
+            this.outer.clean();
+          };
+          HMAC2.prototype.update = function(data) {
+            this.inner.update(data);
+            return this;
+          };
+          HMAC2.prototype.finish = function(out) {
+            if (this.outer.finished) {
+              this.outer.finish(out);
+            } else {
+              this.inner.finish(out);
+              this.outer.update(out, this.digestLength).finish(out);
+            }
+            return this;
+          };
+          HMAC2.prototype.digest = function() {
+            var out = new Uint8Array(this.digestLength);
+            this.finish(out);
+            return out;
+          };
+          return HMAC2;
+        })()
+      );
+      exports2.HMAC = HMAC;
+      function hash(data) {
+        var h = new Hash().update(data);
+        var digest = h.digest();
+        h.clean();
+        return digest;
+      }
+      exports2.hash = hash;
+      exports2["default"] = hash;
+      function hmac(key, data) {
+        var h = new HMAC(key).update(data);
+        var digest = h.digest();
+        h.clean();
+        return digest;
+      }
+      exports2.hmac = hmac;
+      function fillBuffer(buffer, hmac2, info, counter) {
+        var num = counter[0];
+        if (num === 0) {
+          throw new Error("hkdf: cannot expand more");
+        }
+        hmac2.reset();
+        if (num > 1) {
+          hmac2.update(buffer);
+        }
+        if (info) {
+          hmac2.update(info);
+        }
+        hmac2.update(counter);
+        hmac2.finish(buffer);
+        counter[0]++;
+      }
+      var hkdfSalt = new Uint8Array(exports2.digestLength);
+      function hkdf(key, salt, info, length) {
+        if (salt === void 0) {
+          salt = hkdfSalt;
+        }
+        if (length === void 0) {
+          length = 32;
+        }
+        var counter = new Uint8Array([1]);
+        var okm = hmac(salt, key);
+        var hmac_ = new HMAC(okm);
+        var buffer = new Uint8Array(hmac_.digestLength);
+        var bufpos = buffer.length;
+        var out = new Uint8Array(length);
+        for (var i = 0; i < length; i++) {
+          if (bufpos === buffer.length) {
+            fillBuffer(buffer, hmac_, info, counter);
+            bufpos = 0;
+          }
+          out[i] = buffer[bufpos++];
+        }
+        hmac_.clean();
+        buffer.fill(0);
+        counter.fill(0);
+        return out;
+      }
+      exports2.hkdf = hkdf;
+      function pbkdf2(password, salt, iterations, dkLen) {
+        var prf = new HMAC(password);
+        var len = prf.digestLength;
+        var ctr = new Uint8Array(4);
+        var t = new Uint8Array(len);
+        var u = new Uint8Array(len);
+        var dk = new Uint8Array(dkLen);
+        for (var i = 0; i * len < dkLen; i++) {
+          var c = i + 1;
+          ctr[0] = c >>> 24 & 255;
+          ctr[1] = c >>> 16 & 255;
+          ctr[2] = c >>> 8 & 255;
+          ctr[3] = c >>> 0 & 255;
+          prf.reset();
+          prf.update(salt);
+          prf.update(ctr);
+          prf.finish(u);
+          for (var j = 0; j < len; j++) {
+            t[j] = u[j];
+          }
+          for (var j = 2; j <= iterations; j++) {
+            prf.reset();
+            prf.update(u).finish(u);
+            for (var k = 0; k < len; k++) {
+              t[k] ^= u[k];
+            }
+          }
+          for (var j = 0; j < len && i * len + j < dkLen; j++) {
+            dk[i * len + j] = t[j];
+          }
+        }
+        for (var i = 0; i < len; i++) {
+          t[i] = u[i] = 0;
+        }
+        for (var i = 0; i < 4; i++) {
+          ctr[i] = 0;
+        }
+        prf.clean();
+        return dk;
+      }
+      exports2.pbkdf2 = pbkdf2;
+    });
+  }
+});
+
+// ../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js
+var require_dist2 = __commonJS({
+  "../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Webhook = exports.WebhookVerificationError = void 0;
+    var timing_safe_equal_1 = require_timing_safe_equal();
+    var base64 = require_base64();
+    var sha256 = require_sha256();
+    var WEBHOOK_TOLERANCE_IN_SECONDS = 5 * 60;
+    var ExtendableError = class _ExtendableError extends Error {
+      constructor(message) {
+        super(message);
+        Object.setPrototypeOf(this, _ExtendableError.prototype);
+        this.name = "ExtendableError";
+        this.stack = new Error(message).stack;
+      }
+    };
+    var WebhookVerificationError = class _WebhookVerificationError extends ExtendableError {
+      constructor(message) {
+        super(message);
+        Object.setPrototypeOf(this, _WebhookVerificationError.prototype);
+        this.name = "WebhookVerificationError";
+      }
+    };
+    exports.WebhookVerificationError = WebhookVerificationError;
+    var Webhook2 = class _Webhook {
+      constructor(secret, options) {
+        if (!secret) {
+          throw new Error("Secret can't be empty.");
+        }
+        if ((options === null || options === void 0 ? void 0 : options.format) === "raw") {
+          if (secret instanceof Uint8Array) {
+            this.key = secret;
+          } else {
+            this.key = Uint8Array.from(secret, (c) => c.charCodeAt(0));
+          }
+        } else {
+          if (typeof secret !== "string") {
+            throw new Error("Expected secret to be of type string");
+          }
+          if (secret.startsWith(_Webhook.prefix)) {
+            secret = secret.substring(_Webhook.prefix.length);
+          }
+          this.key = base64.decode(secret);
+        }
+      }
+      verify(payload, headers_) {
+        const headers = {};
+        for (const key of Object.keys(headers_)) {
+          headers[key.toLowerCase()] = headers_[key];
+        }
+        const msgId = headers["webhook-id"];
+        const msgSignature = headers["webhook-signature"];
+        const msgTimestamp = headers["webhook-timestamp"];
+        if (!msgSignature || !msgId || !msgTimestamp) {
+          throw new WebhookVerificationError("Missing required headers");
+        }
+        const timestamp = this.verifyTimestamp(msgTimestamp);
+        const computedSignature = this.sign(msgId, timestamp, payload);
+        const expectedSignature = computedSignature.split(",")[1];
+        const passedSignatures = msgSignature.split(" ");
+        const encoder2 = new globalThis.TextEncoder();
+        for (const versionedSignature of passedSignatures) {
+          const [version, signature] = versionedSignature.split(",");
+          if (version !== "v1") {
+            continue;
+          }
+          if ((0, timing_safe_equal_1.timingSafeEqual)(encoder2.encode(signature), encoder2.encode(expectedSignature))) {
+            return JSON.parse(payload.toString());
+          }
+        }
+        throw new WebhookVerificationError("No matching signature found");
+      }
+      sign(msgId, timestamp, payload) {
+        if (typeof payload === "string") {
+        } else if (payload.constructor.name === "Buffer") {
+          payload = payload.toString();
+        } else {
+          throw new Error("Expected payload to be of type string or Buffer.");
+        }
+        const encoder2 = new TextEncoder();
+        const timestampNumber = Math.floor(timestamp.getTime() / 1e3);
+        const toSign = encoder2.encode(`${msgId}.${timestampNumber}.${payload}`);
+        const expectedSignature = base64.encode(sha256.hmac(this.key, toSign));
+        return `v1,${expectedSignature}`;
+      }
+      verifyTimestamp(timestampHeader) {
+        const now = Math.floor(Date.now() / 1e3);
+        const timestamp = parseInt(timestampHeader, 10);
+        if (isNaN(timestamp)) {
+          throw new WebhookVerificationError("Invalid Signature Headers");
+        }
+        if (now - timestamp > WEBHOOK_TOLERANCE_IN_SECONDS) {
+          throw new WebhookVerificationError("Message timestamp too old");
+        }
+        if (timestamp > now + WEBHOOK_TOLERANCE_IN_SECONDS) {
+          throw new WebhookVerificationError("Message timestamp too new");
+        }
+        return new Date(timestamp * 1e3);
+      }
+    };
+    exports.Webhook = Webhook2;
+    Webhook2.prefix = "whsec_";
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs
+var import_standardwebhooks, Webhooks2;
+var init_webhooks = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs"() {
+    init_resource();
+    import_standardwebhooks = __toESM(require_dist2(), 1);
+    Webhooks2 = class extends APIResource2 {
+      unwrap(body, { headers, key }) {
+        if (headers !== void 0) {
+          const keyStr = key === void 0 ? this._client.webhookKey : key;
+          if (keyStr === null)
+            throw new Error("Webhook key must not be null in order to unwrap");
+          const wh = new import_standardwebhooks.Webhook(keyStr);
+          wh.verify(body, headers);
+        }
+        return JSON.parse(body);
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs
+var Versions2;
+var init_versions = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Versions2 = class extends APIResource2 {
+      /**
+       * List Agent Versions
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsAgent of client.beta.agents.versions.list(
+       *   'agent_011CZkYpogX7uDKUyvBTophP',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(agentID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/agents/${agentID}/versions?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs
+var Agents;
+var init_agents = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs"() {
+    init_resource();
+    init_versions();
+    init_versions();
+    init_pagination();
+    init_headers();
+    init_path();
+    Agents = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.versions = new Versions2(this._client);
+      }
+      /**
+       * Create Agent
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsAgent =
+       *   await client.beta.agents.create({
+       *     model: 'claude-sonnet-4-6',
+       *     name: 'My First Agent',
+       *   });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/agents?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get Agent
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsAgent =
+       *   await client.beta.agents.retrieve(
+       *     'agent_011CZkYpogX7uDKUyvBTophP',
+       *   );
+       * ```
+       */
+      retrieve(agentID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.get(path2`/v1/agents/${agentID}?beta=true`, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update Agent
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsAgent =
+       *   await client.beta.agents.update(
+       *     'agent_011CZkYpogX7uDKUyvBTophP',
+       *     { version: 1 },
+       *   );
+       * ```
+       */
+      update(agentID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/agents/${agentID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Agents
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsAgent of client.beta.agents.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/agents?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive Agent
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsAgent =
+       *   await client.beta.agents.archive(
+       *     'agent_011CZkYpogX7uDKUyvBTophP',
+       *   );
+       * ```
+       */
+      archive(agentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/agents/${agentID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    Agents.Versions = Versions2;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs
+function linkAbort(external, controller) {
+  if (!external)
+    return () => {
+    };
+  if (external.aborted) {
+    controller.abort();
+    return () => {
+    };
+  }
+  const onAbort = () => controller.abort();
+  external.addEventListener("abort", onAbort);
+  return () => external.removeEventListener("abort", onAbort);
+}
+var init_abort = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs
+function isStatus(e, code) {
+  return e instanceof APIError2 && e.status === code;
+}
+function is4xx(e) {
+  return e instanceof APIError2 && typeof e.status === "number" && e.status >= 400 && e.status < 500;
+}
+function isFatal4xx(e) {
+  return is4xx(e) && !isStatus(e, 408) && !isStatus(e, 409) && !isStatus(e, 429);
+}
+function backoff(attempt, baseMs, capMs) {
+  return Math.min(baseMs * 2 ** attempt, capMs);
+}
+function jitter(lowMs, highMs) {
+  return lowMs + Math.random() * (highMs - lowMs);
+}
+function applyJitter(ms) {
+  return ms * (1 - Math.random() * 0.25);
+}
+var init_backoff = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs"() {
+    init_error();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs
+function copyClientForHelper(client, { authToken, helper }) {
+  if (!authToken) {
+    throw new AnthropicError(`copyClientForHelper: expected a non-empty authToken but received ${JSON.stringify(authToken)}`);
+  }
+  const internal = client;
+  const parentDefaults = internal._options.defaultHeaders;
+  const parentAuthExtraHeaders = internal._authState?.extraHeaders;
+  const inheritedAuthExtraHeaders = parentAuthExtraHeaders ? Object.fromEntries(Object.entries(parentAuthExtraHeaders).filter(([name]) => {
+    const lower = name.toLowerCase();
+    return lower !== "authorization" && lower !== "x-api-key";
+  })) : void 0;
+  const defaultHeaders = buildHeaders2([
+    inheritedAuthExtraHeaders,
+    parentDefaults,
+    { "x-stainless-helper": helper }
+  ]);
+  return client.withOptions({
+    apiKey: null,
+    authToken,
+    baseURL: client.baseURL,
+    credentials: void 0,
+    defaultHeaders
+  });
+}
+var init_helper_client = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs"() {
+    init_error();
+    init_headers();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs
+function backoff2(attempt) {
+  return backoff(attempt, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS);
+}
+function defaultWorkerId() {
+  const env = globalThis.process?.env;
+  const host = env?.["HOSTNAME"];
+  return host ? `${host}-${uuid42()}` : uuid42();
+}
+var _WorkPoller_runnerClient, _WorkPoller_consumed, _WorkPoller_controller, _WorkPoller_detachExternal, _WorkPoller_autoStop, _WorkPoller_drain, _WorkPoller_blockMs, _WorkPoller_reclaimOlderThanMs, _WorkPoller_requestOpts, POLL_BLOCK_MS, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS, WorkPoller;
+var init_poller = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs"() {
+    init_tslib();
+    init_error();
+    init_log();
+    init_sleep();
+    init_uuid();
+    init_abort();
+    init_headers();
+    init_backoff();
+    init_helper_client();
+    init_backoff();
+    POLL_BLOCK_MS = 999;
+    POLL_BACKOFF_BASE_MS = 1e3;
+    POLL_BACKOFF_CAP_MS = 6e4;
+    WorkPoller = class {
+      constructor(opts) {
+        _WorkPoller_runnerClient.set(this, void 0);
+        _WorkPoller_consumed.set(this, false);
+        _WorkPoller_controller.set(this, void 0);
+        _WorkPoller_detachExternal.set(this, void 0);
+        _WorkPoller_autoStop.set(this, void 0);
+        _WorkPoller_drain.set(this, void 0);
+        _WorkPoller_blockMs.set(this, void 0);
+        _WorkPoller_reclaimOlderThanMs.set(this, void 0);
+        _WorkPoller_requestOpts.set(this, void 0);
+        this.client = opts.client;
+        this.environmentId = opts.environmentId;
+        this.environmentKey = opts.environmentKey;
+        this.workerId = opts.workerId ?? defaultWorkerId();
+        __classPrivateFieldSet2(this, _WorkPoller_runnerClient, copyClientForHelper(opts.client, {
+          authToken: opts.environmentKey,
+          helper: "environments-work-poller"
+        }), "f");
+        __classPrivateFieldSet2(this, _WorkPoller_autoStop, opts.autoStop ?? true, "f");
+        __classPrivateFieldSet2(this, _WorkPoller_drain, opts.drain ?? false, "f");
+        __classPrivateFieldSet2(this, _WorkPoller_blockMs, opts.blockMs === void 0 ? POLL_BLOCK_MS : opts.blockMs, "f");
+        __classPrivateFieldSet2(this, _WorkPoller_reclaimOlderThanMs, opts.reclaimOlderThanMs ?? null, "f");
+        __classPrivateFieldSet2(this, _WorkPoller_requestOpts, opts.requestOptions, "f");
+        __classPrivateFieldSet2(this, _WorkPoller_controller, new AbortController(), "f");
+        __classPrivateFieldSet2(this, _WorkPoller_detachExternal, linkAbort(opts.signal, __classPrivateFieldGet2(this, _WorkPoller_controller, "f")), "f");
+      }
+      /** Read-only view of this iterator's abort signal. */
+      get signal() {
+        return __classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal;
+      }
+      /** Abort the iterator. The current `for await` will exit cleanly. */
+      abort() {
+        __classPrivateFieldGet2(this, _WorkPoller_controller, "f").abort();
+      }
+      async *[(_WorkPoller_runnerClient = /* @__PURE__ */ new WeakMap(), _WorkPoller_consumed = /* @__PURE__ */ new WeakMap(), _WorkPoller_controller = /* @__PURE__ */ new WeakMap(), _WorkPoller_detachExternal = /* @__PURE__ */ new WeakMap(), _WorkPoller_autoStop = /* @__PURE__ */ new WeakMap(), _WorkPoller_drain = /* @__PURE__ */ new WeakMap(), _WorkPoller_blockMs = /* @__PURE__ */ new WeakMap(), _WorkPoller_reclaimOlderThanMs = /* @__PURE__ */ new WeakMap(), _WorkPoller_requestOpts = /* @__PURE__ */ new WeakMap(), Symbol.asyncIterator)]() {
+        if (__classPrivateFieldGet2(this, _WorkPoller_consumed, "f")) {
+          throw new AnthropicError("Cannot iterate over a consumed WorkPoller");
+        }
+        __classPrivateFieldSet2(this, _WorkPoller_consumed, true, "f");
+        const log = loggerFor2(this.client);
+        log.info("poller starting", {
+          component: "work-poller",
+          environment_id: this.environmentId
+        });
+        try {
+          let attempt = 0;
+          while (!__classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal.aborted) {
+            let work;
+            try {
+              work = await __classPrivateFieldGet2(this, _WorkPoller_runnerClient, "f").beta.environments.work.poll(this.environmentId, {
+                "Anthropic-Worker-ID": this.workerId,
+                ...__classPrivateFieldGet2(this, _WorkPoller_blockMs, "f") !== null ? { block_ms: __classPrivateFieldGet2(this, _WorkPoller_blockMs, "f") } : {},
+                ...__classPrivateFieldGet2(this, _WorkPoller_reclaimOlderThanMs, "f") !== null ? { reclaim_older_than_ms: __classPrivateFieldGet2(this, _WorkPoller_reclaimOlderThanMs, "f") } : {}
+              }, { headers: buildHeaders2([__classPrivateFieldGet2(this, _WorkPoller_requestOpts, "f")?.headers]), signal: __classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal });
+            } catch (e) {
+              if (__classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal.aborted)
+                return;
+              if (isFatal4xx(e)) {
+                log.error("poll failed permanently, stopping poller", { error: String(e) });
+                throw e;
+              }
+              const wait = applyJitter(backoff2(attempt));
+              log.warn("poll failed, backing off", { error: String(e), backoff_ms: wait });
+              attempt++;
+              await sleep2(wait, __classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal);
+              continue;
+            }
+            attempt = 0;
+            if (work == null) {
+              if (__classPrivateFieldGet2(this, _WorkPoller_drain, "f"))
+                return;
+              await sleep2(jitter(1e3, 3e3), __classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal);
+              continue;
+            }
+            log.info("claimed work", {
+              component: "work-poller",
+              environment_id: this.environmentId,
+              work_id: work.id,
+              work_type: work.data.type
+            });
+            try {
+              await __classPrivateFieldGet2(this, _WorkPoller_runnerClient, "f").beta.environments.work.ack(work.id, { environment_id: work.environment_id }, { headers: buildHeaders2([__classPrivateFieldGet2(this, _WorkPoller_requestOpts, "f")?.headers]), signal: __classPrivateFieldGet2(this, _WorkPoller_controller, "f").signal });
+            } catch (e) {
+              log.error("ack failed", { work_id: work.id, error: String(e) });
+              continue;
+            }
+            try {
+              yield work;
+            } finally {
+              if (__classPrivateFieldGet2(this, _WorkPoller_autoStop, "f")) {
+                try {
+                  await __classPrivateFieldGet2(this, _WorkPoller_runnerClient, "f").beta.environments.work.stop(work.id, { environment_id: work.environment_id }, { headers: buildHeaders2([__classPrivateFieldGet2(this, _WorkPoller_requestOpts, "f")?.headers]) });
+                } catch (e) {
+                  if (!isStatus(e, 409))
+                    log.warn("stop failed", { work_id: work.id, error: String(e) });
+                }
+              }
+            }
+          }
+        } finally {
+          __classPrivateFieldGet2(this, _WorkPoller_detachExternal, "f").call(this);
+        }
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs
+var _AsyncQueue_items, _AsyncQueue_waiters, _AsyncQueue_closed, AsyncQueue;
+var init_async_queue = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs"() {
+    init_tslib();
+    AsyncQueue = class {
+      constructor() {
+        _AsyncQueue_items.set(this, []);
+        _AsyncQueue_waiters.set(this, []);
+        _AsyncQueue_closed.set(this, false);
+      }
+      /** Enqueue an item, or hand it directly to a waiting reader. Returns `false` once closed. */
+      push(item) {
+        if (__classPrivateFieldGet2(this, _AsyncQueue_closed, "f"))
+          return false;
+        const w = __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").shift();
+        if (w)
+          w({ done: false, value: item });
+        else
+          __classPrivateFieldGet2(this, _AsyncQueue_items, "f").push(item);
+        return true;
+      }
+      /** Mark the queue done. Idempotent; wakes every pending reader with `done: true`. */
+      close() {
+        if (__classPrivateFieldGet2(this, _AsyncQueue_closed, "f"))
+          return;
+        __classPrivateFieldSet2(this, _AsyncQueue_closed, true, "f");
+        while (__classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").length > 0) {
+          const w = __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").shift();
+          w({ done: true, value: void 0 });
+        }
+      }
+      /**
+       * Resolve with the next item, or `done: true` once the queue is closed and
+       * drained. When `signal` is supplied, aborting it resolves a pending read
+       * with `done: true` (cancellation is pushed down here rather than handled by
+       * an outer `Promise.race`).
+       */
+      next(signal) {
+        if (__classPrivateFieldGet2(this, _AsyncQueue_items, "f").length > 0) {
+          return Promise.resolve({ done: false, value: __classPrivateFieldGet2(this, _AsyncQueue_items, "f").shift() });
+        }
+        if (__classPrivateFieldGet2(this, _AsyncQueue_closed, "f") || signal?.aborted) {
+          return Promise.resolve({ done: true, value: void 0 });
+        }
+        return new Promise((resolve4) => {
+          const waiter = (r) => {
+            signal?.removeEventListener("abort", onAbort);
+            resolve4(r);
+          };
+          const onAbort = () => {
+            const idx = __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").indexOf(waiter);
+            if (idx >= 0)
+              __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").splice(idx, 1);
+            resolve4({ done: true, value: void 0 });
+          };
+          __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").push(waiter);
+          signal?.addEventListener("abort", onAbort, { once: true });
+        });
+      }
+      /** Synchronously remove and return the next buffered item, or `undefined` if empty. */
+      tryShift() {
+        return __classPrivateFieldGet2(this, _AsyncQueue_items, "f").shift();
+      }
+    };
+    _AsyncQueue_items = /* @__PURE__ */ new WeakMap(), _AsyncQueue_waiters = /* @__PURE__ */ new WeakMap(), _AsyncQueue_closed = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs
+var ToolError;
+var init_ToolError = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs"() {
+    ToolError = class extends Error {
+      constructor(content) {
+        const message = typeof content === "string" ? content : content.map((block) => {
+          if (block.type === "text")
+            return block.text;
+          return `[${block.type}]`;
+        }).join(" ");
+        super(message);
+        this.name = "ToolError";
+        this.content = content;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs
+function toolName(tool) {
+  return "name" in tool ? tool.name : tool.mcp_server_name;
+}
+function toolErrorContent(e) {
+  return e instanceof ToolError ? e.content : `Error: ${e instanceof Error ? e.message : String(e)}`;
+}
+async function runRunnableTool(tool, rawInput, context) {
+  try {
+    const input = tool.parse ? tool.parse(rawInput) : rawInput;
+    const content = await tool.run(input, context);
+    return { content, isError: false };
+  } catch (e) {
+    return { content: toolErrorContent(e), isError: true };
+  }
+}
+var init_BetaRunnableTool = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs"() {
+    init_ToolError();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs
+function isEndTurnIdle(ev) {
+  return ev.type === "session.status_idle" && ev.stop_reason?.type === "end_turn";
+}
+function buildResultEvent(ev, isError, content) {
+  if (ev.type === "agent.custom_tool_use") {
+    return { type: "user.custom_tool_result", custom_tool_use_id: ev.id, is_error: isError, content };
+  }
+  return { type: "user.tool_result", tool_use_id: ev.id, is_error: isError, content };
+}
+function toSessionContent(content) {
+  if (typeof content === "string")
+    return [{ type: "text", text: content || "(no output)" }];
+  const out = content.map((b) => {
+    if (b.type === "text")
+      return { type: "text", text: b.text || "(no output)" };
+    if (b.type === "image" || b.type === "document")
+      return b;
+    if (b.type === "search_result") {
+      return {
+        type: "search_result",
+        source: b.source,
+        title: b.title,
+        content: b.content.map((c) => ({ type: "text", text: c.text })),
+        citations: { enabled: b.citations?.enabled ?? false }
+      };
+    }
+    return { type: "text", text: JSON.stringify(b) };
+  });
+  return out.length > 0 ? out : [{ type: "text", text: "(no output)" }];
+}
+var _SessionToolRunner_instances, _SessionToolRunner_consumed, _SessionToolRunner_controller, _SessionToolRunner_detachExternal, _SessionToolRunner_requestOpts, _SessionToolRunner_toolByName, _SessionToolRunner_logger, _SessionToolRunner_seen, _SessionToolRunner_answered, _SessionToolRunner_results, _SessionToolRunner_inFlightCount, _SessionToolRunner_onIdle, _SessionToolRunner_idleTimer, _SessionToolRunner_requestOptions, _SessionToolRunner_streamLoop, _SessionToolRunner_reconcile, _SessionToolRunner_ingestHistory, _SessionToolRunner_handleStreamEvent, _SessionToolRunner_armIdleTimer, _SessionToolRunner_disarmIdleTimer, _SessionToolRunner_execute, _SessionToolRunner_sendResult, _SessionToolRunner_drain, HELPER_NAME, STREAM_BACKOFF_START_MS, STREAM_BACKOFF_CAP_MS, TOOL_TIMEOUT_MS, DRAIN_TIMEOUT_MS, SEND_RETRIES, DEFAULT_MAX_IDLE_MS, SessionToolRunner;
+var init_SessionToolRunner = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs"() {
+    init_tslib();
+    init_error();
+    init_log();
+    init_sleep();
+    init_backoff();
+    init_abort();
+    init_async_queue();
+    init_headers();
+    init_BetaRunnableTool();
+    HELPER_NAME = "SessionToolRunner";
+    STREAM_BACKOFF_START_MS = 500;
+    STREAM_BACKOFF_CAP_MS = 1e4;
+    TOOL_TIMEOUT_MS = 12e4;
+    DRAIN_TIMEOUT_MS = 3e4;
+    SEND_RETRIES = 3;
+    DEFAULT_MAX_IDLE_MS = 6e4;
+    SessionToolRunner = class {
+      constructor(sessionId, opts) {
+        _SessionToolRunner_instances.add(this);
+        _SessionToolRunner_consumed.set(this, false);
+        _SessionToolRunner_controller.set(this, void 0);
+        _SessionToolRunner_detachExternal.set(this, void 0);
+        _SessionToolRunner_requestOpts.set(this, void 0);
+        _SessionToolRunner_toolByName.set(this, void 0);
+        _SessionToolRunner_logger.set(this, void 0);
+        _SessionToolRunner_seen.set(this, /* @__PURE__ */ new Set());
+        _SessionToolRunner_answered.set(this, /* @__PURE__ */ new Set());
+        _SessionToolRunner_results.set(this, new AsyncQueue());
+        _SessionToolRunner_inFlightCount.set(this, 0);
+        _SessionToolRunner_onIdle.set(this, null);
+        _SessionToolRunner_idleTimer.set(this, void 0);
+        this.client = opts.client;
+        this.sessionId = sessionId;
+        this.tools = opts.tools;
+        this.maxIdleMs = opts.maxIdleMs ?? DEFAULT_MAX_IDLE_MS;
+        __classPrivateFieldSet2(this, _SessionToolRunner_logger, loggerFor2(opts.client), "f");
+        __classPrivateFieldSet2(this, _SessionToolRunner_toolByName, new Map(opts.tools.map((t) => [toolName(t), t])), "f");
+        __classPrivateFieldSet2(this, _SessionToolRunner_controller, new AbortController(), "f");
+        __classPrivateFieldSet2(this, _SessionToolRunner_detachExternal, linkAbort(opts.signal, __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f")), "f");
+        __classPrivateFieldSet2(this, _SessionToolRunner_requestOpts, opts.requestOptions, "f");
+      }
+      /** Read-only view of this runner's abort signal. */
+      get signal() {
+        return __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").signal;
+      }
+      /** Abort the runner. Background tasks will wind down and `for await` will exit cleanly. */
+      abort() {
+        __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").abort();
+      }
+      async *[(_SessionToolRunner_consumed = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_controller = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_detachExternal = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_requestOpts = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_toolByName = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_logger = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_seen = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_answered = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_results = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_inFlightCount = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_onIdle = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_idleTimer = /* @__PURE__ */ new WeakMap(), _SessionToolRunner_instances = /* @__PURE__ */ new WeakSet(), Symbol.asyncIterator)]() {
+        if (__classPrivateFieldGet2(this, _SessionToolRunner_consumed, "f")) {
+          throw new AnthropicError("Cannot iterate over a consumed SessionToolRunner");
+        }
+        __classPrivateFieldSet2(this, _SessionToolRunner_consumed, true, "f");
+        __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").info("session tool runner starting", {
+          component: "session-tool-runner",
+          session_id: this.sessionId
+        });
+        const streamPromise = __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_streamLoop).call(this).catch((e) => {
+          if (!__classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").signal.aborted) {
+            __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").error("stream loop failed", { error: String(e) });
+          }
+          __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").abort();
+        });
+        try {
+          while (true) {
+            const next = await __classPrivateFieldGet2(this, _SessionToolRunner_results, "f").next(__classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").signal);
+            if (next.done)
+              break;
+            yield next.value;
+          }
+          await streamPromise;
+          let pending;
+          while ((pending = __classPrivateFieldGet2(this, _SessionToolRunner_results, "f").tryShift()) !== void 0) {
+            yield pending;
+          }
+        } finally {
+          __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").abort();
+          __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_disarmIdleTimer).call(this);
+          await streamPromise;
+          try {
+            await __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_drain).call(this);
+          } catch (e) {
+            __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").warn("drain failed", { error: String(e) });
+          }
+          __classPrivateFieldGet2(this, _SessionToolRunner_results, "f").close();
+          for (const t of this.tools) {
+            try {
+              await t.close?.();
+            } catch (e) {
+              __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").warn("tool.close failed", { tool: toolName(t), error: String(e) });
+            }
+          }
+          __classPrivateFieldGet2(this, _SessionToolRunner_detachExternal, "f").call(this);
+        }
+      }
+    };
+    _SessionToolRunner_requestOptions = function _SessionToolRunner_requestOptions2() {
+      return {
+        ...__classPrivateFieldGet2(this, _SessionToolRunner_requestOpts, "f"),
+        headers: buildHeaders2([{ "x-stainless-helper": HELPER_NAME }, __classPrivateFieldGet2(this, _SessionToolRunner_requestOpts, "f")?.headers]),
+        signal: __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").signal
+      };
+    }, _SessionToolRunner_streamLoop = // ===== event stream =====
+    async function _SessionToolRunner_streamLoop2() {
+      const ctrl = __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f");
+      let backoff3 = STREAM_BACKOFF_START_MS;
+      while (!ctrl.signal.aborted) {
+        try {
+          const stream = await this.client.beta.sessions.events.stream(this.sessionId, {}, __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_requestOptions).call(this));
+          await __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_reconcile).call(this);
+          for await (const ev of stream) {
+            backoff3 = STREAM_BACKOFF_START_MS;
+            if (await __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_handleStreamEvent).call(this, ev))
+              return;
+          }
+        } catch (e) {
+          ctrl.signal.throwIfAborted();
+          if (isFatal4xx(e)) {
+            __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").error("permanent stream failure, shutting down", { error: String(e) });
+            ctrl.abort();
+            throw e;
+          }
+          __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").warn("stream disconnected, reconnecting", {
+            error: String(e),
+            backoff_ms: backoff3
+          });
+        }
+        ctrl.signal.throwIfAborted();
+        await sleep2(backoff3, ctrl.signal);
+        backoff3 = Math.min(backoff3 * 2, STREAM_BACKOFF_CAP_MS);
+      }
+    }, _SessionToolRunner_reconcile = /**
+     * Read full history before dispatching so a `tool_use` whose result appears
+     * later in the same history is not re-executed. Runs after the live stream is
+     * already attached (see {@link SessionToolRunner.#streamLoop}).
+     */
+    async function _SessionToolRunner_reconcile2() {
+      const ctrl = __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f");
+      const pending = [];
+      let lastWasEndTurn = false;
+      try {
+        for await (const ev of this.client.beta.sessions.events.list(this.sessionId, { limit: 1e3 }, __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_requestOptions).call(this))) {
+          __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_ingestHistory).call(this, ev, pending);
+          lastWasEndTurn = isEndTurnIdle(ev);
+        }
+      } catch (e) {
+        ctrl.signal.throwIfAborted();
+        __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").warn("reconcile list failed", { error: String(e) });
+        for (const ev of pending)
+          __classPrivateFieldGet2(this, _SessionToolRunner_seen, "f").delete(ev.id);
+        return;
+      }
+      const unanswered = pending.filter((ev) => !__classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").has(ev.id));
+      if (lastWasEndTurn && unanswered.length === 0)
+        __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_armIdleTimer).call(this);
+      else
+        __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_disarmIdleTimer).call(this);
+      for (const ev of unanswered)
+        await __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_execute).call(this, ev);
+    }, _SessionToolRunner_ingestHistory = function _SessionToolRunner_ingestHistory2(ev, pending) {
+      if (ev.type === "agent.tool_use" || ev.type === "agent.custom_tool_use") {
+        __classPrivateFieldGet2(this, _SessionToolRunner_seen, "f").add(ev.id);
+        if (!__classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").has(ev.id))
+          pending.push(ev);
+      } else if (ev.type === "user.tool_result") {
+        __classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").add(ev.tool_use_id);
+      } else if (ev.type === "user.custom_tool_result") {
+        __classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").add(ev.custom_tool_use_id);
+      }
+    }, _SessionToolRunner_handleStreamEvent = /** Returns true when the runner should exit. */
+    async function _SessionToolRunner_handleStreamEvent2(ev) {
+      if (isEndTurnIdle(ev))
+        __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_armIdleTimer).call(this);
+      else
+        __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_disarmIdleTimer).call(this);
+      switch (ev.type) {
+        case "agent.tool_use":
+        case "agent.custom_tool_use":
+          if (!__classPrivateFieldGet2(this, _SessionToolRunner_seen, "f").has(ev.id)) {
+            __classPrivateFieldGet2(this, _SessionToolRunner_seen, "f").add(ev.id);
+            await __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_execute).call(this, ev);
+          }
+          return false;
+        case "user.tool_result":
+          __classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").add(ev.tool_use_id);
+          return false;
+        case "user.custom_tool_result":
+          __classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").add(ev.custom_tool_use_id);
+          return false;
+        case "session.status_terminated":
+        case "session.deleted":
+          __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").info("session terminated", {
+            component: "session-tool-runner",
+            session_id: this.sessionId
+          });
+          __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").abort();
+          return true;
+        default:
+          return false;
+      }
+    }, _SessionToolRunner_armIdleTimer = function _SessionToolRunner_armIdleTimer2() {
+      __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_disarmIdleTimer).call(this);
+      if (this.maxIdleMs <= 0)
+        return;
+      __classPrivateFieldSet2(this, _SessionToolRunner_idleTimer, setTimeout(() => {
+        __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").info("session idle after end_turn; stopping", {
+          component: "session-tool-runner",
+          session_id: this.sessionId,
+          max_idle_ms: this.maxIdleMs
+        });
+        __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").abort();
+      }, this.maxIdleMs), "f");
+    }, _SessionToolRunner_disarmIdleTimer = function _SessionToolRunner_disarmIdleTimer2() {
+      if (__classPrivateFieldGet2(this, _SessionToolRunner_idleTimer, "f") !== void 0) {
+        clearTimeout(__classPrivateFieldGet2(this, _SessionToolRunner_idleTimer, "f"));
+        __classPrivateFieldSet2(this, _SessionToolRunner_idleTimer, void 0, "f");
+      }
+    }, _SessionToolRunner_execute = // ===== tool execution =====
+    async function _SessionToolRunner_execute2(ev) {
+      var _a4, _b;
+      if (__classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").has(ev.id))
+        return;
+      __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").info("executing tool", {
+        component: "session-tool-runner",
+        session_id: this.sessionId,
+        tool: ev.name,
+        tool_use_id: ev.id
+      });
+      __classPrivateFieldSet2(this, _SessionToolRunner_inFlightCount, (_a4 = __classPrivateFieldGet2(this, _SessionToolRunner_inFlightCount, "f"), _a4++, _a4), "f");
+      try {
+        const tool = __classPrivateFieldGet2(this, _SessionToolRunner_toolByName, "f").get(ev.name);
+        if (!tool) {
+          __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").info("tool not owned by this runner; leaving the tool_use_id pending for its owner", {
+            component: "session-tool-runner",
+            session_id: this.sessionId,
+            tool: ev.name,
+            tool_use_id: ev.id
+          });
+          __classPrivateFieldGet2(this, _SessionToolRunner_results, "f").push({ event: ev, toolUseId: ev.id, name: ev.name, isError: false, posted: false });
+          return;
+        }
+        let content;
+        let isError;
+        const toolCtrl = new AbortController();
+        const detachTool = linkAbort(__classPrivateFieldGet2(this, _SessionToolRunner_controller, "f").signal, toolCtrl);
+        const timer = setTimeout(() => toolCtrl.abort(), TOOL_TIMEOUT_MS);
+        try {
+          const outcome = await runRunnableTool(tool, ev.input, {
+            toolUse: ev,
+            toolUseBlock: ev,
+            signal: toolCtrl.signal
+          });
+          content = outcome.content;
+          isError = outcome.isError;
+        } finally {
+          clearTimeout(timer);
+          detachTool();
+        }
+        const result = buildResultEvent(ev, isError, toSessionContent(content));
+        const posted = await __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_sendResult).call(this, result, ev.id);
+        __classPrivateFieldGet2(this, _SessionToolRunner_results, "f").push({
+          event: ev,
+          result,
+          toolUseId: ev.id,
+          name: ev.name,
+          isError,
+          posted
+        });
+      } finally {
+        __classPrivateFieldSet2(this, _SessionToolRunner_inFlightCount, (_b = __classPrivateFieldGet2(this, _SessionToolRunner_inFlightCount, "f"), _b--, _b), "f");
+        if (__classPrivateFieldGet2(this, _SessionToolRunner_inFlightCount, "f") === 0)
+          __classPrivateFieldGet2(this, _SessionToolRunner_onIdle, "f")?.call(this);
+      }
+    }, _SessionToolRunner_sendResult = async function _SessionToolRunner_sendResult2(result, toolUseId) {
+      const ctrl = __classPrivateFieldGet2(this, _SessionToolRunner_controller, "f");
+      let lastErr;
+      for (let i = 0; i < SEND_RETRIES; i++) {
+        ctrl.signal.throwIfAborted();
+        try {
+          await this.client.beta.sessions.events.send(this.sessionId, { events: [result] }, __classPrivateFieldGet2(this, _SessionToolRunner_instances, "m", _SessionToolRunner_requestOptions).call(this));
+          __classPrivateFieldGet2(this, _SessionToolRunner_answered, "f").add(toolUseId);
+          return true;
+        } catch (e) {
+          lastErr = e;
+          if (isFatal4xx(e))
+            break;
+          if (i < SEND_RETRIES - 1)
+            await sleep2((i + 1) * 1e3, ctrl.signal);
+        }
+      }
+      __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").error("failed to send tool result", {
+        tool_use_id: toolUseId,
+        error: String(lastErr)
+      });
+      return false;
+    }, _SessionToolRunner_drain = /** Wait (bounded) for in-flight tool executions to finish during teardown. */
+    async function _SessionToolRunner_drain2() {
+      if (__classPrivateFieldGet2(this, _SessionToolRunner_inFlightCount, "f") === 0)
+        return;
+      await Promise.race([new Promise((r) => __classPrivateFieldSet2(this, _SessionToolRunner_onIdle, r, "f")), sleep2(DRAIN_TIMEOUT_MS)]);
+      __classPrivateFieldSet2(this, _SessionToolRunner_onIdle, null, "f");
+      if (__classPrivateFieldGet2(this, _SessionToolRunner_inFlightCount, "f") > 0) {
+        __classPrivateFieldGet2(this, _SessionToolRunner_logger, "f").warn("drain timeout exceeded");
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs
+var init_transform_json_schema = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs"() {
+    init_utils2();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs
+function betaTool(options) {
+  if (options.inputSchema.type !== "object") {
+    throw new Error(`JSON schema for tool "${options.name}" must be an object, but got ${options.inputSchema.type}`);
+  }
+  return {
+    type: "custom",
+    name: options.name,
+    input_schema: options.inputSchema,
+    description: options.description,
+    run: options.run,
+    parse: (content) => content,
+    ...options.close ? { close: options.close } : {}
+  };
+}
+var init_json_schema = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs"() {
+    init_sdk();
+    init_transform_json_schema();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs
+function promiseWithResolvers() {
+  let resolve4;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve4 = res;
+    reject = rej;
+  });
+  return { promise, resolve: resolve4, reject };
+}
+var init_promise = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs"() {
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs
+import * as fs from "node:fs/promises";
+import * as path3 from "node:path";
+import { randomUUID } from "node:crypto";
+async function realpathOrSelf(p) {
+  try {
+    return await fs.realpath(p);
+  } catch {
+    return p;
+  }
+}
+async function canonicalize(abs) {
+  const tail = [];
+  let prefix = abs;
+  for (; ; ) {
+    let real;
+    try {
+      real = await fs.realpath(prefix);
+    } catch {
+      let isLink = false;
+      try {
+        isLink = (await fs.lstat(prefix)).isSymbolicLink();
+      } catch {
+      }
+      if (isLink) {
+        prefix = path3.resolve(path3.dirname(prefix), await fs.readlink(prefix));
+        continue;
+      }
+      const parent = path3.dirname(prefix);
+      if (parent === prefix)
+        return abs;
+      tail.push(path3.basename(prefix));
+      prefix = parent;
+      continue;
+    }
+    return tail.length ? path3.join(real, ...tail.reverse()) : real;
+  }
+}
+async function confineToRoot(root, p, opts) {
+  const allowOutside = opts?.allowOutside ?? false;
+  if (path3.isAbsolute(p)) {
+    if (!allowOutside) {
+      throw new ToolError(`absolute path ${JSON.stringify(p)} not permitted`);
+    }
+    return path3.resolve(p);
+  }
+  const realRoot = await realpathOrSelf(path3.resolve(root));
+  const abs = path3.resolve(realRoot, p);
+  if (allowOutside)
+    return abs;
+  const real = await canonicalize(abs);
+  const rootSep = realRoot.endsWith(path3.sep) ? realRoot : realRoot + path3.sep;
+  if (real !== realRoot && !real.startsWith(rootSep)) {
+    throw new ToolError(`path ${JSON.stringify(p)} escapes workdir`);
+  }
+  return real;
+}
+async function atomicWriteFile(targetPath, content) {
+  const dir = path3.dirname(targetPath);
+  const tempPath = path3.join(dir, `.tmp-${process.pid}-${randomUUID()}`);
+  let handle;
+  try {
+    handle = await fs.open(tempPath, "wx", FILE_CREATE_MODE);
+    await handle.writeFile(content, "utf-8");
+    await handle.sync();
+    await handle.close();
+    handle = void 0;
+    await fs.rename(tempPath, targetPath);
+  } catch (err) {
+    if (handle)
+      await handle.close().catch(() => {
+      });
+    await fs.unlink(tempPath).catch(() => {
+    });
+    throw err;
+  }
+}
+function fsErrorMessage(err, file) {
+  const code = err?.code;
+  switch (code) {
+    case "ENOENT":
+      return `${file}: no such file or directory`;
+    case "EACCES":
+    case "EPERM":
+      return `${file}: permission denied`;
+    case "ENOTDIR":
+      return `${file}: not a directory`;
+    case "EISDIR":
+      return `${file}: is a directory`;
+    case "ELOOP":
+      return `${file}: too many levels of symbolic links`;
+    case "ENAMETOOLONG":
+      return `${file}: file name too long`;
+    case "ENOSPC":
+      return `${file}: no space left on device`;
+    case "EMFILE":
+    case "ENFILE":
+      return `${file}: too many open files`;
+    default:
+      return `${file}: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+var DIR_CREATE_MODE, FILE_CREATE_MODE;
+var init_fs_util = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs"() {
+    init_ToolError();
+    DIR_CREATE_MODE = 493;
+    FILE_CREATE_MODE = 420;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs
+import * as fs2 from "node:fs/promises";
+import * as fssync from "node:fs";
+import * as path4 from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+async function setupSkills(ctx) {
+  const { client, sessionId } = ctx;
+  if (!client || !sessionId)
+    return async () => {
+    };
+  const log = loggerFor2(client);
+  const session = await client.beta.sessions.retrieve(sessionId);
+  const skillsRoot = path4.resolve(ctx.workdir, "skills");
+  const created = [];
+  for (const skill of session.agent.skills) {
+    try {
+      const versionId = await resolveSkillVersion(client, skill.skill_id, skill.version);
+      const version = await client.beta.skills.versions.retrieve(versionId, { skill_id: skill.skill_id });
+      let dirname4 = path4.basename(version.name.trim());
+      if (dirname4 === "" || dirname4 === "." || dirname4 === "..")
+        dirname4 = skill.skill_id;
+      const dest = path4.resolve(skillsRoot, dirname4);
+      if (dest !== skillsRoot && !dest.startsWith(skillsRoot + path4.sep)) {
+        log.warn("skill name escapes the skills dir; skipping", {
+          component: "agent-tool-context",
+          name: version.name
+        });
+        continue;
+      }
+      const resp = await client.beta.skills.versions.download(versionId, { skill_id: skill.skill_id });
+      await fs2.rm(dest, { recursive: true, force: true });
+      await fs2.mkdir(dest, { recursive: true, mode: DIR_CREATE_MODE });
+      created.push(dest);
+      await extractSkillArchive(resp, dest);
+      log.info("downloaded skill", {
+        component: "agent-tool-context",
+        skill_id: skill.skill_id,
+        version: versionId,
+        dest
+      });
+    } catch (e) {
+      log.warn("failed to download skill", {
+        component: "agent-tool-context",
+        skill_id: skill.skill_id,
+        error: String(e)
+      });
+    }
+  }
+  return async () => {
+    for (const dest of created) {
+      await fs2.rm(dest, { recursive: true, force: true }).catch((e) => {
+        log.warn("failed to clean up skill", { component: "agent-tool-context", dest, error: String(e) });
+      });
+    }
+  };
+}
+async function resolveSkillVersion(client, skillId, version) {
+  if (/^\d+$/.test(version))
+    return version;
+  let newest;
+  for await (const v of client.beta.skills.versions.list(skillId)) {
+    if (/^\d+$/.test(v.version) && (newest === void 0 || BigInt(v.version) > BigInt(newest))) {
+      newest = v.version;
+    }
+  }
+  if (newest === void 0) {
+    throw new AnthropicError(`skill ${JSON.stringify(skillId)} has no concrete version to resolve ${JSON.stringify(version)} against`);
+  }
+  return newest;
+}
+function assertSafeMemberNames(names) {
+  for (const raw of names.split("\n")) {
+    const entry = raw.trim();
+    if (!entry)
+      continue;
+    if (path4.isAbsolute(entry) || entry.split(/[\\/]/).includes("..")) {
+      throw new AnthropicError(`refusing to extract unsafe archive member: ${entry}`);
+    }
+  }
+}
+function assertNoSpecialMembers(verboseListing) {
+  for (const line of verboseListing.split("\n")) {
+    const type = line.trimStart()[0];
+    if (type === "l" || type === "h" || type === "b" || type === "c" || type === "p" || type === "s") {
+      throw new AnthropicError("refusing to extract archive with symlink/hardlink/device member");
+    }
+  }
+}
+async function runArchiveTool(cmd, args) {
+  try {
+    const { stdout } = await execFileAsync(cmd, args);
+    return stdout;
+  } catch (e) {
+    if (e != null && typeof e === "object" && e.code === "ENOENT") {
+      throw new AnthropicError(`skill extraction requires the \`${cmd}\` command, but it was not found on PATH`);
+    }
+    throw e;
+  }
+}
+function archiveTopDir(listing) {
+  let top;
+  let nested = false;
+  for (const raw of listing.split("\n")) {
+    const parts = raw.trim().split("/").filter((p) => p !== "" && p !== ".");
+    if (parts.length === 0)
+      continue;
+    const first = parts[0];
+    if (top === void 0)
+      top = first;
+    else if (first !== top)
+      return "";
+    if (parts.length > 1)
+      nested = true;
+  }
+  return top !== void 0 && nested ? top : "";
+}
+async function extractSkillArchive(resp, dest) {
+  const tmp = path4.join(dest, `.skill-archive-${process.pid}-${Date.now()}`);
+  if (!resp.body) {
+    throw new AnthropicError("skill download response had no body");
+  }
+  await pipeline(Readable.fromWeb(resp.body), fssync.createWriteStream(tmp));
+  const stage = path4.join(path4.dirname(dest), `.skill-stage-${process.pid}-${Date.now()}`);
+  try {
+    const head = await readHead(tmp, 4);
+    const isZip = head.length >= 4 && head[0] === 80 && head[1] === 75 && head[2] === 3 && head[3] === 4;
+    const archiveCmd = isZip ? "unzip" : "tar";
+    const listing = await runArchiveTool(archiveCmd, isZip ? ["-Z1", tmp] : ["-tf", tmp]);
+    assertSafeMemberNames(listing);
+    assertNoSpecialMembers(await runArchiveTool(archiveCmd, isZip ? ["-Z", tmp] : ["-tvf", tmp]));
+    const top = archiveTopDir(listing);
+    await fs2.mkdir(stage, { recursive: true, mode: DIR_CREATE_MODE });
+    await runArchiveTool(archiveCmd, isZip ? ["-oq", tmp, "-d", stage] : ["-xf", tmp, "-C", stage]);
+    const srcRoot = top ? path4.join(stage, top) : stage;
+    for (const entry of await fs2.readdir(srcRoot)) {
+      await fs2.rename(path4.join(srcRoot, entry), path4.join(dest, entry));
+    }
+  } finally {
+    await fs2.rm(tmp, { force: true });
+    await fs2.rm(stage, { recursive: true, force: true });
+  }
+}
+async function readHead(file, n) {
+  const handle = await fs2.open(file, "r");
+  try {
+    const buf = Buffer.alloc(n);
+    const { bytesRead } = await handle.read(buf, 0, n, 0);
+    return buf.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
+}
+var execFileAsync;
+var init_skills = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs"() {
+    init_error();
+    init_log();
+    init_fs_util();
+    execFileAsync = promisify(execFile);
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs
+var node_exports = {};
+__export(node_exports, {
+  BashSession: () => BashSession,
+  betaAgentToolset20260401: () => betaAgentToolset20260401,
+  betaBashTool: () => betaBashTool,
+  betaEditTool: () => betaEditTool,
+  betaGlobTool: () => betaGlobTool,
+  betaGrepTool: () => betaGrepTool,
+  betaReadTool: () => betaReadTool,
+  betaWriteTool: () => betaWriteTool,
+  extractSkillArchive: () => extractSkillArchive,
+  resolvePath: () => resolvePath,
+  resolveSkillVersion: () => resolveSkillVersion,
+  setupSkills: () => setupSkills
+});
+import * as fs3 from "node:fs/promises";
+import * as fssync2 from "node:fs";
+import * as path5 from "node:path";
+import * as cp from "node:child_process";
+import * as crypto2 from "node:crypto";
+import * as readline from "node:readline";
+function resolveMaxBytes(configured) {
+  return configured === void 0 ? DEFAULT_MAX_FILE_BYTES : configured;
+}
+function betaAgentToolset20260401(ctx) {
+  return [
+    betaBashTool(ctx),
+    betaReadTool(ctx),
+    betaWriteTool(ctx),
+    betaEditTool(ctx),
+    betaGlobTool(ctx),
+    betaGrepTool(ctx)
+  ];
+}
+function resolvePath(ctx, p) {
+  return confineToRoot(ctx.workdir, p, { allowOutside: ctx.unrestrictedPaths ?? false });
+}
+function scrubbedShellEnv() {
+  const env = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("ANTHROPIC_"))
+      continue;
+    env[key] = value;
+  }
+  return env;
+}
+function betaBashTool(ctx) {
+  let session;
+  let tail = Promise.resolve();
+  return betaTool({
+    name: "bash",
+    description: "Run a bash command in a persistent shell. State (cwd, env vars) persists across calls.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "The command to run" },
+        restart: { type: "boolean", description: "Restart the persistent shell before running" },
+        timeout_ms: { type: "integer", description: "Per-call timeout in milliseconds" }
+      }
+    },
+    run: async ({ command, restart, timeout_ms }, context) => {
+      const prev = tail;
+      const gate = promiseWithResolvers();
+      tail = gate.promise;
+      try {
+        await prev;
+      } catch {
+      }
+      try {
+        if (restart) {
+          session?.close();
+          session = void 0;
+        }
+        if (!command) {
+          if (restart)
+            return "bash session restarted";
+          throw new ToolError("bash: command is required");
+        }
+        session ?? (session = new BashSession(ctx.workdir, ctx.env));
+        try {
+          const { output, exitCode } = await session.exec(command, {
+            timeoutMs: timeout_ms ?? BASH_DEFAULT_TIMEOUT_MS,
+            signal: context?.signal
+          });
+          if (exitCode !== 0)
+            throw new ToolError(output || `exit ${exitCode}`);
+          return output;
+        } catch (e) {
+          if (e instanceof ToolError)
+            throw e;
+          session.close();
+          session = void 0;
+          throw new ToolError(`bash: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      } finally {
+        gate.resolve();
+      }
+    },
+    close: () => {
+      session?.close();
+      session = void 0;
+    }
+  });
+}
+function betaReadTool(ctx) {
+  return betaTool({
+    name: "read",
+    description: "Read a UTF-8 text file relative to the workdir.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file_path: { type: "string" },
+        view_range: {
+          type: "array",
+          items: { type: "integer" },
+          description: "[start_line, end_line] 1-indexed inclusive"
+        }
+      },
+      required: ["file_path"]
+    },
+    run: async ({ file_path, view_range }) => {
+      if (!file_path)
+        throw new ToolError("read: file_path is required");
+      const abs = await resolvePath(ctx, file_path);
+      let data;
+      try {
+        const st = await fs3.stat(abs);
+        if (!st.isFile()) {
+          throw new ToolError(`read: ${file_path} is not a regular file`);
+        }
+        const limit3 = resolveMaxBytes(ctx.maxFileBytes);
+        if (limit3 !== null && st.size > limit3) {
+          throw new ToolError(`read: ${file_path} is ${st.size} bytes, exceeds ${limit3}-byte limit. Use bash (head/tail/sed) to read a slice.`);
+        }
+        data = await fs3.readFile(abs, "utf8");
+      } catch (e) {
+        if (e instanceof ToolError)
+          throw e;
+        throw new ToolError(`read: ${fsErrorMessage(e, file_path)}`);
+      }
+      if (!view_range)
+        return data;
+      if (view_range.length !== 2)
+        throw new ToolError("read: view_range must be [start_line, end_line]");
+      const [startLine, endLine] = view_range;
+      const lines = data.split("\n");
+      const start = Math.max(0, startLine - 1);
+      const end = endLine > 0 ? endLine : lines.length;
+      return lines.slice(start, end).join("\n");
+    }
+  });
+}
+function betaWriteTool(ctx) {
+  return betaTool({
+    name: "write",
+    description: "Write a UTF-8 text file relative to the workdir, creating parent directories as needed.",
+    inputSchema: {
+      type: "object",
+      properties: { file_path: { type: "string" }, content: { type: "string" } },
+      required: ["file_path", "content"]
+    },
+    run: async ({ file_path, content }) => {
+      if (!file_path)
+        throw new ToolError("write: file_path is required");
+      const abs = await resolvePath(ctx, file_path);
+      try {
+        await fs3.mkdir(path5.dirname(abs), { recursive: true, mode: DIR_CREATE_MODE });
+        await atomicWriteFile(abs, content ?? "");
+      } catch (e) {
+        throw new ToolError(`write: ${fsErrorMessage(e, file_path)}`);
+      }
+      return `wrote ${Buffer.byteLength(content ?? "")} bytes to ${file_path}`;
+    }
+  });
+}
+function betaEditTool(ctx) {
+  return betaTool({
+    name: "edit",
+    description: "Replace old_string with new_string in a file. old_string must be unique unless replace_all.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file_path: { type: "string" },
+        old_string: { type: "string" },
+        new_string: { type: "string" },
+        replace_all: { type: "boolean" }
+      },
+      required: ["file_path", "old_string", "new_string"]
+    },
+    run: async ({ file_path, old_string, new_string, replace_all }) => {
+      if (!file_path)
+        throw new ToolError("edit: file_path is required");
+      if (!old_string)
+        throw new ToolError("edit: old_string is required");
+      const abs = await resolvePath(ctx, file_path);
+      let data;
+      try {
+        const st = await fs3.stat(abs);
+        if (!st.isFile()) {
+          throw new ToolError(`edit: ${file_path} is not a regular file`);
+        }
+        const limit3 = resolveMaxBytes(ctx.maxFileBytes);
+        if (limit3 !== null && st.size > limit3) {
+          throw new ToolError(`edit: ${file_path} is ${st.size} bytes, exceeds ${limit3}-byte limit. Use bash (sed/awk) to edit a large file.`);
+        }
+        data = await fs3.readFile(abs, "utf8");
+      } catch (e) {
+        if (e instanceof ToolError)
+          throw e;
+        throw new ToolError(`edit: ${fsErrorMessage(e, file_path)}`);
+      }
+      const count = data.split(old_string).length - 1;
+      if (count === 0)
+        throw new ToolError(`edit: old_string not found in ${file_path}`);
+      let updated;
+      if (replace_all) {
+        updated = data.split(old_string).join(new_string);
+      } else {
+        if (count > 1)
+          throw new ToolError(`edit: old_string appears ${count} times in ${file_path} (must be unique)`);
+        updated = data.replace(old_string, () => new_string);
+      }
+      try {
+        await atomicWriteFile(abs, updated);
+      } catch (e) {
+        throw new ToolError(`edit: write: ${fsErrorMessage(e, file_path)}`);
+      }
+      return `edited ${file_path} (${replace_all ? count : 1} replacement(s))`;
+    }
+  });
+}
+function betaGlobTool(ctx) {
+  return betaTool({
+    name: "glob",
+    description: "Match files under the workdir against a glob pattern. Results are mtime-sorted, newest first.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        pattern: { type: "string" },
+        path: { type: "string", description: "Directory to search in. Defaults to the workdir." }
+      },
+      required: ["pattern"]
+    },
+    run: async ({ pattern, path: searchPath }) => {
+      if (!pattern)
+        throw new ToolError("glob: pattern is required");
+      let root = path5.resolve(ctx.workdir);
+      let pat = pattern;
+      if (path5.isAbsolute(pattern)) {
+        if (!ctx.unrestrictedPaths)
+          throw new ToolError("glob: absolute pattern not permitted");
+        root = path5.parse(pattern).root;
+        pat = path5.relative(root, pattern);
+      } else if (searchPath) {
+        root = await resolvePath(ctx, searchPath);
+      }
+      if (!ctx.unrestrictedPaths && pat.split(/[\\/]/).includes("..")) {
+        throw new ToolError('glob: ".." is not permitted in the pattern');
+      }
+      const matches = [];
+      try {
+        for await (const entry of fsGlob(pat, {
+          cwd: root,
+          withFileTypes: true,
+          exclude: (d) => d.name === ".git" || d.name === "node_modules"
+        })) {
+          if (!entry.isFile())
+            continue;
+          const full = path5.join(entry.parentPath, entry.name);
+          if (!ctx.unrestrictedPaths && !isWithin(root, full))
+            continue;
+          let mtime = 0;
+          try {
+            mtime = (await fs3.stat(full)).mtimeMs;
+          } catch {
+          }
+          matches.push({ path: full, mtime });
+        }
+      } catch (e) {
+        throw new ToolError(`glob: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      if (matches.length === 0)
+        return "no matches";
+      matches.sort((a, b) => b.mtime - a.mtime);
+      return matches.slice(0, GLOB_RESULT_LIMIT).map((m) => m.path).join("\n");
+    }
+  });
+}
+function betaGrepTool(ctx) {
+  return betaTool({
+    name: "grep",
+    description: "Search file contents for a regex. Uses ripgrep if available, otherwise a built-in walker.",
+    inputSchema: {
+      type: "object",
+      properties: { pattern: { type: "string" }, path: { type: "string" } },
+      required: ["pattern"]
+    },
+    run: async ({ pattern, path: p }, context) => {
+      if (!pattern)
+        throw new ToolError("grep: pattern is required");
+      let searchPath = path5.resolve(ctx.workdir);
+      if (p)
+        searchPath = await resolvePath(ctx, p);
+      const rg = await findRg();
+      return rg ? runRipgrep(rg, pattern, searchPath, context?.signal) : runWalkGrep(pattern, searchPath, context?.signal);
+    }
+  });
+}
+function runRipgrep(rg, pattern, searchPath, signal) {
+  return new Promise((resolve4, reject) => {
+    const proc = cp.spawn(rg, ["-n", "--no-heading", "-e", pattern, "--", searchPath], {
+      ...signal ? { signal } : {}
+    });
+    let out = "";
+    let errOut = "";
+    let truncated = false;
+    proc.stdout.on("data", (d) => {
+      if (truncated)
+        return;
+      out += d;
+      if (out.length > GREP_OUTPUT_LIMIT) {
+        truncated = true;
+        out = out.slice(0, GREP_OUTPUT_LIMIT);
+        proc.kill("SIGKILL");
+      }
+    });
+    proc.stderr.on("data", (d) => errOut += d);
+    proc.on("close", (code) => {
+      if (signal?.aborted)
+        return reject(new ToolError("grep: aborted"));
+      if (truncated)
+        return resolve4(out + `
+[output truncated at ${GREP_OUTPUT_LIMIT} bytes]`);
+      if (code === 0)
+        return resolve4(out);
+      if (code === 1)
+        return resolve4("no matches");
+      reject(new ToolError(`grep: rg failed: ${errOut || `exit ${code}`}`));
+    });
+    proc.on("error", (e) => {
+      if (signal?.aborted)
+        return reject(new ToolError("grep: aborted"));
+      reject(new ToolError(`grep: rg failed: ${e.message}`));
+    });
+  });
+}
+async function runWalkGrep(pattern, root, signal) {
+  let re;
+  try {
+    re = new RegExp(pattern);
+  } catch (e) {
+    throw new ToolError(`grep: invalid regex: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  const hits = [];
+  let budget = GREP_OUTPUT_LIMIT;
+  const push = (line) => {
+    budget -= line.length + 1;
+    if (budget < 0) {
+      hits.push(`[output truncated at ${GREP_OUTPUT_LIMIT} bytes]`);
+      return false;
+    }
+    hits.push(line);
+    return true;
+  };
+  const stat2 = await fs3.stat(root).catch(() => null);
+  if (stat2?.isFile()) {
+    await grepFile(root, re, push);
+  } else {
+    await walk(root, "", (rel) => grepFile(path5.join(root, rel), re, push), signal);
+  }
+  if (signal?.aborted)
+    throw new ToolError("grep: aborted");
+  if (hits.length === 0)
+    return "no matches";
+  return hits.join("\n");
+}
+async function grepFile(file, re, push) {
+  const stream = fssync2.createReadStream(file, { encoding: "utf8" });
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+  let i = 0;
+  try {
+    for await (const line of rl) {
+      i++;
+      if (line.length > GREP_MAX_LINE_LENGTH)
+        continue;
+      if (re.test(line) && !push(`${file}:${i}:${line}`))
+        return false;
+    }
+  } catch {
+  } finally {
+    stream.destroy();
+  }
+  return true;
+}
+function isWithin(root, p) {
+  const rel = path5.relative(root, p);
+  return rel === "" || !rel.startsWith(".." + path5.sep) && rel !== ".." && !path5.isAbsolute(rel);
+}
+async function walk(root, rel, fn, signal) {
+  let remaining = WALK_MAX_ENTRIES;
+  async function inner(rel2, depth) {
+    if (depth > WALK_MAX_DEPTH)
+      return true;
+    if (signal?.aborted)
+      return false;
+    let entries;
+    try {
+      entries = await fs3.readdir(path5.join(root, rel2), { withFileTypes: true });
+    } catch {
+      return true;
+    }
+    for (const e of entries) {
+      if (e.name === ".git" || e.name === "node_modules")
+        continue;
+      if (remaining-- <= 0)
+        return false;
+      if (signal?.aborted)
+        return false;
+      const childRel = rel2 ? path5.join(rel2, e.name) : e.name;
+      if (e.isDirectory()) {
+        if (!await inner(childRel, depth + 1))
+          return false;
+      } else if (e.isFile()) {
+        if (await fn(childRel) === false)
+          return false;
+      }
+    }
+    return true;
+  }
+  await inner(rel, 0);
+}
+async function findRg() {
+  const dirs = (process.env["PATH"] ?? "").split(path5.delimiter);
+  for (const d of dirs) {
+    const candidate = path5.join(d, "rg");
+    try {
+      await fs3.access(candidate, fssync2.constants.X_OK);
+      return candidate;
+    } catch {
+    }
+  }
+  return null;
+}
+var _BashSession_instances, _BashSession_proc, _BashSession_buf, _BashSession_truncated, _BashSession_closed, _BashSession_waiting, _BashSession_append, BASH_OUTPUT_LIMIT, BASH_DEFAULT_TIMEOUT_MS, DEFAULT_MAX_FILE_BYTES, GREP_OUTPUT_LIMIT, GREP_MAX_LINE_LENGTH, GLOB_RESULT_LIMIT, ANSI_RE, fsGlob, BashSession, WALK_MAX_DEPTH, WALK_MAX_ENTRIES;
+var init_node = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs"() {
+    init_tslib();
+    init_error();
+    init_ToolError();
+    init_json_schema();
+    init_promise();
+    init_fs_util();
+    init_skills();
+    BASH_OUTPUT_LIMIT = 100 * 1024;
+    BASH_DEFAULT_TIMEOUT_MS = 12e4;
+    DEFAULT_MAX_FILE_BYTES = 256 * 1024;
+    GREP_OUTPUT_LIMIT = 100 * 1024;
+    GREP_MAX_LINE_LENGTH = 2e3;
+    GLOB_RESULT_LIMIT = 200;
+    ANSI_RE = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
+    fsGlob = fs3.glob;
+    BashSession = class {
+      constructor(dir, env = scrubbedShellEnv()) {
+        _BashSession_instances.add(this);
+        _BashSession_proc.set(this, void 0);
+        _BashSession_buf.set(this, "");
+        _BashSession_truncated.set(this, false);
+        _BashSession_closed.set(this, false);
+        _BashSession_waiting.set(this, null);
+        __classPrivateFieldSet2(this, _BashSession_proc, cp.spawn("/bin/bash", ["--noprofile", "--norc"], {
+          cwd: dir,
+          // `env` is the full base environment (the scrubbed process env by
+          // default, or the verbatim replacement from `AgentToolContext.env`).
+          // PS1/PS2/TERM are shell-control settings BashSession always applies so
+          // the pipe-based sentinel exec parsing works — not part of the
+          // user-facing environment.
+          env: { ...env, PS1: "", PS2: "", TERM: "dumb" },
+          stdio: ["pipe", "pipe", "pipe"],
+          detached: true
+        }), "f");
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stdout.setEncoding("utf8");
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stderr.setEncoding("utf8");
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stdout.on("data", (d) => __classPrivateFieldGet2(this, _BashSession_instances, "m", _BashSession_append).call(this, d));
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stderr.on("data", (d) => __classPrivateFieldGet2(this, _BashSession_instances, "m", _BashSession_append).call(this, d));
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").once("close", () => {
+          __classPrivateFieldSet2(this, _BashSession_closed, true, "f");
+          const w = __classPrivateFieldGet2(this, _BashSession_waiting, "f");
+          __classPrivateFieldSet2(this, _BashSession_waiting, null, "f");
+          w?.resolve();
+        });
+      }
+      /** Whether the underlying shell process has exited. */
+      get closed() {
+        return __classPrivateFieldGet2(this, _BashSession_closed, "f");
+      }
+      async exec(command, opts = {}) {
+        if (__classPrivateFieldGet2(this, _BashSession_closed, "f")) {
+          throw new AnthropicError("bash session terminated");
+        }
+        const timeoutMs = opts.timeoutMs ?? BASH_DEFAULT_TIMEOUT_MS;
+        const signal = opts.signal;
+        if (signal?.aborted) {
+          throw new AnthropicError("bash command aborted");
+        }
+        __classPrivateFieldSet2(this, _BashSession_buf, "", "f");
+        __classPrivateFieldSet2(this, _BashSession_truncated, false, "f");
+        const sentinel3 = `__ANT_CMD_${crypto2.randomUUID()}_DONE__`;
+        const sentinelSplit = `${sentinel3.slice(0, 8)}''${sentinel3.slice(8)}`;
+        const wrapped = `{ ${command}
+} </dev/null 2>&1; printf '\\n${sentinelSplit}%d\\n' $?
+`;
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stdin.write(wrapped);
+        if (__classPrivateFieldGet2(this, _BashSession_buf, "f").indexOf(sentinel3) < 0) {
+          const { promise: sentinelSeen, resolve: resolve4 } = promiseWithResolvers();
+          __classPrivateFieldSet2(this, _BashSession_waiting, { sentinel: sentinel3, resolve: resolve4 }, "f");
+          let timer;
+          let onAbort;
+          try {
+            await Promise.race([
+              sentinelSeen,
+              new Promise((_, reject) => {
+                timer = setTimeout(() => reject(new AnthropicError(`bash command timed out after ${timeoutMs}ms`)), timeoutMs);
+              }),
+              new Promise((_, reject) => {
+                if (!signal)
+                  return;
+                onAbort = () => reject(new AnthropicError("bash command aborted"));
+                signal.addEventListener("abort", onAbort, { once: true });
+              })
+            ]);
+          } finally {
+            if (timer)
+              clearTimeout(timer);
+            if (onAbort && signal)
+              signal.removeEventListener("abort", onAbort);
+            __classPrivateFieldSet2(this, _BashSession_waiting, null, "f");
+          }
+        }
+        const idx = __classPrivateFieldGet2(this, _BashSession_buf, "f").indexOf(sentinel3);
+        if (idx < 0) {
+          throw new AnthropicError("bash session terminated");
+        }
+        const tail = __classPrivateFieldGet2(this, _BashSession_buf, "f").slice(idx + sentinel3.length);
+        const m = tail.match(/^(-?\d+)/);
+        const exitCode = m ? parseInt(m[1], 10) : -1;
+        let out = __classPrivateFieldGet2(this, _BashSession_buf, "f").slice(0, idx).replace(ANSI_RE, "").replace(/\n+$/, "");
+        if (__classPrivateFieldGet2(this, _BashSession_truncated, "f")) {
+          out = `[output truncated]
+${out}`;
+        }
+        return { output: out, exitCode };
+      }
+      close() {
+        if (__classPrivateFieldGet2(this, _BashSession_closed, "f"))
+          return;
+        __classPrivateFieldSet2(this, _BashSession_closed, true, "f");
+        const w = __classPrivateFieldGet2(this, _BashSession_waiting, "f");
+        __classPrivateFieldSet2(this, _BashSession_waiting, null, "f");
+        w?.resolve();
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stdout.destroy();
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stderr.destroy();
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").stdin.destroy();
+        try {
+          process.kill(-__classPrivateFieldGet2(this, _BashSession_proc, "f").pid, "SIGKILL");
+        } catch {
+          __classPrivateFieldGet2(this, _BashSession_proc, "f").kill("SIGKILL");
+        }
+        __classPrivateFieldGet2(this, _BashSession_proc, "f").unref();
+      }
+    };
+    _BashSession_proc = /* @__PURE__ */ new WeakMap(), _BashSession_buf = /* @__PURE__ */ new WeakMap(), _BashSession_truncated = /* @__PURE__ */ new WeakMap(), _BashSession_closed = /* @__PURE__ */ new WeakMap(), _BashSession_waiting = /* @__PURE__ */ new WeakMap(), _BashSession_instances = /* @__PURE__ */ new WeakSet(), _BashSession_append = function _BashSession_append2(d) {
+      __classPrivateFieldSet2(this, _BashSession_buf, __classPrivateFieldGet2(this, _BashSession_buf, "f") + d, "f");
+      if (__classPrivateFieldGet2(this, _BashSession_buf, "f").length > BASH_OUTPUT_LIMIT) {
+        __classPrivateFieldSet2(this, _BashSession_buf, __classPrivateFieldGet2(this, _BashSession_buf, "f").slice(__classPrivateFieldGet2(this, _BashSession_buf, "f").length - BASH_OUTPUT_LIMIT), "f");
+        __classPrivateFieldSet2(this, _BashSession_truncated, true, "f");
+      }
+      if (__classPrivateFieldGet2(this, _BashSession_waiting, "f") && __classPrivateFieldGet2(this, _BashSession_buf, "f").indexOf(__classPrivateFieldGet2(this, _BashSession_waiting, "f").sentinel) >= 0) {
+        const w = __classPrivateFieldGet2(this, _BashSession_waiting, "f");
+        __classPrivateFieldSet2(this, _BashSession_waiting, null, "f");
+        w.resolve();
+      }
+    };
+    WALK_MAX_DEPTH = 40;
+    WALK_MAX_ENTRIES = 5e4;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs
+async function forceStop(client, work, log, requestOptions) {
+  try {
+    await client.beta.environments.work.stop(
+      work.id,
+      { environment_id: work.environment_id, force: true },
+      // Caller's headers pass through; the helper-tag header is on the scoped
+      // sub-client's default_headers via copyClientForHelper, so no per-call
+      // re-stamping needed.
+      { ...requestOptions, headers: buildHeaders2([requestOptions?.headers]) }
+    );
+  } catch (e) {
+    if (!isStatus(e, 409)) {
+      log.error("force-stop on exit failed", { work_id: work.id, error: String(e) });
+    }
+  }
+}
+async function heartbeatLoop(client, work, ctrl, logger2, requestOptions) {
+  let intervalMs = HEARTBEAT_DEFAULT_MS;
+  let last = NO_HEARTBEAT_SENTINEL;
+  const beat = async () => {
+    try {
+      const resp = await client.beta.environments.work.heartbeat(work.id, { environment_id: work.environment_id, expected_last_heartbeat: last }, { ...requestOptions, headers: buildHeaders2([requestOptions?.headers]), signal: ctrl.signal });
+      last = resp.last_heartbeat;
+      if (resp.ttl_seconds > 0) {
+        intervalMs = Math.max(1e3, Math.min(resp.ttl_seconds * 1e3 / 2, HEARTBEAT_DEFAULT_MS));
+      }
+      if (resp.state === "stopping" || resp.state === "stopped") {
+        logger2.info("heartbeat signals shutdown", { work_id: work.id, state: resp.state });
+        ctrl.abort();
+      }
+      if (!resp.lease_extended) {
+        logger2.warn("lease not extended, shutting down", { work_id: work.id });
+        ctrl.abort();
+      }
+    } catch (e) {
+      ctrl.signal.throwIfAborted();
+      if (isFatal4xx(e)) {
+        logger2.error("permanent heartbeat failure", { work_id: work.id, error: String(e) });
+        ctrl.abort();
+        throw e;
+      }
+      logger2.warn("transient heartbeat failure", { work_id: work.id, error: String(e) });
+    }
+  };
+  await beat();
+  while (!ctrl.signal.aborted) {
+    await sleep2(intervalMs, ctrl.signal);
+    ctrl.signal.throwIfAborted();
+    await beat();
+  }
+}
+var _EnvironmentWorker_instances, _EnvironmentWorker_signal, _EnvironmentWorker_handleItem, HEARTBEAT_DEFAULT_MS, NO_HEARTBEAT_SENTINEL, EnvironmentWorker;
+var init_worker = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs"() {
+    init_tslib();
+    init_error();
+    init_log();
+    init_env();
+    init_sleep();
+    init_backoff();
+    init_abort();
+    init_headers();
+    init_SessionToolRunner();
+    init_poller();
+    init_helper_client();
+    HEARTBEAT_DEFAULT_MS = 3e4;
+    NO_HEARTBEAT_SENTINEL = "NO_HEARTBEAT";
+    EnvironmentWorker = class {
+      constructor(opts) {
+        _EnvironmentWorker_instances.add(this);
+        _EnvironmentWorker_signal.set(this, void 0);
+        this.client = opts.client;
+        this.environmentId = opts.environmentId;
+        this.environmentKey = opts.environmentKey;
+        this.tools = opts.tools;
+        this.workdir = opts.workdir ?? process.cwd();
+        this.unrestrictedPaths = opts.unrestrictedPaths;
+        this.maxFileBytes = opts.maxFileBytes;
+        this.maxIdleMs = opts.maxIdleMs;
+        this.workerId = opts.workerId;
+        this.requestOptions = opts.requestOptions;
+        __classPrivateFieldSet2(this, _EnvironmentWorker_signal, opts.signal, "f");
+      }
+      /**
+       * Poll the environment and service each claimed session until the supplied
+       * signal (or the one passed to the constructor) aborts. Throws if
+       * `environmentId` / `environmentKey` were not provided to the constructor.
+       */
+      async run(signal) {
+        const { environmentId, environmentKey } = this;
+        if (environmentId === void 0 || environmentKey === void 0) {
+          throw new AnthropicError("EnvironmentWorker.run: environmentId and environmentKey are required to poll for work");
+        }
+        const externalSignal = signal ?? __classPrivateFieldGet2(this, _EnvironmentWorker_signal, "f");
+        const poller = new WorkPoller({
+          client: this.client,
+          environmentId,
+          environmentKey,
+          ...this.workerId !== void 0 ? { workerId: this.workerId } : {},
+          ...externalSignal ? { signal: externalSignal } : {},
+          ...this.requestOptions !== void 0 ? { requestOptions: this.requestOptions } : {},
+          // The per-item handler force-stops every work item on exit; let it be the
+          // single owner of `work.stop` rather than double-posting from the poller.
+          autoStop: false
+        });
+        for await (const work of poller) {
+          await __classPrivateFieldGet2(this, _EnvironmentWorker_instances, "m", _EnvironmentWorker_handleItem).call(this, work, environmentKey, poller.signal);
+        }
+      }
+      /**
+       * Service a single, already-claimed work item without the poll loop: build the
+       * per-session {@link AgentToolContext} (workdir from this worker's options),
+       * download the session agent's skills (`setupSkills`), run a
+       * {@link SessionToolRunner} for the session while heartbeating the work-item
+       * lease in parallel, and force-stop the work item on exit (whether the runner
+       * finishes normally, throws, or the heartbeat loop signals shutdown).
+       *
+       * Use this when something else does the claiming — e.g. a `worker poll
+       * --on-work` script that hands an already-claimed item to a fresh process. The
+       * work id / environment id / session id each fall back to `ANTHROPIC_WORK_ID` /
+       * `ANTHROPIC_ENVIRONMENT_ID` / `ANTHROPIC_SESSION_ID` (the env vars that
+       * command sets) when not passed; the environment key resolves from this
+       * option, then the worker's own `environmentKey`, then
+       * `ANTHROPIC_ENVIRONMENT_KEY`. With no arguments inside that command it just
+       * works. Throws a clear error naming the first of the four required values
+       * still missing after resolution.
+       */
+      async handleItem(opts) {
+        const workId = opts?.workId ?? readEnv2("ANTHROPIC_WORK_ID");
+        const environmentId = opts?.environmentId ?? readEnv2("ANTHROPIC_ENVIRONMENT_ID");
+        const sessionId = opts?.sessionId ?? readEnv2("ANTHROPIC_SESSION_ID");
+        const environmentKey = opts?.environmentKey ?? this.environmentKey ?? readEnv2("ANTHROPIC_ENVIRONMENT_KEY");
+        if (!workId) {
+          throw new AnthropicError("handleItem: workId is required \u2014 pass it or set ANTHROPIC_WORK_ID");
+        }
+        if (!environmentId) {
+          throw new AnthropicError("handleItem: environmentId is required \u2014 pass it or set ANTHROPIC_ENVIRONMENT_ID");
+        }
+        if (!sessionId) {
+          throw new AnthropicError("handleItem: sessionId is required \u2014 pass it or set ANTHROPIC_SESSION_ID");
+        }
+        if (!environmentKey) {
+          throw new AnthropicError("handleItem: environmentKey is required \u2014 pass it, construct the worker with it, or set ANTHROPIC_ENVIRONMENT_KEY");
+        }
+        const work = {
+          id: workId,
+          environment_id: environmentId,
+          data: { type: "session", id: sessionId }
+        };
+        await __classPrivateFieldGet2(this, _EnvironmentWorker_instances, "m", _EnvironmentWorker_handleItem).call(this, work, environmentKey, opts?.signal ?? __classPrivateFieldGet2(this, _EnvironmentWorker_signal, "f"));
+      }
+    };
+    _EnvironmentWorker_signal = /* @__PURE__ */ new WeakMap(), _EnvironmentWorker_instances = /* @__PURE__ */ new WeakSet(), _EnvironmentWorker_handleItem = /**
+     * The per-item body shared by {@link EnvironmentWorker.run}'s poll loop and
+     * {@link EnvironmentWorker.handleItem}: run a {@link SessionToolRunner} for the
+     * work item's session while heartbeating its lease, force-stopping on exit.
+     * Non-session work items are ignored.
+     */
+    async function _EnvironmentWorker_handleItem2(work, environmentKey, externalSignal) {
+      const log = loggerFor2(this.client);
+      const sessionClient = copyClientForHelper(this.client, {
+        authToken: environmentKey,
+        helper: "environments-worker"
+      });
+      const sessionId = work.data.id;
+      const ctx = {
+        workdir: this.workdir,
+        client: this.client,
+        sessionId,
+        ...this.unrestrictedPaths !== void 0 ? { unrestrictedPaths: this.unrestrictedPaths } : {},
+        ...this.maxFileBytes !== void 0 ? { maxFileBytes: this.maxFileBytes } : {}
+      };
+      const agentToolset = await Promise.resolve().then(() => (init_node(), node_exports));
+      let cleanupSkills = async () => {
+      };
+      try {
+        cleanupSkills = await agentToolset.setupSkills(ctx);
+      } catch (e) {
+        log.warn("skill setup failed", { session_id: sessionId, work_id: work.id, error: String(e) });
+      }
+      const tools = typeof this.tools === "function" ? this.tools(ctx) : this.tools ?? agentToolset.betaAgentToolset20260401(ctx);
+      const ctrl = new AbortController();
+      const detachExternal = linkAbort(externalSignal, ctrl);
+      const heartbeatPromise = heartbeatLoop(sessionClient, work, ctrl, log, this.requestOptions).catch((e) => {
+        if (!ctrl.signal.aborted)
+          log.error("heartbeat loop failed", { work_id: work.id, error: String(e) });
+        ctrl.abort();
+      });
+      try {
+        const runner = new SessionToolRunner(sessionId, {
+          client: sessionClient,
+          tools,
+          ...this.maxIdleMs !== void 0 ? { maxIdleMs: this.maxIdleMs } : {},
+          ...this.requestOptions !== void 0 ? { requestOptions: this.requestOptions } : {},
+          signal: ctrl.signal
+        });
+        for await (const _ of runner) {
+        }
+      } finally {
+        ctrl.abort();
+        detachExternal();
+        await heartbeatPromise;
+        await cleanupSkills().catch((e) => {
+          log.warn("skill cleanup failed", { session_id: sessionId, work_id: work.id, error: String(e) });
+        });
+        await forceStop(sessionClient, work, log, this.requestOptions);
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs
+var Work;
+var init_work = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    init_poller();
+    init_worker();
+    init_poller();
+    init_worker();
+    Work = class extends APIResource2 {
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * Retrieve detailed information about a specific work item.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWork =
+       *   await client.beta.environments.work.retrieve('work_id', {
+       *     environment_id: 'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   });
+       * ```
+       */
+      retrieve(workID, params, options) {
+        const { environment_id, betas } = params;
+        return this._client.get(path2`/v1/environments/${environment_id}/work/${workID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * Update work item metadata with merge semantics.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWork =
+       *   await client.beta.environments.work.update('work_id', {
+       *     environment_id: 'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *     metadata: { foo: 'string' },
+       *   });
+       * ```
+       */
+      update(workID, params, options) {
+        const { environment_id, betas, ...body } = params;
+        return this._client.post(path2`/v1/environments/${environment_id}/work/${workID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * List work items in an environment.
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaSelfHostedWork of client.beta.environments.work.list(
+       *   'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(environmentID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/environments/${environmentID}/work?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * Acknowledge receipt of a work item, transitioning it from 'queued' to 'starting'
+       * and removing it from the queue.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWork =
+       *   await client.beta.environments.work.ack('work_id', {
+       *     environment_id: 'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   });
+       * ```
+       */
+      ack(workID, params, options) {
+        const { environment_id, betas } = params;
+        return this._client.post(path2`/v1/environments/${environment_id}/work/${workID}/ack?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * Record a heartbeat for a work item to maintain the lease.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWorkHeartbeatResponse =
+       *   await client.beta.environments.work.heartbeat('work_id', {
+       *     environment_id: 'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   });
+       * ```
+       */
+      heartbeat(workID, params, options) {
+        const { environment_id, desired_ttl_seconds, expected_last_heartbeat, betas } = params;
+        return this._client.post(path2`/v1/environments/${environment_id}/work/${workID}/heartbeat?beta=true`, {
+          query: { desired_ttl_seconds, expected_last_heartbeat },
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * Long poll for work items in the queue.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWork =
+       *   await client.beta.environments.work.poll(
+       *     'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   );
+       * ```
+       */
+      poll(environmentID, params = {}, options) {
+        const { betas, "Anthropic-Worker-ID": anthropicWorkerID, ...query } = params ?? {};
+        return this._client.get(path2`/v1/environments/${environmentID}/work/poll?beta=true`, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            {
+              "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString(),
+              ...anthropicWorkerID != null ? { "Anthropic-Worker-ID": anthropicWorkerID } : void 0
+            },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get statistics about the work queue for an environment.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWorkQueueStats =
+       *   await client.beta.environments.work.stats(
+       *     'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   );
+       * ```
+       */
+      stats(environmentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/environments/${environmentID}/work/stats?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Note: these endpoints are called automatically by the pre-built environment
+       * worker provided in the SDKs and CLI, for orchestrating sessions with self-hosted
+       * sandbox environments. They are included here as a reference; you do not need to
+       * invoke them directly.
+       *
+       * Stop a work item, initiating graceful or forced shutdown.
+       *
+       * @example
+       * ```ts
+       * const betaSelfHostedWork =
+       *   await client.beta.environments.work.stop('work_id', {
+       *     environment_id: 'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   });
+       * ```
+       */
+      stop(workID, params, options) {
+        const { environment_id, betas, ...body } = params;
+        return this._client.post(path2`/v1/environments/${environment_id}/work/${workID}/stop?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Continuously claim work from a self-hosted environment, ack each item,
+       * and yield it. Posts `stop` automatically when the consumer's loop body
+       * returns or when iteration ends.
+       *
+       * @example
+       * ```ts
+       * for await (const work of client.beta.environments.work.poller({
+       *   environmentId,
+       *   environmentKey,
+       * })) {
+       *   if (work.data.type !== 'session') continue;
+       *   // ...service the work...
+       * }
+       * ```
+       */
+      poller(opts) {
+        return new WorkPoller({ ...opts, client: this._client });
+      }
+      /**
+       * The self-hosted environment runner: poll for work, and for each claimed
+       * session set up the workdir, download the agent's skills, run the tools while
+       * heartbeating the lease, and force-stop on exit.
+       *
+       * @example
+       * ```ts
+       * // Long-running daemon — poll, serve each session, loop:
+       * await client.beta.environments.work
+       *   .worker({ environmentId, environmentKey, workdir: '/workspace' })
+       *   .run();
+       *
+       * // Or service one already-claimed work item (e.g. inside a sandbox spawned
+       * // by `ant worker poll --on-work`) — handleItem() reads the ANTHROPIC_* env vars:
+       * await client.beta.environments.work.worker({ workdir: '/workspace' }).handleItem();
+       * ```
+       */
+      worker(opts) {
+        return new EnvironmentWorker({ ...opts, client: this._client });
+      }
+    };
+    Work.WorkPoller = WorkPoller;
+    Work.EnvironmentWorker = EnvironmentWorker;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs
+var Environments;
+var init_environments = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs"() {
+    init_resource();
+    init_work();
+    init_work();
+    init_pagination();
+    init_headers();
+    init_path();
+    Environments = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.work = new Work(this._client);
+      }
+      /**
+       * Create a new environment with the specified configuration.
+       *
+       * @example
+       * ```ts
+       * const betaEnvironment =
+       *   await client.beta.environments.create({
+       *     name: 'python-data-analysis',
+       *   });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/environments?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Retrieve a specific environment by ID.
+       *
+       * @example
+       * ```ts
+       * const betaEnvironment =
+       *   await client.beta.environments.retrieve(
+       *     'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   );
+       * ```
+       */
+      retrieve(environmentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/environments/${environmentID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update an existing environment's configuration.
+       *
+       * @example
+       * ```ts
+       * const betaEnvironment =
+       *   await client.beta.environments.update(
+       *     'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   );
+       * ```
+       */
+      update(environmentID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/environments/${environmentID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List environments with pagination support.
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaEnvironment of client.beta.environments.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/environments?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete an environment by ID. Returns a confirmation of the deletion.
+       *
+       * @example
+       * ```ts
+       * const betaEnvironmentDeleteResponse =
+       *   await client.beta.environments.delete(
+       *     'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   );
+       * ```
+       */
+      delete(environmentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/environments/${environmentID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive an environment by ID. Archived environments cannot be used to create new
+       * sessions.
+       *
+       * @example
+       * ```ts
+       * const betaEnvironment =
+       *   await client.beta.environments.archive(
+       *     'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   );
+       * ```
+       */
+      archive(environmentID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/environments/${environmentID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    Environments.Work = Work;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs
+var Memories;
+var init_memories = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Memories = class extends APIResource2 {
+      /**
+       * Create a memory
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemory =
+       *   await client.beta.memoryStores.memories.create(
+       *     'memory_store_id',
+       *     { content: 'content', path: 'xx' },
+       *   );
+       * ```
+       */
+      create(memoryStoreID, params, options) {
+        const { view, betas, ...body } = params;
+        return this._client.post(path2`/v1/memory_stores/${memoryStoreID}/memories?beta=true`, {
+          query: { view },
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Retrieve a memory
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemory =
+       *   await client.beta.memoryStores.memories.retrieve(
+       *     'memory_id',
+       *     { memory_store_id: 'memory_store_id' },
+       *   );
+       * ```
+       */
+      retrieve(memoryID, params, options) {
+        const { memory_store_id, betas, ...query } = params;
+        return this._client.get(path2`/v1/memory_stores/${memory_store_id}/memories/${memoryID}?beta=true`, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update a memory
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemory =
+       *   await client.beta.memoryStores.memories.update(
+       *     'memory_id',
+       *     { memory_store_id: 'memory_store_id' },
+       *   );
+       * ```
+       */
+      update(memoryID, params, options) {
+        const { memory_store_id, view, betas, ...body } = params;
+        return this._client.post(path2`/v1/memory_stores/${memory_store_id}/memories/${memoryID}?beta=true`, {
+          query: { view },
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List memories
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsMemoryListItem of client.beta.memoryStores.memories.list(
+       *   'memory_store_id',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(memoryStoreID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/memory_stores/${memoryStoreID}/memories?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete a memory
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeletedMemory =
+       *   await client.beta.memoryStores.memories.delete(
+       *     'memory_id',
+       *     { memory_store_id: 'memory_store_id' },
+       *   );
+       * ```
+       */
+      delete(memoryID, params, options) {
+        const { memory_store_id, expected_content_sha256, betas } = params;
+        return this._client.delete(path2`/v1/memory_stores/${memory_store_id}/memories/${memoryID}?beta=true`, {
+          query: { expected_content_sha256 },
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs
+var MemoryVersions;
+var init_memory_versions = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    MemoryVersions = class extends APIResource2 {
+      /**
+       * Retrieve a memory version
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemoryVersion =
+       *   await client.beta.memoryStores.memoryVersions.retrieve(
+       *     'memory_version_id',
+       *     { memory_store_id: 'memory_store_id' },
+       *   );
+       * ```
+       */
+      retrieve(memoryVersionID, params, options) {
+        const { memory_store_id, betas, ...query } = params;
+        return this._client.get(path2`/v1/memory_stores/${memory_store_id}/memory_versions/${memoryVersionID}?beta=true`, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List memory versions
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsMemoryVersion of client.beta.memoryStores.memoryVersions.list(
+       *   'memory_store_id',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(memoryStoreID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/memory_stores/${memoryStoreID}/memory_versions?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Redact a memory version
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemoryVersion =
+       *   await client.beta.memoryStores.memoryVersions.redact(
+       *     'memory_version_id',
+       *     { memory_store_id: 'memory_store_id' },
+       *   );
+       * ```
+       */
+      redact(memoryVersionID, params, options) {
+        const { memory_store_id, betas } = params;
+        return this._client.post(path2`/v1/memory_stores/${memory_store_id}/memory_versions/${memoryVersionID}/redact?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs
+var MemoryStores;
+var init_memory_stores = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs"() {
+    init_resource();
+    init_memories();
+    init_memories();
+    init_memory_versions();
+    init_memory_versions();
+    init_pagination();
+    init_headers();
+    init_path();
+    MemoryStores = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.memories = new Memories(this._client);
+        this.memoryVersions = new MemoryVersions(this._client);
+      }
+      /**
+       * Create a memory store
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemoryStore =
+       *   await client.beta.memoryStores.create({ name: 'x' });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/memory_stores?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Retrieve a memory store
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemoryStore =
+       *   await client.beta.memoryStores.retrieve(
+       *     'memory_store_id',
+       *   );
+       * ```
+       */
+      retrieve(memoryStoreID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/memory_stores/${memoryStoreID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update a memory store
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemoryStore =
+       *   await client.beta.memoryStores.update('memory_store_id');
+       * ```
+       */
+      update(memoryStoreID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/memory_stores/${memoryStoreID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List memory stores
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsMemoryStore of client.beta.memoryStores.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/memory_stores?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete a memory store
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeletedMemoryStore =
+       *   await client.beta.memoryStores.delete('memory_store_id');
+       * ```
+       */
+      delete(memoryStoreID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/memory_stores/${memoryStoreID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive a memory store
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsMemoryStore =
+       *   await client.beta.memoryStores.archive('memory_store_id');
+       * ```
+       */
+      archive(memoryStoreID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/memory_stores/${memoryStoreID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    MemoryStores.Memories = Memories;
+    MemoryStores.MemoryVersions = MemoryVersions;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/error.mjs
+var init_error2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/error.mjs"() {
+    init_error();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
+var JSONLDecoder;
+var init_jsonl = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs"() {
+    init_error();
+    init_shims();
+    init_line();
+    JSONLDecoder = class _JSONLDecoder {
+      constructor(iterator, controller) {
+        this.iterator = iterator;
+        this.controller = controller;
+      }
+      async *decoder() {
+        const lineDecoder = new LineDecoder2();
+        for await (const chunk of this.iterator) {
+          for (const line of lineDecoder.decode(chunk)) {
+            yield JSON.parse(line);
+          }
+        }
+        for (const line of lineDecoder.flush()) {
+          yield JSON.parse(line);
+        }
+      }
+      [Symbol.asyncIterator]() {
+        return this.decoder();
+      }
+      static fromResponse(response, controller) {
+        if (!response.body) {
+          controller.abort();
+          if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.product === "ReactNative") {
+            throw new AnthropicError(`The default react-native fetch implementation does not support streaming. Please use expo/fetch: https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api`);
+          }
+          throw new AnthropicError(`Attempted to iterate over a response with no body`);
+        }
+        return new _JSONLDecoder(ReadableStreamToAsyncIterable2(response.body), controller);
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs
+var Batches2;
+var init_batches = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_jsonl();
+    init_error2();
+    init_path();
+    Batches2 = class extends APIResource2 {
+      /**
+       * Send a batch of Message creation requests.
+       *
+       * The Message Batches API can be used to process multiple Messages API requests at
+       * once. Once a Message Batch is created, it begins processing immediately. Batches
+       * can take up to 24 hours to complete.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const betaMessageBatch =
+       *   await client.beta.messages.batches.create({
+       *     requests: [
+       *       {
+       *         custom_id: 'my-custom-id-1',
+       *         params: {
+       *           max_tokens: 1024,
+       *           messages: [
+       *             { content: 'Hello, world', role: 'user' },
+       *           ],
+       *           model: 'claude-opus-4-6',
+       *         },
+       *       },
+       *     ],
+       *   });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/messages/batches?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * This endpoint is idempotent and can be used to poll for Message Batch
+       * completion. To access the results of a Message Batch, make a request to the
+       * `results_url` field in the response.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const betaMessageBatch =
+       *   await client.beta.messages.batches.retrieve(
+       *     'message_batch_id',
+       *   );
+       * ```
+       */
+      retrieve(messageBatchID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/messages/batches/${messageBatchID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List all Message Batches within a Workspace. Most recently created batches are
+       * returned first.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaMessageBatch of client.beta.messages.batches.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/messages/batches?beta=true", Page2, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete a Message Batch.
+       *
+       * Message Batches can only be deleted once they've finished processing. If you'd
+       * like to delete an in-progress batch, you must first cancel it.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const betaDeletedMessageBatch =
+       *   await client.beta.messages.batches.delete(
+       *     'message_batch_id',
+       *   );
+       * ```
+       */
+      delete(messageBatchID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/messages/batches/${messageBatchID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Batches may be canceled any time before processing ends. Once cancellation is
+       * initiated, the batch enters a `canceling` state, at which time the system may
+       * complete any in-progress, non-interruptible requests before finalizing
+       * cancellation.
+       *
+       * The number of canceled requests is specified in `request_counts`. To determine
+       * which requests were canceled, check the individual results within the batch.
+       * Note that cancellation may not result in any canceled requests if they were
+       * non-interruptible.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const betaMessageBatch =
+       *   await client.beta.messages.batches.cancel(
+       *     'message_batch_id',
+       *   );
+       * ```
+       */
+      cancel(messageBatchID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/messages/batches/${messageBatchID}/cancel?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Streams the results of a Message Batch as a `.jsonl` file.
+       *
+       * Each line in the file is a JSON object containing the result of a single request
+       * in the Message Batch. Results are not guaranteed to be in the same order as
+       * requests. Use the `custom_id` field to match results to requests.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const betaMessageBatchIndividualResponse =
+       *   await client.beta.messages.batches.results(
+       *     'message_batch_id',
+       *   );
+       * ```
+       */
+      async results(messageBatchID, params = {}, options) {
+        const batch = await this.retrieve(messageBatchID);
+        if (!batch.results_url) {
+          throw new AnthropicError(`No batch \`results_url\`; Has it finished processing? ${batch.processing_status} - ${batch.id}`);
+        }
+        const { betas } = params ?? {};
+        return this._client.get(batch.results_url, {
+          ...options,
+          headers: buildHeaders2([
+            {
+              "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString(),
+              Accept: "application/binary"
+            },
+            options?.headers
+          ]),
+          stream: true,
+          __binaryResponse: true
+        })._thenUnwrap((_, props) => JSONLDecoder.fromResponse(props.response, props.controller));
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/constants.mjs
+var MODEL_NONSTREAMING_TOKENS;
+var init_constants = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/constants.mjs"() {
+    MODEL_NONSTREAMING_TOKENS = {
+      "claude-opus-4-20250514": 8192,
+      "claude-opus-4-0": 8192,
+      "claude-4-opus-20250514": 8192,
+      "anthropic.claude-opus-4-20250514-v1:0": 8192,
+      "claude-opus-4@20250514": 8192,
+      "claude-opus-4-1-20250805": 8192,
+      "anthropic.claude-opus-4-1-20250805-v1:0": 8192,
+      "claude-opus-4-1@20250805": 8192
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs
+function getOutputFormat(params) {
+  return params?.output_format ?? params?.output_config?.format;
+}
+function maybeParseBetaMessage(message, params, opts) {
+  const outputFormat = getOutputFormat(params);
+  if (!params || !("parse" in (outputFormat ?? {}))) {
+    return {
+      ...message,
+      content: message.content.map((block) => {
+        if (block.type === "text") {
+          const parsedBlock = Object.defineProperty({ ...block }, "parsed_output", {
+            value: null,
+            enumerable: false
+          });
+          return Object.defineProperty(parsedBlock, "parsed", {
+            get() {
+              opts.logger.warn("The `parsed` property on `text` blocks is deprecated, please use `parsed_output` instead.");
+              return null;
+            },
+            enumerable: false
+          });
+        }
+        return block;
+      }),
+      parsed_output: null
+    };
+  }
+  return parseBetaMessage(message, params, opts);
+}
+function parseBetaMessage(message, params, opts) {
+  let firstParsedOutput = null;
+  const content = message.content.map((block) => {
+    if (block.type === "text") {
+      const parsedOutput = parseBetaOutputFormat(params, block.text);
+      if (firstParsedOutput === null) {
+        firstParsedOutput = parsedOutput;
+      }
+      const parsedBlock = Object.defineProperty({ ...block }, "parsed_output", {
+        value: parsedOutput,
+        enumerable: false
+      });
+      return Object.defineProperty(parsedBlock, "parsed", {
+        get() {
+          opts.logger.warn("The `parsed` property on `text` blocks is deprecated, please use `parsed_output` instead.");
+          return parsedOutput;
+        },
+        enumerable: false
+      });
+    }
+    return block;
+  });
+  return {
+    ...message,
+    content,
+    parsed_output: firstParsedOutput
+  };
+}
+function parseBetaOutputFormat(params, content) {
+  const outputFormat = getOutputFormat(params);
+  if (outputFormat?.type !== "json_schema") {
+    return null;
+  }
+  try {
+    if ("parse" in outputFormat) {
+      return outputFormat.parse(content);
+    }
+    return JSON.parse(content);
+  } catch (error) {
+    throw new AnthropicError(`Failed to parse structured output: ${error}`);
+  }
+}
+var init_beta_parser = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs"() {
+    init_error();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
+var tokenize, strip, unstrip, generate, partialParse2;
+var init_parser = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs"() {
+    tokenize = (input) => {
+      let current = 0;
+      let tokens = [];
+      while (current < input.length) {
+        let char = input[current];
+        if (char === "\\") {
+          current++;
+          continue;
+        }
+        if (char === "{") {
+          tokens.push({
+            type: "brace",
+            value: "{"
+          });
+          current++;
+          continue;
+        }
+        if (char === "}") {
+          tokens.push({
+            type: "brace",
+            value: "}"
+          });
+          current++;
+          continue;
+        }
+        if (char === "[") {
+          tokens.push({
+            type: "paren",
+            value: "["
+          });
+          current++;
+          continue;
+        }
+        if (char === "]") {
+          tokens.push({
+            type: "paren",
+            value: "]"
+          });
+          current++;
+          continue;
+        }
+        if (char === ":") {
+          tokens.push({
+            type: "separator",
+            value: ":"
+          });
+          current++;
+          continue;
+        }
+        if (char === ",") {
+          tokens.push({
+            type: "delimiter",
+            value: ","
+          });
+          current++;
+          continue;
+        }
+        if (char === '"') {
+          let value = "";
+          let danglingQuote = false;
+          char = input[++current];
+          while (char !== '"') {
+            if (current === input.length) {
+              danglingQuote = true;
+              break;
+            }
+            if (char === "\\") {
+              current++;
+              if (current === input.length) {
+                danglingQuote = true;
+                break;
+              }
+              value += char + input[current];
+              char = input[++current];
+            } else {
+              value += char;
+              char = input[++current];
+            }
+          }
+          char = input[++current];
+          if (!danglingQuote) {
+            tokens.push({
+              type: "string",
+              value
+            });
+          }
+          continue;
+        }
+        let WHITESPACE = /\s/;
+        if (char && WHITESPACE.test(char)) {
+          current++;
+          continue;
+        }
+        let NUMBERS = /[0-9]/;
+        if (char && NUMBERS.test(char) || char === "-" || char === ".") {
+          let value = "";
+          if (char === "-") {
+            value += char;
+            char = input[++current];
+          }
+          while (char && (NUMBERS.test(char) || char === "." || // exponent marker, e.g. `1e10` or `1.5E-9`
+          char === "e" || char === "E" || // exponent sign, only valid immediately after the exponent marker
+          (char === "-" || char === "+") && (value[value.length - 1] === "e" || value[value.length - 1] === "E"))) {
+            value += char;
+            char = input[++current];
+          }
+          tokens.push({
+            type: "number",
+            value
+          });
+          continue;
+        }
+        let LETTERS = /[a-z]/i;
+        if (char && LETTERS.test(char)) {
+          let value = "";
+          while (char && LETTERS.test(char)) {
+            if (current === input.length) {
+              break;
+            }
+            value += char;
+            char = input[++current];
+          }
+          if (value == "true" || value == "false" || value === "null") {
+            tokens.push({
+              type: "name",
+              value
+            });
+          } else {
+            current++;
+            continue;
+          }
+          continue;
+        }
+        current++;
+      }
+      return tokens;
+    };
+    strip = (tokens) => {
+      if (tokens.length === 0) {
+        return tokens;
+      }
+      let lastToken = tokens[tokens.length - 1];
+      switch (lastToken.type) {
+        case "separator":
+          tokens = tokens.slice(0, tokens.length - 1);
+          return strip(tokens);
+          break;
+        case "number":
+          let lastCharacterOfLastToken = lastToken.value[lastToken.value.length - 1];
+          if (lastCharacterOfLastToken === "." || lastCharacterOfLastToken === "-" || lastCharacterOfLastToken === "+" || lastCharacterOfLastToken === "e" || lastCharacterOfLastToken === "E") {
+            tokens = tokens.slice(0, tokens.length - 1);
+            return strip(tokens);
+          }
+        case "string":
+          let tokenBeforeTheLastToken = tokens[tokens.length - 2];
+          if (tokenBeforeTheLastToken?.type === "delimiter") {
+            tokens = tokens.slice(0, tokens.length - 1);
+            return strip(tokens);
+          } else if (tokenBeforeTheLastToken?.type === "brace" && tokenBeforeTheLastToken.value === "{") {
+            tokens = tokens.slice(0, tokens.length - 1);
+            return strip(tokens);
+          }
+          break;
+        case "delimiter":
+          tokens = tokens.slice(0, tokens.length - 1);
+          return strip(tokens);
+          break;
+      }
+      return tokens;
+    };
+    unstrip = (tokens) => {
+      let tail = [];
+      tokens.map((token) => {
+        if (token.type === "brace") {
+          if (token.value === "{") {
+            tail.push("}");
+          } else {
+            tail.splice(tail.lastIndexOf("}"), 1);
+          }
+        }
+        if (token.type === "paren") {
+          if (token.value === "[") {
+            tail.push("]");
+          } else {
+            tail.splice(tail.lastIndexOf("]"), 1);
+          }
+        }
+      });
+      if (tail.length > 0) {
+        tail.reverse().map((item) => {
+          if (item === "}") {
+            tokens.push({
+              type: "brace",
+              value: "}"
+            });
+          } else if (item === "]") {
+            tokens.push({
+              type: "paren",
+              value: "]"
+            });
+          }
+        });
+      }
+      return tokens;
+    };
+    generate = (tokens) => {
+      let output = "";
+      tokens.map((token) => {
+        switch (token.type) {
+          case "string":
+            output += '"' + token.value + '"';
+            break;
+          default:
+            output += token.value;
+            break;
+        }
+      });
+      return output;
+    };
+    partialParse2 = (input) => JSON.parse(generate(unstrip(strip(tokenize(input)))));
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/streaming.mjs
+var init_streaming2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/streaming.mjs"() {
+    init_streaming();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs
+function tracksToolInput(content) {
+  return content.type === "tool_use" || content.type === "server_tool_use" || content.type === "mcp_tool_use";
+}
+function checkNever(x) {
+}
+var _BetaMessageStream_instances, _BetaMessageStream_currentMessageSnapshot, _BetaMessageStream_params, _BetaMessageStream_connectedPromise, _BetaMessageStream_resolveConnectedPromise, _BetaMessageStream_rejectConnectedPromise, _BetaMessageStream_endPromise, _BetaMessageStream_resolveEndPromise, _BetaMessageStream_rejectEndPromise, _BetaMessageStream_listeners, _BetaMessageStream_ended, _BetaMessageStream_errored, _BetaMessageStream_aborted, _BetaMessageStream_catchingPromiseCreated, _BetaMessageStream_response, _BetaMessageStream_request_id, _BetaMessageStream_logger, _BetaMessageStream_getFinalMessage, _BetaMessageStream_getFinalText, _BetaMessageStream_handleError, _BetaMessageStream_beginRequest, _BetaMessageStream_addStreamEvent, _BetaMessageStream_endRequest, _BetaMessageStream_accumulateMessage, JSON_BUF_PROPERTY, BetaMessageStream;
+var init_BetaMessageStream = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs"() {
+    init_tslib();
+    init_parser();
+    init_error2();
+    init_errors();
+    init_streaming2();
+    init_beta_parser();
+    JSON_BUF_PROPERTY = "__json_buf";
+    BetaMessageStream = class _BetaMessageStream {
+      constructor(params, opts) {
+        _BetaMessageStream_instances.add(this);
+        this.messages = [];
+        this.receivedMessages = [];
+        _BetaMessageStream_currentMessageSnapshot.set(this, void 0);
+        _BetaMessageStream_params.set(this, null);
+        this.controller = new AbortController();
+        _BetaMessageStream_connectedPromise.set(this, void 0);
+        _BetaMessageStream_resolveConnectedPromise.set(this, () => {
+        });
+        _BetaMessageStream_rejectConnectedPromise.set(this, () => {
+        });
+        _BetaMessageStream_endPromise.set(this, void 0);
+        _BetaMessageStream_resolveEndPromise.set(this, () => {
+        });
+        _BetaMessageStream_rejectEndPromise.set(this, () => {
+        });
+        _BetaMessageStream_listeners.set(this, {});
+        _BetaMessageStream_ended.set(this, false);
+        _BetaMessageStream_errored.set(this, false);
+        _BetaMessageStream_aborted.set(this, false);
+        _BetaMessageStream_catchingPromiseCreated.set(this, false);
+        _BetaMessageStream_response.set(this, void 0);
+        _BetaMessageStream_request_id.set(this, void 0);
+        _BetaMessageStream_logger.set(this, void 0);
+        _BetaMessageStream_handleError.set(this, (error) => {
+          __classPrivateFieldSet2(this, _BetaMessageStream_errored, true, "f");
+          if (isAbortError2(error)) {
+            error = new APIUserAbortError2();
+          }
+          if (error instanceof APIUserAbortError2) {
+            __classPrivateFieldSet2(this, _BetaMessageStream_aborted, true, "f");
+            return this._emit("abort", error);
+          }
+          if (error instanceof AnthropicError) {
+            return this._emit("error", error);
+          }
+          if (error instanceof Error) {
+            const anthropicError = new AnthropicError(error.message);
+            anthropicError.cause = error;
+            return this._emit("error", anthropicError);
+          }
+          return this._emit("error", new AnthropicError(String(error)));
+        });
+        __classPrivateFieldSet2(this, _BetaMessageStream_connectedPromise, new Promise((resolve4, reject) => {
+          __classPrivateFieldSet2(this, _BetaMessageStream_resolveConnectedPromise, resolve4, "f");
+          __classPrivateFieldSet2(this, _BetaMessageStream_rejectConnectedPromise, reject, "f");
+        }), "f");
+        __classPrivateFieldSet2(this, _BetaMessageStream_endPromise, new Promise((resolve4, reject) => {
+          __classPrivateFieldSet2(this, _BetaMessageStream_resolveEndPromise, resolve4, "f");
+          __classPrivateFieldSet2(this, _BetaMessageStream_rejectEndPromise, reject, "f");
+        }), "f");
+        __classPrivateFieldGet2(this, _BetaMessageStream_connectedPromise, "f").catch(() => {
+        });
+        __classPrivateFieldGet2(this, _BetaMessageStream_endPromise, "f").catch(() => {
+        });
+        __classPrivateFieldSet2(this, _BetaMessageStream_params, params, "f");
+        __classPrivateFieldSet2(this, _BetaMessageStream_logger, opts?.logger ?? console, "f");
+      }
+      get response() {
+        return __classPrivateFieldGet2(this, _BetaMessageStream_response, "f");
+      }
+      get request_id() {
+        return __classPrivateFieldGet2(this, _BetaMessageStream_request_id, "f");
+      }
+      /**
+       * Returns the `MessageStream` data, the raw `Response` instance and the ID of the request,
+       * returned vie the `request-id` header which is useful for debugging requests and resporting
+       * issues to Anthropic.
+       *
+       * This is the same as the `APIPromise.withResponse()` method.
+       *
+       * This method will raise an error if you created the stream using `MessageStream.fromReadableStream`
+       * as no `Response` is available.
+       */
+      async withResponse() {
+        __classPrivateFieldSet2(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
+        const response = await __classPrivateFieldGet2(this, _BetaMessageStream_connectedPromise, "f");
+        if (!response) {
+          throw new Error("Could not resolve a `Response` object");
+        }
+        return {
+          data: this,
+          response,
+          request_id: response.headers.get("request-id")
+        };
+      }
+      /**
+       * Intended for use on the frontend, consuming a stream produced with
+       * `.toReadableStream()` on the backend.
+       *
+       * Note that messages sent to the model do not appear in `.on('message')`
+       * in this context.
+       */
+      static fromReadableStream(stream) {
+        const runner = new _BetaMessageStream(null);
+        runner._run(() => runner._fromReadableStream(stream));
+        return runner;
+      }
+      static createMessage(messages, params, options, { logger: logger2 } = {}) {
+        const runner = new _BetaMessageStream(params, { logger: logger2 });
+        for (const message of params.messages) {
+          runner._addMessageParam(message);
+        }
+        __classPrivateFieldSet2(runner, _BetaMessageStream_params, { ...params, stream: true }, "f");
+        runner._run(() => runner._createMessage(messages, { ...params, stream: true }, { ...options, headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" } }));
+        return runner;
+      }
+      _run(executor) {
+        executor().then(() => {
+          this._emitFinal();
+          this._emit("end");
+        }, __classPrivateFieldGet2(this, _BetaMessageStream_handleError, "f"));
+      }
+      _addMessageParam(message) {
+        this.messages.push(message);
+      }
+      _addMessage(message, emit = true) {
+        this.receivedMessages.push(message);
+        if (emit) {
+          this._emit("message", message);
+        }
+      }
+      async _createMessage(messages, params, options) {
+        const signal = options?.signal;
+        let abortHandler;
+        if (signal) {
+          if (signal.aborted)
+            this.controller.abort();
+          abortHandler = this.controller.abort.bind(this.controller);
+          signal.addEventListener("abort", abortHandler);
+        }
+        try {
+          __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_beginRequest).call(this);
+          const { response, data: stream } = await messages.create({ ...params, stream: true }, { ...options, signal: this.controller.signal }).withResponse();
+          this._connected(response);
+          for await (const event of stream) {
+            __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_addStreamEvent).call(this, event);
+          }
+          if (stream.controller.signal?.aborted) {
+            throw new APIUserAbortError2();
+          }
+          __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_endRequest).call(this);
+        } finally {
+          if (signal && abortHandler) {
+            signal.removeEventListener("abort", abortHandler);
+          }
+        }
+      }
+      _connected(response) {
+        if (this.ended)
+          return;
+        __classPrivateFieldSet2(this, _BetaMessageStream_response, response, "f");
+        __classPrivateFieldSet2(this, _BetaMessageStream_request_id, response?.headers.get("request-id"), "f");
+        __classPrivateFieldGet2(this, _BetaMessageStream_resolveConnectedPromise, "f").call(this, response);
+        this._emit("connect");
+      }
+      get ended() {
+        return __classPrivateFieldGet2(this, _BetaMessageStream_ended, "f");
+      }
+      get errored() {
+        return __classPrivateFieldGet2(this, _BetaMessageStream_errored, "f");
+      }
+      get aborted() {
+        return __classPrivateFieldGet2(this, _BetaMessageStream_aborted, "f");
+      }
+      abort() {
+        this.controller.abort();
+      }
+      /**
+       * Adds the listener function to the end of the listeners array for the event.
+       * No checks are made to see if the listener has already been added. Multiple calls passing
+       * the same combination of event and listener will result in the listener being added, and
+       * called, multiple times.
+       * @returns this MessageStream, so that calls can be chained
+       */
+      on(event, listener) {
+        const listeners = __classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event] || (__classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event] = []);
+        listeners.push({ listener });
+        return this;
+      }
+      /**
+       * Removes the specified listener from the listener array for the event.
+       * off() will remove, at most, one instance of a listener from the listener array. If any single
+       * listener has been added multiple times to the listener array for the specified event, then
+       * off() must be called multiple times to remove each instance.
+       * @returns this MessageStream, so that calls can be chained
+       */
+      off(event, listener) {
+        const listeners = __classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event];
+        if (!listeners)
+          return this;
+        const index = listeners.findIndex((l) => l.listener === listener);
+        if (index >= 0)
+          listeners.splice(index, 1);
+        return this;
+      }
+      /**
+       * Adds a one-time listener function for the event. The next time the event is triggered,
+       * this listener is removed and then invoked.
+       * @returns this MessageStream, so that calls can be chained
+       */
+      once(event, listener) {
+        const listeners = __classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event] || (__classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event] = []);
+        listeners.push({ listener, once: true });
+        return this;
+      }
+      /**
+       * This is similar to `.once()`, but returns a Promise that resolves the next time
+       * the event is triggered, instead of calling a listener callback.
+       * @returns a Promise that resolves the next time given event is triggered,
+       * or rejects if an error is emitted.  (If you request the 'error' event,
+       * returns a promise that resolves with the error).
+       *
+       * Example:
+       *
+       *   const message = await stream.emitted('message') // rejects if the stream errors
+       */
+      emitted(event) {
+        return new Promise((resolve4, reject) => {
+          __classPrivateFieldSet2(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
+          if (event !== "error")
+            this.once("error", reject);
+          this.once(event, resolve4);
+        });
+      }
+      async done() {
+        __classPrivateFieldSet2(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
+        await __classPrivateFieldGet2(this, _BetaMessageStream_endPromise, "f");
+      }
+      get currentMessage() {
+        return __classPrivateFieldGet2(this, _BetaMessageStream_currentMessageSnapshot, "f");
+      }
+      /**
+       * @returns a promise that resolves with the the final assistant Message response,
+       * or rejects if an error occurred or the stream ended prematurely without producing a Message.
+       * If structured outputs were used, this will be a ParsedMessage with a `parsed` field.
+       */
+      async finalMessage() {
+        await this.done();
+        return __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalMessage).call(this);
+      }
+      /**
+       * @returns a promise that resolves with the the final assistant Message's text response, concatenated
+       * together if there are more than one text blocks.
+       * Rejects if an error occurred or the stream ended prematurely without producing a Message.
+       */
+      async finalText() {
+        await this.done();
+        return __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalText).call(this);
+      }
+      _emit(event, ...args) {
+        if (__classPrivateFieldGet2(this, _BetaMessageStream_ended, "f"))
+          return;
+        if (event === "end") {
+          __classPrivateFieldSet2(this, _BetaMessageStream_ended, true, "f");
+          __classPrivateFieldGet2(this, _BetaMessageStream_resolveEndPromise, "f").call(this);
+        }
+        const listeners = __classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event];
+        if (listeners) {
+          __classPrivateFieldGet2(this, _BetaMessageStream_listeners, "f")[event] = listeners.filter((l) => !l.once);
+          listeners.forEach(({ listener }) => listener(...args));
+        }
+        if (event === "abort") {
+          const error = args[0];
+          if (!__classPrivateFieldGet2(this, _BetaMessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
+            Promise.reject(error);
+          }
+          __classPrivateFieldGet2(this, _BetaMessageStream_rejectConnectedPromise, "f").call(this, error);
+          __classPrivateFieldGet2(this, _BetaMessageStream_rejectEndPromise, "f").call(this, error);
+          this._emit("end");
+          return;
+        }
+        if (event === "error") {
+          const error = args[0];
+          if (!__classPrivateFieldGet2(this, _BetaMessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
+            Promise.reject(error);
+          }
+          __classPrivateFieldGet2(this, _BetaMessageStream_rejectConnectedPromise, "f").call(this, error);
+          __classPrivateFieldGet2(this, _BetaMessageStream_rejectEndPromise, "f").call(this, error);
+          this._emit("end");
+        }
+      }
+      _emitFinal() {
+        const finalMessage = this.receivedMessages.at(-1);
+        if (finalMessage) {
+          this._emit("finalMessage", __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalMessage).call(this));
+        }
+      }
+      async _fromReadableStream(readableStream, options) {
+        const signal = options?.signal;
+        let abortHandler;
+        if (signal) {
+          if (signal.aborted)
+            this.controller.abort();
+          abortHandler = this.controller.abort.bind(this.controller);
+          signal.addEventListener("abort", abortHandler);
+        }
+        try {
+          __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_beginRequest).call(this);
+          this._connected(null);
+          const stream = Stream2.fromReadableStream(readableStream, this.controller);
+          for await (const event of stream) {
+            __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_addStreamEvent).call(this, event);
+          }
+          if (stream.controller.signal?.aborted) {
+            throw new APIUserAbortError2();
+          }
+          __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_endRequest).call(this);
+        } finally {
+          if (signal && abortHandler) {
+            signal.removeEventListener("abort", abortHandler);
+          }
+        }
+      }
+      [(_BetaMessageStream_currentMessageSnapshot = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_params = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_resolveConnectedPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_rejectConnectedPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_endPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_resolveEndPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_rejectEndPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_listeners = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_ended = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_errored = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_aborted = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_catchingPromiseCreated = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_response = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_request_id = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_logger = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_handleError = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_instances = /* @__PURE__ */ new WeakSet(), _BetaMessageStream_getFinalMessage = function _BetaMessageStream_getFinalMessage2() {
+        if (this.receivedMessages.length === 0) {
+          throw new AnthropicError("stream ended without producing a Message with role=assistant");
+        }
+        return this.receivedMessages.at(-1);
+      }, _BetaMessageStream_getFinalText = function _BetaMessageStream_getFinalText2() {
+        if (this.receivedMessages.length === 0) {
+          throw new AnthropicError("stream ended without producing a Message with role=assistant");
+        }
+        const textBlocks = this.receivedMessages.at(-1).content.filter((block) => block.type === "text").map((block) => block.text);
+        if (textBlocks.length === 0) {
+          throw new AnthropicError("stream ended without producing a content block with type=text");
+        }
+        return textBlocks.join(" ");
+      }, _BetaMessageStream_beginRequest = function _BetaMessageStream_beginRequest2() {
+        if (this.ended)
+          return;
+        __classPrivateFieldSet2(this, _BetaMessageStream_currentMessageSnapshot, void 0, "f");
+      }, _BetaMessageStream_addStreamEvent = function _BetaMessageStream_addStreamEvent2(event) {
+        if (this.ended)
+          return;
+        const messageSnapshot = __classPrivateFieldGet2(this, _BetaMessageStream_instances, "m", _BetaMessageStream_accumulateMessage).call(this, event);
+        this._emit("streamEvent", event, messageSnapshot);
+        switch (event.type) {
+          case "content_block_delta": {
+            const content = messageSnapshot.content.at(-1);
+            switch (event.delta.type) {
+              case "text_delta": {
+                if (content.type === "text") {
+                  this._emit("text", event.delta.text, content.text || "");
+                }
+                break;
+              }
+              case "citations_delta": {
+                if (content.type === "text") {
+                  this._emit("citation", event.delta.citation, content.citations ?? []);
+                }
+                break;
+              }
+              case "input_json_delta": {
+                if (tracksToolInput(content) && content.input) {
+                  this._emit("inputJson", event.delta.partial_json, content.input);
+                }
+                break;
+              }
+              case "thinking_delta": {
+                if (content.type === "thinking") {
+                  this._emit("thinking", event.delta.thinking, content.thinking);
+                }
+                break;
+              }
+              case "signature_delta": {
+                if (content.type === "thinking") {
+                  this._emit("signature", content.signature);
+                }
+                break;
+              }
+              case "compaction_delta": {
+                if (content.type === "compaction" && content.content) {
+                  this._emit("compaction", content.content);
+                }
+                break;
+              }
+              default:
+                checkNever(event.delta);
+            }
+            break;
+          }
+          case "message_stop": {
+            this._addMessageParam(messageSnapshot);
+            this._addMessage(maybeParseBetaMessage(messageSnapshot, __classPrivateFieldGet2(this, _BetaMessageStream_params, "f"), { logger: __classPrivateFieldGet2(this, _BetaMessageStream_logger, "f") }), true);
+            break;
+          }
+          case "content_block_stop": {
+            this._emit("contentBlock", messageSnapshot.content.at(-1));
+            break;
+          }
+          case "message_start": {
+            __classPrivateFieldSet2(this, _BetaMessageStream_currentMessageSnapshot, messageSnapshot, "f");
+            break;
+          }
+          case "content_block_start":
+          case "message_delta":
+            break;
+        }
+      }, _BetaMessageStream_endRequest = function _BetaMessageStream_endRequest2() {
+        if (this.ended) {
+          throw new AnthropicError(`stream has ended, this shouldn't happen`);
+        }
+        const snapshot = __classPrivateFieldGet2(this, _BetaMessageStream_currentMessageSnapshot, "f");
+        if (!snapshot) {
+          throw new AnthropicError(`request ended without sending any chunks`);
+        }
+        __classPrivateFieldSet2(this, _BetaMessageStream_currentMessageSnapshot, void 0, "f");
+        return maybeParseBetaMessage(snapshot, __classPrivateFieldGet2(this, _BetaMessageStream_params, "f"), { logger: __classPrivateFieldGet2(this, _BetaMessageStream_logger, "f") });
+      }, _BetaMessageStream_accumulateMessage = function _BetaMessageStream_accumulateMessage2(event) {
+        let snapshot = __classPrivateFieldGet2(this, _BetaMessageStream_currentMessageSnapshot, "f");
+        if (event.type === "message_start") {
+          if (snapshot) {
+            throw new AnthropicError(`Unexpected event order, got ${event.type} before receiving "message_stop"`);
+          }
+          return event.message;
+        }
+        if (!snapshot) {
+          throw new AnthropicError(`Unexpected event order, got ${event.type} before "message_start"`);
+        }
+        switch (event.type) {
+          case "message_stop":
+            return snapshot;
+          case "message_delta":
+            snapshot.container = event.delta.container;
+            snapshot.stop_reason = event.delta.stop_reason;
+            snapshot.stop_sequence = event.delta.stop_sequence;
+            if (event.delta.stop_details != null) {
+              snapshot.stop_details = event.delta.stop_details;
+            }
+            snapshot.usage.output_tokens = event.usage.output_tokens;
+            snapshot.context_management = event.context_management;
+            if (event.usage.input_tokens != null) {
+              snapshot.usage.input_tokens = event.usage.input_tokens;
+            }
+            if (event.usage.cache_creation_input_tokens != null) {
+              snapshot.usage.cache_creation_input_tokens = event.usage.cache_creation_input_tokens;
+            }
+            if (event.usage.cache_read_input_tokens != null) {
+              snapshot.usage.cache_read_input_tokens = event.usage.cache_read_input_tokens;
+            }
+            if (event.usage.server_tool_use != null) {
+              snapshot.usage.server_tool_use = event.usage.server_tool_use;
+            }
+            if (event.usage.iterations != null) {
+              snapshot.usage.iterations = event.usage.iterations;
+            }
+            return snapshot;
+          case "content_block_start":
+            snapshot.content.push(event.content_block);
+            if (event.content_block.type === "fallback") {
+              snapshot.model = event.content_block.to.model;
+            }
+            return snapshot;
+          case "content_block_delta": {
+            const snapshotContent = snapshot.content.at(event.index);
+            switch (event.delta.type) {
+              case "text_delta": {
+                if (snapshotContent?.type === "text") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    text: (snapshotContent.text || "") + event.delta.text
+                  };
+                }
+                break;
+              }
+              case "citations_delta": {
+                if (snapshotContent?.type === "text") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    citations: [...snapshotContent.citations ?? [], event.delta.citation]
+                  };
+                }
+                break;
+              }
+              case "input_json_delta": {
+                if (snapshotContent && tracksToolInput(snapshotContent)) {
+                  let jsonBuf = snapshotContent[JSON_BUF_PROPERTY] || "";
+                  jsonBuf += event.delta.partial_json;
+                  const newContent = { ...snapshotContent };
+                  Object.defineProperty(newContent, JSON_BUF_PROPERTY, {
+                    value: jsonBuf,
+                    enumerable: false,
+                    writable: true
+                  });
+                  if (jsonBuf) {
+                    try {
+                      newContent.input = partialParse2(jsonBuf);
+                    } catch (err) {
+                      const error = new AnthropicError(`Unable to parse tool parameter JSON from model. Please retry your request or adjust your prompt. Error: ${err}. JSON: ${jsonBuf}`);
+                      __classPrivateFieldGet2(this, _BetaMessageStream_handleError, "f").call(this, error);
+                    }
+                  }
+                  snapshot.content[event.index] = newContent;
+                }
+                break;
+              }
+              case "thinking_delta": {
+                if (snapshotContent?.type === "thinking") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    thinking: snapshotContent.thinking + event.delta.thinking
+                  };
+                }
+                break;
+              }
+              case "signature_delta": {
+                if (snapshotContent?.type === "thinking") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    signature: event.delta.signature
+                  };
+                }
+                break;
+              }
+              case "compaction_delta": {
+                if (snapshotContent?.type === "compaction") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    content: (snapshotContent.content || "") + event.delta.content,
+                    encrypted_content: event.delta.encrypted_content
+                  };
+                }
+                break;
+              }
+              default:
+                checkNever(event.delta);
+            }
+            return snapshot;
+          }
+          case "content_block_stop":
+            return snapshot;
+        }
+      }, Symbol.asyncIterator)]() {
+        const pushQueue = [];
+        const readQueue = [];
+        let done = false;
+        this.on("streamEvent", (event) => {
+          const reader = readQueue.shift();
+          if (reader) {
+            reader.resolve(event);
+          } else {
+            pushQueue.push(event);
+          }
+        });
+        this.on("end", () => {
+          done = true;
+          for (const reader of readQueue) {
+            reader.resolve(void 0);
+          }
+          readQueue.length = 0;
+        });
+        this.on("abort", (err) => {
+          done = true;
+          for (const reader of readQueue) {
+            reader.reject(err);
+          }
+          readQueue.length = 0;
+        });
+        this.on("error", (err) => {
+          done = true;
+          for (const reader of readQueue) {
+            reader.reject(err);
+          }
+          readQueue.length = 0;
+        });
+        return {
+          next: async () => {
+            if (!pushQueue.length) {
+              if (done) {
+                return { value: void 0, done: true };
+              }
+              return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+            }
+            const chunk = pushQueue.shift();
+            return { value: chunk, done: false };
+          },
+          return: async () => {
+            this.abort();
+            return { value: void 0, done: true };
+          }
+        };
+      }
+      toReadableStream() {
+        const stream = new Stream2(this[Symbol.asyncIterator].bind(this), this.controller);
+        return stream.toReadableStream();
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs
+var DEFAULT_TOKEN_THRESHOLD, DEFAULT_SUMMARY_PROMPT;
+var init_CompactionControl = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs"() {
+    DEFAULT_TOKEN_THRESHOLD = 1e5;
+    DEFAULT_SUMMARY_PROMPT = `You have been working on the task described above but have not yet completed it. Write a continuation summary that will allow you (or another instance of yourself) to resume work efficiently in a future context window where the conversation history will be replaced with this summary. Your summary should be structured, concise, and actionable. Include:
+1. Task Overview
+The user's core request and success criteria
+Any clarifications or constraints they specified
+2. Current State
+What has been completed so far
+Files created, modified, or analyzed (with paths if relevant)
+Key outputs or artifacts produced
+3. Important Discoveries
+Technical constraints or requirements uncovered
+Decisions made and their rationale
+Errors encountered and how they were resolved
+What approaches were tried that didn't work (and why)
+4. Next Steps
+Specific actions needed to complete the task
+Any blockers or open questions to resolve
+Priority order if multiple steps remain
+5. Context to Preserve
+User preferences or style requirements
+Domain-specific details that aren't obvious
+Any promises made to the user
+Be concise but complete\u2014err on the side of including information that would prevent duplicate work or repeated mistakes. Write in a way that enables immediate resumption of the task.
+Wrap your summary in <summary></summary> tags.`;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs
+async function generateToolResponse(params, lastMessage = params.messages.at(-1), requestOptions) {
+  if (!lastMessage || lastMessage.role !== "assistant" || !lastMessage.content || typeof lastMessage.content === "string") {
+    return null;
+  }
+  const toolUseBlocks = lastMessage.content.filter((content) => content.type === "tool_use");
+  if (toolUseBlocks.length === 0) {
+    return null;
+  }
+  const toolResults = await Promise.all(toolUseBlocks.map(async (toolUse) => {
+    const tool = params.tools.find((t) => ("name" in t ? t.name : t.mcp_server_name) === toolUse.name);
+    if (!tool || !("run" in tool)) {
+      return {
+        type: "tool_result",
+        tool_use_id: toolUse.id,
+        content: `Error: Tool '${toolUse.name}' not found`,
+        is_error: true
+      };
+    }
+    try {
+      let input = toolUse.input;
+      if ("parse" in tool && tool.parse) {
+        input = tool.parse(input);
+      }
+      const result = await tool.run(input, {
+        toolUse,
+        toolUseBlock: toolUse,
+        signal: requestOptions?.signal
+      });
+      return {
+        type: "tool_result",
+        tool_use_id: toolUse.id,
+        content: result
+      };
+    } catch (error) {
+      return {
+        type: "tool_result",
+        tool_use_id: toolUse.id,
+        content: error instanceof ToolError ? error.content : `Error: ${error instanceof Error ? error.message : String(error)}`,
+        is_error: true
+      };
+    }
+  }));
+  return {
+    role: "user",
+    content: toolResults
+  };
+}
+var _BetaToolRunner_instances, _BetaToolRunner_consumed, _BetaToolRunner_mutated, _BetaToolRunner_state, _BetaToolRunner_options, _BetaToolRunner_message, _BetaToolRunner_toolResponse, _BetaToolRunner_completion, _BetaToolRunner_iterationCount, _BetaToolRunner_checkAndCompact, _BetaToolRunner_generateToolResponse, BetaToolRunner;
+var init_BetaToolRunner = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs"() {
+    init_tslib();
+    init_ToolError();
+    init_error();
+    init_headers();
+    init_promise();
+    init_CompactionControl();
+    init_stainless_helper_header();
+    BetaToolRunner = class {
+      constructor(client, params, options) {
+        _BetaToolRunner_instances.add(this);
+        this.client = client;
+        _BetaToolRunner_consumed.set(this, false);
+        _BetaToolRunner_mutated.set(this, false);
+        _BetaToolRunner_state.set(this, void 0);
+        _BetaToolRunner_options.set(this, void 0);
+        _BetaToolRunner_message.set(this, void 0);
+        _BetaToolRunner_toolResponse.set(this, void 0);
+        _BetaToolRunner_completion.set(this, void 0);
+        _BetaToolRunner_iterationCount.set(this, 0);
+        __classPrivateFieldSet2(this, _BetaToolRunner_state, {
+          params: {
+            // You can't clone the entire params since there are functions as handlers.
+            // You also don't really need to clone params.messages, but it probably will prevent a foot gun
+            // somewhere.
+            ...params,
+            messages: structuredClone(params.messages)
+          }
+        }, "f");
+        const helpers = collectStainlessHelpers(params.tools, params.messages);
+        const helperValue = ["BetaToolRunner", ...helpers].join(", ");
+        __classPrivateFieldSet2(this, _BetaToolRunner_options, {
+          ...options,
+          headers: buildHeaders2([{ "x-stainless-helper": helperValue }, options?.headers])
+        }, "f");
+        __classPrivateFieldSet2(this, _BetaToolRunner_completion, promiseWithResolvers(), "f");
+        if (params.compactionControl?.enabled) {
+          console.warn('Anthropic: The `compactionControl` parameter is deprecated and will be removed in a future version. Use server-side compaction instead by passing `edits: [{ type: "compact_20260112" }]` in the params passed to `toolRunner()`. See https://platform.claude.com/docs/en/build-with-claude/compaction');
+        }
+      }
+      async *[(_BetaToolRunner_consumed = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_mutated = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_state = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_options = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_message = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_toolResponse = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_completion = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_iterationCount = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_instances = /* @__PURE__ */ new WeakSet(), _BetaToolRunner_checkAndCompact = async function _BetaToolRunner_checkAndCompact2() {
+        const compactionControl = __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.compactionControl;
+        if (!compactionControl || !compactionControl.enabled) {
+          return false;
+        }
+        let tokensUsed = 0;
+        if (__classPrivateFieldGet2(this, _BetaToolRunner_message, "f") !== void 0) {
+          try {
+            const message = await __classPrivateFieldGet2(this, _BetaToolRunner_message, "f");
+            const totalInputTokens = message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0) + (message.usage.cache_read_input_tokens ?? 0);
+            tokensUsed = totalInputTokens + message.usage.output_tokens;
+          } catch {
+            return false;
+          }
+        }
+        const threshold = compactionControl.contextTokenThreshold ?? DEFAULT_TOKEN_THRESHOLD;
+        if (tokensUsed < threshold) {
+          return false;
+        }
+        const model = compactionControl.model ?? __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.model;
+        const summaryPrompt = compactionControl.summaryPrompt ?? DEFAULT_SUMMARY_PROMPT;
+        const messages = __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.messages;
+        if (messages[messages.length - 1].role === "assistant") {
+          const lastMessage = messages[messages.length - 1];
+          if (Array.isArray(lastMessage.content)) {
+            const nonToolBlocks = lastMessage.content.filter((block) => block.type !== "tool_use");
+            if (nonToolBlocks.length === 0) {
+              messages.pop();
+            } else {
+              lastMessage.content = nonToolBlocks;
+            }
+          }
+        }
+        const response = await this.client.beta.messages.create({
+          model,
+          messages: [
+            ...messages,
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: summaryPrompt
+                }
+              ]
+            }
+          ],
+          max_tokens: __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.max_tokens
+        }, {
+          signal: __classPrivateFieldGet2(this, _BetaToolRunner_options, "f").signal,
+          headers: buildHeaders2([__classPrivateFieldGet2(this, _BetaToolRunner_options, "f").headers, { "x-stainless-helper": "compaction" }])
+        });
+        if (response.content[0]?.type !== "text") {
+          throw new AnthropicError("Expected text response for compaction");
+        }
+        __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.messages = [
+          {
+            role: "user",
+            content: response.content
+          }
+        ];
+        return true;
+      }, Symbol.asyncIterator)]() {
+        var _a4;
+        if (__classPrivateFieldGet2(this, _BetaToolRunner_consumed, "f")) {
+          throw new AnthropicError("Cannot iterate over a consumed stream");
+        }
+        __classPrivateFieldSet2(this, _BetaToolRunner_consumed, true, "f");
+        __classPrivateFieldSet2(this, _BetaToolRunner_mutated, true, "f");
+        __classPrivateFieldSet2(this, _BetaToolRunner_toolResponse, void 0, "f");
+        try {
+          while (true) {
+            let stream;
+            try {
+              if (__classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.max_iterations && __classPrivateFieldGet2(this, _BetaToolRunner_iterationCount, "f") >= __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.max_iterations) {
+                break;
+              }
+              __classPrivateFieldSet2(this, _BetaToolRunner_mutated, false, "f");
+              __classPrivateFieldSet2(this, _BetaToolRunner_toolResponse, void 0, "f");
+              __classPrivateFieldSet2(this, _BetaToolRunner_iterationCount, (_a4 = __classPrivateFieldGet2(this, _BetaToolRunner_iterationCount, "f"), _a4++, _a4), "f");
+              __classPrivateFieldSet2(this, _BetaToolRunner_message, void 0, "f");
+              const { max_iterations, compactionControl, ...params } = __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params;
+              if (params.stream) {
+                stream = this.client.beta.messages.stream({ ...params }, __classPrivateFieldGet2(this, _BetaToolRunner_options, "f"));
+                __classPrivateFieldSet2(this, _BetaToolRunner_message, stream.finalMessage(), "f");
+                __classPrivateFieldGet2(this, _BetaToolRunner_message, "f").catch(() => {
+                });
+                yield stream;
+              } else {
+                __classPrivateFieldSet2(this, _BetaToolRunner_message, this.client.beta.messages.create({ ...params, stream: false }, __classPrivateFieldGet2(this, _BetaToolRunner_options, "f")), "f");
+                yield __classPrivateFieldGet2(this, _BetaToolRunner_message, "f");
+              }
+              const isCompacted = await __classPrivateFieldGet2(this, _BetaToolRunner_instances, "m", _BetaToolRunner_checkAndCompact).call(this);
+              if (!isCompacted) {
+                if (!__classPrivateFieldGet2(this, _BetaToolRunner_mutated, "f")) {
+                  const message = await __classPrivateFieldGet2(this, _BetaToolRunner_message, "f");
+                  __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.messages.push({ role: message.role, content: message.content });
+                  if (message.stop_reason === "refusal") {
+                    break;
+                  }
+                }
+                const toolMessage = await __classPrivateFieldGet2(this, _BetaToolRunner_instances, "m", _BetaToolRunner_generateToolResponse).call(this, __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.messages.at(-1));
+                if (toolMessage) {
+                  __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params.messages.push(toolMessage);
+                } else if (!__classPrivateFieldGet2(this, _BetaToolRunner_mutated, "f")) {
+                  break;
+                }
+              }
+            } finally {
+              if (stream) {
+                stream.abort();
+              }
+            }
+          }
+          if (!__classPrivateFieldGet2(this, _BetaToolRunner_message, "f")) {
+            throw new AnthropicError("ToolRunner concluded without a message from the server");
+          }
+          __classPrivateFieldGet2(this, _BetaToolRunner_completion, "f").resolve(await __classPrivateFieldGet2(this, _BetaToolRunner_message, "f"));
+        } catch (error) {
+          __classPrivateFieldSet2(this, _BetaToolRunner_consumed, false, "f");
+          __classPrivateFieldGet2(this, _BetaToolRunner_completion, "f").promise.catch(() => {
+          });
+          __classPrivateFieldGet2(this, _BetaToolRunner_completion, "f").reject(error);
+          __classPrivateFieldSet2(this, _BetaToolRunner_completion, promiseWithResolvers(), "f");
+          throw error;
+        }
+      }
+      setMessagesParams(paramsOrMutator) {
+        if (typeof paramsOrMutator === "function") {
+          __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params = paramsOrMutator(__classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params);
+        } else {
+          __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params = paramsOrMutator;
+        }
+        __classPrivateFieldSet2(this, _BetaToolRunner_mutated, true, "f");
+        __classPrivateFieldSet2(this, _BetaToolRunner_toolResponse, void 0, "f");
+      }
+      setRequestOptions(optionsOrMutator) {
+        if (typeof optionsOrMutator === "function") {
+          __classPrivateFieldSet2(this, _BetaToolRunner_options, optionsOrMutator(__classPrivateFieldGet2(this, _BetaToolRunner_options, "f")), "f");
+        } else {
+          __classPrivateFieldSet2(this, _BetaToolRunner_options, { ...__classPrivateFieldGet2(this, _BetaToolRunner_options, "f"), ...optionsOrMutator }, "f");
+        }
+      }
+      /**
+       * Get the tool response for the last message from the assistant.
+       * Avoids redundant tool executions by caching results.
+       *
+       * @returns A promise that resolves to a BetaMessageParam containing tool results, or null if no tools need to be executed
+       *
+       * @example
+       * const toolResponse = await runner.generateToolResponse();
+       * if (toolResponse) {
+       *   console.log('Tool results:', toolResponse.content);
+       * }
+       */
+      async generateToolResponse(signal = __classPrivateFieldGet2(this, _BetaToolRunner_options, "f").signal) {
+        const message = await __classPrivateFieldGet2(this, _BetaToolRunner_message, "f") ?? this.params.messages.at(-1);
+        if (!message) {
+          return null;
+        }
+        return __classPrivateFieldGet2(this, _BetaToolRunner_instances, "m", _BetaToolRunner_generateToolResponse).call(this, message, signal);
+      }
+      /**
+       * Wait for the async iterator to complete. This works even if the async iterator hasn't yet started, and
+       * will wait for an instance to start and go to completion.
+       *
+       * @returns A promise that resolves to the final BetaMessage when the iterator completes
+       *
+       * @example
+       * // Start consuming the iterator
+       * for await (const message of runner) {
+       *   console.log('Message:', message.content);
+       * }
+       *
+       * // Meanwhile, wait for completion from another part of the code
+       * const finalMessage = await runner.done();
+       * console.log('Final response:', finalMessage.content);
+       */
+      done() {
+        return __classPrivateFieldGet2(this, _BetaToolRunner_completion, "f").promise;
+      }
+      /**
+       * Returns a promise indicating that the stream is done. Unlike .done(), this will eagerly read the stream:
+       * * If the iterator has not been consumed, consume the entire iterator and return the final message from the
+       * assistant.
+       * * If the iterator has been consumed, waits for it to complete and returns the final message.
+       *
+       * @returns A promise that resolves to the final BetaMessage from the conversation
+       * @throws {AnthropicError} If no messages were processed during the conversation
+       *
+       * @example
+       * const finalMessage = await runner.runUntilDone();
+       * console.log('Final response:', finalMessage.content);
+       */
+      async runUntilDone() {
+        if (!__classPrivateFieldGet2(this, _BetaToolRunner_consumed, "f")) {
+          for await (const _ of this) {
+          }
+        }
+        return this.done();
+      }
+      /**
+       * Get the current parameters being used by the ToolRunner.
+       *
+       * @returns A readonly view of the current ToolRunnerParams
+       *
+       * @example
+       * const currentParams = runner.params;
+       * console.log('Current model:', currentParams.model);
+       * console.log('Message count:', currentParams.messages.length);
+       */
+      get params() {
+        return __classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params;
+      }
+      /**
+       * Add one or more messages to the conversation history.
+       *
+       * @param messages - One or more BetaMessageParam objects to add to the conversation
+       *
+       * @example
+       * runner.pushMessages(
+       *   { role: 'user', content: 'Also, what about the weather in NYC?' }
+       * );
+       *
+       * @example
+       * // Adding multiple messages
+       * runner.pushMessages(
+       *   { role: 'user', content: 'What about NYC?' },
+       *   { role: 'user', content: 'And Boston?' }
+       * );
+       */
+      pushMessages(...messages) {
+        this.setMessagesParams((params) => ({
+          ...params,
+          messages: [...params.messages, ...messages]
+        }));
+      }
+      /**
+       * Makes the ToolRunner directly awaitable, equivalent to calling .runUntilDone()
+       * This allows using `await runner` instead of `await runner.runUntilDone()`
+       */
+      then(onfulfilled, onrejected) {
+        return this.runUntilDone().then(onfulfilled, onrejected);
+      }
+    };
+    _BetaToolRunner_generateToolResponse = async function _BetaToolRunner_generateToolResponse2(lastMessage, signal = __classPrivateFieldGet2(this, _BetaToolRunner_options, "f").signal) {
+      if (__classPrivateFieldGet2(this, _BetaToolRunner_toolResponse, "f") !== void 0) {
+        return __classPrivateFieldGet2(this, _BetaToolRunner_toolResponse, "f");
+      }
+      __classPrivateFieldSet2(this, _BetaToolRunner_toolResponse, generateToolResponse(__classPrivateFieldGet2(this, _BetaToolRunner_state, "f").params, lastMessage, {
+        ...__classPrivateFieldGet2(this, _BetaToolRunner_options, "f"),
+        signal
+      }), "f");
+      return __classPrivateFieldGet2(this, _BetaToolRunner_toolResponse, "f");
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs
+function transformOutputFormat(params) {
+  if (!params.output_format) {
+    return params;
+  }
+  if (params.output_config?.format) {
+    throw new AnthropicError("Both output_format and output_config.format were provided. Please use only output_config.format (output_format is deprecated).");
+  }
+  const { output_format, ...rest } = params;
+  return {
+    ...rest,
+    output_config: {
+      ...params.output_config,
+      format: output_format
+    }
+  };
+}
+var DEPRECATED_MODELS, MODELS_TO_WARN_WITH_THINKING_ENABLED, Messages3;
+var init_messages = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs"() {
+    init_error2();
+    init_batches();
+    init_resource();
+    init_constants();
+    init_headers();
+    init_stainless_helper_header();
+    init_beta_parser();
+    init_BetaMessageStream();
+    init_BetaToolRunner();
+    init_ToolError();
+    init_batches();
+    init_BetaToolRunner();
+    init_ToolError();
+    DEPRECATED_MODELS = {
+      "claude-1.3": "November 6th, 2024",
+      "claude-1.3-100k": "November 6th, 2024",
+      "claude-instant-1.1": "November 6th, 2024",
+      "claude-instant-1.1-100k": "November 6th, 2024",
+      "claude-instant-1.2": "November 6th, 2024",
+      "claude-3-sonnet-20240229": "July 21st, 2025",
+      "claude-3-opus-20240229": "January 5th, 2026",
+      "claude-2.1": "July 21st, 2025",
+      "claude-2.0": "July 21st, 2025",
+      "claude-3-7-sonnet-latest": "February 19th, 2026",
+      "claude-3-7-sonnet-20250219": "February 19th, 2026",
+      "claude-3-5-haiku-latest": "February 19th, 2026",
+      "claude-3-5-haiku-20241022": "February 19th, 2026",
+      "claude-opus-4-0": "June 15th, 2026",
+      "claude-opus-4-20250514": "June 15th, 2026",
+      "claude-sonnet-4-0": "June 15th, 2026",
+      "claude-sonnet-4-20250514": "June 15th, 2026",
+      "claude-opus-4-1": "August 5th, 2026",
+      "claude-opus-4-1-20250805": "August 5th, 2026",
+      "claude-mythos-preview": "June 30th, 2026"
+    };
+    MODELS_TO_WARN_WITH_THINKING_ENABLED = ["claude-mythos-preview", "claude-opus-4-6"];
+    Messages3 = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.batches = new Batches2(this._client);
+      }
+      create(params, options) {
+        const modifiedParams = transformOutputFormat(params);
+        const { betas, ...body } = modifiedParams;
+        if (body.model in DEPRECATED_MODELS) {
+          console.warn(`The model '${body.model}' is deprecated and will reach end-of-life on ${DEPRECATED_MODELS[body.model]}
+Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resources/model-deprecations for more information.`);
+        }
+        if (MODELS_TO_WARN_WITH_THINKING_ENABLED.includes(body.model) && body.thinking && body.thinking.type === "enabled") {
+          console.warn(`Using Claude with ${body.model} and 'thinking.type=enabled' is deprecated. Use 'thinking.type=adaptive' instead which results in better model performance in our testing: https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking`);
+        }
+        let timeout = this._client._options.timeout;
+        if (!body.stream && timeout == null) {
+          const maxNonstreamingTokens = MODEL_NONSTREAMING_TOKENS[body.model] ?? void 0;
+          timeout = this._client.calculateNonstreamingTimeout(body.max_tokens, maxNonstreamingTokens);
+        }
+        const helperHeader = stainlessHelperHeader(body.tools, body.messages);
+        return this._client.post("/v1/messages?beta=true", {
+          body,
+          timeout: timeout ?? 6e5,
+          ...options,
+          headers: buildHeaders2([
+            { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
+            helperHeader,
+            options?.headers
+          ]),
+          stream: modifiedParams.stream ?? false
+        });
+      }
+      /**
+       * Send a structured list of input messages with text and/or image content, along with an expected `output_format` and
+       * the response will be automatically parsed and available in the `parsed_output` property of the message.
+       *
+       * @example
+       * ```ts
+       * const message = await client.beta.messages.parse({
+       *   model: 'claude-3-5-sonnet-20241022',
+       *   max_tokens: 1024,
+       *   messages: [{ role: 'user', content: 'What is 2+2?' }],
+       *   output_format: zodOutputFormat(z.object({ answer: z.number() }), 'math'),
+       * });
+       *
+       * console.log(message.parsed_output?.answer); // 4
+       * ```
+       */
+      parse(params, options) {
+        options = {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...params.betas ?? [], "structured-outputs-2025-12-15"].toString() },
+            options?.headers
+          ])
+        };
+        return this.create(params, options).then((message) => parseBetaMessage(message, params, { logger: this._client.logger ?? console }));
+      }
+      /**
+       * Create a Message stream
+       */
+      stream(body, options) {
+        return BetaMessageStream.createMessage(this, body, options);
+      }
+      /**
+       * Count the number of tokens in a Message.
+       *
+       * The Token Count API can be used to count the number of tokens in a Message,
+       * including tools, images, and documents, without creating it.
+       *
+       * Learn more about token counting in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/token-counting)
+       *
+       * @example
+       * ```ts
+       * const betaMessageTokensCount =
+       *   await client.beta.messages.countTokens({
+       *     messages: [{ content: 'Hello, world', role: 'user' }],
+       *     model: 'claude-opus-4-6',
+       *   });
+       * ```
+       */
+      countTokens(params, options) {
+        const modifiedParams = transformOutputFormat(params);
+        const { betas, ...body } = modifiedParams;
+        return this._client.post("/v1/messages/count_tokens?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "token-counting-2024-11-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      toolRunner(body, options) {
+        return new BetaToolRunner(this._client, body, options);
+      }
+    };
+    Messages3.Batches = Batches2;
+    Messages3.BetaToolRunner = BetaToolRunner;
+    Messages3.ToolError = ToolError;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs
+var Events;
+var init_events = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    init_SessionToolRunner();
+    init_SessionToolRunner();
+    Events = class extends APIResource2 {
+      /**
+       * List Events
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsSessionEvent of client.beta.sessions.events.list(
+       *   'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(sessionID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/sessions/${sessionID}/events?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Send Events
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSendSessionEvents =
+       *   await client.beta.sessions.events.send(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *     {
+       *       events: [
+       *         {
+       *           content: [
+       *             {
+       *               text: 'Where is my order #1234?',
+       *               type: 'text',
+       *             },
+       *           ],
+       *           type: 'user.message',
+       *         },
+       *       ],
+       *     },
+       *   );
+       * ```
+       */
+      send(sessionID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/sessions/${sessionID}/events?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Stream Events
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsStreamSessionEvents =
+       *   await client.beta.sessions.events.stream(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *   );
+       * ```
+       */
+      stream(sessionID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/sessions/${sessionID}/events/stream?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ]),
+          stream: true
+        });
+      }
+      /**
+       * Attach to a session and dispatch every incoming `agent.tool_use` and
+       * `agent.custom_tool_use` event to a local tool registry, sending the matching
+       * result back (`user.tool_result` / `user.custom_tool_result`). The
+       * sessions-side counterpart to `client.beta.messages.toolRunner`: yields one
+       * entry per completed tool call so callers can observe each dispatch (and
+       * `break` to abort cleanly).
+       *
+       * @example
+       * ```ts
+       * import { betaAgentToolset20260401 } from '@anthropic-ai/sdk/tools/agent-toolset/node';
+       *
+       * for await (const call of client.beta.sessions.events.toolRunner(work.data.id, {
+       *   tools: [...betaAgentToolset20260401({ workdir }), myTool],
+       * })) {
+       *   console.log(`${call.name} -> ${call.isError ? 'error' : 'ok'}`);
+       * }
+       * ```
+       */
+      toolRunner(sessionID, opts) {
+        return new SessionToolRunner(sessionID, { ...opts, client: this._client });
+      }
+    };
+    Events.SessionToolRunner = SessionToolRunner;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs
+var Resources;
+var init_resources = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Resources = class extends APIResource2 {
+      /**
+       * Get Session Resource
+       *
+       * @example
+       * ```ts
+       * const resource =
+       *   await client.beta.sessions.resources.retrieve(
+       *     'sesrsc_011CZkZBJq5dWxk9fVLNcPht',
+       *     { session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7' },
+       *   );
+       * ```
+       */
+      retrieve(resourceID, params, options) {
+        const { session_id, betas } = params;
+        return this._client.get(path2`/v1/sessions/${session_id}/resources/${resourceID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update Session Resource
+       *
+       * @example
+       * ```ts
+       * const resource =
+       *   await client.beta.sessions.resources.update(
+       *     'sesrsc_011CZkZBJq5dWxk9fVLNcPht',
+       *     {
+       *       session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *       authorization_token: 'ghp_exampletoken',
+       *     },
+       *   );
+       * ```
+       */
+      update(resourceID, params, options) {
+        const { session_id, betas, ...body } = params;
+        return this._client.post(path2`/v1/sessions/${session_id}/resources/${resourceID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Session Resources
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsSessionResource of client.beta.sessions.resources.list(
+       *   'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(sessionID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/sessions/${sessionID}/resources?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete Session Resource
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeleteSessionResource =
+       *   await client.beta.sessions.resources.delete(
+       *     'sesrsc_011CZkZBJq5dWxk9fVLNcPht',
+       *     { session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7' },
+       *   );
+       * ```
+       */
+      delete(resourceID, params, options) {
+        const { session_id, betas } = params;
+        return this._client.delete(path2`/v1/sessions/${session_id}/resources/${resourceID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Add Session Resource
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsFileResource =
+       *   await client.beta.sessions.resources.add(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *     {
+       *       file_id: 'file_011CNha8iCJcU1wXNR6q4V8w',
+       *       type: 'file',
+       *     },
+       *   );
+       * ```
+       */
+      add(sessionID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/sessions/${sessionID}/resources?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs
+var Events2;
+var init_events2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Events2 = class extends APIResource2 {
+      /**
+       * List Session Thread Events
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsSessionEvent of client.beta.sessions.threads.events.list(
+       *   'sthr_011CZkZVWa6oIjw0rgXZpnBt',
+       *   { session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7' },
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(threadID, params, options) {
+        const { session_id, betas, ...query } = params;
+        return this._client.getAPIList(path2`/v1/sessions/${session_id}/threads/${threadID}/events?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Stream Session Thread Events
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsStreamSessionThreadEvents =
+       *   await client.beta.sessions.threads.events.stream(
+       *     'sthr_011CZkZVWa6oIjw0rgXZpnBt',
+       *     { session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7' },
+       *   );
+       * ```
+       */
+      stream(threadID, params, options) {
+        const { session_id, betas } = params;
+        return this._client.get(path2`/v1/sessions/${session_id}/threads/${threadID}/stream?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ]),
+          stream: true
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs
+var Threads3;
+var init_threads = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs"() {
+    init_resource();
+    init_events2();
+    init_events2();
+    init_pagination();
+    init_headers();
+    init_path();
+    Threads3 = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.events = new Events2(this._client);
+      }
+      /**
+       * Get Session Thread
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSessionThread =
+       *   await client.beta.sessions.threads.retrieve(
+       *     'sthr_011CZkZVWa6oIjw0rgXZpnBt',
+       *     { session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7' },
+       *   );
+       * ```
+       */
+      retrieve(threadID, params, options) {
+        const { session_id, betas } = params;
+        return this._client.get(path2`/v1/sessions/${session_id}/threads/${threadID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Session Threads
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsSessionThread of client.beta.sessions.threads.list(
+       *   'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(sessionID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/sessions/${sessionID}/threads?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive Session Thread
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSessionThread =
+       *   await client.beta.sessions.threads.archive(
+       *     'sthr_011CZkZVWa6oIjw0rgXZpnBt',
+       *     { session_id: 'sesn_011CZkZAtmR3yMPDzynEDxu7' },
+       *   );
+       * ```
+       */
+      archive(threadID, params, options) {
+        const { session_id, betas } = params;
+        return this._client.post(path2`/v1/sessions/${session_id}/threads/${threadID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    Threads3.Events = Events2;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs
+var Sessions3;
+var init_sessions = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs"() {
+    init_resource();
+    init_events();
+    init_events();
+    init_resources();
+    init_resources();
+    init_threads();
+    init_threads();
+    init_pagination();
+    init_headers();
+    init_path();
+    Sessions3 = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.events = new Events(this._client);
+        this.resources = new Resources(this._client);
+        this.threads = new Threads3(this._client);
+      }
+      /**
+       * Create Session
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSession =
+       *   await client.beta.sessions.create({
+       *     agent: 'agent_011CZkYpogX7uDKUyvBTophP',
+       *     environment_id: 'env_011CZkZ9X2dpNyB7HsEFoRfW',
+       *   });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/sessions?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get Session
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSession =
+       *   await client.beta.sessions.retrieve(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *   );
+       * ```
+       */
+      retrieve(sessionID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/sessions/${sessionID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update Session
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSession =
+       *   await client.beta.sessions.update(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *   );
+       * ```
+       */
+      update(sessionID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/sessions/${sessionID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Sessions
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsSession of client.beta.sessions.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/sessions?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete Session
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeletedSession =
+       *   await client.beta.sessions.delete(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *   );
+       * ```
+       */
+      delete(sessionID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/sessions/${sessionID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive Session
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsSession =
+       *   await client.beta.sessions.archive(
+       *     'sesn_011CZkZAtmR3yMPDzynEDxu7',
+       *   );
+       * ```
+       */
+      archive(sessionID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/sessions/${sessionID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    Sessions3.Events = Events;
+    Sessions3.Resources = Resources;
+    Sessions3.Threads = Threads3;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs
+var Versions3;
+var init_versions2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_uploads();
+    init_path();
+    Versions3 = class extends APIResource2 {
+      /**
+       * Create Skill Version
+       *
+       * @example
+       * ```ts
+       * const version = await client.beta.skills.versions.create(
+       *   'skill_id',
+       * );
+       * ```
+       */
+      create(skillID, params = {}, options) {
+        const { betas, ...body } = params ?? {};
+        return this._client.post(path2`/v1/skills/${skillID}/versions?beta=true`, multipartFormRequestOptions2({
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        }, this._client, false));
+      }
+      /**
+       * Get Skill Version
+       *
+       * @example
+       * ```ts
+       * const version = await client.beta.skills.versions.retrieve(
+       *   'version',
+       *   { skill_id: 'skill_id' },
+       * );
+       * ```
+       */
+      retrieve(version, params, options) {
+        const { skill_id, betas } = params;
+        return this._client.get(path2`/v1/skills/${skill_id}/versions/${version}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Skill Versions
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const versionListResponse of client.beta.skills.versions.list(
+       *   'skill_id',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(skillID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/skills/${skillID}/versions?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete Skill Version
+       *
+       * @example
+       * ```ts
+       * const version = await client.beta.skills.versions.delete(
+       *   'version',
+       *   { skill_id: 'skill_id' },
+       * );
+       * ```
+       */
+      delete(version, params, options) {
+        const { skill_id, betas } = params;
+        return this._client.delete(path2`/v1/skills/${skill_id}/versions/${version}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Download a skill version's content as a zip archive.
+       *
+       * @example
+       * ```ts
+       * const response = await client.beta.skills.versions.download(
+       *   'version',
+       *   { skill_id: 'skill_id' },
+       * );
+       *
+       * const content = await response.blob();
+       * console.log(content);
+       * ```
+       */
+      download(version, params, options) {
+        const { skill_id, betas } = params;
+        return this._client.get(path2`/v1/skills/${skill_id}/versions/${version}/content?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            {
+              "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString(),
+              Accept: "application/binary"
+            },
+            options?.headers
+          ]),
+          __binaryResponse: true
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs
+var Skills2;
+var init_skills2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs"() {
+    init_resource();
+    init_versions2();
+    init_versions2();
+    init_pagination();
+    init_headers();
+    init_uploads();
+    init_path();
+    Skills2 = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.versions = new Versions3(this._client);
+      }
+      /**
+       * Create Skill
+       *
+       * @example
+       * ```ts
+       * const skill = await client.beta.skills.create();
+       * ```
+       */
+      create(params = {}, options) {
+        const { betas, ...body } = params ?? {};
+        return this._client.post("/v1/skills?beta=true", multipartFormRequestOptions2({
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        }, this._client, false));
+      }
+      /**
+       * Get Skill
+       *
+       * @example
+       * ```ts
+       * const skill = await client.beta.skills.retrieve('skill_id');
+       * ```
+       */
+      retrieve(skillID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/skills/${skillID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Skills
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const skillListResponse of client.beta.skills.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/skills?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete Skill
+       *
+       * @example
+       * ```ts
+       * const skill = await client.beta.skills.delete('skill_id');
+       * ```
+       */
+      delete(skillID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/skills/${skillID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    Skills2.Versions = Versions3;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs
+var Credentials;
+var init_credentials2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Credentials = class extends APIResource2 {
+      /**
+       * Create Credential
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsCredential =
+       *   await client.beta.vaults.credentials.create(
+       *     'vlt_011CZkZDLs7fYzm1hXNPeRjv',
+       *     {
+       *       auth: {
+       *         token: 'bearer_exampletoken',
+       *         mcp_server_url:
+       *           'https://example-server.modelcontextprotocol.io/sse',
+       *         type: 'static_bearer',
+       *       },
+       *     },
+       *   );
+       * ```
+       */
+      create(vaultID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/vaults/${vaultID}/credentials?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get Credential
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsCredential =
+       *   await client.beta.vaults.credentials.retrieve(
+       *     'vcrd_011CZkZEMt8gZan2iYOQfSkw',
+       *     { vault_id: 'vlt_011CZkZDLs7fYzm1hXNPeRjv' },
+       *   );
+       * ```
+       */
+      retrieve(credentialID, params, options) {
+        const { vault_id, betas } = params;
+        return this._client.get(path2`/v1/vaults/${vault_id}/credentials/${credentialID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update Credential
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsCredential =
+       *   await client.beta.vaults.credentials.update(
+       *     'vcrd_011CZkZEMt8gZan2iYOQfSkw',
+       *     { vault_id: 'vlt_011CZkZDLs7fYzm1hXNPeRjv' },
+       *   );
+       * ```
+       */
+      update(credentialID, params, options) {
+        const { vault_id, betas, ...body } = params;
+        return this._client.post(path2`/v1/vaults/${vault_id}/credentials/${credentialID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Credentials
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsCredential of client.beta.vaults.credentials.list(
+       *   'vlt_011CZkZDLs7fYzm1hXNPeRjv',
+       * )) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(vaultID, params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList(path2`/v1/vaults/${vaultID}/credentials?beta=true`, PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete Credential
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeletedCredential =
+       *   await client.beta.vaults.credentials.delete(
+       *     'vcrd_011CZkZEMt8gZan2iYOQfSkw',
+       *     { vault_id: 'vlt_011CZkZDLs7fYzm1hXNPeRjv' },
+       *   );
+       * ```
+       */
+      delete(credentialID, params, options) {
+        const { vault_id, betas } = params;
+        return this._client.delete(path2`/v1/vaults/${vault_id}/credentials/${credentialID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive Credential
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsCredential =
+       *   await client.beta.vaults.credentials.archive(
+       *     'vcrd_011CZkZEMt8gZan2iYOQfSkw',
+       *     { vault_id: 'vlt_011CZkZDLs7fYzm1hXNPeRjv' },
+       *   );
+       * ```
+       */
+      archive(credentialID, params, options) {
+        const { vault_id, betas } = params;
+        return this._client.post(path2`/v1/vaults/${vault_id}/credentials/${credentialID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Validate Credential
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsCredentialValidation =
+       *   await client.beta.vaults.credentials.mcpOAuthValidate(
+       *     'vcrd_011CZkZEMt8gZan2iYOQfSkw',
+       *     { vault_id: 'vlt_011CZkZDLs7fYzm1hXNPeRjv' },
+       *   );
+       * ```
+       */
+      mcpOAuthValidate(credentialID, params, options) {
+        const { vault_id, betas } = params;
+        return this._client.post(path2`/v1/vaults/${vault_id}/credentials/${credentialID}/mcp_oauth_validate?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs
+var Vaults;
+var init_vaults = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs"() {
+    init_resource();
+    init_credentials2();
+    init_credentials2();
+    init_pagination();
+    init_headers();
+    init_path();
+    Vaults = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.credentials = new Credentials(this._client);
+      }
+      /**
+       * Create Vault
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsVault =
+       *   await client.beta.vaults.create({
+       *     display_name: 'Example vault',
+       *   });
+       * ```
+       */
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/vaults?beta=true", {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Get Vault
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsVault =
+       *   await client.beta.vaults.retrieve(
+       *     'vlt_011CZkZDLs7fYzm1hXNPeRjv',
+       *   );
+       * ```
+       */
+      retrieve(vaultID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/vaults/${vaultID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Update Vault
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsVault =
+       *   await client.beta.vaults.update(
+       *     'vlt_011CZkZDLs7fYzm1hXNPeRjv',
+       *   );
+       * ```
+       */
+      update(vaultID, params, options) {
+        const { betas, ...body } = params;
+        return this._client.post(path2`/v1/vaults/${vaultID}?beta=true`, {
+          body,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List Vaults
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const betaManagedAgentsVault of client.beta.vaults.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/vaults?beta=true", PageCursor, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Delete Vault
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsDeletedVault =
+       *   await client.beta.vaults.delete(
+       *     'vlt_011CZkZDLs7fYzm1hXNPeRjv',
+       *   );
+       * ```
+       */
+      delete(vaultID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.delete(path2`/v1/vaults/${vaultID}?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * Archive Vault
+       *
+       * @example
+       * ```ts
+       * const betaManagedAgentsVault =
+       *   await client.beta.vaults.archive(
+       *     'vlt_011CZkZDLs7fYzm1hXNPeRjv',
+       *   );
+       * ```
+       */
+      archive(vaultID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.post(path2`/v1/vaults/${vaultID}/archive?beta=true`, {
+          ...options,
+          headers: buildHeaders2([
+            { "anthropic-beta": [...betas ?? [], "managed-agents-2026-04-01"].toString() },
+            options?.headers
+          ])
+        });
+      }
+    };
+    Vaults.Credentials = Credentials;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
+var Beta2;
+var init_beta = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs"() {
+    init_resource();
+    init_deployment_runs();
+    init_deployment_runs();
+    init_deployments();
+    init_deployments();
+    init_files();
+    init_files();
+    init_models();
+    init_models();
+    init_user_profiles();
+    init_user_profiles();
+    init_webhooks();
+    init_webhooks();
+    init_agents();
+    init_agents();
+    init_environments();
+    init_environments();
+    init_memory_stores();
+    init_memory_stores();
+    init_messages();
+    init_messages();
+    init_sessions();
+    init_sessions();
+    init_skills2();
+    init_skills2();
+    init_vaults();
+    init_vaults();
+    Beta2 = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.models = new Models2(this._client);
+        this.messages = new Messages3(this._client);
+        this.agents = new Agents(this._client);
+        this.environments = new Environments(this._client);
+        this.sessions = new Sessions3(this._client);
+        this.deployments = new Deployments(this._client);
+        this.deploymentRuns = new DeploymentRuns(this._client);
+        this.vaults = new Vaults(this._client);
+        this.memoryStores = new MemoryStores(this._client);
+        this.files = new Files4(this._client);
+        this.skills = new Skills2(this._client);
+        this.webhooks = new Webhooks2(this._client);
+        this.userProfiles = new UserProfiles(this._client);
+      }
+    };
+    Beta2.Models = Models2;
+    Beta2.Messages = Messages3;
+    Beta2.Agents = Agents;
+    Beta2.Environments = Environments;
+    Beta2.Sessions = Sessions3;
+    Beta2.Deployments = Deployments;
+    Beta2.DeploymentRuns = DeploymentRuns;
+    Beta2.Vaults = Vaults;
+    Beta2.MemoryStores = MemoryStores;
+    Beta2.Files = Files4;
+    Beta2.Skills = Skills2;
+    Beta2.Webhooks = Webhooks2;
+    Beta2.UserProfiles = UserProfiles;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/completions.mjs
+var Completions3;
+var init_completions = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/completions.mjs"() {
+    init_resource();
+    init_headers();
+    Completions3 = class extends APIResource2 {
+      create(params, options) {
+        const { betas, ...body } = params;
+        return this._client.post("/v1/complete", {
+          body,
+          timeout: this._client._options.timeout ?? 6e5,
+          ...options,
+          headers: buildHeaders2([
+            { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
+            options?.headers
+          ]),
+          stream: params.stream ?? false
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/parser.mjs
+function getOutputFormat2(params) {
+  return params?.output_config?.format;
+}
+function maybeParseMessage(message, params, opts) {
+  const outputFormat = getOutputFormat2(params);
+  if (!params || !("parse" in (outputFormat ?? {}))) {
+    return {
+      ...message,
+      content: message.content.map((block) => {
+        if (block.type === "text") {
+          const parsedBlock = Object.defineProperty({ ...block }, "parsed_output", {
+            value: null,
+            enumerable: false
+          });
+          return parsedBlock;
+        }
+        return block;
+      }),
+      parsed_output: null
+    };
+  }
+  return parseMessage(message, params, opts);
+}
+function parseMessage(message, params, opts) {
+  let firstParsedOutput = null;
+  const content = message.content.map((block) => {
+    if (block.type === "text") {
+      const parsedOutput = parseOutputFormat(params, block.text);
+      if (firstParsedOutput === null) {
+        firstParsedOutput = parsedOutput;
+      }
+      const parsedBlock = Object.defineProperty({ ...block }, "parsed_output", {
+        value: parsedOutput,
+        enumerable: false
+      });
+      return parsedBlock;
+    }
+    return block;
+  });
+  return {
+    ...message,
+    content,
+    parsed_output: firstParsedOutput
+  };
+}
+function parseOutputFormat(params, content) {
+  const outputFormat = getOutputFormat2(params);
+  if (outputFormat?.type !== "json_schema") {
+    return null;
+  }
+  try {
+    if ("parse" in outputFormat) {
+      return outputFormat.parse(content);
+    }
+    return JSON.parse(content);
+  } catch (error) {
+    throw new AnthropicError(`Failed to parse structured output: ${error}`);
+  }
+}
+var init_parser2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/parser.mjs"() {
+    init_error();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
+function tracksToolInput2(content) {
+  return content.type === "tool_use" || content.type === "server_tool_use";
+}
+function checkNever2(x) {
+}
+var _MessageStream_instances, _MessageStream_currentMessageSnapshot, _MessageStream_params, _MessageStream_connectedPromise, _MessageStream_resolveConnectedPromise, _MessageStream_rejectConnectedPromise, _MessageStream_endPromise, _MessageStream_resolveEndPromise, _MessageStream_rejectEndPromise, _MessageStream_listeners, _MessageStream_ended, _MessageStream_errored, _MessageStream_aborted, _MessageStream_catchingPromiseCreated, _MessageStream_response, _MessageStream_request_id, _MessageStream_logger, _MessageStream_getFinalMessage, _MessageStream_getFinalText, _MessageStream_handleError, _MessageStream_beginRequest, _MessageStream_addStreamEvent, _MessageStream_endRequest, _MessageStream_accumulateMessage, JSON_BUF_PROPERTY2, MessageStream;
+var init_MessageStream = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs"() {
+    init_tslib();
+    init_errors();
+    init_error2();
+    init_streaming2();
+    init_parser();
+    init_parser2();
+    JSON_BUF_PROPERTY2 = "__json_buf";
+    MessageStream = class _MessageStream {
+      constructor(params, opts) {
+        _MessageStream_instances.add(this);
+        this.messages = [];
+        this.receivedMessages = [];
+        _MessageStream_currentMessageSnapshot.set(this, void 0);
+        _MessageStream_params.set(this, null);
+        this.controller = new AbortController();
+        _MessageStream_connectedPromise.set(this, void 0);
+        _MessageStream_resolveConnectedPromise.set(this, () => {
+        });
+        _MessageStream_rejectConnectedPromise.set(this, () => {
+        });
+        _MessageStream_endPromise.set(this, void 0);
+        _MessageStream_resolveEndPromise.set(this, () => {
+        });
+        _MessageStream_rejectEndPromise.set(this, () => {
+        });
+        _MessageStream_listeners.set(this, {});
+        _MessageStream_ended.set(this, false);
+        _MessageStream_errored.set(this, false);
+        _MessageStream_aborted.set(this, false);
+        _MessageStream_catchingPromiseCreated.set(this, false);
+        _MessageStream_response.set(this, void 0);
+        _MessageStream_request_id.set(this, void 0);
+        _MessageStream_logger.set(this, void 0);
+        _MessageStream_handleError.set(this, (error) => {
+          __classPrivateFieldSet2(this, _MessageStream_errored, true, "f");
+          if (isAbortError2(error)) {
+            error = new APIUserAbortError2();
+          }
+          if (error instanceof APIUserAbortError2) {
+            __classPrivateFieldSet2(this, _MessageStream_aborted, true, "f");
+            return this._emit("abort", error);
+          }
+          if (error instanceof AnthropicError) {
+            return this._emit("error", error);
+          }
+          if (error instanceof Error) {
+            const anthropicError = new AnthropicError(error.message);
+            anthropicError.cause = error;
+            return this._emit("error", anthropicError);
+          }
+          return this._emit("error", new AnthropicError(String(error)));
+        });
+        __classPrivateFieldSet2(this, _MessageStream_connectedPromise, new Promise((resolve4, reject) => {
+          __classPrivateFieldSet2(this, _MessageStream_resolveConnectedPromise, resolve4, "f");
+          __classPrivateFieldSet2(this, _MessageStream_rejectConnectedPromise, reject, "f");
+        }), "f");
+        __classPrivateFieldSet2(this, _MessageStream_endPromise, new Promise((resolve4, reject) => {
+          __classPrivateFieldSet2(this, _MessageStream_resolveEndPromise, resolve4, "f");
+          __classPrivateFieldSet2(this, _MessageStream_rejectEndPromise, reject, "f");
+        }), "f");
+        __classPrivateFieldGet2(this, _MessageStream_connectedPromise, "f").catch(() => {
+        });
+        __classPrivateFieldGet2(this, _MessageStream_endPromise, "f").catch(() => {
+        });
+        __classPrivateFieldSet2(this, _MessageStream_params, params, "f");
+        __classPrivateFieldSet2(this, _MessageStream_logger, opts?.logger ?? console, "f");
+      }
+      get response() {
+        return __classPrivateFieldGet2(this, _MessageStream_response, "f");
+      }
+      get request_id() {
+        return __classPrivateFieldGet2(this, _MessageStream_request_id, "f");
+      }
+      /**
+       * Returns the `MessageStream` data, the raw `Response` instance and the ID of the request,
+       * returned vie the `request-id` header which is useful for debugging requests and resporting
+       * issues to Anthropic.
+       *
+       * This is the same as the `APIPromise.withResponse()` method.
+       *
+       * This method will raise an error if you created the stream using `MessageStream.fromReadableStream`
+       * as no `Response` is available.
+       */
+      async withResponse() {
+        __classPrivateFieldSet2(this, _MessageStream_catchingPromiseCreated, true, "f");
+        const response = await __classPrivateFieldGet2(this, _MessageStream_connectedPromise, "f");
+        if (!response) {
+          throw new Error("Could not resolve a `Response` object");
+        }
+        return {
+          data: this,
+          response,
+          request_id: response.headers.get("request-id")
+        };
+      }
+      /**
+       * Intended for use on the frontend, consuming a stream produced with
+       * `.toReadableStream()` on the backend.
+       *
+       * Note that messages sent to the model do not appear in `.on('message')`
+       * in this context.
+       */
+      static fromReadableStream(stream) {
+        const runner = new _MessageStream(null);
+        runner._run(() => runner._fromReadableStream(stream));
+        return runner;
+      }
+      static createMessage(messages, params, options, { logger: logger2 } = {}) {
+        const runner = new _MessageStream(params, { logger: logger2 });
+        for (const message of params.messages) {
+          runner._addMessageParam(message);
+        }
+        __classPrivateFieldSet2(runner, _MessageStream_params, { ...params, stream: true }, "f");
+        runner._run(() => runner._createMessage(messages, { ...params, stream: true }, { ...options, headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" } }));
+        return runner;
+      }
+      _run(executor) {
+        executor().then(() => {
+          this._emitFinal();
+          this._emit("end");
+        }, __classPrivateFieldGet2(this, _MessageStream_handleError, "f"));
+      }
+      _addMessageParam(message) {
+        this.messages.push(message);
+      }
+      _addMessage(message, emit = true) {
+        this.receivedMessages.push(message);
+        if (emit) {
+          this._emit("message", message);
+        }
+      }
+      async _createMessage(messages, params, options) {
+        const signal = options?.signal;
+        let abortHandler;
+        if (signal) {
+          if (signal.aborted)
+            this.controller.abort();
+          abortHandler = this.controller.abort.bind(this.controller);
+          signal.addEventListener("abort", abortHandler);
+        }
+        try {
+          __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_beginRequest).call(this);
+          const { response, data: stream } = await messages.create({ ...params, stream: true }, { ...options, signal: this.controller.signal }).withResponse();
+          this._connected(response);
+          for await (const event of stream) {
+            __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_addStreamEvent).call(this, event);
+          }
+          if (stream.controller.signal?.aborted) {
+            throw new APIUserAbortError2();
+          }
+          __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_endRequest).call(this);
+        } finally {
+          if (signal && abortHandler) {
+            signal.removeEventListener("abort", abortHandler);
+          }
+        }
+      }
+      _connected(response) {
+        if (this.ended)
+          return;
+        __classPrivateFieldSet2(this, _MessageStream_response, response, "f");
+        __classPrivateFieldSet2(this, _MessageStream_request_id, response?.headers.get("request-id"), "f");
+        __classPrivateFieldGet2(this, _MessageStream_resolveConnectedPromise, "f").call(this, response);
+        this._emit("connect");
+      }
+      get ended() {
+        return __classPrivateFieldGet2(this, _MessageStream_ended, "f");
+      }
+      get errored() {
+        return __classPrivateFieldGet2(this, _MessageStream_errored, "f");
+      }
+      get aborted() {
+        return __classPrivateFieldGet2(this, _MessageStream_aborted, "f");
+      }
+      abort() {
+        this.controller.abort();
+      }
+      /**
+       * Adds the listener function to the end of the listeners array for the event.
+       * No checks are made to see if the listener has already been added. Multiple calls passing
+       * the same combination of event and listener will result in the listener being added, and
+       * called, multiple times.
+       * @returns this MessageStream, so that calls can be chained
+       */
+      on(event, listener) {
+        const listeners = __classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event] || (__classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event] = []);
+        listeners.push({ listener });
+        return this;
+      }
+      /**
+       * Removes the specified listener from the listener array for the event.
+       * off() will remove, at most, one instance of a listener from the listener array. If any single
+       * listener has been added multiple times to the listener array for the specified event, then
+       * off() must be called multiple times to remove each instance.
+       * @returns this MessageStream, so that calls can be chained
+       */
+      off(event, listener) {
+        const listeners = __classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event];
+        if (!listeners)
+          return this;
+        const index = listeners.findIndex((l) => l.listener === listener);
+        if (index >= 0)
+          listeners.splice(index, 1);
+        return this;
+      }
+      /**
+       * Adds a one-time listener function for the event. The next time the event is triggered,
+       * this listener is removed and then invoked.
+       * @returns this MessageStream, so that calls can be chained
+       */
+      once(event, listener) {
+        const listeners = __classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event] || (__classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event] = []);
+        listeners.push({ listener, once: true });
+        return this;
+      }
+      /**
+       * This is similar to `.once()`, but returns a Promise that resolves the next time
+       * the event is triggered, instead of calling a listener callback.
+       * @returns a Promise that resolves the next time given event is triggered,
+       * or rejects if an error is emitted.  (If you request the 'error' event,
+       * returns a promise that resolves with the error).
+       *
+       * Example:
+       *
+       *   const message = await stream.emitted('message') // rejects if the stream errors
+       */
+      emitted(event) {
+        return new Promise((resolve4, reject) => {
+          __classPrivateFieldSet2(this, _MessageStream_catchingPromiseCreated, true, "f");
+          if (event !== "error")
+            this.once("error", reject);
+          this.once(event, resolve4);
+        });
+      }
+      async done() {
+        __classPrivateFieldSet2(this, _MessageStream_catchingPromiseCreated, true, "f");
+        await __classPrivateFieldGet2(this, _MessageStream_endPromise, "f");
+      }
+      get currentMessage() {
+        return __classPrivateFieldGet2(this, _MessageStream_currentMessageSnapshot, "f");
+      }
+      /**
+       * @returns a promise that resolves with the the final assistant Message response,
+       * or rejects if an error occurred or the stream ended prematurely without producing a Message.
+       * If structured outputs were used, this will be a ParsedMessage with a `parsed_output` field.
+       */
+      async finalMessage() {
+        await this.done();
+        return __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_getFinalMessage).call(this);
+      }
+      /**
+       * @returns a promise that resolves with the the final assistant Message's text response, concatenated
+       * together if there are more than one text blocks.
+       * Rejects if an error occurred or the stream ended prematurely without producing a Message.
+       */
+      async finalText() {
+        await this.done();
+        return __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_getFinalText).call(this);
+      }
+      _emit(event, ...args) {
+        if (__classPrivateFieldGet2(this, _MessageStream_ended, "f"))
+          return;
+        if (event === "end") {
+          __classPrivateFieldSet2(this, _MessageStream_ended, true, "f");
+          __classPrivateFieldGet2(this, _MessageStream_resolveEndPromise, "f").call(this);
+        }
+        const listeners = __classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event];
+        if (listeners) {
+          __classPrivateFieldGet2(this, _MessageStream_listeners, "f")[event] = listeners.filter((l) => !l.once);
+          listeners.forEach(({ listener }) => listener(...args));
+        }
+        if (event === "abort") {
+          const error = args[0];
+          if (!__classPrivateFieldGet2(this, _MessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
+            Promise.reject(error);
+          }
+          __classPrivateFieldGet2(this, _MessageStream_rejectConnectedPromise, "f").call(this, error);
+          __classPrivateFieldGet2(this, _MessageStream_rejectEndPromise, "f").call(this, error);
+          this._emit("end");
+          return;
+        }
+        if (event === "error") {
+          const error = args[0];
+          if (!__classPrivateFieldGet2(this, _MessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
+            Promise.reject(error);
+          }
+          __classPrivateFieldGet2(this, _MessageStream_rejectConnectedPromise, "f").call(this, error);
+          __classPrivateFieldGet2(this, _MessageStream_rejectEndPromise, "f").call(this, error);
+          this._emit("end");
+        }
+      }
+      _emitFinal() {
+        const finalMessage = this.receivedMessages.at(-1);
+        if (finalMessage) {
+          this._emit("finalMessage", __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_getFinalMessage).call(this));
+        }
+      }
+      async _fromReadableStream(readableStream, options) {
+        const signal = options?.signal;
+        let abortHandler;
+        if (signal) {
+          if (signal.aborted)
+            this.controller.abort();
+          abortHandler = this.controller.abort.bind(this.controller);
+          signal.addEventListener("abort", abortHandler);
+        }
+        try {
+          __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_beginRequest).call(this);
+          this._connected(null);
+          const stream = Stream2.fromReadableStream(readableStream, this.controller);
+          for await (const event of stream) {
+            __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_addStreamEvent).call(this, event);
+          }
+          if (stream.controller.signal?.aborted) {
+            throw new APIUserAbortError2();
+          }
+          __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_endRequest).call(this);
+        } finally {
+          if (signal && abortHandler) {
+            signal.removeEventListener("abort", abortHandler);
+          }
+        }
+      }
+      [(_MessageStream_currentMessageSnapshot = /* @__PURE__ */ new WeakMap(), _MessageStream_params = /* @__PURE__ */ new WeakMap(), _MessageStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _MessageStream_resolveConnectedPromise = /* @__PURE__ */ new WeakMap(), _MessageStream_rejectConnectedPromise = /* @__PURE__ */ new WeakMap(), _MessageStream_endPromise = /* @__PURE__ */ new WeakMap(), _MessageStream_resolveEndPromise = /* @__PURE__ */ new WeakMap(), _MessageStream_rejectEndPromise = /* @__PURE__ */ new WeakMap(), _MessageStream_listeners = /* @__PURE__ */ new WeakMap(), _MessageStream_ended = /* @__PURE__ */ new WeakMap(), _MessageStream_errored = /* @__PURE__ */ new WeakMap(), _MessageStream_aborted = /* @__PURE__ */ new WeakMap(), _MessageStream_catchingPromiseCreated = /* @__PURE__ */ new WeakMap(), _MessageStream_response = /* @__PURE__ */ new WeakMap(), _MessageStream_request_id = /* @__PURE__ */ new WeakMap(), _MessageStream_logger = /* @__PURE__ */ new WeakMap(), _MessageStream_handleError = /* @__PURE__ */ new WeakMap(), _MessageStream_instances = /* @__PURE__ */ new WeakSet(), _MessageStream_getFinalMessage = function _MessageStream_getFinalMessage2() {
+        if (this.receivedMessages.length === 0) {
+          throw new AnthropicError("stream ended without producing a Message with role=assistant");
+        }
+        return this.receivedMessages.at(-1);
+      }, _MessageStream_getFinalText = function _MessageStream_getFinalText2() {
+        if (this.receivedMessages.length === 0) {
+          throw new AnthropicError("stream ended without producing a Message with role=assistant");
+        }
+        const textBlocks = this.receivedMessages.at(-1).content.filter((block) => block.type === "text").map((block) => block.text);
+        if (textBlocks.length === 0) {
+          throw new AnthropicError("stream ended without producing a content block with type=text");
+        }
+        return textBlocks.join(" ");
+      }, _MessageStream_beginRequest = function _MessageStream_beginRequest2() {
+        if (this.ended)
+          return;
+        __classPrivateFieldSet2(this, _MessageStream_currentMessageSnapshot, void 0, "f");
+      }, _MessageStream_addStreamEvent = function _MessageStream_addStreamEvent2(event) {
+        if (this.ended)
+          return;
+        const messageSnapshot = __classPrivateFieldGet2(this, _MessageStream_instances, "m", _MessageStream_accumulateMessage).call(this, event);
+        this._emit("streamEvent", event, messageSnapshot);
+        switch (event.type) {
+          case "content_block_delta": {
+            const content = messageSnapshot.content.at(-1);
+            switch (event.delta.type) {
+              case "text_delta": {
+                if (content.type === "text") {
+                  this._emit("text", event.delta.text, content.text || "");
+                }
+                break;
+              }
+              case "citations_delta": {
+                if (content.type === "text") {
+                  this._emit("citation", event.delta.citation, content.citations ?? []);
+                }
+                break;
+              }
+              case "input_json_delta": {
+                if (tracksToolInput2(content) && content.input) {
+                  this._emit("inputJson", event.delta.partial_json, content.input);
+                }
+                break;
+              }
+              case "thinking_delta": {
+                if (content.type === "thinking") {
+                  this._emit("thinking", event.delta.thinking, content.thinking);
+                }
+                break;
+              }
+              case "signature_delta": {
+                if (content.type === "thinking") {
+                  this._emit("signature", content.signature);
+                }
+                break;
+              }
+              default:
+                checkNever2(event.delta);
+            }
+            break;
+          }
+          case "message_stop": {
+            this._addMessageParam(messageSnapshot);
+            this._addMessage(maybeParseMessage(messageSnapshot, __classPrivateFieldGet2(this, _MessageStream_params, "f"), { logger: __classPrivateFieldGet2(this, _MessageStream_logger, "f") }), true);
+            break;
+          }
+          case "content_block_stop": {
+            this._emit("contentBlock", messageSnapshot.content.at(-1));
+            break;
+          }
+          case "message_start": {
+            __classPrivateFieldSet2(this, _MessageStream_currentMessageSnapshot, messageSnapshot, "f");
+            break;
+          }
+          case "content_block_start":
+          case "message_delta":
+            break;
+        }
+      }, _MessageStream_endRequest = function _MessageStream_endRequest2() {
+        if (this.ended) {
+          throw new AnthropicError(`stream has ended, this shouldn't happen`);
+        }
+        const snapshot = __classPrivateFieldGet2(this, _MessageStream_currentMessageSnapshot, "f");
+        if (!snapshot) {
+          throw new AnthropicError(`request ended without sending any chunks`);
+        }
+        __classPrivateFieldSet2(this, _MessageStream_currentMessageSnapshot, void 0, "f");
+        return maybeParseMessage(snapshot, __classPrivateFieldGet2(this, _MessageStream_params, "f"), { logger: __classPrivateFieldGet2(this, _MessageStream_logger, "f") });
+      }, _MessageStream_accumulateMessage = function _MessageStream_accumulateMessage2(event) {
+        let snapshot = __classPrivateFieldGet2(this, _MessageStream_currentMessageSnapshot, "f");
+        if (event.type === "message_start") {
+          if (snapshot) {
+            throw new AnthropicError(`Unexpected event order, got ${event.type} before receiving "message_stop"`);
+          }
+          return event.message;
+        }
+        if (!snapshot) {
+          throw new AnthropicError(`Unexpected event order, got ${event.type} before "message_start"`);
+        }
+        switch (event.type) {
+          case "message_stop":
+            return snapshot;
+          case "message_delta":
+            snapshot.stop_reason = event.delta.stop_reason;
+            snapshot.stop_sequence = event.delta.stop_sequence;
+            if (event.delta.stop_details != null) {
+              snapshot.stop_details = event.delta.stop_details;
+            }
+            snapshot.usage.output_tokens = event.usage.output_tokens;
+            if (event.usage.input_tokens != null) {
+              snapshot.usage.input_tokens = event.usage.input_tokens;
+            }
+            if (event.usage.cache_creation_input_tokens != null) {
+              snapshot.usage.cache_creation_input_tokens = event.usage.cache_creation_input_tokens;
+            }
+            if (event.usage.cache_read_input_tokens != null) {
+              snapshot.usage.cache_read_input_tokens = event.usage.cache_read_input_tokens;
+            }
+            if (event.usage.server_tool_use != null) {
+              snapshot.usage.server_tool_use = event.usage.server_tool_use;
+            }
+            return snapshot;
+          case "content_block_start":
+            snapshot.content.push({ ...event.content_block });
+            return snapshot;
+          case "content_block_delta": {
+            const snapshotContent = snapshot.content.at(event.index);
+            switch (event.delta.type) {
+              case "text_delta": {
+                if (snapshotContent?.type === "text") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    text: (snapshotContent.text || "") + event.delta.text
+                  };
+                }
+                break;
+              }
+              case "citations_delta": {
+                if (snapshotContent?.type === "text") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    citations: [...snapshotContent.citations ?? [], event.delta.citation]
+                  };
+                }
+                break;
+              }
+              case "input_json_delta": {
+                if (snapshotContent && tracksToolInput2(snapshotContent)) {
+                  let jsonBuf = snapshotContent[JSON_BUF_PROPERTY2] || "";
+                  jsonBuf += event.delta.partial_json;
+                  const newContent = { ...snapshotContent };
+                  Object.defineProperty(newContent, JSON_BUF_PROPERTY2, {
+                    value: jsonBuf,
+                    enumerable: false,
+                    writable: true
+                  });
+                  if (jsonBuf) {
+                    newContent.input = partialParse2(jsonBuf);
+                  }
+                  snapshot.content[event.index] = newContent;
+                }
+                break;
+              }
+              case "thinking_delta": {
+                if (snapshotContent?.type === "thinking") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    thinking: snapshotContent.thinking + event.delta.thinking
+                  };
+                }
+                break;
+              }
+              case "signature_delta": {
+                if (snapshotContent?.type === "thinking") {
+                  snapshot.content[event.index] = {
+                    ...snapshotContent,
+                    signature: event.delta.signature
+                  };
+                }
+                break;
+              }
+              default:
+                checkNever2(event.delta);
+            }
+            return snapshot;
+          }
+          case "content_block_stop":
+            return snapshot;
+        }
+      }, Symbol.asyncIterator)]() {
+        const pushQueue = [];
+        const readQueue = [];
+        let done = false;
+        this.on("streamEvent", (event) => {
+          const reader = readQueue.shift();
+          if (reader) {
+            reader.resolve(event);
+          } else {
+            pushQueue.push(event);
+          }
+        });
+        this.on("end", () => {
+          done = true;
+          for (const reader of readQueue) {
+            reader.resolve(void 0);
+          }
+          readQueue.length = 0;
+        });
+        this.on("abort", (err) => {
+          done = true;
+          for (const reader of readQueue) {
+            reader.reject(err);
+          }
+          readQueue.length = 0;
+        });
+        this.on("error", (err) => {
+          done = true;
+          for (const reader of readQueue) {
+            reader.reject(err);
+          }
+          readQueue.length = 0;
+        });
+        return {
+          next: async () => {
+            if (!pushQueue.length) {
+              if (done) {
+                return { value: void 0, done: true };
+              }
+              return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+            }
+            const chunk = pushQueue.shift();
+            return { value: chunk, done: false };
+          },
+          return: async () => {
+            this.abort();
+            return { value: void 0, done: true };
+          }
+        };
+      }
+      toReadableStream() {
+        const stream = new Stream2(this[Symbol.asyncIterator].bind(this), this.controller);
+        return stream.toReadableStream();
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
+var Batches3;
+var init_batches2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_jsonl();
+    init_error2();
+    init_path();
+    Batches3 = class extends APIResource2 {
+      /**
+       * Send a batch of Message creation requests.
+       *
+       * The Message Batches API can be used to process multiple Messages API requests at
+       * once. Once a Message Batch is created, it begins processing immediately. Batches
+       * can take up to 24 hours to complete.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const messageBatch = await client.messages.batches.create({
+       *   requests: [
+       *     {
+       *       custom_id: 'my-custom-id-1',
+       *       params: {
+       *         max_tokens: 1024,
+       *         messages: [
+       *           { content: 'Hello, world', role: 'user' },
+       *         ],
+       *         model: 'claude-opus-4-6',
+       *       },
+       *     },
+       *   ],
+       * });
+       * ```
+       */
+      create(body, options) {
+        return this._client.post("/v1/messages/batches", { body, ...options });
+      }
+      /**
+       * This endpoint is idempotent and can be used to poll for Message Batch
+       * completion. To access the results of a Message Batch, make a request to the
+       * `results_url` field in the response.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const messageBatch = await client.messages.batches.retrieve(
+       *   'message_batch_id',
+       * );
+       * ```
+       */
+      retrieve(messageBatchID, options) {
+        return this._client.get(path2`/v1/messages/batches/${messageBatchID}`, options);
+      }
+      /**
+       * List all Message Batches within a Workspace. Most recently created batches are
+       * returned first.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * // Automatically fetches more pages as needed.
+       * for await (const messageBatch of client.messages.batches.list()) {
+       *   // ...
+       * }
+       * ```
+       */
+      list(query = {}, options) {
+        return this._client.getAPIList("/v1/messages/batches", Page2, { query, ...options });
+      }
+      /**
+       * Delete a Message Batch.
+       *
+       * Message Batches can only be deleted once they've finished processing. If you'd
+       * like to delete an in-progress batch, you must first cancel it.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const deletedMessageBatch =
+       *   await client.messages.batches.delete('message_batch_id');
+       * ```
+       */
+      delete(messageBatchID, options) {
+        return this._client.delete(path2`/v1/messages/batches/${messageBatchID}`, options);
+      }
+      /**
+       * Batches may be canceled any time before processing ends. Once cancellation is
+       * initiated, the batch enters a `canceling` state, at which time the system may
+       * complete any in-progress, non-interruptible requests before finalizing
+       * cancellation.
+       *
+       * The number of canceled requests is specified in `request_counts`. To determine
+       * which requests were canceled, check the individual results within the batch.
+       * Note that cancellation may not result in any canceled requests if they were
+       * non-interruptible.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const messageBatch = await client.messages.batches.cancel(
+       *   'message_batch_id',
+       * );
+       * ```
+       */
+      cancel(messageBatchID, options) {
+        return this._client.post(path2`/v1/messages/batches/${messageBatchID}/cancel`, options);
+      }
+      /**
+       * Streams the results of a Message Batch as a `.jsonl` file.
+       *
+       * Each line in the file is a JSON object containing the result of a single request
+       * in the Message Batch. Results are not guaranteed to be in the same order as
+       * requests. Use the `custom_id` field to match results to requests.
+       *
+       * Learn more about the Message Batches API in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
+       *
+       * @example
+       * ```ts
+       * const messageBatchIndividualResponse =
+       *   await client.messages.batches.results('message_batch_id');
+       * ```
+       */
+      async results(messageBatchID, options) {
+        const batch = await this.retrieve(messageBatchID);
+        if (!batch.results_url) {
+          throw new AnthropicError(`No batch \`results_url\`; Has it finished processing? ${batch.processing_status} - ${batch.id}`);
+        }
+        return this._client.get(batch.results_url, {
+          ...options,
+          headers: buildHeaders2([{ Accept: "application/binary" }, options?.headers]),
+          stream: true,
+          __binaryResponse: true
+        })._thenUnwrap((_, props) => JSONLDecoder.fromResponse(props.response, props.controller));
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
+var Messages4, DEPRECATED_MODELS2, MODELS_TO_WARN_WITH_THINKING_ENABLED2;
+var init_messages2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs"() {
+    init_resource();
+    init_headers();
+    init_stainless_helper_header();
+    init_MessageStream();
+    init_parser2();
+    init_batches2();
+    init_batches2();
+    init_constants();
+    Messages4 = class extends APIResource2 {
+      constructor() {
+        super(...arguments);
+        this.batches = new Batches3(this._client);
+      }
+      create(body, options) {
+        if (body.model in DEPRECATED_MODELS2) {
+          console.warn(`The model '${body.model}' is deprecated and will reach end-of-life on ${DEPRECATED_MODELS2[body.model]}
+Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resources/model-deprecations for more information.`);
+        }
+        if (MODELS_TO_WARN_WITH_THINKING_ENABLED2.includes(body.model) && body.thinking && body.thinking.type === "enabled") {
+          console.warn(`Using Claude with ${body.model} and 'thinking.type=enabled' is deprecated. Use 'thinking.type=adaptive' instead which results in better model performance in our testing: https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking`);
+        }
+        let timeout = this._client._options.timeout;
+        if (!body.stream && timeout == null) {
+          const maxNonstreamingTokens = MODEL_NONSTREAMING_TOKENS[body.model] ?? void 0;
+          timeout = this._client.calculateNonstreamingTimeout(body.max_tokens, maxNonstreamingTokens);
+        }
+        const helperHeader = stainlessHelperHeader(body.tools, body.messages);
+        return this._client.post("/v1/messages", {
+          body,
+          timeout: timeout ?? 6e5,
+          ...options,
+          headers: buildHeaders2([helperHeader, options?.headers]),
+          stream: body.stream ?? false
+        });
+      }
+      /**
+       * Send a structured list of input messages with text and/or image content, along with an expected `output_config.format` and
+       * the response will be automatically parsed and available in the `parsed_output` property of the message.
+       *
+       * @example
+       * ```ts
+       * const message = await client.messages.parse({
+       *   model: 'claude-sonnet-4-5-20250929',
+       *   max_tokens: 1024,
+       *   messages: [{ role: 'user', content: 'What is 2+2?' }],
+       *   output_config: {
+       *     format: zodOutputFormat(z.object({ answer: z.number() })),
+       *   },
+       * });
+       *
+       * console.log(message.parsed_output?.answer); // 4
+       * ```
+       */
+      parse(params, options) {
+        return this.create(params, options).then((message) => parseMessage(message, params, { logger: this._client.logger ?? console }));
+      }
+      /**
+       * Create a Message stream.
+       *
+       * If `output_config.format` is provided with a parseable format (like `zodOutputFormat()`),
+       * the final message will include a `parsed_output` property with the parsed content.
+       *
+       * @example
+       * ```ts
+       * const stream = client.messages.stream({
+       *   model: 'claude-sonnet-4-5-20250929',
+       *   max_tokens: 1024,
+       *   messages: [{ role: 'user', content: 'What is 2+2?' }],
+       *   output_config: {
+       *     format: zodOutputFormat(z.object({ answer: z.number() })),
+       *   },
+       * });
+       *
+       * const message = await stream.finalMessage();
+       * console.log(message.parsed_output?.answer); // 4
+       * ```
+       */
+      stream(body, options) {
+        return MessageStream.createMessage(this, body, options, { logger: this._client.logger ?? console });
+      }
+      /**
+       * Count the number of tokens in a Message.
+       *
+       * The Token Count API can be used to count the number of tokens in a Message,
+       * including tools, images, and documents, without creating it.
+       *
+       * Learn more about token counting in our
+       * [user guide](https://docs.claude.com/en/docs/build-with-claude/token-counting)
+       *
+       * @example
+       * ```ts
+       * const messageTokensCount =
+       *   await client.messages.countTokens({
+       *     messages: [{ content: 'Hello, world', role: 'user' }],
+       *     model: 'claude-opus-4-6',
+       *   });
+       * ```
+       */
+      countTokens(body, options) {
+        return this._client.post("/v1/messages/count_tokens", { body, ...options });
+      }
+    };
+    DEPRECATED_MODELS2 = {
+      "claude-1.3": "November 6th, 2024",
+      "claude-1.3-100k": "November 6th, 2024",
+      "claude-instant-1.1": "November 6th, 2024",
+      "claude-instant-1.1-100k": "November 6th, 2024",
+      "claude-instant-1.2": "November 6th, 2024",
+      "claude-3-sonnet-20240229": "July 21st, 2025",
+      "claude-3-opus-20240229": "January 5th, 2026",
+      "claude-2.1": "July 21st, 2025",
+      "claude-2.0": "July 21st, 2025",
+      "claude-3-7-sonnet-latest": "February 19th, 2026",
+      "claude-3-7-sonnet-20250219": "February 19th, 2026",
+      "claude-3-5-haiku-latest": "February 19th, 2026",
+      "claude-3-5-haiku-20241022": "February 19th, 2026",
+      "claude-opus-4-0": "June 15th, 2026",
+      "claude-opus-4-20250514": "June 15th, 2026",
+      "claude-sonnet-4-0": "June 15th, 2026",
+      "claude-sonnet-4-20250514": "June 15th, 2026",
+      "claude-opus-4-1": "August 5th, 2026",
+      "claude-opus-4-1-20250805": "August 5th, 2026",
+      "claude-mythos-preview": "June 30th, 2026"
+    };
+    MODELS_TO_WARN_WITH_THINKING_ENABLED2 = ["claude-mythos-preview", "claude-opus-4-6"];
+    Messages4.Batches = Batches3;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/models.mjs
+var Models3;
+var init_models2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/models.mjs"() {
+    init_resource();
+    init_pagination();
+    init_headers();
+    init_path();
+    Models3 = class extends APIResource2 {
+      /**
+       * Get a specific model.
+       *
+       * The Models API response can be used to determine information about a specific
+       * model or resolve a model alias to a model ID.
+       */
+      retrieve(modelID, params = {}, options) {
+        const { betas } = params ?? {};
+        return this._client.get(path2`/v1/models/${modelID}`, {
+          ...options,
+          headers: buildHeaders2([
+            { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
+            options?.headers
+          ])
+        });
+      }
+      /**
+       * List available models.
+       *
+       * The Models API response can be used to determine which models are available for
+       * use in the API. More recently released models are listed first.
+       */
+      list(params = {}, options) {
+        const { betas, ...query } = params ?? {};
+        return this._client.getAPIList("/v1/models", Page2, {
+          query,
+          ...options,
+          headers: buildHeaders2([
+            { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
+            options?.headers
+          ])
+        });
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/index.mjs
+var init_resources2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/index.mjs"() {
+    init_shared();
+    init_beta();
+    init_completions();
+    init_messages2();
+    init_models2();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/client.mjs
+var _BaseAnthropic_instances, _a3, _BaseAnthropic_encoder, _BaseAnthropic_baseURLOverridden, HUMAN_PROMPT, AI_PROMPT, BaseAnthropic, Anthropic;
+var init_client = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/client.mjs"() {
+    init_tslib();
+    init_uuid();
+    init_values();
+    init_sleep();
+    init_errors();
+    init_detect_platform();
+    init_shims();
+    init_request_options();
+    init_query();
+    init_version();
+    init_error();
+    init_types();
+    init_token_cache();
+    init_credential_chain();
+    init_middleware();
+    init_pagination();
+    init_uploads2();
+    init_resources2();
+    init_api_promise();
+    init_completions();
+    init_models2();
+    init_beta();
+    init_messages2();
+    init_detect_platform();
+    init_headers();
+    init_env();
+    init_log();
+    init_values();
+    HUMAN_PROMPT = "\\n\\nHuman:";
+    AI_PROMPT = "\\n\\nAssistant:";
+    BaseAnthropic = class {
+      /**
+       * The active credential provider. Default credential resolution runs once
+       * at construction time. If it fails, the error is surfaced on every
+       * request and the client must be reconstructed — there is no retry path.
+       *
+       * Clones returned by {@link withOptions} share the parent's auth state
+       * (provider, token cache, pending resolution, and any resolution error)
+       * unless the caller passes an explicit `apiKey`, `authToken`,
+       * `credentials`, `config`, or `profile` override.
+       */
+      get credentials() {
+        return this._authState.provider;
+      }
+      /**
+       * API Client for interfacing with the Anthropic API.
+       *
+       * @param {string | null | undefined} [opts.apiKey=process.env['ANTHROPIC_API_KEY'] ?? null]
+       * @param {string | null | undefined} [opts.authToken=process.env['ANTHROPIC_AUTH_TOKEN'] ?? null]
+       * @param {string | null | undefined} [opts.webhookKey=process.env['ANTHROPIC_WEBHOOK_SIGNING_KEY'] ?? null]
+       * @param {string} [opts.baseURL=process.env['ANTHROPIC_BASE_URL'] ?? https://api.anthropic.com] - Override the default base URL for the API.
+       * @param {number} [opts.timeout=10 minutes] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
+       * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
+       * @param {Fetch} [opts.fetch] - Specify a custom `fetch` function implementation.
+       * @param {number} [opts.maxRetries=2] - The maximum number of times the client will retry a request.
+       * @param {HeadersLike} opts.defaultHeaders - Default headers to include with every request to the API.
+       * @param {Record<string, string | undefined>} opts.defaultQuery - Default query parameters to include with every request to the API.
+       * @param {boolean} [opts.dangerouslyAllowBrowser=false] - By default, client-side use of this library is not allowed, as it risks exposing your secret API credentials to attackers.
+       */
+      constructor({ baseURL = readEnv2("ANTHROPIC_BASE_URL"), apiKey, authToken, webhookKey = readEnv2("ANTHROPIC_WEBHOOK_SIGNING_KEY") ?? null, ...opts } = {}) {
+        _BaseAnthropic_instances.add(this);
+        this._requestAuthFlags = /* @__PURE__ */ new WeakMap();
+        _BaseAnthropic_encoder.set(this, void 0);
+        if (apiKey === void 0) {
+          apiKey = opts.profile != null ? null : readEnv2("ANTHROPIC_API_KEY") ?? null;
+        }
+        if (authToken === void 0) {
+          authToken = opts.profile != null ? null : readEnv2("ANTHROPIC_AUTH_TOKEN") ?? null;
+        }
+        if (opts.profile != null && (opts.credentials != null || opts.config != null)) {
+          throw new TypeError("Pass at most one of `profile`, `credentials`, or `config`.");
+        }
+        const options = {
+          apiKey,
+          authToken,
+          webhookKey,
+          ...opts,
+          baseURL: baseURL || `https://api.anthropic.com`
+        };
+        if (!options.dangerouslyAllowBrowser && isRunningInBrowser2()) {
+          throw new AnthropicError("It looks like you're running in a browser-like environment.\n\nThis is disabled by default, as it risks exposing your secret API credentials to attackers.\nIf you understand the risks and have appropriate mitigations in place,\nyou can set the `dangerouslyAllowBrowser` option to `true`, e.g.,\n\nnew Anthropic({ apiKey, dangerouslyAllowBrowser: true });\n");
+        }
+        this.baseURL = options.baseURL;
+        this._baseURLIsExplicit = opts.__baseURLIsExplicit ?? !!baseURL;
+        this.timeout = options.timeout ?? _a3.DEFAULT_TIMEOUT;
+        this.logger = options.logger ?? console;
+        this.logLevel = defaultLogLevel;
+        this.logLevel = parseLogLevel2(options.logLevel, "ClientOptions.logLevel", loggerFor2(this)) ?? parseLogLevel2(readEnv2("ANTHROPIC_LOG"), "process.env['ANTHROPIC_LOG']", loggerFor2(this)) ?? defaultLogLevel;
+        this.fetchOptions = options.fetchOptions;
+        this.maxRetries = options.maxRetries ?? 2;
+        this.fetch = options.fetch ?? getDefaultFetch2();
+        __classPrivateFieldSet2(this, _BaseAnthropic_encoder, FallbackEncoder2, "f");
+        this.middleware = [...options.middleware ?? []];
+        const customHeadersEnv = readEnv2("ANTHROPIC_CUSTOM_HEADERS");
+        if (customHeadersEnv) {
+          const parsed = {};
+          for (const line of customHeadersEnv.split("\n")) {
+            const colon = line.indexOf(":");
+            if (colon >= 0) {
+              parsed[line.substring(0, colon).trim()] = line.substring(colon + 1).trim();
+            }
+          }
+          options.defaultHeaders = { ...parsed, ...options.defaultHeaders };
+        }
+        const inherited = opts.__auth;
+        delete options.__auth;
+        delete options.__baseURLIsExplicit;
+        this._options = options;
+        this.apiKey = typeof apiKey === "string" ? apiKey : null;
+        this.authToken = authToken;
+        this.webhookKey = webhookKey;
+        if (inherited) {
+          this._authState = inherited;
+          if (!this._baseURLIsExplicit && inherited.baseURL) {
+            this.baseURL = inherited.baseURL;
+          }
+        } else {
+          this._authState = { provider: null, tokenCache: null, resolution: null, error: null, extraHeaders: {} };
+          if (this.apiKey == null && this.authToken == null) {
+            const credentials = options.credentials ?? null;
+            if (credentials) {
+              this._authState.provider = credentials;
+              this._authState.tokenCache = this._makeTokenCache(credentials);
+            } else if (options.config != null) {
+              const result = resolveCredentialsFromConfig(options.config, this._credentialResolverOptions());
+              this._authState.provider = result.provider;
+              this._authState.tokenCache = this._makeTokenCache(result.provider);
+              this._authState.extraHeaders = result.extraHeaders;
+              this._applyCredentialBaseURL(result.baseURL);
+            } else if (options.profile != null) {
+              this._authState.resolution = this._resolveDefaultCredentials(options.profile);
+            } else {
+              this._authState.resolution = this._resolveDefaultCredentials();
+            }
+          }
+        }
+      }
+      /**
+       * Stores a profile/config-supplied base URL on the shared auth state and, if
+       * the caller did not pin `baseURL` via constructor option or env, adopts it
+       * as this client's outbound API host. Precedence: ctor opt > env > profile >
+       * hardcoded default.
+       */
+      _applyCredentialBaseURL(baseURL) {
+        if (!baseURL)
+          return;
+        const normalized = baseURL.replace(/\/+$/, "");
+        this._authState.baseURL = normalized;
+        if (!this._baseURLIsExplicit) {
+          this.baseURL = normalized;
+        }
+      }
+      /**
+       * Options bag passed into the credential chain. `baseURL` here is only the
+       * fallback host for the token-exchange POST when the config itself omits
+       * `base_url`; the chain returns the config's own `base_url` (if any) on
+       * {@link CredentialResult.baseURL}, which {@link _applyCredentialBaseURL}
+       * then adopts for outbound API requests. The two are deliberately decoupled
+       * so this fallback never round-trips into precedence.
+       */
+      _credentialResolverOptions() {
+        return {
+          baseURL: this.baseURL,
+          fetch: this._credentialsFetch(),
+          userAgent: this.getUserAgent(),
+          onCacheWriteError: (err) => {
+            loggerFor2(this).debug("credential cache write failed (best-effort)", err);
+          },
+          onSafetyWarning: (msg) => {
+            loggerFor2(this).warn(msg);
+          }
+        };
+      }
+      /**
+       * A `Fetch` for first-party credential token-exchange requests (OIDC
+       * federation jwt-bearer grants, user-OAuth refresh grants) that routes
+       * through this client's middleware chain, so middleware observes token
+       * traffic like any other request. Only client-level middleware applies:
+       * a minted token is shared across requests, so attributing the exchange
+       * to any one request's per-request middleware would be arbitrary. For the
+       * same reason, `ctx.options` is undefined for these requests.
+       */
+      _credentialsFetch() {
+        return wrapFetchWithMiddleware(this.fetch, this.middleware, void 0, this);
+      }
+      _makeTokenCache(provider) {
+        return new TokenCache(provider, (err) => {
+          loggerFor2(this).debug("advisory token refresh failed; serving cached token", err);
+        });
+      }
+      /**
+       * Create a new client instance re-using the same options given to the current client with optional overriding.
+       */
+      withOptions(options) {
+        const overridesStructuredAuth = "credentials" in options || "config" in options || "profile" in options;
+        const overridesAuth = "apiKey" in options || "authToken" in options || overridesStructuredAuth;
+        const internal = {
+          ...this._options,
+          // Only forward baseURL when the caller (or env) explicitly chose it.
+          // For a non-explicit parent, this.baseURL may have been mutated to the
+          // profile-resolved host; pinning that as the clone's options.baseURL
+          // would make _options on the clone misreport caller intent and would
+          // leave the clone stuck on the parent's host across an auth override.
+          // The clone instead receives the construction-time value via
+          // ...this._options above and re-adopts the profile host through the
+          // shared _authState.baseURL + __baseURLIsExplicit=false path.
+          ...this._baseURLIsExplicit ? { baseURL: this.baseURL } : {},
+          maxRetries: this.maxRetries,
+          timeout: this.timeout,
+          logger: this.logger,
+          logLevel: this.logLevel,
+          fetch: this.fetch,
+          fetchOptions: this.fetchOptions,
+          middleware: this.middleware,
+          apiKey: this.apiKey,
+          authToken: this.authToken,
+          webhookKey: this.webhookKey,
+          // credentials: this.credentials is a no-op when __auth is shared (the
+          // ctor takes the inherited path and ignores options.credentials); when
+          // overridesAuth is true via apiKey/authToken only, it lets the clone
+          // build a fresh TokenCache around the parent's provider.
+          credentials: this.credentials,
+          // When the caller passes a structured-credential override, drop inherited
+          // structured-credential options so only `...options` supplies them —
+          // otherwise an inherited `credentials`/`config`/`profile` would trip the
+          // mutual-exclusion check or precedence over the override.
+          ...overridesStructuredAuth ? { credentials: void 0, config: void 0, profile: void 0 } : {},
+          ...options,
+          // Always set __auth so any stale value from ...this._options is
+          // overwritten. undefined means "build fresh auth from these options".
+          __auth: overridesAuth ? void 0 : this._authState,
+          __baseURLIsExplicit: "baseURL" in options ? true : this._baseURLIsExplicit
+        };
+        return new this.constructor(internal);
+      }
+      /**
+       * Lazily resolves credentials from config files or environment variables.
+       * Called once from the constructor when no explicit auth is provided, or
+       * when an explicit `profile` was passed (in which case a missing/unresolved
+       * profile is surfaced as an error instead of falling through to "no auth").
+       * The returned promise is stored and awaited on the first request.
+       */
+      async _resolveDefaultCredentials(profile) {
+        try {
+          const result = await defaultCredentials(this._credentialResolverOptions(), profile);
+          if (result) {
+            this._authState.provider = result.provider;
+            this._authState.tokenCache = this._makeTokenCache(result.provider);
+            this._authState.extraHeaders = result.extraHeaders;
+            this._applyCredentialBaseURL(result.baseURL);
+          } else if (profile != null) {
+            throw new AnthropicError(`Profile "${profile}" could not be resolved (no <config_dir>/configs/${profile}.json found).`);
+          }
+        } catch (err) {
+          this._authState.error = err;
+        } finally {
+          this._authState.resolution = null;
+        }
+      }
+      defaultQuery() {
+        return this._options.defaultQuery;
+      }
+      validateHeaders({ values, nulls }) {
+        if (values.get("x-api-key") || values.get("authorization")) {
+          return;
+        }
+        if (this._authState.error) {
+          throw this._authState.error;
+        }
+        if (this._authState.tokenCache || this._authState.resolution) {
+          return;
+        }
+        if (this.apiKey && values.get("x-api-key")) {
+          return;
+        }
+        if (nulls.has("x-api-key")) {
+          return;
+        }
+        if (this.authToken && values.get("authorization")) {
+          return;
+        }
+        if (nulls.has("authorization")) {
+          return;
+        }
+        throw new Error('Could not resolve authentication method. Expected one of apiKey, authToken, credentials, config, or profile to be set. Or for one of the "X-Api-Key" or "Authorization" headers to be explicitly omitted');
+      }
+      _authFlags(opts) {
+        let flags = this._requestAuthFlags.get(opts);
+        if (!flags) {
+          flags = { usedTokenCache: false, didRefreshFor401: false };
+          this._requestAuthFlags.set(opts, flags);
+        }
+        return flags;
+      }
+      async authHeaders(opts) {
+        if (this._authState.resolution) {
+          await this._authState.resolution;
+        }
+        if (this._authState.error) {
+          return void 0;
+        }
+        if (this._authState.tokenCache && this.apiKey == null) {
+          const token = await this._authState.tokenCache.getToken();
+          this._authFlags(opts).usedTokenCache = true;
+          return buildHeaders2([{ Authorization: `Bearer ${token}` }]);
+        }
+        return buildHeaders2([await this.apiKeyAuth(opts), await this.bearerAuth(opts)]);
+      }
+      async apiKeyAuth(opts) {
+        if (this.apiKey == null) {
+          return void 0;
+        }
+        return buildHeaders2([{ "X-Api-Key": this.apiKey }]);
+      }
+      async bearerAuth(opts) {
+        if (this.authToken == null) {
+          return void 0;
+        }
+        return buildHeaders2([{ Authorization: `Bearer ${this.authToken}` }]);
+      }
+      stringifyQuery(query) {
+        return stringifyQuery2(query);
+      }
+      getUserAgent() {
+        return `${this.constructor.name}/JS ${VERSION2}`;
+      }
+      defaultIdempotencyKey() {
+        return `stainless-node-retry-${uuid42()}`;
+      }
+      makeStatusError(status, error, message, headers) {
+        return APIError2.generate(status, error, message, headers);
+      }
+      buildURL(path6, query, defaultBaseURL) {
+        const baseURL = !__classPrivateFieldGet2(this, _BaseAnthropic_instances, "m", _BaseAnthropic_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
+        const url = isAbsoluteURL2(path6) ? new URL(path6) : new URL(baseURL + (baseURL.endsWith("/") && path6.startsWith("/") ? path6.slice(1) : path6));
+        const defaultQuery = this.defaultQuery();
+        const pathQuery = Object.fromEntries(url.searchParams);
+        if (!isEmptyObj2(defaultQuery) || !isEmptyObj2(pathQuery)) {
+          query = { ...pathQuery, ...defaultQuery, ...query };
+        }
+        if (typeof query === "object" && query && !Array.isArray(query)) {
+          url.search = this.stringifyQuery(query);
+        }
+        return url.toString();
+      }
+      _calculateNonstreamingTimeout(maxTokens) {
+        const defaultTimeout = 10 * 60;
+        const expectedTimeout = 60 * 60 * maxTokens / 128e3;
+        if (expectedTimeout > defaultTimeout) {
+          throw new AnthropicError("Streaming is required for operations that may take longer than 10 minutes. See https://github.com/anthropics/anthropic-sdk-typescript#streaming-responses for more details");
+        }
+        return defaultTimeout * 1e3;
+      }
+      /**
+       * Used as a callback for mutating the given `FinalRequestOptions` object.
+       */
+      async prepareOptions(options) {
+      }
+      /**
+       * Used as a callback for mutating the given `RequestInit` object.
+       *
+       * This is useful for cases where you want to add certain headers based off of
+       * the request properties, e.g. `method` or `url`.
+       *
+       * Runs after all middleware (including {@link backendMiddleware}),
+       * immediately before each underlying fetch call, so it sees exactly what
+       * goes over the wire. Middleware may replay a request by calling `next()`
+       * more than once, so this hook can run multiple times per attempt:
+       * overrides must be idempotent and overwrite headers from a previous
+       * invocation rather than append to them.
+       */
+      async prepareRequest(request, { url, options }) {
+        if (this._authState.tokenCache && this.apiKey == null) {
+          const headers = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
+          for (const [k, v] of Object.entries(this._authState.extraHeaders)) {
+            if (!headers.has(k))
+              headers.set(k, v);
+          }
+          const existing = headers.get("anthropic-beta")?.split(",").map((s) => s.trim());
+          if (!existing?.includes(OAUTH_API_BETA_HEADER)) {
+            headers.append("anthropic-beta", OAUTH_API_BETA_HEADER);
+          }
+          request.headers = headers;
+        }
+      }
+      /**
+       * Internal {@link Middleware} composed innermost in the chain — inside both
+       * client-level and per-request middleware, immediately around the underlying
+       * `fetch`. Subclasses for third-party backends override this to adapt the
+       * canonical Anthropic-shaped request to the backend's wire shape (URL/body
+       * rewriting, request signing) and to normalize the wire response back to the
+       * canonical shape (e.g. AWS EventStream to SSE).
+       *
+       * Running inside the user's middleware means user middleware always observes
+       * canonical Anthropic-shaped traffic, and the adaptation re-runs (e.g.
+       * re-signs) on every `next()` invocation, covering whatever the middleware
+       * mutated.
+       *
+       * Errors thrown here follow the middleware error policy: they propagate to
+       * the caller as-is — no retries, no `APIConnectionError` wrapping — unless
+       * retryable (see {@link Middleware}); throw a `RetryableError` to opt into
+       * the retry path.
+       */
+      backendMiddleware() {
+        return [];
+      }
+      get(path6, opts) {
+        return this.methodRequest("get", path6, opts);
+      }
+      post(path6, opts) {
+        return this.methodRequest("post", path6, opts);
+      }
+      patch(path6, opts) {
+        return this.methodRequest("patch", path6, opts);
+      }
+      put(path6, opts) {
+        return this.methodRequest("put", path6, opts);
+      }
+      delete(path6, opts) {
+        return this.methodRequest("delete", path6, opts);
+      }
+      methodRequest(method, path6, opts) {
+        return this.request(Promise.resolve(opts).then((opts2) => {
+          return { method, path: path6, ...opts2 };
+        }));
+      }
+      request(options, remainingRetries = null) {
+        return new APIPromise2(this, this.makeRequest(options, remainingRetries, void 0));
+      }
+      async makeRequest(optionsInput, retriesRemaining, retryOfRequestLogID) {
+        const options = await optionsInput;
+        const maxRetries = options.maxRetries ?? this.maxRetries;
+        if (retriesRemaining == null) {
+          retriesRemaining = maxRetries;
+          this._requestAuthFlags.delete(options);
+        }
+        await this.prepareOptions(options);
+        const { req, url, timeout } = await this.buildRequest(options, {
+          retryCount: maxRetries - retriesRemaining
+        });
+        const requestLogID = "log_" + (Math.random() * (1 << 24) | 0).toString(16).padStart(6, "0");
+        const retryLogStr = retryOfRequestLogID === void 0 ? "" : `, retryOf: ${retryOfRequestLogID}`;
+        const startTime = Date.now();
+        if (options.signal?.aborted) {
+          throw new APIUserAbortError2();
+        }
+        const controller = new AbortController();
+        const response = await this.fetchWithTimeout(url, req, timeout, controller, options, {
+          requestLogID,
+          retryOfRequestLogID
+        }).catch(castToError2);
+        const headersTime = Date.now();
+        if (response instanceof globalThis.Error) {
+          const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
+          if (options.signal?.aborted) {
+            throw new APIUserAbortError2();
+          }
+          const isTimeout = isAbortError2(response) || /timed? ?out/i.test(String(response) + ("cause" in response ? String(response.cause) : ""));
+          const hasMiddleware = this.middleware.length > 0 || !!options.middleware?.length || this.backendMiddleware().length > 0;
+          if (hasMiddleware && !isTimeout && !isRetryableError(response)) {
+            loggerFor2(this).info(`[${requestLogID}] middleware error (not retryable)`);
+            loggerFor2(this).debug(`[${requestLogID}] middleware error (not retryable)`, formatRequestDetails2({
+              retryOfRequestLogID,
+              url,
+              durationMs: headersTime - startTime,
+              message: response.message
+            }));
+            throw response;
+          }
+          if (retriesRemaining) {
+            loggerFor2(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - ${retryMessage}`);
+            loggerFor2(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (${retryMessage})`, formatRequestDetails2({
+              retryOfRequestLogID,
+              url,
+              durationMs: headersTime - startTime,
+              message: response.message
+            }));
+            return this.retryRequest(options, retriesRemaining, retryOfRequestLogID ?? requestLogID);
+          }
+          loggerFor2(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - error; no more retries left`);
+          loggerFor2(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (error; no more retries left)`, formatRequestDetails2({
+            retryOfRequestLogID,
+            url,
+            durationMs: headersTime - startTime,
+            message: response.message
+          }));
+          if (isTimeout) {
+            throw new APIConnectionTimeoutError2();
+          }
+          if (hasMiddleware && !isFetchOriginError(response)) {
+            throw response;
+          }
+          throw new APIConnectionError2({ cause: response });
+        }
+        const specialHeaders = [...response.headers.entries()].filter(([name]) => name === "request-id").map(([name, value]) => ", " + name + ": " + JSON.stringify(value)).join("");
+        const responseInfo = `[${requestLogID}${retryLogStr}${specialHeaders}] ${req.method} ${url} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
+        if (!response.ok) {
+          const shouldRetry = await this.shouldRetry(response, options);
+          if (retriesRemaining && shouldRetry) {
+            const retryMessage2 = `retrying, ${retriesRemaining} attempts remaining`;
+            await CancelReadableStream2(response.body);
+            loggerFor2(this).info(`${responseInfo} - ${retryMessage2}`);
+            loggerFor2(this).debug(`[${requestLogID}] response error (${retryMessage2})`, formatRequestDetails2({
+              retryOfRequestLogID,
+              url: response.url,
+              status: response.status,
+              headers: response.headers,
+              durationMs: headersTime - startTime
+            }));
+            return this.retryRequest(options, retriesRemaining, retryOfRequestLogID ?? requestLogID, response.headers);
+          }
+          const retryMessage = shouldRetry ? `error; no more retries left` : `error; not retryable`;
+          loggerFor2(this).info(`${responseInfo} - ${retryMessage}`);
+          const errText = await response.text().catch((err2) => castToError2(err2).message);
+          const errJSON = safeJSON2(errText);
+          const errMessage = errJSON ? void 0 : errText;
+          loggerFor2(this).debug(`[${requestLogID}] response error (${retryMessage})`, formatRequestDetails2({
+            retryOfRequestLogID,
+            url: response.url,
+            status: response.status,
+            headers: response.headers,
+            message: errMessage,
+            durationMs: Date.now() - startTime
+          }));
+          const err = this.makeStatusError(response.status, errJSON, errMessage, response.headers);
+          throw err;
+        }
+        loggerFor2(this).info(responseInfo);
+        loggerFor2(this).debug(`[${requestLogID}] response start`, formatRequestDetails2({
+          retryOfRequestLogID,
+          url: response.url,
+          status: response.status,
+          headers: response.headers,
+          durationMs: headersTime - startTime
+        }));
+        return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
+      }
+      getAPIList(path6, Page3, opts) {
+        return this.requestAPIList(Page3, opts && "then" in opts ? opts.then((opts2) => ({ method: "get", path: path6, ...opts2 })) : { method: "get", path: path6, ...opts });
+      }
+      requestAPIList(Page3, options) {
+        const request = this.makeRequest(options, null, void 0);
+        return new PagePromise2(this, request, Page3);
+      }
+      async fetchWithTimeout(url, init, ms, controller, requestOptions, logCtx) {
+        const { signal, method, ...options } = init || {};
+        const abort = this._makeAbort(controller);
+        if (signal)
+          signal.addEventListener("abort", abort, { once: true });
+        const isReadableBody = globalThis.ReadableStream && options.body instanceof globalThis.ReadableStream || typeof options.body === "object" && options.body !== null && Symbol.asyncIterator in options.body;
+        const fetchOptions = {
+          signal: controller.signal,
+          ...isReadableBody ? { duplex: "half" } : {},
+          method: "GET",
+          ...options
+        };
+        if (method) {
+          fetchOptions.method = method.toUpperCase();
+        }
+        const baseFetch = this.fetch;
+        const timedFetch = async (innerUrl, innerInit) => {
+          const timeout = setTimeout(abort, ms);
+          try {
+            return await baseFetch.call(void 0, innerUrl, innerInit);
+          } finally {
+            clearTimeout(timeout);
+          }
+        };
+        const innerFetch = requestOptions === void 0 ? timedFetch : (async (innerUrl, innerInit = {}) => {
+          const innerUrlStr = typeof innerUrl === "string" ? innerUrl : innerUrl instanceof URL ? innerUrl.href : innerUrl.url;
+          innerInit.headers = innerInit.headers instanceof Headers ? innerInit.headers : new Headers(innerInit.headers);
+          await this.prepareRequest(innerInit, { url: innerUrlStr, options: requestOptions });
+          if (logCtx) {
+            loggerFor2(this).debug(`[${logCtx.requestLogID}] sending request`, formatRequestDetails2({
+              retryOfRequestLogID: logCtx.retryOfRequestLogID,
+              method: innerInit.method,
+              url: innerUrlStr,
+              options: requestOptions,
+              headers: innerInit.headers
+            }));
+          }
+          return timedFetch(innerUrl, innerInit);
+        });
+        const requestMiddleware = requestOptions?.middleware;
+        const backendMiddleware = this.backendMiddleware();
+        const allMiddleware = requestMiddleware?.length || backendMiddleware.length ? [...this.middleware, ...requestMiddleware ?? [], ...backendMiddleware] : this.middleware;
+        return await wrapFetchWithMiddleware(innerFetch, allMiddleware, requestOptions, this)(url, fetchOptions);
+      }
+      async shouldRetry(response, options) {
+        const flags = this._authFlags(options);
+        if (response.status === 401 && this._authState.tokenCache && flags.usedTokenCache && !flags.didRefreshFor401) {
+          flags.didRefreshFor401 = true;
+          this._authState.tokenCache.invalidate();
+          return true;
+        }
+        const shouldRetryHeader = response.headers.get("x-should-retry");
+        if (shouldRetryHeader === "true")
+          return true;
+        if (shouldRetryHeader === "false")
+          return false;
+        if (response.status === 408)
+          return true;
+        if (response.status === 409)
+          return true;
+        if (response.status === 429)
+          return true;
+        if (response.status >= 500)
+          return true;
+        return false;
+      }
+      async retryRequest(options, retriesRemaining, requestLogID, responseHeaders) {
+        let timeoutMillis;
+        const retryAfterMillisHeader = responseHeaders?.get("retry-after-ms");
+        if (retryAfterMillisHeader) {
+          const timeoutMs = parseFloat(retryAfterMillisHeader);
+          if (!Number.isNaN(timeoutMs)) {
+            timeoutMillis = timeoutMs;
+          }
+        }
+        const retryAfterHeader = responseHeaders?.get("retry-after");
+        if (retryAfterHeader && !timeoutMillis) {
+          const timeoutSeconds = parseFloat(retryAfterHeader);
+          if (!Number.isNaN(timeoutSeconds)) {
+            timeoutMillis = timeoutSeconds * 1e3;
+          } else {
+            timeoutMillis = Date.parse(retryAfterHeader) - Date.now();
+          }
+        }
+        if (timeoutMillis === void 0) {
+          const maxRetries = options.maxRetries ?? this.maxRetries;
+          timeoutMillis = this.calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries);
+        }
+        await sleep2(timeoutMillis);
+        return this.makeRequest(options, retriesRemaining - 1, requestLogID);
+      }
+      calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries) {
+        const initialRetryDelay = 0.5;
+        const maxRetryDelay = 8;
+        const numRetries = maxRetries - retriesRemaining;
+        const sleepSeconds = Math.min(initialRetryDelay * Math.pow(2, numRetries), maxRetryDelay);
+        const jitter2 = 1 - Math.random() * 0.25;
+        return sleepSeconds * jitter2 * 1e3;
+      }
+      calculateNonstreamingTimeout(maxTokens, maxNonstreamingTokens) {
+        const maxTime = 60 * 60 * 1e3;
+        const defaultTime = 60 * 10 * 1e3;
+        const expectedTime = maxTime * maxTokens / 128e3;
+        if (expectedTime > defaultTime || maxNonstreamingTokens != null && maxTokens > maxNonstreamingTokens) {
+          throw new AnthropicError("Streaming is required for operations that may take longer than 10 minutes. See https://github.com/anthropics/anthropic-sdk-typescript#long-requests for more details");
+        }
+        return defaultTime;
+      }
+      async buildRequest(inputOptions, { retryCount = 0 } = {}) {
+        const options = { ...inputOptions };
+        const { method, path: path6, query, defaultBaseURL } = options;
+        if (this._authState.resolution) {
+          await this._authState.resolution;
+        }
+        if (!this._baseURLIsExplicit && this._authState.baseURL && this.baseURL !== this._authState.baseURL) {
+          this.baseURL = this._authState.baseURL;
+        }
+        const url = this.buildURL(path6, query, defaultBaseURL);
+        if ("timeout" in options)
+          validatePositiveInteger2("timeout", options.timeout);
+        options.timeout = options.timeout ?? this.timeout;
+        const { bodyHeaders, body } = this.buildBody({ options });
+        const reqHeaders = await this.buildHeaders({ options: inputOptions, method, bodyHeaders, retryCount });
+        const req = {
+          method,
+          headers: reqHeaders,
+          ...options.signal && { signal: options.signal },
+          ...globalThis.ReadableStream && body instanceof globalThis.ReadableStream && { duplex: "half" },
+          ...body && { body },
+          ...this.fetchOptions ?? {},
+          ...options.fetchOptions ?? {}
+        };
+        return { req, url, timeout: options.timeout };
+      }
+      async buildHeaders({ options, method, bodyHeaders, retryCount }) {
+        let idempotencyHeaders = {};
+        if (this.idempotencyHeader && method !== "get") {
+          if (!options.idempotencyKey)
+            options.idempotencyKey = this.defaultIdempotencyKey();
+          idempotencyHeaders[this.idempotencyHeader] = options.idempotencyKey;
+        }
+        const headers = buildHeaders2([
+          idempotencyHeaders,
+          {
+            Accept: "application/json",
+            "User-Agent": this.getUserAgent(),
+            "X-Stainless-Retry-Count": String(retryCount),
+            ...options.timeout ? { "X-Stainless-Timeout": String(Math.trunc(options.timeout / 1e3)) } : {},
+            ...getPlatformHeaders2(),
+            ...this._options.dangerouslyAllowBrowser ? { "anthropic-dangerous-direct-browser-access": "true" } : void 0,
+            "anthropic-version": "2023-06-01"
+          },
+          await this.authHeaders(options),
+          this._options.defaultHeaders,
+          bodyHeaders,
+          options.headers
+        ]);
+        this.validateHeaders(headers);
+        return headers.values;
+      }
+      _makeAbort(controller) {
+        return () => controller.abort();
+      }
+      buildBody({ options: { body, headers: rawHeaders } }) {
+        if (!body) {
+          return { bodyHeaders: void 0, body: void 0 };
+        }
+        const headers = buildHeaders2([rawHeaders]);
+        if (
+          // Pass raw type verbatim
+          ArrayBuffer.isView(body) || body instanceof ArrayBuffer || body instanceof DataView || typeof body === "string" && // Preserve legacy string encoding behavior for now
+          headers.values.has("content-type") || // `Blob` is superset of `File`
+          globalThis.Blob && body instanceof globalThis.Blob || // `FormData` -> `multipart/form-data`
+          body instanceof FormData || // `URLSearchParams` -> `application/x-www-form-urlencoded`
+          body instanceof URLSearchParams || // Send chunked stream (each chunk has own `length`)
+          globalThis.ReadableStream && body instanceof globalThis.ReadableStream
+        ) {
+          return { bodyHeaders: void 0, body };
+        } else if (typeof body === "object" && (Symbol.asyncIterator in body || Symbol.iterator in body && "next" in body && typeof body.next === "function")) {
+          return { bodyHeaders: void 0, body: ReadableStreamFrom2(body) };
+        } else if (typeof body === "object" && headers.values.get("content-type") === "application/x-www-form-urlencoded") {
+          return {
+            bodyHeaders: { "content-type": "application/x-www-form-urlencoded" },
+            body: this.stringifyQuery(body)
+          };
+        } else {
+          return __classPrivateFieldGet2(this, _BaseAnthropic_encoder, "f").call(this, { body, headers });
+        }
+      }
+    };
+    _a3 = BaseAnthropic, _BaseAnthropic_encoder = /* @__PURE__ */ new WeakMap(), _BaseAnthropic_instances = /* @__PURE__ */ new WeakSet(), _BaseAnthropic_baseURLOverridden = function _BaseAnthropic_baseURLOverridden2() {
+      return this.baseURL !== "https://api.anthropic.com";
+    };
+    BaseAnthropic.Anthropic = _a3;
+    BaseAnthropic.HUMAN_PROMPT = HUMAN_PROMPT;
+    BaseAnthropic.AI_PROMPT = AI_PROMPT;
+    BaseAnthropic.DEFAULT_TIMEOUT = 6e5;
+    BaseAnthropic.AnthropicError = AnthropicError;
+    BaseAnthropic.APIError = APIError2;
+    BaseAnthropic.APIConnectionError = APIConnectionError2;
+    BaseAnthropic.APIConnectionTimeoutError = APIConnectionTimeoutError2;
+    BaseAnthropic.APIUserAbortError = APIUserAbortError2;
+    BaseAnthropic.NotFoundError = NotFoundError2;
+    BaseAnthropic.ConflictError = ConflictError2;
+    BaseAnthropic.RateLimitError = RateLimitError2;
+    BaseAnthropic.BadRequestError = BadRequestError2;
+    BaseAnthropic.AuthenticationError = AuthenticationError2;
+    BaseAnthropic.InternalServerError = InternalServerError2;
+    BaseAnthropic.PermissionDeniedError = PermissionDeniedError2;
+    BaseAnthropic.UnprocessableEntityError = UnprocessableEntityError2;
+    BaseAnthropic.toFile = toFile2;
+    Anthropic = class extends BaseAnthropic {
+      constructor() {
+        super(...arguments);
+        this.completions = new Completions3(this);
+        this.messages = new Messages4(this);
+        this.models = new Models3(this);
+        this.beta = new Beta2(this);
+      }
+    };
+    Anthropic.Completions = Completions3;
+    Anthropic.Messages = Messages4;
+    Anthropic.Models = Models3;
+    Anthropic.Beta = Beta2;
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/middleware.mjs
+var encoder;
+var init_middleware2 = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/middleware.mjs"() {
+    init_error();
+    init_streaming();
+    init_errors();
+    init_values();
+    init_request_options();
+    encoder = new TextEncoder();
+  }
+});
+
+// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/index.mjs
+var init_sdk = __esm({
+  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/index.mjs"() {
+    init_client();
+    init_uploads2();
+    init_api_promise();
+    init_middleware2();
+    init_client();
+    init_pagination();
+    init_error();
+  }
+});
+
 // src/functions.ts
 import { onRequest } from "firebase-functions/v2/https";
 
 // src/app-firebase.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express13 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
 // src/routes/index-firebase.ts
-var import_express9 = __toESM(require_express2(), 1);
+var import_express12 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -24369,8 +36057,8 @@ function getErrorMap() {
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path6, errorMaps, issueData } = params;
+  const fullPath = [...path6, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -24485,11 +36173,11 @@ var errorUtil;
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path6, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path6;
     this._key = key;
   }
   get path() {
@@ -27938,6 +39626,7 @@ async function verifyIdToken(idToken) {
     return {
       uid: decoded.uid,
       email: decoded.email,
+      name: decoded.name,
       admin: decoded["admin"] === true
     };
   } catch {
@@ -27951,6 +39640,12 @@ function getFirestoreDb() {
 
 // src/lib/creditLedger.ts
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+function toIsoString(v) {
+  if (v instanceof Timestamp) return v.toDate().toISOString();
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "string") return v;
+  return (/* @__PURE__ */ new Date()).toISOString();
+}
 async function addCredits(uid, amount, type, opts = {}) {
   if (!isFirebaseConfigured()) {
     console.warn("[CreditLedger] Firebase not configured \u2014 skipping credit grant for", uid);
@@ -27961,7 +39656,7 @@ async function addCredits(uid, amount, type, opts = {}) {
   const userRef = db.collection("users").doc(uid);
   return db.runTransaction(async (tx) => {
     if (opts.idempotencyKey) {
-      const dedupRef = db.collection("stripe_events").doc(opts.idempotencyKey);
+      const dedupRef = db.collection("payment_events").doc(opts.idempotencyKey);
       const dedupSnap = await tx.get(dedupRef);
       if (dedupSnap.exists) {
         return { newBalance: 0, skipped: true };
@@ -27978,10 +39673,7 @@ async function addCredits(uid, amount, type, opts = {}) {
     const newBalance = current + amount;
     tx.set(
       userRef,
-      {
-        creditBalance: newBalance,
-        updatedAt: FieldValue.serverTimestamp()
-      },
+      { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() },
       { merge: true }
     );
     const txRef = db.collection("credit_transactions").doc();
@@ -27992,11 +39684,44 @@ async function addCredits(uid, amount, type, opts = {}) {
       balanceAfter: newBalance,
       source: opts.source ?? type,
       sessionId: opts.sessionId ?? null,
-      stripePaymentId: opts.stripePaymentId ?? null,
+      paymentId: opts.paymentId ?? null,
       createdAt: FieldValue.serverTimestamp()
     });
     return { newBalance };
   });
+}
+async function getTransactions(uid, limit3 = 50, cursor) {
+  if (!isFirebaseConfigured()) return { items: [], nextCursor: null };
+  const db = getFirestoreDb();
+  if (!db) return { items: [], nextCursor: null };
+  try {
+    let q = db.collection("credit_transactions").where("userId", "==", uid).orderBy("createdAt", "desc").limit(limit3 + 1);
+    if (cursor) {
+      const cursorSnap = await db.collection("credit_transactions").doc(cursor).get();
+      if (cursorSnap.exists) q = q.startAfter(cursorSnap);
+    }
+    const snap = await q.get();
+    const docs = snap.docs;
+    const hasMore = docs.length > limit3;
+    const items = docs.slice(0, limit3).map((d) => {
+      const data = d.data();
+      return {
+        transactionId: d.id,
+        userId: data["userId"],
+        type: data["type"],
+        amount: data["amount"],
+        balanceAfter: data["balanceAfter"],
+        source: data["source"],
+        sessionId: data["sessionId"] ?? null,
+        paymentId: data["paymentId"] ?? null,
+        createdAt: toIsoString(data["createdAt"])
+      };
+    });
+    return { items, nextCursor: hasMore ? docs[limit3 - 1].id : null };
+  } catch (err) {
+    console.error("[CreditLedger] getTransactions error:", err);
+    return { items: [], nextCursor: null };
+  }
 }
 async function grantSignupBonus(uid) {
   const result = await addCredits(uid, 50, "signup_bonus", {
@@ -28004,6 +39729,15 @@ async function grantSignupBonus(uid) {
     idempotencyKey: `signup_bonus_${uid}`
   });
   return { skipped: result?.skipped === true };
+}
+async function setAutoRefillPreference(uid, opts) {
+  if (!isFirebaseConfigured()) return;
+  const db = getFirestoreDb();
+  if (!db) return;
+  await db.collection("users").doc(uid).set(
+    { autoRefill: opts, updatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  );
 }
 
 // src/routes/auth.ts
@@ -28027,12 +39761,26 @@ router2.post("/auth/provision", async (req, res) => {
   }
   const uid = decoded.uid;
   const userRef = db.collection("users").doc(uid);
+  const { role, organization } = req.body ?? {};
+  const VALID_ROLES = /* @__PURE__ */ new Set([
+    "individual",
+    "lawyer",
+    "law-student",
+    "researcher",
+    "business",
+    "journalist",
+    "other"
+  ]);
+  const sanitizedRole = role && VALID_ROLES.has(role) ? role : null;
+  const sanitizedOrg = organization?.trim().slice(0, 200) || null;
   try {
     const existing = await userRef.get();
     if (!existing.exists) {
       await userRef.set({
         email: decoded.email ?? "",
-        displayName: null,
+        displayName: decoded.name ?? decoded.email?.split("@")[0] ?? null,
+        role: sanitizedRole,
+        organization: sanitizedOrg,
         plan: "free",
         creditBalance: 0,
         subscriptionStatus: "none",
@@ -28040,7 +39788,8 @@ router2.post("/auth/provision", async (req, res) => {
         updatedAt: FieldValue2.serverTimestamp(),
         defaultSettings: {
           courtMode: "adversarial",
-          confidenceTarget: 85,
+          litigantCount: 3,
+          confidenceTarget: 80,
           responseMode: "balanced",
           outputFormat: "report"
         }
@@ -28057,10 +39806,83 @@ router2.post("/auth/provision", async (req, res) => {
     return res.status(500).json({ error: "Provisioning failed" });
   }
 });
+router2.patch("/auth/preferences", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) return res.status(401).json({ error: "Unauthorized" });
+  if (!isFirebaseConfigured()) return res.json({ saved: false, reason: "firebase_not_configured" });
+  const db = getFirestoreDb();
+  if (!db) return res.json({ saved: false, reason: "firestore_unavailable" });
+  const VALID_COURT_MODES = /* @__PURE__ */ new Set(["adversarial", "socratic", "analysis", "critique"]);
+  const VALID_RESP_MODES = /* @__PURE__ */ new Set(["balanced", "thorough", "concise"]);
+  const VALID_OUT_FORMATS = /* @__PURE__ */ new Set(["report", "memo", "bullets", "verdict"]);
+  const VALID_PROVIDERS = /* @__PURE__ */ new Set(["openai", "anthropic", "grok", "gemini"]);
+  const body = req.body ?? {};
+  const ds = body.defaultSettings ?? {};
+  const patch = { updatedAt: FieldValue2.serverTimestamp() };
+  if (body.onboardingComplete === true) patch["onboardingComplete"] = true;
+  if (ds.courtMode && VALID_COURT_MODES.has(ds.courtMode))
+    patch["defaultSettings.courtMode"] = ds.courtMode;
+  if (typeof ds.litigantCount === "number" && ds.litigantCount >= 2 && ds.litigantCount <= 10)
+    patch["defaultSettings.litigantCount"] = ds.litigantCount;
+  if (typeof ds.confidenceTarget === "number" && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
+    patch["defaultSettings.confidenceTarget"] = ds.confidenceTarget;
+  if (ds.responseMode && VALID_RESP_MODES.has(ds.responseMode))
+    patch["defaultSettings.responseMode"] = ds.responseMode;
+  if (ds.outputFormat && VALID_OUT_FORMATS.has(ds.outputFormat))
+    patch["defaultSettings.outputFormat"] = ds.outputFormat;
+  if (ds.provider && VALID_PROVIDERS.has(ds.provider))
+    patch["defaultSettings.provider"] = ds.provider;
+  try {
+    await db.collection("users").doc(decoded.uid).update(patch);
+    return res.json({ saved: true });
+  } catch (err) {
+    console.error("[Auth] preferences save error:", err.message);
+    return res.status(500).json({ error: "Failed to save preferences" });
+  }
+});
 var auth_default = router2;
 
 // src/routes/brain.ts
 var import_express3 = __toESM(require_express2(), 1);
+
+// src/lib/providers/types.ts
+var DEFAULT_MODELS = {
+  openai: "gpt-4o",
+  anthropic: "claude-opus-4-5",
+  grok: "grok-3",
+  gemini: "gemini-2.5-pro"
+};
+var PROVIDER_DISPLAY_NAMES = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  grok: "xAI Grok",
+  gemini: "Google Gemini"
+};
+var PROVIDER_MODELS = {
+  openai: [
+    { id: "gpt-4o", label: "GPT-4o" },
+    { id: "gpt-4o-mini", label: "GPT-4o Mini" },
+    { id: "o3", label: "o3 (reasoning)" },
+    { id: "o4-mini", label: "o4-mini (reasoning)" }
+  ],
+  anthropic: [
+    { id: "claude-opus-4-5", label: "Claude Opus 4.5" },
+    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
+    { id: "claude-haiku-4-5", label: "Claude Haiku 4.5" }
+  ],
+  grok: [
+    { id: "grok-3", label: "Grok 3" },
+    { id: "grok-3-mini", label: "Grok 3 Mini" },
+    { id: "grok-2", label: "Grok 2" }
+  ],
+  gemini: [
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" }
+  ]
+};
 
 // ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
@@ -28082,13 +39904,13 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
 
 // ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
-  const { crypto: crypto2 } = globalThis;
-  if (crypto2?.randomUUID) {
-    uuid4 = crypto2.randomUUID.bind(crypto2);
-    return crypto2.randomUUID();
+  const { crypto: crypto5 } = globalThis;
+  if (crypto5?.randomUUID) {
+    uuid4 = crypto5.randomUUID.bind(crypto5);
+    return crypto5.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto2 ? () => crypto2.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -28301,7 +40123,7 @@ var safeJSON = (text) => {
 };
 
 // ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/sleep.mjs
-var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+var sleep = (ms) => new Promise((resolve4) => setTimeout(resolve4, ms));
 
 // ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/version.mjs
 var VERSION = "6.42.0";
@@ -28448,11 +40270,11 @@ function getDefaultFetch() {
   throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new OpenAI({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
 }
 function makeReadableStream(...args) {
-  const ReadableStream = globalThis.ReadableStream;
-  if (typeof ReadableStream === "undefined") {
+  const ReadableStream2 = globalThis.ReadableStream;
+  if (typeof ReadableStream2 === "undefined") {
     throw new Error("`ReadableStream` is not defined as a global; You will need to polyfill it, `globalThis.ReadableStream = ReadableStream`");
   }
-  return new ReadableStream(...args);
+  return new ReadableStream2(...args);
 }
 function ReadableStreamFrom(iterable) {
   let iter = Symbol.asyncIterator in iterable ? iterable[Symbol.asyncIterator]() : iterable[Symbol.iterator]();
@@ -28653,7 +40475,7 @@ function is_non_nullish_primitive(v) {
   return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
 }
 var sentinel = {};
-function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
   let obj = object;
   let tmp_sc = sideChannel;
   let step = 0;
@@ -28686,19 +40508,19 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
   }
   if (obj === null) {
     if (strictNullHandling) {
-      return encoder && !encodeValuesOnly ? (
+      return encoder2 && !encodeValuesOnly ? (
         // @ts-expect-error
-        encoder(prefix, defaults.encoder, charset, "key", format)
+        encoder2(prefix, defaults.encoder, charset, "key", format)
       ) : prefix;
     }
     obj = "";
   }
   if (is_non_nullish_primitive(obj) || is_buffer(obj)) {
-    if (encoder) {
-      const key_value = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder, charset, "key", format);
+    if (encoder2) {
+      const key_value = encodeValuesOnly ? prefix : encoder2(prefix, defaults.encoder, charset, "key", format);
       return [
         formatter?.(key_value) + "=" + // @ts-expect-error
-        formatter?.(encoder(obj, defaults.encoder, charset, "value", format))
+        formatter?.(encoder2(obj, defaults.encoder, charset, "value", format))
       ];
     }
     return [formatter?.(prefix) + "=" + formatter?.(String(obj))];
@@ -28709,8 +40531,8 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
   }
   let obj_keys;
   if (generateArrayPrefix === "comma" && isArray(obj)) {
-    if (encodeValuesOnly && encoder) {
-      obj = maybe_map(obj, encoder);
+    if (encodeValuesOnly && encoder2) {
+      obj = maybe_map(obj, encoder2);
     }
     obj_keys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
   } else if (isArray(filter)) {
@@ -28748,7 +40570,7 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
       skipNulls,
       encodeDotInKeys,
       // @ts-ignore
-      generateArrayPrefix === "comma" && encodeValuesOnly && isArray(obj) ? null : encoder,
+      generateArrayPrefix === "comma" && encodeValuesOnly && isArray(obj) ? null : encoder2,
       filter,
       sort,
       allowDots,
@@ -28909,8 +40731,8 @@ function concatBytes(buffers) {
 }
 var encodeUTF8_;
 function encodeUTF8(str2) {
-  let encoder;
-  return (encodeUTF8_ ?? (encoder = new globalThis.TextEncoder(), encodeUTF8_ = encoder.encode.bind(encoder)))(str2);
+  let encoder2;
+  return (encodeUTF8_ ?? (encoder2 = new globalThis.TextEncoder(), encodeUTF8_ = encoder2.encode.bind(encoder2)))(str2);
 }
 var decodeUTF8_;
 function decodeUTF8(bytes) {
@@ -29015,11 +40837,11 @@ var parseLogLevel = (maybeLevel, sourceName, client) => {
 };
 function noop() {
 }
-function makeLogFn(fnLevel, logger, logLevel) {
-  if (!logger || levelNumbers[fnLevel] > levelNumbers[logLevel]) {
+function makeLogFn(fnLevel, logger2, logLevel) {
+  if (!logger2 || levelNumbers[fnLevel] > levelNumbers[logLevel]) {
     return noop;
   } else {
-    return logger[fnLevel].bind(logger);
+    return logger2[fnLevel].bind(logger2);
   }
 }
 var noopLogger = {
@@ -29030,22 +40852,22 @@ var noopLogger = {
 };
 var cachedLoggers = /* @__PURE__ */ new WeakMap();
 function loggerFor(client) {
-  const logger = client.logger;
+  const logger2 = client.logger;
   const logLevel = client.logLevel ?? "off";
-  if (!logger) {
+  if (!logger2) {
     return noopLogger;
   }
-  const cachedLogger = cachedLoggers.get(logger);
+  const cachedLogger = cachedLoggers.get(logger2);
   if (cachedLogger && cachedLogger[0] === logLevel) {
     return cachedLogger[1];
   }
   const levelLogger = {
-    error: makeLogFn("error", logger, logLevel),
-    warn: makeLogFn("warn", logger, logLevel),
-    info: makeLogFn("info", logger, logLevel),
-    debug: makeLogFn("debug", logger, logLevel)
+    error: makeLogFn("error", logger2, logLevel),
+    warn: makeLogFn("warn", logger2, logLevel),
+    info: makeLogFn("info", logger2, logLevel),
+    debug: makeLogFn("debug", logger2, logLevel)
   };
-  cachedLoggers.set(logger, [logLevel, levelLogger]);
+  cachedLoggers.set(logger2, [logLevel, levelLogger]);
   return levelLogger;
 }
 var formatRequestDetails = (details) => {
@@ -29079,7 +40901,7 @@ var Stream = class _Stream {
   }
   static fromSSEResponse(response, controller, client, synthesizeEventData) {
     let consumed = false;
-    const logger = client ? loggerFor(client) : console;
+    const logger2 = client ? loggerFor(client) : console;
     async function* iterator() {
       if (consumed) {
         throw new OpenAIError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
@@ -29099,8 +40921,8 @@ var Stream = class _Stream {
             try {
               data = JSON.parse(sse.data);
             } catch (e) {
-              logger.error(`Could not parse message into JSON:`, sse.data);
-              logger.error(`From chunk:`, sse.raw);
+              logger2.error(`Could not parse message into JSON:`, sse.data);
+              logger2.error(`From chunk:`, sse.raw);
               throw e;
             }
             if (data && data.error) {
@@ -29318,10 +41140,10 @@ var SSEDecoder = class {
     return null;
   }
 };
-function partition(str2, delimiter) {
-  const index = str2.indexOf(delimiter);
+function partition(str2, delimiter2) {
+  const index = str2.indexOf(delimiter2);
   if (index !== -1) {
-    return [str2.substring(0, index), delimiter, str2.substring(index + delimiter.length)];
+    return [str2.substring(0, index), delimiter2, str2.substring(index + delimiter2.length)];
   }
   return [str2, "", ""];
 }
@@ -29380,8 +41202,8 @@ function addRequestID(value, response) {
 var _APIPromise_client;
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
-    super((resolve) => {
-      resolve(null);
+    super((resolve4) => {
+      resolve4(null);
     });
     this.responsePromise = responsePromise;
     this.parseResponse = parseResponse2;
@@ -29479,8 +41301,8 @@ var AbstractPage = class {
   }
 };
 var PagePromise = class extends APIPromise {
-  constructor(client, request, Page2) {
-    super(client, request, async (client2, props) => new Page2(client2, props.response, await defaultParseResponse(client2, props), props.options));
+  constructor(client, request, Page3) {
+    super(client, request, async (client2, props) => new Page3(client2, props.response, await defaultParseResponse(client2, props), props.options));
   }
   /**
    * Allow auto-paginating iteration on an unawaited list call, eg:
@@ -29843,12 +41665,12 @@ function encodeURIPath(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
 var EMPTY = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
-var createPathTagFunction = (pathEncoder = encodeURIPath) => function path2(statics, ...params) {
+var createPathTagFunction = (pathEncoder = encodeURIPath) => function path6(statics, ...params) {
   if (statics.length === 1)
     return statics[0];
   let postPath = false;
   const invalidSegments = [];
-  const path3 = statics.reduce((previousValue, currentValue, index) => {
+  const path7 = statics.reduce((previousValue, currentValue, index) => {
     if (/[?#]/.test(currentValue)) {
       postPath = true;
     }
@@ -29865,7 +41687,7 @@ var createPathTagFunction = (pathEncoder = encodeURIPath) => function path2(stat
     }
     return previousValue + currentValue + (index === params.length ? "" : encoded);
   }, "");
-  const pathOnly = path3.split(/[?#]/, 1)[0];
+  const pathOnly = path7.split(/[?#]/, 1)[0];
   const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
   let match;
   while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
@@ -29886,10 +41708,10 @@ var createPathTagFunction = (pathEncoder = encodeURIPath) => function path2(stat
     }, "");
     throw new OpenAIError(`Path parameters result in path with invalid segments:
 ${invalidSegments.map((e) => e.error).join("\n")}
-${path3}
+${path7}
 ${underline}`);
   }
-  return path3;
+  return path7;
 };
 var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
 
@@ -30062,12 +41884,12 @@ var EventStream = class {
     _EventStream_errored.set(this, false);
     _EventStream_aborted.set(this, false);
     _EventStream_catchingPromiseCreated.set(this, false);
-    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve, reject) => {
-      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve, "f");
+    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve4, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve4, "f");
       __classPrivateFieldSet(this, _EventStream_rejectConnectedPromise, reject, "f");
     }), "f");
-    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve, reject) => {
-      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve, "f");
+    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve4, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve4, "f");
       __classPrivateFieldSet(this, _EventStream_rejectEndPromise, reject, "f");
     }), "f");
     __classPrivateFieldGet(this, _EventStream_connectedPromise, "f").catch(() => {
@@ -30151,11 +41973,11 @@ var EventStream = class {
    *   const message = await stream.emitted('message') // rejects if the stream errors
    */
   emitted(event) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve4, reject) => {
       __classPrivateFieldSet(this, _EventStream_catchingPromiseCreated, true, "f");
       if (event !== "error")
         this.once("error", reject);
-      this.once(event, resolve);
+      this.once(event, resolve4);
     });
   }
   async done() {
@@ -30958,7 +42780,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
     }
     return null;
   }, _ChatCompletionStream_accumulateChatCompletion = function _ChatCompletionStream_accumulateChatCompletion2(chunk) {
-    var _a3, _b, _c, _d;
+    var _a4, _b, _c, _d;
     let snapshot = __classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f");
     const { choices, ...rest } = chunk;
     if (!snapshot) {
@@ -30982,7 +42804,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
           assertIsEmpty(rest3);
           Object.assign(choice.logprobs, rest3);
           if (content2) {
-            (_a3 = choice.logprobs).content ?? (_a3.content = []);
+            (_a4 = choice.logprobs).content ?? (_a4.content = []);
             choice.logprobs.content.push(...content2);
           }
           if (refusal2) {
@@ -31094,7 +42916,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
         }
         const chunk = pushQueue.shift();
         return { value: chunk, done: false };
@@ -34193,7 +46015,7 @@ var AssistantStream = class extends EventStream {
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
         }
         const chunk = pushQueue.shift();
         return { value: chunk, done: false };
@@ -36262,7 +48084,7 @@ var ResponseStream = class _ResponseStream extends EventStream {
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
         }
         const event = pushQueue.shift();
         return { value: event, done: false };
@@ -37238,9 +49060,9 @@ var OpenAI = class {
     this.baseURL = options.baseURL;
     this.timeout = options.timeout ?? _a2.DEFAULT_TIMEOUT;
     this.logger = options.logger ?? console;
-    const defaultLogLevel = "warn";
-    this.logLevel = defaultLogLevel;
-    this.logLevel = parseLogLevel(options.logLevel, "ClientOptions.logLevel", this) ?? parseLogLevel(readEnv("OPENAI_LOG"), "process.env['OPENAI_LOG']", this) ?? defaultLogLevel;
+    const defaultLogLevel2 = "warn";
+    this.logLevel = defaultLogLevel2;
+    this.logLevel = parseLogLevel(options.logLevel, "ClientOptions.logLevel", this) ?? parseLogLevel(readEnv("OPENAI_LOG"), "process.env['OPENAI_LOG']", this) ?? defaultLogLevel2;
     this.fetchOptions = options.fetchOptions;
     this.maxRetries = options.maxRetries ?? 2;
     this.fetch = options.fetch ?? getDefaultFetch();
@@ -37365,9 +49187,9 @@ var OpenAI = class {
     this.apiKey = token;
     return true;
   }
-  buildURL(path2, query, defaultBaseURL) {
+  buildURL(path6, query, defaultBaseURL) {
     const baseURL = !__classPrivateFieldGet(this, _OpenAI_instances, "m", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
-    const url = isAbsoluteURL(path2) ? new URL(path2) : new URL(baseURL + (baseURL.endsWith("/") && path2.startsWith("/") ? path2.slice(1) : path2));
+    const url = isAbsoluteURL(path6) ? new URL(path6) : new URL(baseURL + (baseURL.endsWith("/") && path6.startsWith("/") ? path6.slice(1) : path6));
     const defaultQuery = this.defaultQuery();
     const pathQuery = Object.fromEntries(url.searchParams);
     if (!isEmptyObj(defaultQuery) || !isEmptyObj(pathQuery)) {
@@ -37395,24 +49217,24 @@ var OpenAI = class {
    */
   async prepareRequest(request, { url, options }) {
   }
-  get(path2, opts) {
-    return this.methodRequest("get", path2, opts);
+  get(path6, opts) {
+    return this.methodRequest("get", path6, opts);
   }
-  post(path2, opts) {
-    return this.methodRequest("post", path2, opts);
+  post(path6, opts) {
+    return this.methodRequest("post", path6, opts);
   }
-  patch(path2, opts) {
-    return this.methodRequest("patch", path2, opts);
+  patch(path6, opts) {
+    return this.methodRequest("patch", path6, opts);
   }
-  put(path2, opts) {
-    return this.methodRequest("put", path2, opts);
+  put(path6, opts) {
+    return this.methodRequest("put", path6, opts);
   }
-  delete(path2, opts) {
-    return this.methodRequest("delete", path2, opts);
+  delete(path6, opts) {
+    return this.methodRequest("delete", path6, opts);
   }
-  methodRequest(method, path2, opts) {
+  methodRequest(method, path6, opts) {
     return this.request(Promise.resolve(opts).then((opts2) => {
-      return { method, path: path2, ...opts2 };
+      return { method, path: path6, ...opts2 };
     }));
   }
   request(options, remainingRetries = null) {
@@ -37534,12 +49356,12 @@ var OpenAI = class {
     }));
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
   }
-  getAPIList(path2, Page2, opts) {
-    return this.requestAPIList(Page2, opts && "then" in opts ? opts.then((opts2) => ({ method: "get", path: path2, ...opts2 })) : { method: "get", path: path2, ...opts });
+  getAPIList(path6, Page3, opts) {
+    return this.requestAPIList(Page3, opts && "then" in opts ? opts.then((opts2) => ({ method: "get", path: path6, ...opts2 })) : { method: "get", path: path6, ...opts });
   }
-  requestAPIList(Page2, options) {
+  requestAPIList(Page3, options) {
     const request = this.makeRequest(options, null, void 0);
-    return new PagePromise(this, request, Page2);
+    return new PagePromise(this, request, Page3);
   }
   async fetchWithAuth(url, init, timeout, controller, schemes = {
     bearerAuth: true,
@@ -37624,13 +49446,13 @@ var OpenAI = class {
     const maxRetryDelay = 8;
     const numRetries = maxRetries - retriesRemaining;
     const sleepSeconds = Math.min(initialRetryDelay * Math.pow(2, numRetries), maxRetryDelay);
-    const jitter = 1 - Math.random() * 0.25;
-    return sleepSeconds * jitter * 1e3;
+    const jitter2 = 1 - Math.random() * 0.25;
+    return sleepSeconds * jitter2 * 1e3;
   }
   async buildRequest(inputOptions, { retryCount = 0 } = {}) {
     const options = { ...inputOptions };
-    const { method, path: path2, query, defaultBaseURL } = options;
-    const url = this.buildURL(path2, query, defaultBaseURL);
+    const { method, path: path6, query, defaultBaseURL } = options;
+    const url = this.buildURL(path6, query, defaultBaseURL);
     if ("timeout" in options)
       validatePositiveInteger("timeout", options.timeout);
     options.timeout = options.timeout ?? this.timeout;
@@ -37777,11 +49599,451 @@ function isUndiciDispatcherVersionMismatchError(error) {
   return false;
 }
 
+// src/lib/providers/openai.ts
+var OpenAIProvider = class {
+  name = "openai";
+  displayName = "OpenAI";
+  model;
+  client;
+  constructor(model = "gpt-4o", credentials) {
+    this.model = model;
+    if (credentials) {
+      this.client = new OpenAI({
+        apiKey: credentials.key,
+        ...credentials.baseUrl ? { baseURL: credentials.baseUrl } : {}
+      });
+    } else {
+      const directKey = process.env["OPENAI_API_KEY"];
+      const replitBase = process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"];
+      const replitKey = process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
+      if (directKey) {
+        this.client = new OpenAI({ apiKey: directKey });
+      } else if (replitBase && replitKey) {
+        this.client = new OpenAI({ baseURL: replitBase, apiKey: replitKey });
+      } else {
+        throw new Error("OpenAI not configured \u2014 set OPENAI_API_KEY or add key in Admin \u2192 API Keys");
+      }
+    }
+  }
+  async *streamChat(messages, maxTokens, signal) {
+    const stream = await this.client.chat.completions.create(
+      { model: this.model, max_completion_tokens: maxTokens, stream: true, messages },
+      { signal }
+    );
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) yield content;
+    }
+  }
+};
+
+// src/lib/providers/anthropic.ts
+init_sdk();
+var AnthropicProvider = class {
+  name = "anthropic";
+  displayName = "Anthropic";
+  model;
+  client;
+  constructor(model = "claude-opus-4-5", credentials) {
+    this.model = model;
+    const apiKey = credentials?.key ?? process.env["ANTHROPIC_API_KEY"];
+    if (!apiKey) throw new Error("Anthropic not configured \u2014 set ANTHROPIC_API_KEY or add key in Admin \u2192 API Keys");
+    this.client = new Anthropic({ apiKey });
+  }
+  async *streamChat(messages, maxTokens, signal) {
+    const systemMsg = messages.find((m) => m.role === "system")?.content ?? "";
+    const conversation = messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: m.content }));
+    if (conversation.length === 0 || conversation[0].role !== "user") {
+      conversation.unshift({ role: "user", content: "Begin." });
+    }
+    const stream = await this.client.messages.stream({
+      model: this.model,
+      max_tokens: maxTokens,
+      system: systemMsg,
+      messages: conversation
+    });
+    for await (const event of stream) {
+      if (signal?.aborted) break;
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        yield event.delta.text;
+      }
+    }
+  }
+};
+
+// src/lib/providers/grok.ts
+var GrokProvider = class {
+  name = "grok";
+  displayName = "xAI Grok";
+  model;
+  client;
+  constructor(model = "grok-3", credentials) {
+    this.model = model;
+    const apiKey = credentials?.key ?? process.env["XAI_API_KEY"];
+    if (!apiKey) throw new Error("Grok not configured \u2014 set XAI_API_KEY or add key in Admin \u2192 API Keys");
+    this.client = new OpenAI({
+      baseURL: credentials?.baseUrl ?? "https://api.x.ai/v1",
+      apiKey
+    });
+  }
+  async *streamChat(messages, maxTokens, signal) {
+    const stream = await this.client.chat.completions.create(
+      { model: this.model, max_tokens: maxTokens, stream: true, messages },
+      { signal }
+    );
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) yield content;
+    }
+  }
+};
+
+// src/lib/providers/gemini.ts
+var GeminiProvider = class {
+  name = "gemini";
+  displayName = "Google Gemini";
+  model;
+  client;
+  constructor(model = "gemini-2.5-pro", credentials) {
+    this.model = model;
+    const apiKey = credentials?.key ?? process.env["GEMINI_API_KEY"];
+    if (!apiKey) throw new Error("Gemini not configured \u2014 set GEMINI_API_KEY or add key in Admin \u2192 API Keys");
+    this.client = new OpenAI({
+      baseURL: credentials?.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta/openai",
+      apiKey
+    });
+  }
+  async *streamChat(messages, maxTokens, signal) {
+    const stream = await this.client.chat.completions.create(
+      { model: this.model, max_tokens: maxTokens, stream: true, messages },
+      { signal }
+    );
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) yield content;
+    }
+  }
+};
+
+// src/lib/providers/custom.ts
+var CustomProvider = class {
+  name = "openai";
+  // uses openai-compat wire format
+  displayName;
+  model;
+  client;
+  constructor(id, label, model, credentials) {
+    this.name = id;
+    this.displayName = label;
+    this.model = model;
+    this.client = new OpenAI({ apiKey: credentials.key, baseURL: credentials.baseUrl });
+  }
+  async *streamChat(messages, maxTokens, signal) {
+    const stream = await this.client.chat.completions.create(
+      { model: this.model, max_tokens: maxTokens, stream: true, messages },
+      { signal }
+    );
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) yield content;
+    }
+  }
+};
+
+// src/lib/apiKeyStore.ts
+import { FieldValue as FieldValue3 } from "firebase-admin/firestore";
+var ENV_KEY_MAP = {
+  openai: "OPENAI_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  grok: "XAI_API_KEY",
+  gemini: "GEMINI_API_KEY"
+};
+var ENV_BASE_URL_MAP = {
+  openai: process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"],
+  anthropic: void 0,
+  grok: "https://api.x.ai/v1",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/openai"
+};
+var ENV_LABEL_MAP = {
+  openai: "OpenAI",
+  anthropic: "Anthropic (Claude)",
+  grok: "xAI Grok",
+  gemini: "Google Gemini"
+};
+var _cache = null;
+var _cacheExpiry = 0;
+var CACHE_TTL_MS = 6e4;
+function invalidateApiKeyCache() {
+  _cache = null;
+  _cacheExpiry = 0;
+}
+async function loadFromFirestore() {
+  const now = Date.now();
+  if (_cache !== null && now < _cacheExpiry) return _cache;
+  const db = getFirestoreDb();
+  if (!db) {
+    _cache = {};
+    _cacheExpiry = now + CACHE_TTL_MS;
+    return _cache;
+  }
+  try {
+    const doc = await db.collection("config").doc("apiKeys").get();
+    _cache = doc.data()?.providers ?? {};
+    _cacheExpiry = now + CACHE_TTL_MS;
+    return _cache;
+  } catch {
+    _cache = {};
+    _cacheExpiry = now + CACHE_TTL_MS;
+    return _cache;
+  }
+}
+async function getApiKey(providerId) {
+  const stored = await loadFromFirestore();
+  if (stored[providerId]?.key) {
+    return { key: stored[providerId].key, baseUrl: stored[providerId].baseUrl };
+  }
+  if (providerId === "openai" && process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] && process.env["AI_INTEGRATIONS_OPENAI_API_KEY"]) {
+    return {
+      key: process.env["AI_INTEGRATIONS_OPENAI_API_KEY"],
+      baseUrl: process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"]
+    };
+  }
+  const envVar = ENV_KEY_MAP[providerId];
+  if (envVar && process.env[envVar]) {
+    return { key: process.env[envVar], baseUrl: ENV_BASE_URL_MAP[providerId] };
+  }
+  return null;
+}
+async function getAllConfiguredProviders() {
+  const stored = await loadFromFirestore();
+  const result = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const [id, info] of Object.entries(stored)) {
+    if (!info.key) continue;
+    seen.add(id);
+    result.push({
+      id,
+      label: info.label,
+      maskedKey: info.maskedKey,
+      baseUrl: info.baseUrl,
+      source: "firestore",
+      updatedAt: info.updatedAt ? new Date(info.updatedAt.toDate?.() ?? info.updatedAt).toISOString() : void 0
+    });
+  }
+  if (!seen.has("openai") && process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] && process.env["AI_INTEGRATIONS_OPENAI_API_KEY"]) {
+    seen.add("openai");
+    result.push({
+      id: "openai",
+      label: "OpenAI (Replit proxy)",
+      maskedKey: maskKey(process.env["AI_INTEGRATIONS_OPENAI_API_KEY"]),
+      baseUrl: process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"],
+      source: "env"
+    });
+  }
+  for (const [id, envVar] of Object.entries(ENV_KEY_MAP)) {
+    if (seen.has(id)) continue;
+    const val = process.env[envVar];
+    if (!val) continue;
+    result.push({
+      id,
+      label: ENV_LABEL_MAP[id] ?? id,
+      maskedKey: maskKey(val),
+      baseUrl: ENV_BASE_URL_MAP[id],
+      source: "env"
+    });
+  }
+  return result;
+}
+function maskKey(key) {
+  if (key.length <= 8) return "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+  return key.slice(0, 6) + "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" + key.slice(-4);
+}
+async function saveApiKey(providerId, key, label, baseUrl) {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firebase not configured");
+  const sanitizedId = providerId.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  await db.collection("config").doc("apiKeys").set(
+    {
+      providers: {
+        [sanitizedId]: {
+          key,
+          label,
+          baseUrl: baseUrl ?? null,
+          maskedKey: maskKey(key),
+          updatedAt: FieldValue3.serverTimestamp()
+        }
+      }
+    },
+    { merge: true }
+  );
+  invalidateApiKeyCache();
+}
+async function deleteApiKey(providerId) {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firebase not configured");
+  const doc = await db.collection("config").doc("apiKeys").get();
+  if (!doc.exists) return;
+  const data = doc.data();
+  const providers = { ...data.providers ?? {} };
+  delete providers[providerId];
+  await db.collection("config").doc("apiKeys").set({ providers, updatedAt: FieldValue3.serverTimestamp() });
+  invalidateApiKeyCache();
+}
+
+// src/lib/providers/index.ts
+async function createProviderAsync(id, model, labelHint) {
+  const creds = await getApiKey(id);
+  if (!creds) {
+    throw new Error(
+      `Provider "${id}" is not configured. Add its API key in Admin \u2192 API Keys.`
+    );
+  }
+  const knownDefaults = {
+    openai: "gpt-4o",
+    anthropic: "claude-opus-4-5",
+    grok: "grok-3",
+    gemini: "gemini-2.5-pro"
+  };
+  const resolvedModel = model ?? knownDefaults[id] ?? "gpt-4o";
+  switch (id) {
+    case "openai":
+      return new OpenAIProvider(resolvedModel, creds);
+    case "anthropic":
+      return new AnthropicProvider(resolvedModel, creds);
+    case "grok":
+      return new GrokProvider(resolvedModel, creds);
+    case "gemini":
+      return new GeminiProvider(resolvedModel, creds);
+    default:
+      if (!creds.baseUrl) {
+        throw new Error(
+          `Custom provider "${id}" requires a Base URL (OpenAI-compatible endpoint). Update it in Admin \u2192 API Keys.`
+        );
+      }
+      return new CustomProvider(id, labelHint ?? id, resolvedModel, {
+        key: creds.key,
+        baseUrl: creds.baseUrl
+      });
+  }
+}
+async function getConfiguredProvidersAsync() {
+  const all = await getAllConfiguredProviders();
+  return all.map((p) => p.id);
+}
+function getConfiguredProviders() {
+  const configured = [];
+  const hasOpenAI = !!process.env["OPENAI_API_KEY"] || !!process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] && !!process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
+  if (hasOpenAI) configured.push("openai");
+  if (process.env["ANTHROPIC_API_KEY"]) configured.push("anthropic");
+  if (process.env["XAI_API_KEY"]) configured.push("grok");
+  if (process.env["GEMINI_API_KEY"]) configured.push("gemini");
+  return configured;
+}
+
+// src/lib/creditEngine.ts
+var CREDIT_VALUE_USD = 0.01;
+var MODEL_RATES = {
+  // ── OpenAI ──────────────────────────────────────────────────────────────────
+  "gpt-4o": { input: 25e-4, output: 0.01 },
+  "gpt-4o-mini": { input: 15e-5, output: 6e-4 },
+  "o3": { input: 0.01, output: 0.04 },
+  // reasoning — expensive
+  "o4-mini": { input: 11e-4, output: 44e-4 },
+  // reasoning — mid-tier
+  // ── Anthropic ───────────────────────────────────────────────────────────────
+  "claude-opus-4-5": { input: 0.015, output: 0.075 },
+  // most expensive per token
+  "claude-sonnet-4-5": { input: 3e-3, output: 0.015 },
+  "claude-haiku-4-5": { input: 8e-4, output: 4e-3 },
+  // fast and cheap
+  // ── xAI Grok ────────────────────────────────────────────────────────────────
+  "grok-3": { input: 3e-3, output: 0.015 },
+  "grok-3-mini": { input: 3e-4, output: 5e-4 },
+  // very cheap
+  "grok-2": { input: 2e-3, output: 0.01 },
+  // ── Google Gemini ────────────────────────────────────────────────────────────
+  "gemini-2.5-pro": { input: 125e-5, output: 0.01 },
+  "gemini-2.5-flash": { input: 15e-5, output: 6e-4 },
+  "gemini-2.0-flash": { input: 1e-4, output: 4e-4 }
+  // cheapest per token
+};
+var MODEL_MULTIPLIERS = {
+  // OpenAI
+  "gpt-4o": 5,
+  "gpt-4o-mini": 8,
+  "o3": 4,
+  // expensive — lower margin to stay competitive
+  "o4-mini": 6,
+  // Anthropic
+  "claude-opus-4-5": 3,
+  // most expensive model — lowest margin
+  "claude-sonnet-4-5": 5,
+  "claude-haiku-4-5": 8,
+  // xAI Grok
+  "grok-3": 5,
+  "grok-3-mini": 8,
+  "grok-2": 5,
+  // Google Gemini
+  "gemini-2.5-pro": 5,
+  "gemini-2.5-flash": 10,
+  // extremely cheap → very high margin
+  "gemini-2.0-flash": 10
+};
+var DEFAULT_RATE = { input: 3e-3, output: 0.015 };
+var DEFAULT_MULTIPLIER = 5;
+function getModelRate(model) {
+  return MODEL_RATES[model] ?? DEFAULT_RATE;
+}
+function getModelMultiplier(model) {
+  return MODEL_MULTIPLIERS[model] ?? DEFAULT_MULTIPLIER;
+}
+function usdToCredits(usd, model) {
+  const multiplier = getModelMultiplier(model);
+  return Math.max(1, Math.ceil(usd * multiplier / CREDIT_VALUE_USD));
+}
+function calculateActualCredits(model, inputTokens, outputTokens) {
+  const rate = getModelRate(model);
+  const costUSD = inputTokens / 1e3 * rate.input + outputTokens / 1e3 * rate.output;
+  return usdToCredits(costUSD, model);
+}
+function charsToTokens(chars) {
+  return Math.ceil(chars / 4);
+}
+function estimateSessionCredits(config) {
+  const outputTokensPerTurn = {
+    concise: 300,
+    balanced: 600,
+    thorough: 1200
+  };
+  const tokensPerTurn = outputTokensPerTurn[config.responseMode];
+  const rounds = config.maxIterations;
+  const litigants = Math.min(config.litigantCount, 4);
+  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 1600;
+  const baseInput = 600;
+  const historyPerRound = tokensPerTurn * litigants * 0.8;
+  const avgInputPerTurn = baseInput + historyPerRound * (rounds / 2);
+  const inputTokens = litigants * rounds * avgInputPerTurn + 8e3;
+  const model = config.model ?? "gpt-4o";
+  return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
+}
+function getModelCreditInfo(model) {
+  const rate = getModelRate(model);
+  return {
+    model,
+    multiplier: getModelMultiplier(model),
+    inputRatePer1k: rate.input,
+    outputRatePer1k: rate.output,
+    creditValueUsd: CREDIT_VALUE_USD,
+    exampleSessionCredits: estimateSessionCredits({
+      litigantCount: 3,
+      maxIterations: 2,
+      responseMode: "balanced",
+      model
+    })
+  };
+}
+
 // src/lib/brainEngine.ts
-var openai = new OpenAI({
-  baseURL: process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"],
-  apiKey: process.env["AI_INTEGRATIONS_OPENAI_API_KEY"] || "placeholder"
-});
 function getRoles(config) {
   const modePersonas = {
     adversarial: [
@@ -37812,7 +50074,7 @@ function getRoles(config) {
   const allRoles = modePersonas[config.courtMode];
   return allRoles.slice(0, Math.min(config.litigantCount, allRoles.length));
 }
-function getTokensForMode(responseMode) {
+function getMaxOutputTokens(responseMode) {
   return { balanced: 600, thorough: 1200, concise: 300 }[responseMode];
 }
 function sendSSE(res, event) {
@@ -37823,22 +50085,66 @@ function sendSSE(res, event) {
   }
 }
 function estimateCreditCost(config) {
-  const litigants = Math.min(config.litigantCount, 4);
-  return litigants * config.maxIterations * 3 + 7;
+  return estimateSessionCredits({
+    litigantCount: config.litigantCount,
+    maxIterations: config.maxIterations,
+    responseMode: config.responseMode,
+    model: config.model
+  });
 }
 function throwIfAborted(signal) {
   if (signal?.aborted) throw new Error("Session aborted by client");
+}
+async function resolveProvider(config) {
+  const configured = await getConfiguredProvidersAsync();
+  const requested = config.provider;
+  if (requested && configured.includes(requested)) {
+    return createProviderAsync(requested, config.model);
+  }
+  for (const fallback of ["openai", "anthropic", "grok", "gemini"]) {
+    if (configured.includes(fallback)) {
+      return createProviderAsync(fallback, fallback === requested ? config.model : void 0);
+    }
+  }
+  if (configured.length > 0) {
+    return createProviderAsync(configured[0], config.model);
+  }
+  throw new Error(
+    "No AI provider configured. Add an API key in Admin \u2192 API Keys, or set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY."
+  );
+}
+async function streamRole(provider, messages, maxTokens, onChunk, usage, signal) {
+  const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
+  usage.inputTokens += charsToTokens(inputChars);
+  let output = "";
+  try {
+    for await (const chunk of provider.streamChat(messages, maxTokens, signal)) {
+      if (signal?.aborted) break;
+      output += chunk;
+      onChunk(chunk);
+    }
+  } catch (err) {
+    if (err?.message === "Session aborted by client" || signal?.aborted) throw err;
+    const fallback = `[${err?.message || "Provider error"}]`;
+    output = fallback;
+    onChunk(fallback);
+  }
+  usage.outputTokens += charsToTokens(output.length);
+  return output;
 }
 async function runBrainSession(opts) {
   const { question, config, templateSystemPrompt, res, abortSignal } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
-  const maxTokens = getTokensForMode(config.responseMode);
+  const maxTokens = getMaxOutputTokens(config.responseMode);
   const estimatedCredits = estimateCreditCost(config);
-  sendSSE(res, { type: "start", sessionId, estimatedCredits });
+  const provider = await resolveProvider(config);
+  const providerName = provider.name;
+  const modelName = config.model ?? "";
+  const usage = { inputTokens: 0, outputTokens: 0 };
+  sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });
   const transcript = [];
   const turns = [];
-  let creditsUsed = 0;
   let confidence = 20;
   const baseContext = templateSystemPrompt ? `${templateSystemPrompt}
 
@@ -37846,41 +50152,30 @@ The question or task under examination: "${question}"` : `You are participating 
 
 The question under examination: "${question}"`;
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0 });
-  let orchestratorFrame = "";
-  try {
-    const orchStream = await openai.chat.completions.create({
-      model: "gpt-5.4",
-      max_completion_tokens: 400,
-      stream: true,
-      messages: [
-        {
-          role: "system",
-          content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max)."
-        },
-        {
-          role: "user",
-          content: `${baseContext}
+  sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
+  const orchMessages = [
+    {
+      role: "system",
+      content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max)."
+    },
+    {
+      role: "user",
+      content: `${baseContext}
 
 Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`
-        }
-      ]
-    });
-    for await (const chunk of orchStream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        orchestratorFrame += content;
-        sendSSE(res, { type: "content", role: "Orchestrator", content });
-      }
     }
-  } catch {
-    orchestratorFrame = `[Courtroom convened \u2014 examining: "${question}"]`;
-    sendSSE(res, { type: "content", role: "Orchestrator", content: orchestratorFrame });
-  }
+  ];
+  const orchestratorFrame = await streamRole(
+    provider,
+    orchMessages,
+    400,
+    (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
+    usage,
+    abortSignal
+  );
   transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
   turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
   sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
-  creditsUsed += 1;
   const debateNotesList = [];
   for (let round = 1; round <= config.maxIterations; round++) {
     throwIfAborted(abortSignal);
@@ -37889,8 +50184,7 @@ Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", "
     for (let i = 0; i < roles.length; i++) {
       throwIfAborted(abortSignal);
       const role = roles[i];
-      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round });
-      let roleOutput = "";
+      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: providerName });
       const messages = [
         {
           role: "system",
@@ -37898,7 +50192,7 @@ Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", "
 
 Your role: ${role.persona}. ${role.instruction}
 
-Be sharp, specific, and argumentative. Do not be vague. Target: ${maxTokens} tokens.`
+Be sharp, specific, and argumentative. Do not be vague.`
         },
         {
           role: "user",
@@ -37909,48 +50203,32 @@ ${previousTranscript}
 Now give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`
         }
       ];
-      try {
-        const stream = await openai.chat.completions.create({
-          model: "gpt-5.4",
-          max_completion_tokens: maxTokens,
-          stream: true,
-          messages
-        });
-        for await (const chunk of stream) {
-          if (abortSignal?.aborted) break;
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            roleOutput += content;
-            sendSSE(res, { type: "content", role: role.name, content });
-          }
-        }
-        throwIfAborted(abortSignal);
-      } catch (err) {
-        if (err?.message === "Session aborted by client") throw err;
-        const fallback = `[${role.name} unable to respond \u2014 ${err?.message || "API error"}]`;
-        roleOutput = fallback;
-        sendSSE(res, { type: "content", role: role.name, content: fallback });
-      }
+      const roleOutput = await streamRole(
+        provider,
+        messages,
+        maxTokens,
+        (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
+        usage,
+        abortSignal
+      );
+      throwIfAborted(abortSignal);
       transcript.push(`**${role.name} (Round ${round}):** ${roleOutput}`);
       debateNotesList.push(`### ${role.name} \u2014 Round ${round}
 ${roleOutput}`);
       turns.push({ role: role.name, round, content: roleOutput });
       sendSSE(res, { type: "role_end", role: role.name, fullContent: roleOutput });
-      creditsUsed += Math.ceil(maxTokens / 200);
       confidence = Math.min(
         config.confidenceTarget,
         20 + (round * roles.length + i + 1) * Math.floor((config.confidenceTarget - 20) / (config.maxIterations * roles.length))
       );
-      sendSSE(res, { type: "confidence_update", confidence, creditsUsed });
+      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-4o", usage.inputTokens, usage.outputTokens);
+      sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
     }
     sendSSE(res, { type: "round_end", round, confidence });
     if (confidence >= config.confidenceTarget && round >= 2) break;
   }
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99 });
-  let finalAnswer = "";
-  let caveats = "";
-  let artifacts = "";
+  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: providerName });
   const verdictPrompt = `${baseContext}
 
 You have observed the following structured debate:
@@ -37977,55 +50255,34 @@ Format this as a practical work product the user can use directly.
 What assumptions underlie this analysis? What would change the verdict? What professional expertise should be consulted? List key limitations.
 
 Output format: ${config.outputFormat}`;
-  try {
-    const verdictStream = await openai.chat.completions.create({
-      model: "gpt-5.4",
-      max_completion_tokens: 1600,
-      stream: true,
-      messages: [
-        {
-          role: "system",
-          content: "You are the Synthesizer \u2014 the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections."
-        },
-        { role: "user", content: verdictPrompt }
-      ]
-    });
-    for await (const chunk of verdictStream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        finalAnswer += content;
-        sendSSE(res, { type: "content", role: "Verdict", content });
-      }
-    }
-  } catch (err) {
-    finalAnswer = `## Final Answer
-
-Based on the debate, "${question}" has been examined from ${roles.length} perspectives. Review the transcript for detailed arguments.
-
-## Artifacts
-
-No structured artifact could be generated due to an error.
-
-## Sources & Caveats
-
-This analysis is AI-generated. [Error: ${err?.message || "API error"}]`;
-    sendSSE(res, { type: "content", role: "Verdict", content: finalAnswer });
-  }
+  const verdictMessages = [
+    {
+      role: "system",
+      content: "You are the Synthesizer \u2014 the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections."
+    },
+    { role: "user", content: verdictPrompt }
+  ];
+  const finalAnswer = await streamRole(
+    provider,
+    verdictMessages,
+    1600,
+    (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
+    usage,
+    abortSignal
+  );
   const artifactsMatch = finalAnswer.match(/##\s+Artifacts\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  if (artifactsMatch) {
-    artifacts = artifactsMatch[1].trim();
-  }
+  const artifacts = artifactsMatch ? artifactsMatch[1].trim() : "";
   const caveatMatch = finalAnswer.match(/##\s+(?:Sources &|Sources &amp;|Caveats?|Sources)\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  if (caveatMatch) {
-    caveats = caveatMatch[1].trim();
-  } else {
-    caveats = "This analysis represents AI-generated reasoning and should not substitute for professional advice in legal, medical, financial, or safety-critical domains.";
-  }
+  const caveats = caveatMatch ? caveatMatch[1].trim() : "This analysis represents AI-generated reasoning and should not substitute for professional advice.";
   const answerMatch = finalAnswer.match(/##\s+Final Answer\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const cleanFinalAnswer = answerMatch ? answerMatch[1].trim() : finalAnswer;
-  creditsUsed += 6;
   confidence = Math.min(95, confidence + 5);
   turns.push({ role: "Verdict", round: 99, content: finalAnswer });
+  const creditsUsed = calculateActualCredits(
+    modelName || "gpt-4o",
+    usage.inputTokens,
+    usage.outputTokens
+  );
   sendSSE(res, { type: "role_end", role: "Verdict", fullContent: finalAnswer });
   sendSSE(res, {
     type: "done",
@@ -38036,7 +50293,10 @@ This analysis is AI-generated. [Error: ${err?.message || "API error"}]`;
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript: transcript.join("\n\n---\n\n"),
     caveats,
-    artifacts
+    artifacts,
+    provider: providerName,
+    model: modelName,
+    tokenUsage: usage
   });
   return {
     sessionId,
@@ -38047,12 +50307,120 @@ This analysis is AI-generated. [Error: ${err?.message || "API error"}]`;
     transcript,
     caveats,
     artifacts,
-    turns
+    turns,
+    provider: providerName,
+    model: modelName,
+    tokenUsage: usage
   };
 }
 
 // src/routes/brain.ts
-import { FieldValue as FieldValue3 } from "firebase-admin/firestore";
+import { FieldValue as FieldValue5 } from "firebase-admin/firestore";
+
+// src/lib/pricingConfig.ts
+import { FieldValue as FieldValue4 } from "firebase-admin/firestore";
+var _cache2 = null;
+var _cacheExpiry2 = 0;
+var CACHE_TTL_MS2 = 6e4;
+function invalidateMultiplierCache() {
+  _cache2 = null;
+  _cacheExpiry2 = 0;
+}
+async function getMultiplierOverrides() {
+  const now = Date.now();
+  if (_cache2 !== null && now < _cacheExpiry2) {
+    return { ...MODEL_MULTIPLIERS, ..._cache2.multipliers ?? {} };
+  }
+  const db = getFirestoreDb();
+  if (!db) return { ...MODEL_MULTIPLIERS };
+  try {
+    const doc = await db.collection("config").doc("pricing").get();
+    _cache2 = doc.exists ? doc.data() : {};
+    _cacheExpiry2 = now + CACHE_TTL_MS2;
+    return { ...MODEL_MULTIPLIERS, ..._cache2.multipliers ?? {} };
+  } catch {
+    return { ...MODEL_MULTIPLIERS };
+  }
+}
+async function getEffectiveMultiplier(model) {
+  const overrides = await getMultiplierOverrides();
+  return overrides[model] ?? MODEL_MULTIPLIERS[model] ?? 5;
+}
+async function calculateLiveCredits(model, inputTokens, outputTokens) {
+  const multiplier = await getEffectiveMultiplier(model);
+  const rate = MODEL_RATES[model] ?? { input: 3e-3, output: 0.015 };
+  const costUSD = inputTokens / 1e3 * rate.input + outputTokens / 1e3 * rate.output;
+  return Math.max(1, Math.ceil(costUSD * multiplier / CREDIT_VALUE_USD));
+}
+var MODEL_META = {
+  "gpt-4o": { provider: "openai", label: "GPT-4o" },
+  "gpt-4o-mini": { provider: "openai", label: "GPT-4o Mini" },
+  "o3": { provider: "openai", label: "o3 (reasoning)" },
+  "o4-mini": { provider: "openai", label: "o4-mini (reasoning)" },
+  "claude-opus-4-5": { provider: "anthropic", label: "Claude Opus 4.5" },
+  "claude-sonnet-4-5": { provider: "anthropic", label: "Claude Sonnet 4.5" },
+  "claude-haiku-4-5": { provider: "anthropic", label: "Claude Haiku 4.5" },
+  "grok-3": { provider: "grok", label: "Grok 3" },
+  "grok-3-mini": { provider: "grok", label: "Grok 3 Mini" },
+  "grok-2": { provider: "grok", label: "Grok 2" },
+  "gemini-2.5-pro": { provider: "gemini", label: "Gemini 2.5 Pro" },
+  "gemini-2.5-flash": { provider: "gemini", label: "Gemini 2.5 Flash" },
+  "gemini-2.0-flash": { provider: "gemini", label: "Gemini 2.0 Flash" }
+};
+async function getAdminPricingTable() {
+  const overrides = await getMultiplierOverrides();
+  const EXAMPLE_INPUT = 13e3;
+  const EXAMPLE_OUTPUT = 5600;
+  const models = Object.entries(MODEL_RATES).map(([model, rate]) => {
+    const defaultMultiplier = MODEL_MULTIPLIERS[model] ?? 5;
+    const effectiveMultiplier = overrides[model] ?? defaultMultiplier;
+    const exampleCostUsd = EXAMPLE_INPUT / 1e3 * rate.input + EXAMPLE_OUTPUT / 1e3 * rate.output;
+    const exampleCredits = Math.max(
+      1,
+      Math.ceil(exampleCostUsd * effectiveMultiplier / CREDIT_VALUE_USD)
+    );
+    const meta = MODEL_META[model] ?? { provider: "unknown", label: model };
+    return {
+      model,
+      provider: meta.provider,
+      label: meta.label,
+      inputRatePer1k: rate.input,
+      outputRatePer1k: rate.output,
+      defaultMultiplier,
+      effectiveMultiplier,
+      // isOverridden: only true when the Firestore value differs from the hardcoded default.
+      // A value equal to the default is not counted as an override (user might have
+      // set it back manually).
+      isOverridden: overrides[model] !== void 0 && overrides[model] !== defaultMultiplier,
+      exampleCostUsd: Math.round(exampleCostUsd * 1e4) / 1e4,
+      exampleCredits
+    };
+  });
+  return { creditValueUsd: CREDIT_VALUE_USD, models };
+}
+async function saveMultiplierOverride(model, multiplier) {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firebase not configured");
+  await db.collection("config").doc("pricing").set(
+    { multipliers: { [model]: multiplier }, updatedAt: FieldValue4.serverTimestamp() },
+    { merge: true }
+  );
+  invalidateMultiplierCache();
+}
+async function resetMultiplierToDefault(model) {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firebase not configured");
+  const ref = db.collection("config").doc("pricing");
+  const doc = await ref.get();
+  if (!doc.exists) return;
+  const data = doc.data();
+  const multipliers = { ...data.multipliers ?? {} };
+  delete multipliers[model];
+  await ref.set({ multipliers, updatedAt: FieldValue4.serverTimestamp() });
+  invalidateMultiplierCache();
+}
+
+// src/routes/brain.ts
 var router3 = (0, import_express3.Router)();
 var guestSessionIPs = /* @__PURE__ */ new Set();
 function getClientIp(req) {
@@ -38069,7 +50437,7 @@ async function reserveCredits(uid, amount, sessionId) {
     const balance = userDoc.data()?.creditBalance ?? 0;
     if (balance < amount) return false;
     const newBalance = balance - amount;
-    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue3.serverTimestamp() });
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue5.serverTimestamp() });
     const txRef = db.collection("credit_transactions").doc();
     txn.set(txRef, {
       userId: uid,
@@ -38078,7 +50446,7 @@ async function reserveCredits(uid, amount, sessionId) {
       balanceAfter: newBalance,
       source: "brain_reservation",
       sessionId,
-      createdAt: FieldValue3.serverTimestamp()
+      createdAt: FieldValue5.serverTimestamp()
     });
     return true;
   });
@@ -38091,7 +50459,7 @@ async function reconcileCredits(uid, refundAmount, sessionId, source) {
     const userDoc = await txn.get(userRef);
     const balance = userDoc.data()?.creditBalance ?? 0;
     const newBalance = balance + refundAmount;
-    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue3.serverTimestamp() });
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue5.serverTimestamp() });
     const txRef = db.collection("credit_transactions").doc();
     txn.set(txRef, {
       userId: uid,
@@ -38100,7 +50468,7 @@ async function reconcileCredits(uid, refundAmount, sessionId, source) {
       balanceAfter: newBalance,
       source,
       sessionId,
-      createdAt: FieldValue3.serverTimestamp()
+      createdAt: FieldValue5.serverTimestamp()
     });
   }).catch((e) => console.error(`[brain] ${source} failed for ${uid}:`, e));
 }
@@ -38164,6 +50532,11 @@ router3.post("/run-brain", async (req, res) => {
   res.flushHeaders();
   const abortCtrl = new AbortController();
   req.on("close", () => abortCtrl.abort());
+  const SESSION_TIMEOUT_MS = 5 * 60 * 1e3;
+  const sessionTimer = setTimeout(() => {
+    console.warn("[brain] Session hard-timeout after 5 minutes \u2014 aborting.");
+    abortCtrl.abort();
+  }, SESSION_TIMEOUT_MS);
   let runSucceeded = false;
   let actualCost = 0;
   try {
@@ -38200,12 +50573,22 @@ router3.post("/run-brain", async (req, res) => {
           artifacts: result.artifacts,
           shared: false,
           shareId: null,
-          createdAt: FieldValue3.serverTimestamp(),
-          updatedAt: FieldValue3.serverTimestamp()
+          createdAt: FieldValue5.serverTimestamp(),
+          updatedAt: FieldValue5.serverTimestamp()
         });
+        actualCost = await calculateLiveCredits(
+          result.model || "gpt-4o",
+          result.tokenUsage.inputTokens,
+          result.tokenUsage.outputTokens
+        );
         const refund = Math.max(0, estimatedCost - actualCost);
         if (refund > 0) {
           await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+        }
+        if (actualCost > estimatedCost && uid) {
+          const overage = actualCost - estimatedCost;
+          await reserveCredits(uid, overage, result.sessionId).catch(() => {
+          });
         }
         const turnsCol = sessionRef.collection("session_turns");
         await Promise.all(
@@ -38215,7 +50598,7 @@ router3.post("/run-brain", async (req, res) => {
               role: turn.role,
               round: turn.round,
               content: turn.content,
-              createdAt: FieldValue3.serverTimestamp()
+              createdAt: FieldValue5.serverTimestamp()
             })
           )
         );
@@ -38235,6 +50618,7 @@ router3.post("/run-brain", async (req, res) => {
     if (!runSucceeded && uid && db) {
       await reconcileCredits(uid, estimatedCost, sessionId ?? "failed", "brain_failure_refund");
     }
+    clearTimeout(sessionTimer);
     if (!res.writableEnded) res.end();
   }
 });
@@ -38255,10 +50639,10 @@ router4.get("/sessions", async (req, res) => {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
-  const limit2 = Math.min(Number(req.query["limit"]) || 20, 100);
+  const limit3 = Math.min(Number(req.query["limit"]) || 20, 100);
   const cursor = req.query["cursor"] || null;
   try {
-    let query = db.collection("sessions").where("userId", "==", decoded.uid).orderBy("updatedAt", "desc").limit(limit2 + 1);
+    let query = db.collection("sessions").where("userId", "==", decoded.uid).orderBy("updatedAt", "desc").limit(limit3 + 1);
     if (cursor) {
       const cursorDoc = await db.collection("sessions").doc(cursor).get();
       if (cursorDoc.exists) {
@@ -38266,8 +50650,8 @@ router4.get("/sessions", async (req, res) => {
       }
     }
     const snap = await query.get();
-    const docs = snap.docs.slice(0, limit2);
-    const hasMore = snap.docs.length > limit2;
+    const docs = snap.docs.slice(0, limit3);
+    const hasMore = snap.docs.length > limit3;
     res.json({
       sessions: docs.map((doc) => ({
         id: doc.id,
@@ -38375,13 +50759,12 @@ router4.patch("/sessions/:id", async (req, res) => {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
-  const { title, shared, starred, archived, shareId } = req.body;
+  const { title, shared, starred, archived } = req.body;
   const updates = {};
   if (title !== void 0) updates["title"] = title;
   if (shared !== void 0) updates["shared"] = shared;
   if (starred !== void 0) updates["starred"] = starred;
   if (archived !== void 0) updates["archived"] = archived;
-  if (shareId !== void 0) updates["shareId"] = shareId;
   try {
     const doc = await db.collection("sessions").doc(req.params["id"]).get();
     if (!doc.exists || doc.data()["userId"] !== decoded.uid) {
@@ -38390,6 +50773,32 @@ router4.patch("/sessions/:id", async (req, res) => {
     }
     await doc.ref.update(updates);
     res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ message: e?.message });
+  }
+});
+router4.post("/sessions/:id/share", async (req, res) => {
+  const db = getFirestoreDb();
+  const authHeader = req.headers["authorization"];
+  if (!db || !authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  try {
+    const doc = await db.collection("sessions").doc(req.params["id"]).get();
+    if (!doc.exists || doc.data()["userId"] !== decoded.uid) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+    const existingShareId = doc.data()["shareId"];
+    const shareId = existingShareId || crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    await doc.ref.update({ shared: true, shareId });
+    res.json({ success: true, shareId });
   } catch (e) {
     res.status(500).json({ message: e?.message });
   }
@@ -38487,7 +50896,7 @@ var account_default = router6;
 
 // src/routes/admin.ts
 var import_express7 = __toESM(require_express2(), 1);
-import { FieldValue as FieldValue4 } from "firebase-admin/firestore";
+import { FieldValue as FieldValue6 } from "firebase-admin/firestore";
 import { getAuth as getAuth2 } from "firebase-admin/auth";
 var router7 = (0, import_express7.Router)();
 async function requireAdmin(req, res, next) {
@@ -38627,16 +51036,16 @@ router7.get("/admin/users", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ users: [] });
   const search = req.query["search"]?.toLowerCase();
-  const limit2 = Math.min(Number(req.query["limit"]) || 20, 100);
+  const limit3 = Math.min(Number(req.query["limit"]) || 20, 100);
   const cursor = req.query["cursor"];
   try {
     let q;
     if (search && search.includes("@")) {
-      q = db.collection("users").where("email", ">=", search).where("email", "<=", search + "\uF8FF").limit(limit2 + 1);
+      q = db.collection("users").where("email", ">=", search).where("email", "<=", search + "\uF8FF").limit(limit3 + 1);
     } else if (search) {
       q = db.collection("users").orderBy("createdAt", "desc").limit(200);
     } else {
-      q = db.collection("users").orderBy("createdAt", "desc").limit(limit2 + 1);
+      q = db.collection("users").orderBy("createdAt", "desc").limit(limit3 + 1);
       if (cursor) {
         const cursorDoc = await db.collection("users").doc(cursor).get();
         if (cursorDoc.exists) q = q.startAfter(cursorDoc);
@@ -38649,8 +51058,8 @@ router7.get("/admin/users", requireAdmin, async (req, res) => {
         (u) => u.email?.toLowerCase().includes(search) || u.displayName?.toLowerCase().includes(search)
       );
     }
-    const hasMore = !search && users.length > limit2;
-    if (!search) users = users.slice(0, limit2);
+    const hasMore = !search && users.length > limit3;
+    if (!search) users = users.slice(0, limit3);
     return res.json({
       users,
       hasMore,
@@ -38706,9 +51115,9 @@ router7.post("/admin/users/:uid/ban", requireAdmin, async (req, res) => {
       {
         banned,
         bannedReason: reason ?? null,
-        bannedAt: banned ? FieldValue4.serverTimestamp() : null,
+        bannedAt: banned ? FieldValue6.serverTimestamp() : null,
         bannedBy: req.adminUid,
-        updatedAt: FieldValue4.serverTimestamp()
+        updatedAt: FieldValue6.serverTimestamp()
       },
       { merge: true }
     );
@@ -38730,13 +51139,13 @@ router7.post("/admin/users/:uid/ban", requireAdmin, async (req, res) => {
 router7.get("/admin/sessions", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ sessions: [] });
-  const limit2 = Math.min(Number(req.query["limit"]) || 20, 100);
+  const limit3 = Math.min(Number(req.query["limit"]) || 20, 100);
   const cursor = req.query["cursor"];
   const userId = req.query["userId"];
   const templateId = req.query["templateId"];
   const status = req.query["status"];
   try {
-    let q = db.collection("sessions").orderBy("createdAt", "desc").limit(limit2 + 1);
+    let q = db.collection("sessions").orderBy("createdAt", "desc").limit(limit3 + 1);
     if (userId) q = q.where("userId", "==", userId);
     if (templateId) q = q.where("templateId", "==", templateId);
     if (status) q = q.where("status", "==", status);
@@ -38745,8 +51154,8 @@ router7.get("/admin/sessions", requireAdmin, async (req, res) => {
       if (cursorDoc.exists) q = q.startAfter(cursorDoc);
     }
     const snap = await q.get();
-    const docs = snap.docs.slice(0, limit2);
-    const hasMore = snap.docs.length > limit2;
+    const docs = snap.docs.slice(0, limit3);
+    const hasMore = snap.docs.length > limit3;
     return res.json({
       sessions: docs.map((d) => serializeDoc(d)),
       hasMore,
@@ -38773,12 +51182,12 @@ router7.get("/admin/sessions/:id", requireAdmin, async (req, res) => {
 router7.get("/admin/transactions", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ transactions: [] });
-  const limit2 = Math.min(Number(req.query["limit"]) || 30, 100);
+  const limit3 = Math.min(Number(req.query["limit"]) || 30, 100);
   const cursor = req.query["cursor"];
   const userId = req.query["userId"];
   const type = req.query["type"];
   try {
-    let q = db.collection("credit_transactions").orderBy("createdAt", "desc").limit(limit2 + 1);
+    let q = db.collection("credit_transactions").orderBy("createdAt", "desc").limit(limit3 + 1);
     if (userId) q = q.where("userId", "==", userId);
     if (type) q = q.where("type", "==", type);
     if (cursor) {
@@ -38786,8 +51195,8 @@ router7.get("/admin/transactions", requireAdmin, async (req, res) => {
       if (cursorDoc.exists) q = q.startAfter(cursorDoc);
     }
     const snap = await q.get();
-    const docs = snap.docs.slice(0, limit2);
-    const hasMore = snap.docs.length > limit2;
+    const docs = snap.docs.slice(0, limit3);
+    const hasMore = snap.docs.length > limit3;
     return res.json({
       transactions: docs.map((d) => serializeDoc(d)),
       hasMore,
@@ -38848,11 +51257,11 @@ router7.get("/admin/api-usage", requireAdmin, async (_req, res) => {
 router7.get("/admin/error-logs", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ logs: [], failedSessions: [] });
-  const limit2 = Math.min(Number(req.query["limit"]) || 50, 200);
+  const limit3 = Math.min(Number(req.query["limit"]) || 50, 200);
   try {
     let logs = [];
     try {
-      const snap = await db.collection("api_logs").where("status", "==", "error").orderBy("createdAt", "desc").limit(limit2).get();
+      const snap = await db.collection("api_logs").where("status", "==", "error").orderBy("createdAt", "desc").limit(limit3).get();
       logs = snap.docs.map((d) => serializeDoc(d));
     } catch {
     }
@@ -38871,9 +51280,9 @@ router7.get("/admin/error-logs", requireAdmin, async (req, res) => {
 router7.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ flags: [], totalCount: 0 });
-  const limit2 = Math.min(Number(req.query["limit"]) || 50, 200);
+  const limit3 = Math.min(Number(req.query["limit"]) || 50, 200);
   try {
-    const snap = await db.collection("feedback").where("rating", "in", ["bad", "warn"]).orderBy("createdAt", "desc").limit(limit2).get();
+    const snap = await db.collection("feedback").where("rating", "in", ["bad", "warn"]).orderBy("createdAt", "desc").limit(limit3).get();
     return res.json({
       flags: snap.docs.map((d) => serializeDoc(d)),
       totalCount: snap.size
@@ -38910,7 +51319,7 @@ router7.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
   }
   try {
     await db.collection("config").doc("featureFlags").set(
-      { [req.params["name"]]: value, updatedAt: FieldValue4.serverTimestamp() },
+      { [req.params["name"]]: value, updatedAt: FieldValue6.serverTimestamp() },
       { merge: true }
     );
     return res.json({ success: true, name: req.params["name"], value });
@@ -38932,7 +51341,7 @@ router7.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
   const { title, description, isActive, systemPrompt, defaultSettings } = req.body;
-  const updates = { updatedAt: FieldValue4.serverTimestamp() };
+  const updates = { updatedAt: FieldValue6.serverTimestamp() };
   if (title !== void 0) updates["title"] = title;
   if (description !== void 0) updates["description"] = description;
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
@@ -38941,6 +51350,74 @@ router7.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   try {
     await db.collection("templates").doc(req.params["id"]).set(updates, { merge: true });
     return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.get("/admin/pricing", requireAdmin, async (_req, res) => {
+  try {
+    const table = await getAdminPricingTable();
+    return res.json(table);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.put("/admin/pricing/:model", requireAdmin, async (req, res) => {
+  const { model } = req.params;
+  const { multiplier } = req.body;
+  if (multiplier === void 0 || isNaN(Number(multiplier))) {
+    return res.status(400).json({ error: "multiplier (number) is required" });
+  }
+  const value = Number(multiplier);
+  if (value < 1 || value > 100) {
+    return res.status(400).json({ error: "multiplier must be between 1 and 100" });
+  }
+  try {
+    await saveMultiplierOverride(model, value);
+    return res.json({ success: true, model, multiplier: value });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.delete("/admin/pricing/:model", requireAdmin, async (req, res) => {
+  const { model } = req.params;
+  try {
+    await resetMultiplierToDefault(model);
+    return res.json({ success: true, model, reset: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.get("/admin/api-keys", requireAdmin, async (_req, res) => {
+  try {
+    const providers = await getAllConfiguredProviders();
+    return res.json({ providers });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.put("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
+  const { providerId } = req.params;
+  const { key, label, baseUrl } = req.body;
+  if (!key || typeof key !== "string" || key.trim().length < 8) {
+    return res.status(400).json({ error: "key must be a non-empty string (min 8 chars)" });
+  }
+  if (!label || typeof label !== "string" || label.trim().length === 0) {
+    return res.status(400).json({ error: "label is required" });
+  }
+  const sanitizedId = providerId.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  try {
+    await saveApiKey(sanitizedId, key.trim(), label.trim(), baseUrl?.trim() || void 0);
+    return res.json({ success: true, providerId: sanitizedId });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
+  const { providerId } = req.params;
+  try {
+    await deleteApiKey(providerId);
+    return res.json({ success: true, providerId, note: "env var fallback still applies if set" });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -39013,28 +51490,412 @@ ${t["content"]}`).join("\n\n---\n\n");
 });
 var report_default = router8;
 
-// src/routes/index-firebase.ts
+// src/routes/providers.ts
+var import_express9 = __toESM(require_express2(), 1);
 var router9 = (0, import_express9.Router)();
-router9.use(health_default);
-router9.use(auth_default);
-router9.use(brain_default);
-router9.use(sessions_default);
-router9.use(templates_default);
-router9.use(account_default);
-router9.use(admin_default);
-router9.use(report_default);
-var index_firebase_default = router9;
+router9.get("/providers", (_req, res) => {
+  const configured = getConfiguredProviders();
+  res.json({
+    configured,
+    creditValueUsd: 0.01,
+    providers: configured.map((name) => ({
+      name,
+      displayName: PROVIDER_DISPLAY_NAMES[name],
+      defaultModel: DEFAULT_MODELS[name],
+      models: PROVIDER_MODELS[name].map((m) => ({
+        ...m,
+        creditInfo: getModelCreditInfo(m.id)
+      }))
+    }))
+  });
+});
+var providers_default = router9;
+
+// src/routes/billing.ts
+var import_express10 = __toESM(require_express2(), 1);
+import crypto3 from "crypto";
+
+// src/lib/squareClient.ts
+var SQUARE_BASE_URL = process.env["SQUARE_ENVIRONMENT"] === "production" ? "https://connect.squareup.com" : "https://connect.squareupsandbox.com";
+function isSquareConfigured() {
+  return !!(process.env["SQUARE_ACCESS_TOKEN"] && process.env["SQUARE_LOCATION_ID"]);
+}
+function getSquareLocationId() {
+  const id = process.env["SQUARE_LOCATION_ID"];
+  if (!id) throw new Error("SQUARE_LOCATION_ID not set");
+  return id;
+}
+async function squareFetch(path6, options = {}) {
+  const token = process.env["SQUARE_ACCESS_TOKEN"];
+  if (!token) throw new Error("SQUARE_ACCESS_TOKEN not set");
+  const res = await fetch(`${SQUARE_BASE_URL}${path6}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Square-Version": "2024-11-20",
+      ...options.headers ?? {}
+    }
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    const errMsg = body?.errors?.[0]?.detail ?? `Square API error ${res.status}`;
+    throw new Error(errMsg);
+  }
+  return body;
+}
+async function createPaymentLink(opts) {
+  const locationId = getSquareLocationId();
+  const payload = {
+    idempotency_key: opts.idempotencyKey,
+    quick_pay: {
+      name: opts.name,
+      price_money: {
+        amount: opts.amountCents,
+        currency: "USD"
+      },
+      location_id: locationId
+    },
+    checkout_options: {
+      redirect_url: opts.redirectUrl,
+      ask_for_shipping_address: false
+    },
+    payment_note: opts.note
+  };
+  if (opts.buyerEmail) {
+    payload["pre_populated_data"] = { buyer_email: opts.buyerEmail };
+  }
+  const data = await squareFetch(
+    "/v2/online-checkout/payment-links",
+    { method: "POST", body: JSON.stringify(payload) }
+  );
+  return data.payment_link;
+}
+
+// src/routes/billing.ts
+var router10 = (0, import_express10.Router)();
+async function requireAuth(req, res) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  return decoded;
+}
+router10.post("/billing/signup-grant", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!isFirebaseConfigured()) {
+    return res.json({ granted: false, reason: "firebase_not_configured" });
+  }
+  try {
+    const result = await grantSignupBonus(user.uid);
+    return res.json({ granted: !result.skipped, skipped: result.skipped });
+  } catch (err) {
+    console.error("[Billing] signup-grant error:", err.message);
+    return res.status(500).json({ error: "Failed to grant signup bonus" });
+  }
+});
+router10.patch("/billing/auto-refill", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const { enabled, thresholdCredits, packPriceId } = req.body;
+  if (typeof enabled !== "boolean") {
+    return res.status(400).json({ error: "enabled (boolean) is required" });
+  }
+  await setAutoRefillPreference(user.uid, {
+    enabled,
+    thresholdCredits: thresholdCredits ?? 20,
+    packPriceId: packPriceId ?? "starter_pack"
+  });
+  return res.json({ success: true });
+});
+router10.get("/billing/products", async (_req, res) => {
+  return res.json({ data: STATIC_PRODUCTS });
+});
+router10.get("/billing/transactions", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const limit3 = Math.min(Number(req.query["limit"]) || 50, 100);
+  const cursor = req.query["cursor"] || void 0;
+  const result = await getTransactions(user.uid, limit3, cursor);
+  return res.json(result);
+});
+router10.get("/billing/payment-history", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const { items } = await getTransactions(user.uid, 20);
+  const purchases = items.filter((t) => t.type === "purchase").map((t) => ({
+    id: t.transactionId ?? t.paymentId ?? "",
+    amount: t.amount,
+    currency: "usd",
+    status: "completed",
+    created: Math.floor(new Date(t.createdAt).getTime() / 1e3),
+    description: `${t.amount} credits`
+  }));
+  return res.json({ data: purchases });
+});
+router10.get("/billing/subscription", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  return res.json({ subscription: null });
+});
+router10.post("/billing/checkout", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!isSquareConfigured()) {
+    return res.status(503).json({ error: "Square not configured" });
+  }
+  const { priceId } = req.body;
+  if (!priceId) {
+    return res.status(400).json({ error: "priceId is required" });
+  }
+  const product = STATIC_PRODUCTS.find(
+    (p) => p.prices.some((pr) => pr.id === priceId)
+  );
+  const price = product?.prices.find((pr) => pr.id === priceId);
+  if (!product || !price || !price.unit_amount) {
+    return res.status(404).json({ error: "Unknown price ID" });
+  }
+  const creditAmount = parseInt(
+    price.metadata?.creditAmount ?? product.metadata?.creditAmount ?? "0",
+    10
+  );
+  if (!creditAmount) {
+    return res.status(400).json({ error: "Credit amount not configured for this product" });
+  }
+  const origin = req.headers["origin"] || (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) || `https://${process.env["REPLIT_DOMAINS"]?.split(",")[0]}`;
+  try {
+    const idempotencyKey = crypto3.randomUUID();
+    const note = `LITIGANT:userId=${user.uid},creditAmount=${creditAmount},pack=${product.id}`;
+    const link = await createPaymentLink({
+      name: `${product.name} \u2014 ${creditAmount} Credits`,
+      amountCents: price.unit_amount,
+      note,
+      redirectUrl: `${origin}/gh-brain/billing?success=true`,
+      buyerEmail: user.email,
+      idempotencyKey
+    });
+    return res.json({ url: link.url });
+  } catch (err) {
+    console.error("[Billing] Square checkout error:", err.message);
+    return res.status(500).json({ error: "Failed to create checkout link" });
+  }
+});
+router10.post("/billing/cancel-subscription", async (_req, res) => {
+  return res.status(501).json({ error: "Subscriptions are not available" });
+});
+var STATIC_PRODUCTS = [
+  {
+    id: "starter_pack",
+    name: "Starter Pack",
+    description: "100 credits \u2014 great for exploring Litigant AI",
+    active: true,
+    metadata: { type: "credit_pack", creditAmount: "100" },
+    prices: [
+      {
+        id: "price_starter",
+        product: "starter_pack",
+        unit_amount: 499,
+        currency: "usd",
+        recurring: null,
+        active: true,
+        metadata: { creditAmount: "100" }
+      }
+    ]
+  },
+  {
+    id: "pro_pack",
+    name: "Pro Pack",
+    description: "500 credits \u2014 best value for power users",
+    active: true,
+    metadata: { type: "credit_pack", creditAmount: "500" },
+    prices: [
+      {
+        id: "price_pro_pack",
+        product: "pro_pack",
+        unit_amount: 1999,
+        currency: "usd",
+        recurring: null,
+        active: true,
+        metadata: { creditAmount: "500" }
+      }
+    ]
+  },
+  {
+    id: "mega_pack",
+    name: "Mega Pack",
+    description: "1,000 credits \u2014 maximum savings",
+    active: true,
+    metadata: { type: "credit_pack", creditAmount: "1000" },
+    prices: [
+      {
+        id: "price_mega_pack",
+        product: "mega_pack",
+        unit_amount: 3499,
+        currency: "usd",
+        recurring: null,
+        active: true,
+        metadata: { creditAmount: "1000" }
+      }
+    ]
+  }
+];
+var billing_default = router10;
+
+// src/routes/webhook.ts
+var import_express11 = __toESM(require_express2(), 1);
+
+// src/lib/squareEventHandler.ts
+import crypto4 from "crypto";
+
+// src/lib/logger.ts
+import pino from "pino";
+var isProduction = process.env.NODE_ENV === "production";
+var logger = pino({
+  level: process.env.LOG_LEVEL ?? "info",
+  redact: [
+    "req.headers.authorization",
+    "req.headers.cookie",
+    "res.headers['set-cookie']"
+  ],
+  ...isProduction ? {} : {
+    transport: {
+      target: "pino-pretty",
+      options: { colorize: true }
+    }
+  }
+});
+
+// src/lib/squareEventHandler.ts
+function verifySquareWebhook(rawBody, signature, notificationUrl) {
+  const signingKey = process.env["SQUARE_WEBHOOK_SIGNATURE_KEY"];
+  if (!signingKey) {
+    logger.warn(
+      "[SquareWebhook] SQUARE_WEBHOOK_SIGNATURE_KEY not set \u2014 skipping verification (set it in production)"
+    );
+    return true;
+  }
+  const hmac = crypto4.createHmac("sha256", signingKey);
+  hmac.update(notificationUrl + rawBody);
+  const expected = hmac.digest("base64");
+  return crypto4.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+async function handleSquareEvent(event) {
+  if (!isFirebaseConfigured()) return;
+  switch (event.type) {
+    case "payment.updated": {
+      const payment = event.data.object["payment"];
+      if (!payment) return;
+      if (payment.status !== "COMPLETED") return;
+      const note = payment.note ?? "";
+      const match = note.match(/LITIGANT:userId=([^,]+),creditAmount=(\d+)/);
+      if (!match) {
+        logger.warn(
+          "[SquareEvent] payment.completed: no LITIGANT metadata in payment note \u2014 ignoring"
+        );
+        return;
+      }
+      const userId = match[1];
+      const creditAmount = parseInt(match[2], 10);
+      if (!userId || !creditAmount) return;
+      const result = await addCredits(userId, creditAmount, "purchase", {
+        source: "square_checkout",
+        paymentId: payment.id,
+        idempotencyKey: event.event_id
+      });
+      if (result?.skipped) {
+        logger.info(`[SquareEvent] Event ${event.event_id} already processed \u2014 skipped`);
+      } else {
+        logger.info(`[SquareEvent] Granted ${creditAmount} credits to ${userId}`);
+      }
+      break;
+    }
+    default:
+      logger.debug(`[SquareEvent] Unhandled event type: ${event.type}`);
+      break;
+  }
+}
+
+// src/routes/webhook.ts
+var router11 = (0, import_express11.Router)();
+router11.post("/square/webhook", async (req, res) => {
+  const signature = req.headers["x-square-hmacsha256-signature"];
+  if (!signature) {
+    logger.warn("[SquareWebhook] Missing x-square-hmacsha256-signature header");
+    res.status(400).json({ error: "Missing signature" });
+    return;
+  }
+  const rawBody = req.rawBody ?? "";
+  const domain = process.env["APP_DOMAIN"] ?? process.env["REPLIT_DOMAINS"]?.split(",")[0];
+  const notificationUrl = `https://${domain}/api-server/api/square/webhook`;
+  const valid = verifySquareWebhook(rawBody, signature, notificationUrl);
+  if (!valid) {
+    logger.warn("[SquareWebhook] Invalid signature \u2014 rejected");
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
+  try {
+    const event = JSON.parse(rawBody);
+    await handleSquareEvent(event);
+  } catch (err) {
+    logger.warn({ err }, "Square event handler error (non-fatal)");
+  }
+  res.status(200).json({ received: true });
+});
+var webhook_default = router11;
+
+// src/routes/index-firebase.ts
+var router12 = (0, import_express12.Router)();
+router12.use(health_default);
+router12.use(auth_default);
+router12.use(brain_default);
+router12.use(sessions_default);
+router12.use(templates_default);
+router12.use(account_default);
+router12.use(admin_default);
+router12.use(report_default);
+router12.use(providers_default);
+router12.use(billing_default);
+router12.use(webhook_default);
+var index_firebase_default = router12;
 
 // src/app-firebase.ts
 initFirebaseAdmin();
-var app2 = (0, import_express10.default)();
+var app2 = (0, import_express13.default)();
 app2.use((req, _res, next) => {
   console.log(`[${req.method}] ${req.url?.split("?")[0]}`);
   next();
 });
-app2.use((0, import_cors.default)());
-app2.use(import_express10.default.json({ limit: "10mb" }));
-app2.use(import_express10.default.urlencoded({ extended: true }));
+var allowedOrigins = [
+  "https://litigant-ai.com",
+  "https://www.litigant-ai.com",
+  ...process.env["APP_DOMAIN"] ? [`https://${process.env["APP_DOMAIN"]}`] : [],
+  ...process.env["REPLIT_DOMAINS"] ? process.env["REPLIT_DOMAINS"].split(",").map((d) => `https://${d.trim()}`) : []
+];
+app2.use(
+  (0, import_cors.default)({
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error(`CORS: origin not allowed \u2014 ${origin}`));
+    },
+    credentials: true
+  })
+);
+app2.use(
+  import_express13.default.json({
+    limit: "10mb",
+    verify: (_req, _res, buf) => {
+      _req.rawBody = buf.toString("utf8");
+    }
+  })
+);
+app2.use(import_express13.default.urlencoded({ extended: true }));
 app2.use("/api", index_firebase_default);
 var app_firebase_default = app2;
 

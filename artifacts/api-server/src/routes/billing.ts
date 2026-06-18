@@ -169,6 +169,7 @@ router.post("/billing/checkout", async (req, res) => {
 
   const origin =
     (req.headers["origin"] as string | undefined) ||
+    (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
   try {
