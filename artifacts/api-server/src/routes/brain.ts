@@ -31,13 +31,45 @@
  * See docs/credits.md §5 for the full lifecycle diagram.
  */
 import { Router } from "express";
+import crypto from "crypto";
 import { runBrainSession, estimateCreditCost, type CourtConfig } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { calculateActualCredits } from "../lib/creditEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
+import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
+import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
+import { findPackByPriceId } from "../lib/creditPacks.js";
 
 const router = Router();
+
+/**
+ * Creates a Square Payment Link for an auto-refill top-up.
+ * Used as the createCheckoutUrl callback passed to checkAndTriggerAutoRefill.
+ */
+async function createAutoRefillUrl(priceId: string, uid: string): Promise<string | null> {
+  if (!isSquareConfigured()) return null;
+  const found = findPackByPriceId(priceId);
+  if (!found) return null;
+  const { pack, price } = found;
+  const creditAmount = parseInt(price.metadata.creditAmount, 10);
+  const domain =
+    process.env["APP_DOMAIN"] ??
+    (process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0];
+  if (!domain) return null;
+  try {
+    const link = await createPaymentLink({
+      name: `${pack.name} — Auto-Refill`,
+      amountCents: price.unit_amount,
+      note: `LITIGANT:userId=${uid},creditAmount=${creditAmount},pack=${pack.id}`,
+      redirectUrl: `https://${domain}/billing?success=true&refill=true`,
+      idempotencyKey: crypto.randomUUID(),
+    });
+    return link.url;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * In-memory guest session tracking.
@@ -308,6 +340,16 @@ router.post("/run-brain", async (req, res) => {
         if (actualCost > estimatedCost && uid) {
           const overage = actualCost - estimatedCost;
           await reserveCredits(uid, overage, result.sessionId).catch(() => {/* non-fatal */});
+        }
+
+        // Auto-refill: check if user's balance has dropped below their threshold
+        // and trigger a Square payment link if so (non-fatal)
+        try {
+          const userSnap = await db.collection("users").doc(uid).get();
+          const newBalance = (userSnap.data()?.creditBalance as number) ?? 0;
+          await checkAndTriggerAutoRefill(uid, newBalance, createAutoRefillUrl);
+        } catch (e) {
+          console.error("[brain] Auto-refill check failed (non-fatal):", e);
         }
 
         // Write session_turns subcollection

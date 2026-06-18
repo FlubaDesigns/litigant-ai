@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, CreditCard, History, AlertTriangle,
@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
+import { doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
+import { db, isConfigured as isFirebaseConfigured } from "@/lib/firebase";
 import {
   getProducts,
   getTransactions,
@@ -428,6 +430,24 @@ export default function BillingPage() {
     if (didSucceed) toast.success("Payment successful! Credits will appear shortly.");
     if (didCancel) toast.info("Payment cancelled.");
   }, [didSucceed, didCancel]);
+
+  // Listen for auto-refill checkout URL written by the server after a session
+  const autoRefillHandled = useRef(false);
+  useEffect(() => {
+    if (!user || !isFirebaseConfigured) return;
+    const userRef = doc(db, "users", user.uid);
+    const unsub = onSnapshot(userRef, async (snap) => {
+      if (!snap.exists()) return;
+      const url = snap.data()?.autoRefillCheckoutUrl as string | undefined;
+      if (!url || autoRefillHandled.current) return;
+      autoRefillHandled.current = true;
+      // Clear the field so we don't re-trigger
+      await updateDoc(userRef, { autoRefillCheckoutUrl: deleteField() }).catch(() => {});
+      toast.info("Low balance — completing auto-refill top-up…");
+      window.location.href = url;
+    });
+    return () => unsub();
+  }, [user]);
 
   const [paymentsAvailable, setPaymentsAvailable] = useState<boolean | null>(null);
 

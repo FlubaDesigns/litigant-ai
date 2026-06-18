@@ -8,6 +8,7 @@ import {
   grantSignupBonus,
   setAutoRefillPreference,
 } from "../lib/creditLedger.js";
+import { CREDIT_PACKS } from "../lib/creditPacks.js";
 
 const router = Router();
 
@@ -81,7 +82,7 @@ router.patch("/billing/auto-refill", async (req, res) => {
  * Returns available credit packs.
  */
 router.get("/billing/products", async (_req, res) => {
-  return res.json({ data: STATIC_PRODUCTS });
+  return res.json({ data: CREDIT_PACKS });
 });
 
 /**
@@ -149,7 +150,7 @@ router.post("/billing/checkout", async (req, res) => {
     return res.status(400).json({ error: "priceId is required" });
   }
 
-  const product = STATIC_PRODUCTS.find((p) =>
+  const product = CREDIT_PACKS.find((p) =>
     p.prices.some((pr) => pr.id === priceId)
   );
   const price = product?.prices.find((pr) => pr.id === priceId);
@@ -180,7 +181,7 @@ router.post("/billing/checkout", async (req, res) => {
       name: `${product.name} — ${creditAmount} Credits`,
       amountCents: price.unit_amount,
       note,
-      redirectUrl: `${origin}/gh-brain/billing?success=true`,
+      redirectUrl: `${origin}/billing?success=true`,
       buyerEmail: user.email,
       idempotencyKey,
     });
@@ -200,61 +201,5 @@ router.post("/billing/cancel-subscription", async (_req, res) => {
   return res.status(501).json({ error: "Subscriptions are not available" });
 });
 
-const STATIC_PRODUCTS = [
-  {
-    id: "starter_pack",
-    name: "Starter Pack",
-    description: "100 credits — great for exploring Litigant AI",
-    active: true,
-    metadata: { type: "credit_pack", creditAmount: "100" },
-    prices: [
-      {
-        id: "price_starter",
-        product: "starter_pack",
-        unit_amount: 499,
-        currency: "usd",
-        recurring: null,
-        active: true,
-        metadata: { creditAmount: "100" },
-      },
-    ],
-  },
-  {
-    id: "pro_pack",
-    name: "Pro Pack",
-    description: "500 credits — best value for power users",
-    active: true,
-    metadata: { type: "credit_pack", creditAmount: "500" },
-    prices: [
-      {
-        id: "price_pro_pack",
-        product: "pro_pack",
-        unit_amount: 1999,
-        currency: "usd",
-        recurring: null,
-        active: true,
-        metadata: { creditAmount: "500" },
-      },
-    ],
-  },
-  {
-    id: "mega_pack",
-    name: "Mega Pack",
-    description: "1,000 credits — maximum savings",
-    active: true,
-    metadata: { type: "credit_pack", creditAmount: "1000" },
-    prices: [
-      {
-        id: "price_mega_pack",
-        product: "mega_pack",
-        unit_amount: 3499,
-        currency: "usd",
-        recurring: null,
-        active: true,
-        metadata: { creditAmount: "1000" },
-      },
-    ],
-  },
-];
 
 export default router;

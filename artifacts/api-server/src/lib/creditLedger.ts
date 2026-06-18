@@ -34,8 +34,8 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
  * context within the category (e.g. "brain_reservation" vs "brain_failure_refund").
  */
 export type CreditTxType =
-  | "purchase"           // Stripe one-time pack
-  | "subscription_grant" // Stripe subscription renewal
+  | "purchase"           // Square one-time credit pack
+  | "subscription_grant" // subscription renewal top-up
   | "signup_bonus"       // 50 free trial credits
   | "usage"              // session deduction (negative amount)
   | "refund"             // post-session reconciliation or failure (positive amount)
@@ -214,13 +214,12 @@ export async function getTransactions(
   }
 }
 
-/** Updates plan / subscription / Stripe fields on the user document (no credit change). */
+/** Updates plan / subscription fields on the user document (no credit change). */
 export async function updateUserPlan(
   uid: string,
   data: {
     plan?: "free" | "starter" | "pro" | "team";
     subscriptionStatus?: "none" | "active" | "cancelled" | "past_due";
-    stripeCustomerId?: string;
   }
 ): Promise<void> {
   if (!isFirebaseConfigured()) return;
@@ -234,24 +233,6 @@ export async function updateUserPlan(
     );
   } catch (err) {
     console.error("[CreditLedger] updateUserPlan error:", err);
-  }
-}
-
-/** Look up a user UID by their Stripe customer ID (for webhook handling). */
-export async function getUserIdByStripeCustomer(stripeCustomerId: string): Promise<string | null> {
-  if (!isFirebaseConfigured()) return null;
-  const db = getFirestoreDb();
-  if (!db) return null;
-
-  try {
-    const snap = await db
-      .collection("users")
-      .where("stripeCustomerId", "==", stripeCustomerId)
-      .limit(1)
-      .get();
-    return snap.empty ? null : snap.docs[0].id;
-  } catch {
-    return null;
   }
 }
 
@@ -272,9 +253,10 @@ export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean 
 /**
  * Persists the user's auto-refill preference to Firestore.
  *
- * Auto-refill triggers a Stripe Checkout session whenever the user's
- * credit balance drops below `thresholdCredits`. The checkout URL is
- * written to users/{uid}.autoRefillCheckoutUrl for the frontend to pick up.
+ * When enabled, a Square Payment Link is created and stored on
+ * users/{uid}.autoRefillCheckoutUrl whenever the balance drops below
+ * thresholdCredits. The frontend listens to that field and redirects
+ * the user to complete the purchase.
  *
  * See checkAndTriggerAutoRefill() below.
  */
@@ -282,9 +264,9 @@ export async function setAutoRefillPreference(
   uid: string,
   opts: {
     enabled: boolean;
-    /** Balance level that triggers a top-up */
+    /** Balance level that triggers a top-up (in credits) */
     thresholdCredits: number;
-    /** Stripe Price ID of the credit pack to purchase */
+    /** Credit pack price ID (e.g. "price_starter") */
     packPriceId: string;
   }
 ): Promise<void> {
@@ -300,14 +282,14 @@ export async function setAutoRefillPreference(
 
 /**
  * Checks whether the user's new balance has dropped below their auto-refill
- * threshold, and if so, generates a Stripe Checkout URL and stores it on the
- * user document so the frontend can redirect them to complete the purchase.
+ * threshold, and if so, generates a Square Payment Link URL and stores it on
+ * the user document so the frontend can redirect them to complete the purchase.
  *
- * Called after any credit deduction (e.g. in brain.ts after reconcile).
+ * Called from brain.ts after session credit reconciliation.
  *
  * @param uid                - Firebase UID.
  * @param newBalance         - Balance AFTER the deduction.
- * @param createCheckoutUrl  - Callback that generates a Stripe Checkout URL
+ * @param createCheckoutUrl  - Callback that creates a Square Payment Link URL
  *                             for the given priceId and uid.
  */
 export async function checkAndTriggerAutoRefill(
