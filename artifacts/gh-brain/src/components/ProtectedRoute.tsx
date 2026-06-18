@@ -34,7 +34,7 @@ export function ProtectedRoute({
     return <Redirect to="/sign-in" />;
   }
 
-  if (requireVerified && !user.emailVerified) {
+  if (requireVerified && !user.emailVerified && !import.meta.env.DEV) {
     return <Redirect to="/verify-email" />;
   }
 
