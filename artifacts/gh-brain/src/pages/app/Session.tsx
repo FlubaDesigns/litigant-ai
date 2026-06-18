@@ -5,7 +5,7 @@ import {
   Stethoscope, Scale, Search, FlaskConical, Settings2, Play, Square,
   ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download, ChevronDown,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
-  Printer, Package, ShoppingCart, Cpu,
+  Printer, Package, ShoppingCart, Cpu, LayoutTemplate,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates"
 import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation } from "wouter";
 import {
   getProviders, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
@@ -444,6 +445,7 @@ function exportPDF(state: ReturnType<typeof useBrainSession>["state"], w: Window
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function SessionPage() {
   const { user, userProfile } = useAuth();
+  const { credits, plan } = useUserProfile();
   const savedConfig = userProfile?.defaultSettings
     ? {
         courtMode:        userProfile.defaultSettings.courtMode as CourtConfig["courtMode"],
@@ -458,12 +460,10 @@ export default function SessionPage() {
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
+  const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
-  const [profileNudgeDismissed, setProfileNudgeDismissed] = useState(false);
-  // Per-field values when a template has multiple structured input fields
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  // Credit info for the selected provider/model (used for accurate estimate)
   const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -500,9 +500,6 @@ export default function SessionPage() {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
   }, [state.runtimeFeed, state.phase]);
-
-  const filteredTemplates =
-    activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
 
   /** Assemble a structured question from template input field values */
   function assembleFieldQuestion(): string {
@@ -594,473 +591,505 @@ export default function SessionPage() {
   const isComplete = state.phase === "complete";
   const isError = state.phase === "error";
   const isIdle = state.phase === "idle";
+
   const estimatedCredits = selectedCreditInfo
     ? estimateCredits(selectedCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
     : state.config.litigantCount * state.config.maxIterations * 3 + 6;
 
-  // Google sign-in users who haven't set a role yet
-  const isGoogleUser = user?.providerData?.some((p) => p.providerId === "google.com") ?? false;
-  const showProfileNudge = isGoogleUser && !userProfile?.role && !profileNudgeDismissed;
+  // Live credit health — from Firestore via useUserProfile (updates as backend deducts)
+  const creditsCritical = credits < 10;
+  const creditsLow = credits < 50 && !creditsCritical;
+  const insufficientCredits = credits < estimatedCredits;
+  const sessionsLeft = estimatedCredits > 0 ? Math.floor(credits / estimatedCredits) : 0;
+
+  const filteredTemplates =
+    activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden bg-background">
-      <ConfigPanel
-        open={configOpen}
-        onClose={() => setConfigOpen(false)}
-        config={state.config}
-        onChange={setConfig}
-      />
+    <div
+      className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden"
+      style={{ background: "radial-gradient(circle at top, #102010, #070f07 56%, #020402)" }}
+    >
+      <ConfigPanel open={configOpen} onClose={() => setConfigOpen(false)} config={state.config} onChange={setConfig} />
 
-      {/* ── IDLE PHASE ────────────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
-        {isIdle && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="flex-1 overflow-y-auto"
-          >
-            <div className="max-w-4xl mx-auto px-4 py-8">
-              {/* Google profile completion nudge */}
-              {showProfileNudge && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 flex items-center gap-3"
-                >
-                  <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
-                  <p className="text-xs text-muted-foreground flex-1">
-                    <span className="font-semibold text-blue-400">Complete your profile</span> — takes 10 seconds and helps us tailor results to you.
-                  </p>
-                  <button onClick={() => navigate("/settings")} className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 shrink-0">Set role</button>
-                  <button onClick={() => setProfileNudgeDismissed(true)} className="text-muted-foreground hover:text-foreground shrink-0"><X className="w-3.5 h-3.5" /></button>
-                </motion.div>
-              )}
-
-              {/* Low-credit warning banner */}
-              {userProfile && userProfile.creditBalance < estimatedCredits && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4 flex items-start gap-3"
-                >
-                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-red-400">Insufficient credits</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      You have <span className="font-mono font-bold text-red-400">{userProfile.creditBalance}</span> credits — this session needs ~{estimatedCredits}.
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate("/billing")}
-                    className="shrink-0 bg-red-500 hover:bg-red-400 text-white gap-1.5 h-7 text-xs"
-                  >
-                    <ShoppingCart className="w-3 h-3" />
-                    Buy Credits
-                  </Button>
-                </motion.div>
-              )}
-              {userProfile && userProfile.creditBalance >= estimatedCredits && userProfile.creditBalance < estimatedCredits * 3 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-3 flex items-center gap-3"
-                >
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
-                  <p className="text-xs text-yellow-500 flex-1">
-                    Running low — <span className="font-mono font-bold">{userProfile.creditBalance}</span> credits remaining (~{Math.floor(userProfile.creditBalance / estimatedCredits)} sessions left).
-                  </p>
-                  <button
-                    onClick={() => navigate("/billing")}
-                    className="text-xs text-yellow-500 hover:text-yellow-400 underline underline-offset-2 shrink-0"
-                  >
-                    Top up
+      {/* ── TOP BAR — always visible, adapts to phase ── */}
+      <div className="shrink-0 border-b border-white/5 bg-black/40 backdrop-blur-sm px-3 py-2 flex items-start gap-2">
+        {isIdle ? (
+          <>
+            <div className="flex-1 min-w-0">
+              {state.template && (
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Badge variant="outline" className="text-primary border-primary/40 bg-primary/10 text-[10px] h-5">
+                    {state.template.title}
+                  </Badge>
+                  <button onClick={() => setTemplate(null)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-3 h-3" />
                   </button>
-                </motion.div>
-              )}
-
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-xs font-mono text-primary mb-4">
-                  <Sparkles className="w-3 h-3" />
-                  Don't just ask AI. Put the question on trial.
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2">New Brain Session</h1>
-                <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-                  Choose a template or ask anything. Multiple AI minds debate, critique, and synthesise before delivering a final verdict.
-                </p>
+              )}
+              {state.template && state.template.inputFields.length > 0 ? (
+                <div className="space-y-1.5">
+                  {state.template.inputFields.map((field) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground shrink-0 w-20 truncate">{field.label}</span>
+                      <Input
+                        type={field.type === "url" ? "url" : "text"}
+                        placeholder={field.placeholder}
+                        value={fieldValues[field.id] ?? ""}
+                        onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
+                        className="h-7 text-xs bg-transparent border-white/10 focus-visible:ring-1 focus-visible:ring-primary/50 flex-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Textarea
+                  placeholder="What do you want to put on trial?"
+                  value={state.question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
+                  rows={2}
+                  className="w-full resize-none text-sm bg-transparent border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 leading-relaxed min-h-0"
+                />
+              )}
+            </div>
+            <div className="shrink-0 flex flex-col gap-1 items-end pt-0.5">
+              <Button
+                onClick={handleRun}
+                disabled={(!state.question.trim() && !(state.template && state.template.inputFields.length > 0)) || insufficientCredits}
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 px-4 text-xs font-semibold"
+              >
+                <Play className="w-3 h-3" />
+                Run Trial
+              </Button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setTemplateSheetOpen(true)}
+                  className="text-[10px] text-muted-foreground/60 hover:text-primary flex items-center gap-1 transition-colors px-1.5 py-1 rounded border border-white/5 hover:border-primary/30"
+                >
+                  <LayoutTemplate className="w-3 h-3" />
+                  Templates
+                </button>
+                <button
+                  onClick={() => setConfigOpen(true)}
+                  className="text-[10px] text-muted-foreground/60 hover:text-primary flex items-center gap-1 transition-colors px-1.5 py-1 rounded border border-white/5 hover:border-primary/30"
+                >
+                  <Settings2 className="w-3 h-3" />
+                  <span className="capitalize">{state.config.courtMode}</span>
+                  <span className="opacity-40">·</span>
+                  <span>{state.config.litigantCount}×</span>
+                  <span className="opacity-40">·</span>
+                  <span>{state.config.confidenceTarget}%</span>
+                </button>
               </div>
+            </div>
+          </>
+        ) : isRunning || state.phase === "paused" ? (
+          <>
+            <Brain className="w-4 h-4 text-primary shrink-0 animate-pulse mt-0.5" />
+            <p className="flex-1 text-sm text-muted-foreground/80 truncate min-w-0 leading-tight">{state.question}</p>
+            {state.currentRound > 0 && state.currentRound < 99 && (
+              <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs font-mono text-primary">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                Revolution {state.currentRound} / {state.config.maxIterations}
+              </div>
+            )}
+            <Button variant="destructive" size="sm" onClick={handleStop} className="gap-1.5 h-7 text-xs shrink-0">
+              <Square className="w-3 h-3" />
+              Stop
+            </Button>
+          </>
+        ) : (
+          <>
+            {isComplete
+              ? <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              : <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />}
+            <p className="flex-1 text-sm truncate min-w-0 leading-tight">{state.question}</p>
+            {isComplete && (
+              <div className="shrink-0 flex items-center gap-2 text-xs font-mono">
+                <span className="text-primary flex items-center gap-0.5"><Target className="w-3 h-3" />{state.confidence}%</span>
+                <span className="text-muted-foreground flex items-center gap-0.5"><Zap className="w-3 h-3" />{state.creditsUsed} cr · {credits} left</span>
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 h-7 text-xs shrink-0 border-white/10">
+              <RotateCcw className="w-3 h-3" />
+              New
+            </Button>
+          </>
+        )}
+      </div>
 
-              {/* Question input box */}
-              <div className="rounded-xl border border-border/70 bg-card/60 p-5 mb-6">
-                {state.template && (
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border/40">
-                    <Badge variant="outline" className="text-primary border-primary/40 bg-primary/10 text-xs">
-                      {state.template.title}
-                    </Badge>
+      {/* ── CREDIT WARNING STRIP (idle only) ── */}
+      {isIdle && (creditsCritical || creditsLow || insufficientCredits) && (
+        <div className={cn(
+          "shrink-0 px-3 py-1.5 flex items-center gap-2 text-xs border-b",
+          insufficientCredits || creditsCritical
+            ? "bg-red-500/10 border-red-500/20 text-red-400"
+            : "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
+        )}>
+          <AlertTriangle className="w-3 h-3 shrink-0" />
+          <span>
+            {insufficientCredits
+              ? <>Need ~{estimatedCredits} cr · you have <strong>{credits}</strong>.</>
+              : creditsCritical
+              ? <>Critical: only <strong>{credits}</strong> credits left.</>
+              : <>Low: <strong>{credits}</strong> credits (~{sessionsLeft} sessions).</>
+            }
+          </span>
+          <button onClick={() => navigate("/billing")} className="ml-auto underline underline-offset-2 font-medium">
+            Top up →
+          </button>
+        </div>
+      )}
+
+      {/* ── COURT DIAGRAM — always visible, always the hero ── */}
+      <div className="shrink-0 relative" style={{ height: "clamp(240px, 44vh, 500px)" }}>
+        <CourtDiagram
+          activeRole={state.activeRole}
+          litigantCount={state.config.litigantCount}
+          running={isRunning}
+          confidence={state.confidence}
+          creditsUsed={state.creditsUsed}
+          estimatedCredits={state.estimatedCredits}
+          complete={isComplete}
+        />
+
+        {/* Revolution counter — overlaid top-left */}
+        {(isRunning || isComplete) && state.currentRound > 0 && state.currentRound < 99 && (
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-[10px] font-mono text-primary/80 pointer-events-none backdrop-blur-sm">
+            <span className={cn("w-1.5 h-1.5 rounded-full bg-primary", isRunning && "animate-pulse")} />
+            Revolution {state.currentRound} / {state.config.maxIterations}
+          </div>
+        )}
+
+        {/* Live credit chip — overlaid top-right (Firestore live via useUserProfile) */}
+        {(isRunning || isComplete) && (
+          <div className={cn(
+            "absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 border text-[10px] font-mono pointer-events-none backdrop-blur-sm transition-colors",
+            creditsCritical ? "border-red-500/40 text-red-400"
+            : creditsLow ? "border-yellow-500/40 text-yellow-400"
+            : "border-primary/25 text-primary/70"
+          )}>
+            <Zap className="w-2.5 h-2.5" />
+            {credits} cr
+          </div>
+        )}
+
+        {/* Idle state — config summary overlay at bottom */}
+        {isIdle && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-white/8 text-[10px] font-mono text-muted-foreground/60 pointer-events-none backdrop-blur-sm whitespace-nowrap">
+            <span className="capitalize">{state.config.courtMode}</span>
+            <span className="opacity-30">·</span>
+            <span>{state.config.litigantCount} litigants</span>
+            <span className="opacity-30">·</span>
+            <span>{state.config.confidenceTarget}% target</span>
+            <span className="opacity-30">·</span>
+            <span>~{estimatedCredits} cr</span>
+            <span className="opacity-30">·</span>
+            <span className={cn(creditsCritical ? "text-red-400" : creditsLow ? "text-yellow-400" : "text-primary/60")}>
+              {credits} available
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── CONFIDENCE + CREDITS STATUS STRIP (running / complete) ── */}
+      {!isIdle && (
+        <div className="shrink-0 px-3 py-1.5 border-y border-white/5 bg-black/30 flex items-center gap-3">
+          <span className="text-[9px] font-mono text-primary/50 uppercase tracking-wider shrink-0">Conf</span>
+          <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${state.confidence}%`,
+                background: state.confidence >= state.config.confidenceTarget
+                  ? "#00c853"
+                  : "rgba(0,200,83,0.6)",
+              }}
+            />
+          </div>
+          <span className={cn(
+            "text-[10px] font-mono font-bold tabular-nums shrink-0",
+            state.confidence >= state.config.confidenceTarget ? "text-primary" : "text-primary/60"
+          )}>
+            {state.confidence}%<span className="text-muted-foreground/40 font-normal">/{state.config.confidenceTarget}%</span>
+          </span>
+          <span className="text-white/10 shrink-0">|</span>
+          <span className="text-[10px] font-mono text-muted-foreground/50 shrink-0">
+            {state.creditsUsed > 0 ? `${state.creditsUsed} used` : `~${estimatedCredits} est`}
+          </span>
+        </div>
+      )}
+
+      {/* ── BOTTOM PANEL ── */}
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+
+        {/* IDLE — prompt to ask a question */}
+        {isIdle && (
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-mono text-primary/70">
+              <Sparkles className="w-3 h-3" />
+              Don't just ask AI. Put the question on trial.
+            </div>
+            <p className="text-xs text-muted-foreground/50 max-w-sm">
+              Type your question above, pick a template, or adjust the court configuration — then press <strong className="text-primary/70">Run Trial</strong>.
+            </p>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-mono mt-1",
+              creditsCritical ? "border-red-500/30 bg-red-500/10 text-red-400"
+              : creditsLow ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+              : "border-primary/20 bg-primary/5 text-primary/60"
+            )}>
+              <Zap className="w-2.5 h-2.5" />
+              {credits} credits · {plan}
+              {insufficientCredits && (
+                <button onClick={() => navigate("/billing")} className="ml-1 underline underline-offset-2">top up</button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* RUNNING — live feed streaming in real time */}
+        {(isRunning || state.phase === "paused") && (
+          <div ref={feedRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+            {state.activeRole && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono sticky top-0 bg-[#070f07]/90 backdrop-blur py-1 z-10 border-b border-white/5">
+                <span className="text-primary animate-pulse">▸</span>
+                <span className="text-primary/80">{state.activeRole}</span>
+                <span className="opacity-40">deliberating</span>
+                <span className="flex gap-0.5 ml-1">
+                  {[0, 150, 300].map((d) => (
+                    <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </span>
+              </div>
+            )}
+            <AnimatePresence>
+              {state.runtimeFeed.map((item) => (
+                <FeedItemCard key={item.id} item={item} />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* COMPLETE / ERROR — results */}
+        {(isComplete || isError) && (
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            {isError ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+                <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" />
+                <p className="font-semibold mb-2">Session Error</p>
+                <p className="text-sm text-muted-foreground mb-4">{state.errorMessage}</p>
+                <Button onClick={handleReset} variant="outline">Try Again</Button>
+              </div>
+            ) : (
+              <>
+                {/* Credit summary after session */}
+                <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg border border-primary/15 bg-primary/5 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="text-muted-foreground">Session complete —</span>
+                  <span className="font-mono text-primary">{state.creditsUsed} credits used</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className={cn(
+                    "font-mono",
+                    creditsCritical ? "text-red-400" : creditsLow ? "text-yellow-400" : "text-muted-foreground"
+                  )}>
+                    {credits} remaining
+                  </span>
+                  {(creditsCritical || creditsLow) && (
+                    <button onClick={() => navigate("/billing")} className="ml-auto text-primary underline underline-offset-2">Top up</button>
+                  )}
+                </div>
+
+                {/* Feedback + Export bar */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MessageSquare className="w-3 h-3" />
+                    Helpful?
+                  </span>
+                  {(["good", "bad", "warn"] as const).map((r) => (
                     <button
-                      onClick={() => setTemplate(null)}
-                      className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                      key={r}
+                      onClick={() => handleFeedback(r)}
+                      disabled={feedbackGiven !== null}
+                      className={cn(
+                        "w-7 h-7 rounded-lg border flex items-center justify-center transition-colors",
+                        feedbackGiven === r
+                          ? r === "good" ? "border-primary/50 bg-primary/10 text-primary"
+                          : r === "bad" ? "border-destructive/50 bg-destructive/10 text-destructive"
+                          : "border-yellow-500/50 bg-yellow-500/10 text-yellow-500"
+                          : "border-border/40 text-muted-foreground hover:text-foreground"
+                      )}
                     >
-                      <X className="w-3 h-3" /> Clear
+                      {r === "good" && <ThumbsUp className="w-3.5 h-3.5" />}
+                      {r === "bad" && <ThumbsDown className="w-3.5 h-3.5" />}
+                      {r === "warn" && <AlertTriangle className="w-3.5 h-3.5" />}
                     </button>
-                  </div>
-                )}
-
-                {/* Multi-field form when template has structured inputs */}
-                {state.template && state.template.inputFields.length > 0 ? (
-                  <div className="space-y-3">
-                    {state.template.inputFields.map((field) => (
-                      <div key={field.id}>
-                        <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                          {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
-                        </label>
-                        {field.type === "textarea" ? (
-                          <Textarea
-                            placeholder={field.placeholder}
-                            value={fieldValues[field.id] ?? ""}
-                            onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                            className="min-h-[80px] resize-none bg-background/60 border-border/60 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/50"
-                          />
-                        ) : (
-                          <Input
-                            type={field.type === "url" ? "url" : "text"}
-                            placeholder={field.placeholder}
-                            value={fieldValues[field.id] ?? ""}
-                            onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                            onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                            className="bg-background/60 border-border/60 text-sm placeholder:text-muted-foreground/50 h-9"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <Textarea
-                    placeholder="Ask anything — business decision, technical audit, creative critique, research summary..."
-                    value={state.question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun();
-                    }}
-                    className="min-h-[120px] resize-none bg-transparent border-0 p-0 text-base placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                )}
-                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/40">
-                  <button
-                    onClick={() => setConfigOpen(true)}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Settings2 className="w-3.5 h-3.5" />
-                    <span className="capitalize">{state.config.courtMode}</span>
-                    <span className="opacity-40">·</span>
-                    <span>{state.config.litigantCount} roles</span>
-                    <span className="opacity-40">·</span>
-                    <span>{state.config.confidenceTarget}% target</span>
-                  </button>
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-mono">~{estimatedCredits} credits</span>
-                    <Button
-                      onClick={handleRun}
-                      disabled={!state.question.trim()}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 px-5"
-                    >
-                      <Play className="w-4 h-4" />
-                      Run Trial
+                  ))}
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <Button variant="outline" size="sm" onClick={handleCopyMarkdown} className="gap-1 h-7 text-xs border-white/10">
+                      <Copy className="w-3 h-3" />Copy
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDownloadMarkdown} className="gap-1 h-7 text-xs border-white/10">
+                      <Download className="w-3 h-3" />MD
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1 h-7 text-xs border-white/10">
+                      <Printer className="w-3 h-3" />Print
                     </Button>
                   </div>
                 </div>
-              </div>
 
-              {/* Template grid */}
-              <div>
-                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
-                  <button
-                    onClick={() => setActiveCategory("all")}
-                    className={cn(
-                      "text-xs px-3 py-1.5 rounded-full border transition-colors shrink-0",
-                      activeCategory === "all"
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border/60 text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    All templates
-                  </button>
-                  {TEMPLATE_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
-                      className={cn(
-                        "text-xs px-3 py-1.5 rounded-full border transition-colors shrink-0",
-                        activeCategory === cat.id
-                          ? "border-primary/40 bg-primary/10 text-primary"
-                          : "border-border/60 text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
+                {/* Output tabs */}
+                <Tabs defaultValue="answer">
+                  <TabsList className="bg-black/30 border border-white/8 mb-3 flex-wrap h-auto gap-y-1">
+                    <TabsTrigger value="answer" className="text-xs">Final Answer</TabsTrigger>
+                    <TabsTrigger value="artifacts" className="text-xs">Artifacts</TabsTrigger>
+                    <TabsTrigger value="debate" className="text-xs">Debate</TabsTrigger>
+                    <TabsTrigger value="transcript" className="text-xs">Transcript</TabsTrigger>
+                    <TabsTrigger value="caveats" className="text-xs">Caveats</TabsTrigger>
+                  </TabsList>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filteredTemplates.map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      onClick={() => setTemplate(template)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── RUNNING PHASE ─────────────────────────────────────────── */}
-        {(isRunning || state.phase === "paused") && (
-          <motion.div
-            key="running"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
-            {/* Controls bar */}
-            <div className="border-b border-border/60 bg-card/40 px-4 py-2.5 flex items-center gap-3 shrink-0">
-              <Brain className="w-4 h-4 text-primary shrink-0 animate-pulse" />
-              <span className="text-sm font-medium truncate flex-1">{state.question}</span>
-              {state.currentRound > 0 && state.currentRound < 99 && (
-                <span className="text-xs text-muted-foreground font-mono shrink-0">
-                  Round {state.currentRound}
-                </span>
-              )}
-              <Button variant="destructive" size="sm" onClick={handleStop} className="gap-1.5 h-7 text-xs shrink-0">
-                <Square className="w-3 h-3" />
-                Stop
-              </Button>
-            </div>
-
-            {/* Two-column: diagram (top/right) + feed (bottom/left) */}
-            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-
-              {/* Court diagram — top on mobile, right on desktop */}
-              <div className="lg:order-2 lg:w-[420px] xl:w-[480px] shrink-0 p-3 overflow-y-auto border-b lg:border-b-0 lg:border-l border-border/40"
-                style={{ background: "rgba(7,16,7,0.6)" }}>
-                <CourtDiagram
-                  activeRole={state.activeRole}
-                  litigantCount={state.config.litigantCount}
-                  running={isRunning}
-                  confidence={state.confidence}
-                  creditsUsed={state.creditsUsed}
-                  estimatedCredits={state.estimatedCredits}
-                />
-              </div>
-
-              {/* Runtime feed — bottom on mobile, left on desktop */}
-              <div ref={feedRef} className="lg:order-1 flex-1 overflow-y-auto px-4 py-4">
-                <div className="space-y-3">
-                  {state.activeRole && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono px-1">
-                      <span className="text-primary animate-pulse">▸</span>
-                      {state.activeRole} is deliberating
-                    </div>
-                  )}
-                  <AnimatePresence>
-                    {state.runtimeFeed.map((item) => (
-                      <FeedItemCard key={item.id} item={item} />
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── COMPLETE / ERROR PHASE ────────────────────────────────── */}
-        {(isComplete || isError) && (
-          <motion.div
-            key="complete"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
-            {/* Top bar */}
-            <div className="border-b border-border/60 bg-card/40 px-4 py-2.5 flex items-center gap-3 shrink-0">
-              {isComplete
-                ? <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                : <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />}
-              <span className="text-sm font-medium truncate flex-1">{state.question}</span>
-              {isComplete && (
-                <>
-                  <span className="text-xs font-mono text-primary flex items-center gap-1 shrink-0">
-                    <Target className="w-3 h-3" />{state.confidence}%
-                  </span>
-                  <span className="text-xs font-mono text-muted-foreground flex items-center gap-1 shrink-0">
-                    <Zap className="w-3 h-3" />{state.creditsUsed} cr
-                  </span>
-                </>
-              )}
-              <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 h-7 text-xs shrink-0">
-                <RotateCcw className="w-3 h-3" />
-                New Session
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <div className="max-w-4xl mx-auto">
-                {isError ? (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center">
-                    <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" />
-                    <p className="font-semibold mb-2">Session Error</p>
-                    <p className="text-sm text-muted-foreground mb-4">{state.errorMessage}</p>
-                    <Button onClick={handleReset} variant="outline">Try Again</Button>
-                  </div>
-                ) : (
-                  <>
-                    {/* Feedback + Export bar */}
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <MessageSquare className="w-3 h-3" />
-                        Was this helpful?
-                      </span>
-                      {(["good", "bad", "warn"] as const).map((r) => (
-                        <button
-                          key={r}
-                          onClick={() => handleFeedback(r)}
-                          disabled={feedbackGiven !== null}
-                          className={cn(
-                            "w-7 h-7 rounded-lg border flex items-center justify-center transition-colors",
-                            feedbackGiven === r
-                              ? r === "good"
-                                ? "border-primary/50 bg-primary/10 text-primary"
-                                : r === "bad"
-                                ? "border-destructive/50 bg-destructive/10 text-destructive"
-                                : "border-yellow-500/50 bg-yellow-500/10 text-yellow-500"
-                              : "border-border/60 text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {r === "good" && <ThumbsUp className="w-3.5 h-3.5" />}
-                          {r === "bad" && <ThumbsDown className="w-3.5 h-3.5" />}
-                          {r === "warn" && <AlertTriangle className="w-3.5 h-3.5" />}
-                        </button>
-                      ))}
-                      <div className="ml-auto flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleCopyMarkdown} className="gap-1.5 h-7 text-xs">
-                          <Copy className="w-3 h-3" />Copy
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleDownloadMarkdown} className="gap-1.5 h-7 text-xs">
-                          <Download className="w-3 h-3" />MD
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 h-7 text-xs" title="Print / Save as PDF">
-                          <Printer className="w-3 h-3" />Print
-                        </Button>
+                  <TabsContent value="answer">
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Brain className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-primary">Verdict</span>
+                        <Badge variant="outline" className="ml-auto text-primary border-primary/30 text-xs">
+                          {state.confidence}% confidence
+                        </Badge>
+                      </div>
+                      <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                        {state.finalAnswer || "No final answer generated."}
                       </div>
                     </div>
+                  </TabsContent>
 
-                    {/* Output tabs */}
-                    <Tabs defaultValue="answer">
-                      <TabsList className="bg-card/60 border border-border/50 mb-4 flex-wrap h-auto gap-y-1">
-                        <TabsTrigger value="answer" className="text-xs">Final Answer</TabsTrigger>
-                        <TabsTrigger value="artifacts" className="text-xs">Artifacts</TabsTrigger>
-                        <TabsTrigger value="debate" className="text-xs">Debate Notes</TabsTrigger>
-                        <TabsTrigger value="transcript" className="text-xs">Transcript</TabsTrigger>
-                        <TabsTrigger value="caveats" className="text-xs">Sources & Caveats</TabsTrigger>
-                      </TabsList>
+                  <TabsContent value="artifacts">
+                    <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Package className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm font-semibold text-blue-400">Artifacts</span>
+                      </div>
+                      <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                        {state.artifacts || "No artifacts generated."}
+                      </div>
+                    </div>
+                  </TabsContent>
 
-                      <TabsContent value="answer">
-                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Brain className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-semibold text-primary">Verdict</span>
-                            <Badge variant="outline" className="ml-auto text-primary border-primary/30 text-xs">
-                              {state.confidence}% confidence
-                            </Badge>
-                          </div>
-                          <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                            {state.finalAnswer || "No final answer generated."}
-                          </div>
-                        </div>
-                      </TabsContent>
+                  <TabsContent value="debate">
+                    <div className="rounded-xl border border-border/40 bg-card/30 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Scale className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Debate Notes</span>
+                      </div>
+                      <div className="text-xs leading-relaxed text-foreground/70 whitespace-pre-wrap font-mono">
+                        {state.debateNotes || "No debate notes recorded."}
+                      </div>
+                    </div>
+                  </TabsContent>
 
-                      <TabsContent value="artifacts">
-                        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-6">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Package className="w-4 h-4 text-blue-400" />
-                            <span className="text-sm font-semibold text-blue-400">Artifacts</span>
-                            <span className="ml-auto text-xs text-muted-foreground">Ready-to-use output</span>
-                          </div>
-                          <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                            {state.artifacts || "No artifacts were generated. Run a full session to get structured, ready-to-use artifacts."}
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="debate">
-                        <div className="rounded-xl border border-border/50 bg-card/40 p-6">
-                          <div className="flex items-center gap-2 mb-4">
-                            <Scale className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-semibold">Debate Notes</span>
-                          </div>
-                          <div className="text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap font-mono">
-                            {state.debateNotes || "No debate notes recorded."}
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="transcript">
-                        <div className="rounded-xl border border-border/50 bg-card/40 p-6">
-                          <div className="flex items-center gap-2 mb-4">
-                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-semibold">Full Transcript</span>
-                          </div>
-                          <div className="space-y-4">
-                            {state.runtimeFeed.filter((f) => f.content).map((f) => (
-                              <div key={f.id} className="text-xs">
-                                <span className={cn("font-bold font-mono", getRoleStyle(f.role).split(" ")[0])}>
-                                  {f.role}
-                                </span>
-                                {f.round > 0 && f.round < 99 && (
-                                  <span className="text-muted-foreground"> (Round {f.round})</span>
-                                )}
-                                <p className="mt-1 text-foreground/70 leading-relaxed whitespace-pre-wrap">
-                                  {f.content}
-                                </p>
-                              </div>
-                            ))}
-                            {!state.runtimeFeed.some((f) => f.content) && (
-                              <p className="text-muted-foreground text-xs">Transcript unavailable.</p>
+                  <TabsContent value="transcript">
+                    <div className="rounded-xl border border-border/40 bg-card/30 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Full Transcript</span>
+                      </div>
+                      <div className="space-y-4">
+                        {state.runtimeFeed.filter((f) => f.content).map((f) => (
+                          <div key={f.id} className="text-xs">
+                            <span className={cn("font-bold font-mono", getRoleStyle(f.role).split(" ")[0])}>
+                              {f.role}
+                            </span>
+                            {f.round > 0 && f.round < 99 && (
+                              <span className="text-muted-foreground"> (Round {f.round})</span>
                             )}
+                            <p className="mt-1 text-foreground/60 leading-relaxed whitespace-pre-wrap">{f.content}</p>
                           </div>
-                        </div>
-                      </TabsContent>
+                        ))}
+                        {!state.runtimeFeed.some((f) => f.content) && (
+                          <p className="text-muted-foreground text-xs">Transcript unavailable.</p>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
 
-                      <TabsContent value="caveats">
-                        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-6">
-                          <div className="flex items-center gap-2 mb-4">
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                            <span className="text-sm font-semibold text-yellow-500">Sources & Caveats</span>
-                          </div>
-                          <div className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap mb-4">
-                            {state.caveats}
-                          </div>
-                          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                            <p className="text-xs text-muted-foreground">
-                              <strong className="text-yellow-500">AI Disclaimer: </strong>
-                              Litigant AI provides AI-generated reasoning and decision support. It is not legal, medical, financial, or professional advice. Always verify important decisions with qualified professionals.
-                            </p>
-                          </div>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </>
-                )}
-              </div>
-            </div>
-          </motion.div>
+                  <TabsContent value="caveats">
+                    <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                        <span className="text-sm font-semibold text-yellow-500">Sources & Caveats</span>
+                      </div>
+                      <div className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap mb-3">
+                        {state.caveats}
+                      </div>
+                      <p className="text-xs text-muted-foreground/60 border-t border-yellow-500/10 pt-3">
+                        <strong className="text-yellow-500/80">Disclaimer: </strong>
+                        Litigant AI provides AI-generated reasoning and decision support. Not legal, medical, financial, or professional advice.
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </>
+            )}
+          </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* ── TEMPLATE SHEET — bottom drawer ── */}
+      <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
+        <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
+          <SheetHeader className="shrink-0 pb-3 border-b border-white/5">
+            <SheetTitle className="text-sm flex items-center gap-2">
+              <LayoutTemplate className="w-4 h-4 text-primary" />
+              Templates
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex items-center gap-2 py-2 overflow-x-auto shrink-0 scrollbar-none">
+            <button
+              onClick={() => setActiveCategory("all")}
+              className={cn(
+                "text-[10px] px-2.5 py-1 rounded-full border transition-colors shrink-0",
+                activeCategory === "all"
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-white/10 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              All
+            </button>
+            {TEMPLATE_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={cn(
+                  "text-[10px] px-2.5 py-1 rounded-full border transition-colors shrink-0",
+                  activeCategory === cat.id
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-white/10 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-4">
+              {filteredTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onClick={() => {
+                    setTemplate(template);
+                    setConfig(template.defaultConfig);
+                    setTemplateSheetOpen(false);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
