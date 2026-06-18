@@ -30,6 +30,7 @@ import {
   type ProviderInfo, type ModelInfo, type ModelCreditInfo,
 } from "@/services/providerService";
 import { Input } from "@/components/ui/input";
+import { CourtDiagram } from "@/components/CourtDiagram";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -830,59 +831,48 @@ export default function SessionPage() {
             <div className="border-b border-border/60 bg-card/40 px-4 py-2.5 flex items-center gap-3 shrink-0">
               <Brain className="w-4 h-4 text-primary shrink-0 animate-pulse" />
               <span className="text-sm font-medium truncate flex-1">{state.question}</span>
-              <button
-                onClick={() => setConfigOpen(true)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                title="Configure"
-              >
-                <Settings2 className="w-4 h-4" />
-              </button>
+              {state.currentRound > 0 && state.currentRound < 99 && (
+                <span className="text-xs text-muted-foreground font-mono shrink-0">
+                  Round {state.currentRound}
+                </span>
+              )}
               <Button variant="destructive" size="sm" onClick={handleStop} className="gap-1.5 h-7 text-xs shrink-0">
                 <Square className="w-3 h-3" />
                 Stop
               </Button>
             </div>
 
-            {/* Progress meters */}
-            <div className="px-4 py-2.5 border-b border-border/40 bg-background/50 shrink-0">
-              <div className="max-w-4xl mx-auto grid grid-cols-2 gap-6">
-                <div>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                    <span className="flex items-center gap-1"><Target className="w-3 h-3" />Confidence</span>
-                    <span className="font-mono text-primary font-bold">{state.confidence}%</span>
-                  </div>
-                  <Progress value={state.confidence} className="h-1.5" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" />Credits</span>
-                    <span className="font-mono">{state.creditsUsed} / ~{state.estimatedCredits}</span>
-                  </div>
-                  <Progress
-                    value={state.estimatedCredits > 0 ? (state.creditsUsed / state.estimatedCredits) * 100 : 0}
-                    className="h-1.5"
-                  />
-                </div>
-              </div>
-            </div>
+            {/* Two-column: diagram (top/right) + feed (bottom/left) */}
+            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
 
-            {/* Runtime feed */}
-            <div ref={feedRef} className="flex-1 overflow-y-auto px-4 py-4">
-              <div className="max-w-4xl mx-auto space-y-3">
-                {state.activeRole && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono px-1">
-                    <span className="text-primary">▸</span>
-                    {state.activeRole} is deliberating
-                    {state.currentRound > 0 && state.currentRound < 99 && (
-                      <span className="opacity-60">· Round {state.currentRound}</span>
-                    )}
-                  </div>
-                )}
-                <AnimatePresence>
-                  {state.runtimeFeed.map((item) => (
-                    <FeedItemCard key={item.id} item={item} />
-                  ))}
-                </AnimatePresence>
+              {/* Court diagram — top on mobile, right on desktop */}
+              <div className="lg:order-2 lg:w-[420px] xl:w-[480px] shrink-0 p-3 overflow-y-auto border-b lg:border-b-0 lg:border-l border-border/40"
+                style={{ background: "rgba(7,16,7,0.6)" }}>
+                <CourtDiagram
+                  activeRole={state.activeRole}
+                  litigantCount={state.config.litigantCount}
+                  running={isRunning}
+                  confidence={state.confidence}
+                  creditsUsed={state.creditsUsed}
+                  estimatedCredits={state.estimatedCredits}
+                />
+              </div>
+
+              {/* Runtime feed — bottom on mobile, left on desktop */}
+              <div ref={feedRef} className="lg:order-1 flex-1 overflow-y-auto px-4 py-4">
+                <div className="space-y-3">
+                  {state.activeRole && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono px-1">
+                      <span className="text-primary animate-pulse">▸</span>
+                      {state.activeRole} is deliberating
+                    </div>
+                  )}
+                  <AnimatePresence>
+                    {state.runtimeFeed.map((item) => (
+                      <FeedItemCard key={item.id} item={item} />
+                    ))}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </motion.div>

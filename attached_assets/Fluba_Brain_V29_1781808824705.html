@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Fluba Brain V29</title>
+<style>
+:root{
+  --bg:#071007; --panel:#0d1a0d; --line:#00c853; --soft:#7ab87a;
+  --dim:#1d331d; --text:#eef7ee; --hot:#d7ff77; --warn:#f3d26a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:auto;background:radial-gradient(circle at top,#102010,var(--bg) 56%,#020402);color:var(--text);font-family:Arial,sans-serif}
+body{display:flex;flex-direction:column;min-height:100vh}
+#topbar{padding:6px 10px;border-bottom:1px solid var(--dim);display:flex;flex-direction:column;gap:4px;background:rgba(4,8,4,.96);flex:none}
+#brand{font-weight:800;font-size:13px;white-space:nowrap}
+#stats{font-size:10px;color:var(--soft);text-align:right;line-height:1.25}
+#appShell{flex:1;display:flex;flex-direction:column;min-height:1200px}
+#controls{padding:7px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--dim);background:rgba(6,12,6,.95);flex:none}
+button,select,textarea,input{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;font-size:16px}
+button,select,input{min-height:36px;padding:7px 8px}
+select,input{width:100%}
+#interactionGrid{display:flex;flex-direction:column;gap:7px;padding:4px;border-bottom:1px solid var(--dim);background:rgba(5,10,5,.94);flex:none}
+.panel{border:1px solid var(--dim);border-radius:12px;padding:8px;background:linear-gradient(160deg,rgba(14,26,14,.95),rgba(7,16,7,.95))}
+.panelTitle{font-size:10px;color:var(--line);letter-spacing:.1em;text-transform:uppercase;font-weight:800;margin-bottom:6px}
+.dialog-line{margin-bottom:8px;padding:6px 8px;border-radius:8px;line-height:1.5}
+.dialog-line.you{background:rgba(0,120,255,.08);border-left:3px solid #4a9eff;color:#7ec8ff;}
+.dialog-line.orchestrator{background:rgba(0,0,0,.15);border-left:3px solid var(--soft);}
+.speaker{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:2px}
+.speaker.you{color:#4a9eff;}
+.speaker.orchestrator{color:var(--soft)}
+.disclosure{font-size:11px;color:#3a5a3a;font-style:italic;display:block;margin-bottom:4px;line-height:1.3;}
+#dialogBox{min-height:0;max-height:320px;overflow-y:auto;padding:10px 10px 6px;font-size:16px;line-height:1.6;background:rgba(0,0,0,.12);}
+#runtimeGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:15px}
+.runtimeItem{border:1px solid var(--dim);border-radius:9px;padding:6px;background:rgba(0,0,0,.12)}
+.runtimeKey{font-size:12px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em}
+.runtimeValue{font-weight:800;margin-top:2px}
+#runtimeActions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+#stage{position:relative;flex:none;overflow:hidden;display:flex;flex-direction:column;}
+svg{width:100%;height:auto;display:block;max-height:70vw;}
+.rail-shadow{stroke:#010401;stroke-width:28;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.92;filter:url(#railDrop)}
+.rail-body{stroke:url(#outerRailGradient);stroke-width:22;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:url(#railGlow)}
+.rail-ridge{stroke:rgba(215,255,119,.48);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.7;filter:url(#softGlow)}
+.rail-inner-cut{stroke:rgba(0,0,0,.72);stroke-width:10;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.82}
+.chamber-shadow{stroke:#030803;stroke-width:22;fill:rgba(0,200,83,.035);stroke-linecap:round;stroke-linejoin:round;filter:url(#innerDrop)}
+.chamber-body{stroke:url(#innerRailGradient);stroke-width:14;fill:rgba(0,200,83,.032);stroke-linecap:round;stroke-linejoin:round;filter:url(#softGlow)}
+.chamber-ridge{stroke:rgba(183,255,119,.42);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
+.route{stroke:rgba(0,200,83,.16);stroke-width:5;fill:none;stroke-dasharray:2 14;stroke-linecap:round;stroke-linejoin:round;filter:url(#routeHaze)}
+.node{fill:url(#nodePod);stroke:rgba(137,255,160,.9);stroke-width:4;cursor:pointer;filter:url(#podShadow)}
+.node.active{fill:url(#nodePodActive);stroke:var(--hot);filter:url(#podHot)}
+.lit{fill:url(#litPod);stroke:rgba(122,184,122,.95);stroke-width:3;cursor:pointer;filter:url(#podShadow)}
+.lit.active{fill:url(#litPodActive);stroke:var(--hot);stroke-width:4;filter:url(#podHot)}
+.txt{fill:white;font-size:12px;text-anchor:middle;pointer-events:none;font-weight:800;text-shadow:0 0 7px rgba(255,255,255,.45)}.smalltxt{fill:var(--soft);font-size:10px;text-anchor:middle;pointer-events:none}
+.logic-wake{fill:none;stroke:url(#wakeGradient);stroke-width:24;stroke-linecap:round;stroke-linejoin:round;filter:url(#wakeGlow);pointer-events:none;opacity:0;transition:opacity .15s ease;}
+.logic-trace{fill:none;stroke:url(#meteorTailGradient);stroke-width:20;stroke-linecap:round;stroke-linejoin:round;filter:url(#meteorGlow);pointer-events:none;opacity:.96;}
+.logic-core{fill:none;stroke:url(#meteorCoreGradient);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;filter:url(#meteorCoreGlow);pointer-events:none;}
+#logicPanel{position:relative;left:8px;right:8px;margin:4px 8px 0;background:linear-gradient(160deg,rgba(14,26,14,.92),rgba(7,16,7,.92));border:1px solid var(--dim);border-radius:10px;padding:7px;font-size:11px;line-height:1.25;pointer-events:none}
+#logicTitle{font-size:9px;color:var(--line);letter-spacing:.1em;text-transform:uppercase;font-weight:800;margin-bottom:2px}
+.modal{position:fixed;inset:0;display:none;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:16px;z-index:1000;backdrop-filter:blur(3px)}
+.stage-modal{position:absolute;inset:0;display:none;background:rgba(0,0,0,.92);align-items:flex-start;justify-content:stretch;z-index:100;border-radius:12px;padding:12px;}
+.stage-modal .card{width:100%;max-height:100%;overflow-y:auto;border-radius:10px;}
+.card{background:linear-gradient(160deg,#0e1a0e,#071007);border:1px solid var(--line);border-radius:12px;padding:14px;width:min(430px,92vw);max-height:88vh;overflow:auto}
+.card h3{margin:0 0 8px;color:var(--hot)}
+.row{border-top:1px solid var(--dim);padding:8px 0;font-size:16px}.key{color:var(--soft);font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.modalActions{display:flex;gap:8px;margin-top:10px}.modalActions button{flex:1}
+.configGrid{display:grid;grid-template-columns:1fr;gap:8px}
+.estimateBox{border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(0,200,83,.06)}
+.estimateValue{font-size:20px;font-weight:900;color:var(--hot)}
+.smallNote{font-size:13px;color:var(--soft);line-height:1.4}
+#docContextWrap{border:1px solid var(--dim);border-radius:9px;overflow:hidden;margin-bottom:6px;}
+#docContextHeader{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:rgba(0,200,83,.05);cursor:pointer;}
+#docContextLabel{font-size:12px;color:var(--soft);font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+#docContextToggleBtn{font-size:12px;color:var(--soft);background:transparent;border:none;cursor:pointer;min-height:auto;padding:0;}
+#docContextBody{display:none;padding:6px;}
+#docContextInput{width:100%;height:100px;resize:none;font-size:14px;padding:8px;border-radius:7px;border:1px solid var(--dim);background:var(--panel);color:var(--text);line-height:1.4;}
+#docContextCount{font-size:10px;color:#444;text-align:right;margin-top:2px;}
+#docActiveBadge{display:none;font-size:10px;font-weight:800;color:var(--line);border:1px solid var(--line);border-radius:999px;padding:1px 6px;margin-left:6px;}
+#conscienceBadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.06em;cursor:pointer;transition:all .3s;border:1px solid;}
+#conscienceBadge.on{background:rgba(0,200,83,.15);color:#b6ff6a;border-color:#00c853;}
+#conscienceBadge.off{background:rgba(80,80,80,.15);color:#666;border-color:#444;}
+#conscienceBadge .dot{width:7px;height:7px;border-radius:50%;flex:none;}
+#conscienceBadge.on .dot{background:#00c853;box-shadow:0 0 5px #00c853;}
+#conscienceBadge.off .dot{background:#444;}
+#conscienceModal{position:fixed;inset:0;display:none;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:16px;z-index:1500;backdrop-filter:blur(3px);}
+#conscienceModal .card{max-width:380px;}
+#conscienceReasons{font-size:14px;color:var(--text);line-height:1.6;margin:8px 0 12px;padding:10px;background:rgba(0,0,0,.2);border-radius:8px;border-left:3px solid var(--warn);}
+#conscienceOverrideBadge{display:none;font-size:11px;font-weight:800;color:var(--warn);border:1px solid var(--warn);border-radius:999px;padding:2px 8px;margin-left:6px;letter-spacing:.06em;}
+.feedback-bar{margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(0,200,83,.05);border:1px solid var(--dim);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.feedback-bar .fb-label{font-size:12px;color:var(--soft);}
+.feedback-btn{font-size:18px;background:transparent;border:1px solid var(--dim);border-radius:8px;min-height:36px;padding:4px 10px;cursor:pointer;transition:all .2s;}
+.feedback-btn:hover{border-color:var(--line);}
+.feedback-btn.selected-good{border-color:#00c853;background:rgba(0,200,83,.15);}
+.feedback-btn.selected-bad{border-color:#c84040;background:rgba(200,64,64,.15);}
+.feedback-btn.selected-warn{border-color:var(--warn);background:rgba(243,210,106,.15);}
+.reason-btn{font-size:12px;background:transparent;border:1px solid var(--dim);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--soft);min-height:30px;}
+.reason-btn:hover{border-color:var(--warn);color:var(--warn);}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,200,83,.6)}50%{box-shadow:0 0 0 8px rgba(0,200,83,0)}}
+@keyframes pulseGlowHot{0%,100%{box-shadow:0 0 0 0 rgba(215,255,119,.7)}50%{box-shadow:0 0 0 10px rgba(215,255,119,0)}}
+.onboard-pulse{animation:pulseGlow 1.6s ease-in-out infinite;border-color:var(--line)!important;}
+.onboard-pulse-hot{animation:pulseGlowHot 1.4s ease-in-out infinite;border-color:var(--hot)!important;}
+#onboardOverlay{position:fixed;inset:0;z-index:2000;pointer-events:none;}
+#onboardTooltip{position:fixed;left:50%;transform:translateX(-50%);bottom:120px;width:min(320px,88vw);background:linear-gradient(160deg,#0e1a0e,#071007);border:2px solid var(--line);border-radius:14px;padding:16px;pointer-events:all;box-shadow:0 8px 32px rgba(0,200,83,.25);}
+#onboardStep{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:800;}
+#onboardMsg{font-size:17px;color:var(--text);line-height:1.45;margin-bottom:14px;}
+#onboardActions{display:flex;gap:8px;}
+#onboardNext{flex:1;background:#00c853;color:#071007;font-weight:900;font-size:16px;border:none;border-radius:9px;min-height:44px;cursor:pointer;}
+#onboardSkip{background:transparent;color:var(--soft);font-size:14px;border:1px solid var(--dim);border-radius:9px;min-height:44px;padding:0 14px;cursor:pointer;}
+@media print{
+  body *{visibility:hidden}
+  #dialogBox,#dialogBox *{visibility:visible}
+  #dialogBox{position:fixed;inset:0;max-height:none;border:none;background:white;color:black;font-size:14px;padding:20px;}
+  .dialog-line.you{border-left:3px solid #000;background:#f5f5f5}
+  .dialog-line.orchestrator{border-left:3px solid #999;background:#fff}
+  .speaker{color:#000}
+}
+</style>
+</head>
+<body>
+<header id="topbar">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div id="brand">Fluba Brain V29</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div id="conscienceBadge" class="on" onclick="toggleConscience()"><span class="dot"></span>Conscience ON</div>
+      <button id="devToggleBtn" onclick="toggleOnboardDev()" style="font-size:11px;padding:3px 8px;min-height:26px;background:transparent;border:1px solid #444;border-radius:6px;color:#555;cursor:pointer;">Tour: ON</button>
+    </div>
+  </div>
+  <div id="stats" style="font-size:10px;color:var(--soft);line-height:1.4;">Balance: <span id="balanceTop">250</span> | Used: <span id="usedTop">0</span> | Litigants: <span id="litigantCount">4</span></div>
+</header>
+
+<div id="appShell">
+  <nav id="controls">
+    <button data-action="openConfigure">Configure</button>
+    <button data-action="openSessions">Sessions</button>
+  </nav>
+
+  <section id="interactionGrid">
+    <div class="panel" style="display:flex;flex-direction:column;gap:6px;">
+      <div class="panelTitle">Conversation</div>
+
+      <!-- PANE 1: LITIGANT VOICES — shown only in All Voices mode -->
+      <div id="deliberationWrap" style="display:none;border:1px solid var(--soft);border-radius:12px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(122,184,122,.07);border-bottom:1px solid var(--dim);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:13px;color:var(--soft);letter-spacing:.08em;text-transform:uppercase;font-weight:800;">Litigant Voices</div>
+            <div id="oppositionBadge" style="display:none;font-size:11px;font-weight:900;color:#ff6b6b;border:1px solid #c84040;border-radius:999px;padding:2px 8px;letter-spacing:.06em;">⚔ OPPOSITION ACTIVE</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button data-action="saveDeliberation" style="font-size:12px;padding:4px 8px;min-height:28px;background:transparent;border:1px solid var(--soft);border-radius:7px;cursor:pointer;color:var(--text);">⬇</button>
+            <button data-action="toggleDeliberation" style="font-size:12px;padding:4px 10px;min-height:28px;background:transparent;border:1px solid var(--soft);border-radius:7px;color:var(--soft);cursor:pointer;">▶ Show</button>
+          </div>
+        </div>
+        <div id="deliberationBox" aria-live="off" aria-atomic="false" style="display:none;min-height:120px;max-height:280px;overflow-y:auto;padding:10px;font-size:16px;line-height:1.6;background:rgba(0,0,0,.12);"></div>
+      </div>
+
+      <!-- STATUS BADGE -->
+      <div id="statusBadge" style="display:none;padding:10px 12px;border-radius:10px;font-size:15px;font-weight:700;text-align:center;transition:all .3s;"></div>
+
+      <!-- CONFIDENCE + CREDITS -->
+      <div style="padding:6px 8px;border:1px solid #1d331d;border-radius:8px;">
+        <div style="font-size:10px;color:var(--soft);margin-bottom:3px;">Confidence</div>
+        <div style="height:8px;background:#222;border-radius:6px;overflow:hidden;margin-bottom:2px;">
+          <div id="confidenceBar" style="width:0%;height:100%;background:#b6ff6a;transition:width .4s;"></div>
+        </div>
+        <div style="font-size:11px;color:#b6ff6a;font-weight:800;text-align:right;margin-bottom:4px;"><span id="confidenceNow">0</span>% / <span id="confidenceTargetRead">90</span>%</div>
+        <div style="font-size:10px;color:var(--soft);margin-bottom:3px;">Credits Used</div>
+        <div style="height:8px;background:#222;border-radius:6px;overflow:hidden;">
+          <div id="creditBar" style="width:0%;height:100%;background:#00c853;transition:width .4s;"></div>
+        </div>
+      </div>
+
+      <!-- PANE 2: ORCHESTRATOR / CONSENSUS -->
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(0,200,83,.07);border-bottom:1px solid var(--dim);">
+          <div style="font-size:13px;color:var(--line);letter-spacing:.08em;text-transform:uppercase;font-weight:800;">Orchestrator / Consensus</div>
+          <div style="display:flex;gap:6px;">
+            <button data-action="saveConversation" style="font-size:13px;padding:4px 10px;min-height:32px;background:transparent;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--text);">⬇ Save</button>
+            <button data-action="printConversation" style="font-size:13px;padding:4px 10px;min-height:32px;background:transparent;border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--text);">🖨 Print</button>
+          </div>
+        </div>
+        <div id="dialogBox" aria-live="off" aria-atomic="false"></div>
+      </div>
+
+      <!-- DOCUMENT CONTEXT -->
+      <div id="docContextWrap">
+        <div id="docContextHeader" onclick="toggleDocContext()">
+          <div style="display:flex;align-items:center;">
+            <span id="docContextLabel">📄 Document Context</span>
+            <span id="docActiveBadge">ACTIVE</span>
+          </div>
+          <span id="docContextToggleBtn">▶ Add</span>
+        </div>
+        <div id="docContextBody">
+          <textarea id="docContextInput" placeholder="Paste your document here — contracts, reports, articles, code, anything. The courtroom will base its debate on this content."></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <div id="docContextCount" style="font-size:10px;color:#444;">0 characters</div>
+            <button onclick="clearDocContext()" style="font-size:11px;min-height:24px;padding:2px 8px;background:transparent;border:1px solid var(--dim);border-radius:6px;color:#555;cursor:pointer;">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT BAR -->
+      <div style="display:flex;gap:6px;align-items:flex-end;margin-top:4px;">
+        <textarea id="questionBox" placeholder="Ask a question or follow up…" style="flex:1;height:120px;resize:none;padding:9px;line-height:1.4;outline:none;border-radius:9px;font-size:16px;"></textarea>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+          <button data-action="runBrain" style="height:120px;width:68px;background:#00c853;color:#071007;font-weight:900;font-size:26px;border:none;border-radius:9px;cursor:pointer;flex:none;">▶</button>
+          <div id="conscienceOverrideBadge">⚠ OVERRIDE</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#555;text-align:right;margin-top:-2px;">Shift+Enter for new line</div>
+    </div>
+
+    <!-- RUNTIME PANEL -->
+    <div class="panel">
+      <div class="panelTitle">Runtime Control</div>
+      <div id="runtimeGrid">
+        <div class="runtimeItem"><div class="runtimeKey">Starting</div><div class="runtimeValue" id="startCredits">250</div></div>
+        <div class="runtimeItem"><div class="runtimeKey">Current</div><div class="runtimeValue" id="currentCredits">250</div></div>
+        <div class="runtimeItem"><div class="runtimeKey">Used</div><div class="runtimeValue" id="usedCredits">0</div></div>
+        <div class="runtimeItem"><div class="runtimeKey">Round</div><div class="runtimeValue"><span id="iterations">0</span> / <span id="maxIterationsRead">5</span></div></div>
+        <div class="runtimeItem"><div class="runtimeKey">Credit Cap</div><div class="runtimeValue" id="maxCreditsRead">25</div></div>
+        <div class="runtimeItem"><div class="runtimeKey">Mode</div><div class="runtimeValue" id="outputModeBadge" style="font-size:12px;">Consensus</div></div>
+      </div>
+      <div style="margin-top:8px;border:1px solid #1d331d;border-radius:8px;overflow:hidden;">
+        <button data-action="toggleFeed" style="width:100%;text-align:left;padding:7px 10px;background:rgba(0,200,83,.05);border:none;border-radius:0;color:var(--soft);font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>Activity Log</span><span id="feedToggleIcon">▶</span>
+        </button>
+        <div id="runtimeFeed" aria-live="off" aria-atomic="false" style="display:none;padding:6px;font-size:13px;max-height:160px;overflow-y:auto;"></div>
+      </div>
+      <div id="runtimeActions">
+        <button id="pauseResumeBtn" data-action="togglePause">Pause</button>
+        <button data-action="stopRun">Stop</button>
+      </div>
+    </div>
+  </section>
+
+  <main id="stage">
+    <svg id="brainSvg" viewBox="0 -20 1200 980" preserveAspectRatio="xMidYMin meet">
+      <defs id="routeDefs">
+        <linearGradient id="outerRailGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#d7ff77" stop-opacity=".92"/>
+          <stop offset="40%" stop-color="#00c853" stop-opacity=".88"/>
+          <stop offset="100%" stop-color="#7ab87a" stop-opacity=".78"/>
+        </linearGradient>
+        <linearGradient id="innerRailGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#00c853" stop-opacity=".85"/>
+          <stop offset="100%" stop-color="#b6ff6a" stop-opacity=".7"/>
+        </linearGradient>
+        <linearGradient id="wakeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00c853" stop-opacity=".03"/>
+          <stop offset="45%" stop-color="#00f06a" stop-opacity=".24"/>
+          <stop offset="82%" stop-color="#d7ff77" stop-opacity=".42"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity=".05"/>
+        </linearGradient>
+        <linearGradient id="meteorTailGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00c853" stop-opacity=".02"/>
+          <stop offset="38%" stop-color="#00f06a" stop-opacity=".24"/>
+          <stop offset="70%" stop-color="#d7ff77" stop-opacity=".72"/>
+          <stop offset="92%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity=".04"/>
+        </linearGradient>
+        <linearGradient id="meteorCoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#d7ff77" stop-opacity=".08"/>
+          <stop offset="68%" stop-color="#ffffff" stop-opacity=".88"/>
+          <stop offset="92%" stop-color="#ffffff" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#d7ff77" stop-opacity=".22"/>
+        </linearGradient>
+        <radialGradient id="nodePod" cx="35%" cy="28%" r="72%"><stop offset="0%" stop-color="#315831"/><stop offset="45%" stop-color="#102510"/><stop offset="100%" stop-color="#020602"/></radialGradient>
+        <radialGradient id="nodePodActive" cx="35%" cy="28%" r="72%"><stop offset="0%" stop-color="#d7ff77"/><stop offset="36%" stop-color="#1f4d1f"/><stop offset="100%" stop-color="#061006"/></radialGradient>
+        <radialGradient id="litPod" cx="35%" cy="28%" r="72%"><stop offset="0%" stop-color="#214421"/><stop offset="55%" stop-color="#0d220d"/><stop offset="100%" stop-color="#020602"/></radialGradient>
+        <radialGradient id="litPodActive" cx="35%" cy="28%" r="72%"><stop offset="0%" stop-color="#f4ffba"/><stop offset="42%" stop-color="#2b572b"/><stop offset="100%" stop-color="#051105"/></radialGradient>
+        <filter id="railDrop" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000" flood-opacity=".8"/></filter>
+        <filter id="railGlow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#00c853" flood-opacity=".65"/><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".6"/></filter>
+        <filter id="innerDrop" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000" flood-opacity=".8"/></filter>
+        <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#00c853" flood-opacity=".55"/></filter>
+        <filter id="routeHaze" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00c853" flood-opacity=".22"/></filter>
+        <filter id="wakeGlow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="9" flood-color="#00c853" flood-opacity=".58"/><feDropShadow dx="0" dy="0" stdDeviation="18" flood-color="#d7ff77" flood-opacity=".18"/></filter>
+        <filter id="meteorGlow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#d7ff77" flood-opacity=".95"/><feDropShadow dx="0" dy="0" stdDeviation="15" flood-color="#00c853" flood-opacity=".55"/></filter>
+        <filter id="meteorCoreGlow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#ffffff" flood-opacity=".95"/></filter>
+        <filter id="podShadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#000" flood-opacity=".8"/><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00c853" flood-opacity=".35"/></filter>
+        <filter id="podHot" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#d7ff77" flood-opacity=".9"/><feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#000" flood-opacity=".8"/></filter>
+      </defs>
+      <g id="railLayer"></g>
+      <g id="permanentBridgeLayer">
+        <line id="moderator-courtroom-line-shadow" x1="192" y1="465" x2="250" y2="465" stroke="#010401" stroke-width="24" stroke-linecap="round"></line>
+        <line id="moderator-courtroom-line" x1="192" y1="465" x2="250" y2="465" stroke="#00c853" stroke-width="16" stroke-linecap="round"></line>
+        <line id="moderator-courtroom-line-ridge" x1="192" y1="465" x2="250" y2="465" stroke="#d7ff77" stroke-width="5" stroke-linecap="round"></line>
+      </g>
+      <g id="guideLayer"></g><g id="seatLayer"></g><g id="litigantLayer"></g><g id="courtControlsLayer"></g>
+      <path id="logicWake" class="logic-wake" d=""></path><path id="logicTrace" class="logic-trace" d=""></path><path id="logicCore" class="logic-core" d=""></path>
+    </svg>
+    <section id="logicPanel"><div id="logicTitle">Logic Location</div><div id="logicText">Idle.</div></section>
+
+    <!-- SEAT MODAL — anchored inside stage div -->
+    <div id="seatModal" class="stage-modal"><div class="card">
+      <h3 id="seatTitle"></h3>
+      <div class="row"><div class="key">Assigned AI</div><select id="seatAiSelect"></select></div>
+      <div class="row"><div class="key">Aggregate Grade</div><div id="seatGrade"></div></div>
+      <div class="row"><div class="key">Purpose</div><div id="seatPurpose"></div></div>
+      <div class="modalActions"><button data-action="closeModals">Close</button></div>
+    </div></div>
+  </main>
+</div>
+
+<!-- CONFIGURE MODAL -->
+<div id="configureModal" class="modal"><div class="card">
+  <h3>Mission Briefing</h3>
+  <div class="configGrid">
+    <div class="row"><div class="key">Safety Filter</div><select id="conscienceMode"><option>Conscience ON</option><option>Conscience OFF</option></select><div class="smallNote">ON: self-checks for bias, harm, and gaps. OFF: raw output.</div></div>
+    <div class="row"><div class="key">Response Mode</div><select id="responseMode"><option>Consensus Only</option><option>All Voices</option></select><div class="smallNote">Consensus Only: one clean answer. All Voices: each AI's response shown.</div></div>
+    <div class="row"><div class="key">Debate Mode</div><select id="courtMode"><option>Adversarial</option><option>Collaborative</option></select><div class="smallNote">Adversarial: AIs challenge each other. Collaborative: AIs build on each other.</div></div>
+    <div class="row"><div class="key">AI Reasoning</div><select id="deliberationMode"><option>Independent</option><option>Chain</option></select><div class="smallNote">Independent: each AI thinks alone. Chain: each reads prior responses first.</div></div>
+    <div class="row"><div class="key">Seat Assignment</div><select id="assignmentMode"><option>Manual</option><option>Auto by Grade</option></select><div class="smallNote">Manual: you pick seats. Auto: grade order fills them.</div></div>
+    <div class="row"><div class="key">Output Strategy</div><select id="outputStrategy"><option>Moderator Consensus</option><option>Individual Responses</option><option>Consensus + Individual</option><option>Court Transcript</option><option>Artifact Only</option></select></div>
+    <div class="row"><div class="key">Output Preference</div><select id="outputMode"><option>Display in chat</option><option>Download only</option><option>Display + download</option></select></div>
+    <div class="row"><div class="key">Format</div><select id="formatMode"><option>Text</option><option>HTML</option><option>ZIP</option><option>PDF</option></select></div>
+    <div class="row"><div class="key">Confidence Target</div><select id="confidenceTarget"><option value="80">80% Fast</option><option value="90" selected>90% Standard</option><option value="95">95% Deep</option><option value="99">99% Maximum</option></select></div>
+    <div class="row"><div class="key">Maximum Iterations</div><select id="maxIterations"><option>1</option><option>3</option><option selected>5</option><option>10</option></select></div>
+    <div class="row"><div class="key">Maximum Credits</div><select id="maxCredits"><option>10</option><option selected>25</option><option>50</option><option>100</option></select></div>
+    <div class="estimateBox">
+      <div class="key">Estimated Run Cost</div>
+      <div class="estimateValue"><span id="estimateLow">12</span>–<span id="estimateHigh">18</span> Credits</div>
+      <div class="smallNote" id="estimateText">Based on 4 litigants, Adversarial mode, and 90% confidence target.</div>
+    </div>
+  </div>
+  <div class="modalActions"><button data-action="saveConfig">Save Configuration</button><button data-action="closeModals">Close</button></div>
+</div></div>
+
+<!-- ADD AGENT MODAL -->
+<div id="addModal" class="modal"><div class="card">
+  <h3>Add Agent</h3>
+  <div class="row"><div class="key">Seat</div><div id="addSeatName">Litigant 5</div></div>
+  <div class="row"><div class="key">Position</div><select id="addSeatPosition"></select></div>
+  <div class="row"><div class="key">Assigned AI</div><select id="addAiSelect"></select></div>
+  <div class="row"><div class="key">Description</div><div id="addAiDesc"></div></div>
+  <div class="row"><div class="key">Grade</div><div id="addAiGrade"></div></div>
+  <div class="modalActions"><button data-action="confirmAddAgent">Add Agent</button><button data-action="closeModals">Cancel</button></div>
+</div></div>
+
+<!-- REMOVE AGENT MODAL -->
+<div id="removeModal" class="modal"><div class="card">
+  <h3>Remove Agent</h3>
+  <div class="row"><div class="key">Select Litigant to Remove</div><select id="removeSeatSelect" style="margin-top:4px;"></select></div>
+  <div class="row"><div class="key">AI</div><div id="removeAiName"></div></div>
+  <div class="row" style="color:var(--warn);font-size:13px;">This cannot be undone within the session.</div>
+  <div class="modalActions"><button data-action="confirmRemoveAgent">Remove</button><button data-action="closeModals">Cancel</button></div>
+</div></div>
+
+<!-- SESSIONS MODAL -->
+<!-- PRE-WIRE: wire openSessionsModal() to fetch from brain_sessions in Firebase -->
+<div id="sessionsModal" class="modal"><div class="card">
+  <h3>Saved Sessions</h3>
+  <div id="sessionsList" style="max-height:60vh;overflow:auto;font-size:13px;"></div>
+  <div class="modalActions"><button data-action="closeModals">Close</button></div>
+</div></div>
+
+<!-- SIGNUP BANNER -->
+<div id="signupBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;padding:12px 16px;background:linear-gradient(135deg,#0a1f0a,#071407);border-top:2px solid var(--line);box-shadow:0 -4px 24px rgba(0,200,83,.25);">
+  <div style="max-width:480px;margin:0 auto;">
+    <div style="font-size:16px;font-weight:800;color:var(--hot);margin-bottom:4px;">Save your results — it's free to start</div>
+    <div style="font-size:13px;color:var(--soft);margin-bottom:10px;">Create an account to save this conversation and get <b style="color:var(--hot);">50 Brain Credits</b> free.</div>
+    <div style="display:flex;gap:8px;">
+      <button data-action="openSignup" style="flex:2;background:var(--line);color:#071007;font-weight:900;border:none;font-size:15px;min-height:42px;border-radius:9px;cursor:pointer;">Create Account</button>
+      <button data-action="openEconomics" style="flex:1;font-size:13px;min-height:42px;background:transparent;border:1px solid var(--dim);border-radius:9px;cursor:pointer;color:var(--soft);">How Credits Work</button>
+      <button data-action="dismissBanner" style="flex:none;width:42px;min-height:42px;background:transparent;border:1px solid var(--dim);border-radius:9px;cursor:pointer;color:var(--soft);font-size:18px;">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNUP MODAL -->
+<div id="signupModal" class="modal"><div class="card">
+  <h3>Create Your Account</h3>
+  <div style="font-size:14px;color:var(--soft);margin-bottom:12px;line-height:1.5;">Enter your name and email. We'll send a verification link — click it to activate your <b style="color:var(--hot);">50 free Brain Credits</b>.</div>
+  <div class="row"><div class="key">Your Name</div><input type="text" id="signupName" placeholder="First and last name" style="margin-top:4px;" /></div>
+  <div class="row"><div class="key">Email Address</div><input type="email" id="signupEmail" placeholder="you@example.com" style="margin-top:4px;" /></div>
+  <div class="row"><div class="key">Plan</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+      <div id="planStarter" data-plan="starter" style="border:2px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;background:rgba(0,200,83,.08);"><div style="font-weight:800;font-size:14px;color:var(--hot);">Starter</div><div style="font-size:12px;color:var(--soft);margin-top:3px;">Pay as you go<br>4 litigants max</div></div>
+      <div id="planPro" data-plan="pro" style="border:1px solid var(--dim);border-radius:10px;padding:10px;cursor:pointer;"><div style="font-weight:800;font-size:14px;color:var(--soft);">Pro</div><div style="font-size:12px;color:var(--soft);margin-top:3px;">$9.99/mo<br>8 litigants + history</div></div>
+    </div>
+  </div>
+  <div id="signupMsg" style="font-size:13px;color:var(--hot);margin-top:8px;display:none;"></div>
+  <div class="modalActions"><button data-action="submitSignup" style="background:var(--line);color:#071007;font-weight:900;border:none;">Send Verification Email</button><button data-action="closeModals">Cancel</button></div>
+  <div style="margin-top:10px;text-align:center;font-size:12px;color:var(--soft);">No payment needed to start. <span data-action="openEconomics" style="color:var(--line);cursor:pointer;text-decoration:underline;">How credits work →</span></div>
+</div></div>
+
+<!-- ECONOMICS MODAL -->
+<div id="economicsModal" class="modal"><div class="card">
+  <h3>How Brain Credits Work</h3>
+  <div class="row"><div class="key">What are Brain Credits?</div><div style="font-size:14px;line-height:1.6;margin-top:4px;">Brain Credits are Fluba's internal currency. Priced at <b style="color:var(--hot);">$0.01 each</b> — 100 credits = $1.00.</div></div>
+  <div class="row"><div class="key">How is a run priced?</div><div style="font-size:14px;line-height:1.6;margin-top:4px;">Cost depends on litigants, debate mode, and confidence target. Typical run: <b style="color:var(--hot);">12–18 credits ($0.12–$0.18)</b>.</div></div>
+  <div class="row"><div class="key">Credit Bundles</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;font-size:13px;">
+      <div style="border:1px solid var(--dim);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:900;color:var(--hot);">100</div><div style="color:var(--soft);">credits</div><div style="font-weight:700;margin-top:2px;">$1.00</div></div>
+      <div style="border:1px solid var(--dim);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:900;color:var(--hot);">500</div><div style="color:var(--soft);">credits</div><div style="font-weight:700;margin-top:2px;">$4.50 <span style="color:var(--line);font-size:11px;">save 10%</span></div></div>
+      <div style="border:1px solid var(--dim);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:900;color:var(--hot);">1,000</div><div style="color:var(--soft);">credits</div><div style="font-weight:700;margin-top:2px;">$8.00 <span style="color:var(--line);font-size:11px;">save 20%</span></div></div>
+      <div style="border:1px solid var(--dim);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:900;color:var(--hot);">5,000</div><div style="color:var(--soft);">credits</div><div style="font-weight:700;margin-top:2px;">$35.00 <span style="color:var(--line);font-size:11px;">save 30%</span></div></div>
+    </div>
+  </div>
+  <div class="row"><div class="key">Starter vs Pro</div><div style="font-size:13px;line-height:1.7;margin-top:4px;"><b style="color:var(--hot);">Starter</b> — buy credits as needed. 4 litigants max.<br><br><b style="color:var(--hot);">Pro ($9.99/mo)</b> — 500 credits/mo. 8 litigants. Full history. Artifacts. Sharing.</div></div>
+  <div class="row"><div class="key">Trial Credits</div><div style="font-size:13px;line-height:1.6;margin-top:4px;">New accounts get <b style="color:var(--hot);">50 Brain Credits free</b> after email verification.</div></div>
+  <div class="modalActions"><button data-action="openSignup" style="background:var(--line);color:#071007;font-weight:900;border:none;">Create Account</button><button data-action="closeModals">Close</button></div>
+</div></div>
+
+<!-- CONSCIENCE MODAL -->
+<div id="conscienceModal">
+  <div class="card">
+    <h3>⚠ Conscience Flagged This Request</h3>
+    <div style="font-size:14px;color:var(--soft);margin-bottom:8px;line-height:1.5;">The conscience layer reviewed your request and found potential issues. You can proceed anyway — but you'll know you overrode it.</div>
+    <div id="conscienceReasons"></div>
+    <div class="modalActions">
+      <button id="conscienceProceedBtn" style="background:var(--warn);color:#071007;font-weight:900;border:none;">Proceed Anyway</button>
+      <button id="conscienceCancelBtn" style="background:transparent;border:1px solid var(--dim);color:var(--soft);">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING WIZARD -->
+<div id="onboardOverlay" style="display:none;">
+  <div id="onboardTooltip">
+    <div id="onboardStep">Welcome</div>
+    <div id="onboardMsg"></div>
+    <div id="onboardCapture" style="display:none;margin-bottom:12px;">
+      <input id="onboardName" type="text" placeholder="Your name" style="width:100%;margin-bottom:8px;padding:10px;font-size:16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--text);" />
+      <input id="onboardEmail" type="email" placeholder="Email address" style="width:100%;padding:10px;font-size:16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--text);" />
+      <div id="onboardCaptureMsg" style="display:none;font-size:13px;margin-top:6px;color:#b6ff6a;"></div>
+    </div>
+    <div id="onboardActions" style="display:flex;gap:8px;">
+      <button id="onboardNext" style="flex:1;background:#00c853;color:#071007;font-weight:900;font-size:16px;border:none;border-radius:9px;min-height:44px;cursor:pointer;">Let's go →</button>
+      <button id="onboardSkip" style="background:transparent;color:var(--soft);font-size:14px;border:1px solid var(--dim);border-radius:9px;min-height:44px;padding:0 14px;cursor:pointer;">Skip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DEV TOGGLE ───────────────────────────────────────────────────────────────
+let obDevSkip=false;
+function toggleOnboardDev(){
+  obDevSkip=!obDevSkip;
+  const btn=document.getElementById('devToggleBtn');
+  if(btn){
+    btn.textContent='Tour: '+(obDevSkip?'OFF':'ON');
+    btn.style.color=obDevSkip?'#ff9a9a':'#7ab87a';
+    btn.style.border=obDevSkip?'1px solid #c84040':'1px solid #444';
+    btn.style.background=obDevSkip?'rgba(200,64,64,.12)':'transparent';
+  }
+  if(!obDevSkip){
+    try{localStorage.removeItem('fb_onboarded');}catch(e){}
+    setTimeout(startOnboarding,300);
+  } else {
+    try{localStorage.setItem('fb_onboarded','1');}catch(e){}
+    document.getElementById('onboardOverlay').style.display='none';
+    obClearPulse();
+  }
+}
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const AI_OPTIONS=[
+  {id:'gpt',   name:'GPT-5.5',    grade:'A',  desc:'Strong general reasoning, synthesis, and user-facing explanation.'},
+  {id:'claude',name:'Claude Opus', grade:'A',  desc:'Strong structured reasoning, writing, and implementation planning.'},
+  {id:'grok',  name:'Grok',        grade:'A-', desc:'Strong adversarial reasoning and alternative viewpoints.'},
+  {id:'gemini',name:'Gemini',      grade:'B+', desc:'Strong broad context and multimodal reasoning.'},
+  {id:'local', name:'Local Model', grade:'B',  desc:'Private local reasoning seat for bounded sandbox use.'}
+];
+const G={frame:{left:140,top:220,right:1060,bottom:720,rx:34},court:{left:250,top:320,right:720,bottom:610,rx:24},yMid:465,centerX:600};
+G.seats={
+  user:        {id:'user',        label:'User',        short:'User',        x:G.centerX,    y:95,           r:52},
+  orchestrator:{id:'orchestrator',label:'Orchestrator',short:'Orchestrator',x:G.centerX,    y:G.frame.top,  r:52},
+  moderator:   {id:'moderator',   label:'Moderator',   short:'Moderator',   x:G.frame.left, y:G.yMid,       r:52},
+  auditor:     {id:'auditor',     label:'Auditor',     short:'Auditor',     x:G.frame.right,y:G.yMid,       r:52},
+  architect:   {id:'architect',   label:'Architect',   short:'Architect',   x:G.centerX,    y:G.frame.bottom,r:52},
+  builder:     {id:'builder',     label:'Builder',     short:'Builder',     x:G.centerX,    y:845,          r:52}
+};
+const SEAT_DEFS={
+  user:        {purpose:'Originates the request and controls the session.',           ai:'human',  grade:'Owner'},
+  orchestrator:{purpose:'Talks directly to the user and returns final responses.',    ai:'gpt',    grade:'A'},
+  moderator:   {purpose:'Controls courtroom flow and builds the final briefing.',     ai:'claude', grade:'A-'},
+  auditor:     {purpose:'Controls output and release decisions.',                     ai:'gpt',    grade:'B+'},
+  architect:   {purpose:'Defines build shape and reviews Builder output.',            ai:'claude', grade:'A'},
+  builder:     {purpose:'Builds the requested artifact or implementation.',           ai:'gpt',    grade:'B+'}
+};
+const TIERS={
+  starter:    {maxLitigants:4,  sessionHistory:false,label:'Starter'},
+  pro:        {maxLitigants:8,  sessionHistory:true, label:'Pro'},
+  enterprise: {maxLitigants:16, sessionHistory:true, label:'Enterprise'}
+};
+// PRE-WIRE: replace UserSession with real Firebase auth + brain_user_prefs fetch on login
+const UserSession={userId:'guest',plan:'starter',creditBalance:50,trialCreditsUsed:false,subscriptionStatus:'trial'};
+
+const BrainState={
+  activeSeatId:'user',litigants:[{ai:'gpt'},{ai:'claude'},{ai:'grok'},{ai:'gemini'}],
+  startCredits:250,currentCredits:250,usedCredits:0,iterations:0,confidence:0,
+  running:false,paused:false,stop:false,
+  courtMode:'Adversarial',conscienceMode:'Conscience ON',assignmentMode:'Manual',
+  outputMode:'Display in chat',outputStrategy:'Moderator Consensus',
+  responseMode:'Consensus Only',deliberationMode:'Independent',formatMode:'Text',
+  confidenceTarget:90,maxIterations:5,maxCredits:25,
+  selectedSeatId:null,conversationHistory:[],sessionId:null,sessionCreatedAt:null
+};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function $(id){return document.getElementById(id)}
+function aiById(id){return AI_OPTIONS.find(a=>a.id===id)||AI_OPTIONS[0]}
+function feedRuntime(msg){const f=$('runtimeFeed');if(f){f.innerHTML+='<br>'+msg;f.scrollTop=f.scrollHeight;}}
+function emitLocation(text){$('logicText').textContent=text}
+function setLiveStatus(text){
+  let el=$('liveStatusLine');
+  if(!el){
+    el=document.createElement('div');el.id='liveStatusLine';
+    el.style.cssText='padding:6px 8px;margin-bottom:4px;border-radius:8px;font-size:14px;color:#7ab87a;background:rgba(0,200,83,.06);border-left:3px solid #1d331d;font-style:italic;';
+    $('dialogBox').appendChild(el);
+  }
+  el.textContent='⏳ '+text;
+  $('dialogBox').scrollTop=$('dialogBox').scrollHeight;
+}
+function clearLiveStatus(){const el=$('liveStatusLine');if(el)el.remove();}
+function setActiveSeat(id){BrainState.activeSeatId=id;document.querySelectorAll('.active').forEach(el=>el.classList.remove('active'));const el=$('seat-'+id);if(el)el.classList.add('active')}
+function showModal(id){
+  const el=document.getElementById(id);
+  el.style.display='flex';
+  if(!el.classList.contains('stage-modal'))window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeModals(){document.querySelectorAll('.modal,.stage-modal').forEach(m=>m.style.display='none')}
+function fillAiSelect(select,selected){select.innerHTML=AI_OPTIONS.map(a=>`<option value="${a.id}" ${a.id===selected?'selected':''}>${a.name}</option>`).join('')}
+
+function renderMeters(){
+  $('balanceTop').textContent=BrainState.currentCredits;
+  $('usedTop').textContent=BrainState.usedCredits;
+  $('startCredits').textContent=BrainState.startCredits;
+  $('currentCredits').textContent=BrainState.currentCredits;
+  $('usedCredits').textContent=BrainState.usedCredits;
+  $('confidenceNow').textContent=BrainState.confidence;
+  $('confidenceTargetRead').textContent=BrainState.confidenceTarget;
+  $('iterations').textContent=BrainState.iterations;
+  $('maxIterationsRead').textContent=BrainState.maxIterations;
+  $('maxCreditsRead').textContent=BrainState.maxCredits;
+  $('litigantCount').textContent=BrainState.litigants.length;
+}
+function spendCredits(n){BrainState.usedCredits+=n;BrainState.currentCredits=Math.max(0,BrainState.startCredits-BrainState.usedCredits);renderMeters()}
+
+function setBadge(text,color,autohide=false){
+  const b=$('statusBadge');if(!b)return;
+  b.textContent=text;b.style.display='block';b.style.background=color;
+  b.style.color=color==='rgba(0,200,83,.15)'?'#b6ff6a':color==='rgba(243,210,106,.15)'?'#f3d26a':'#ff6b6b';
+  b.style.border='1px solid '+(color==='rgba(0,200,83,.15)'?'#00c853':color==='rgba(243,210,106,.15)'?'#f3d26a':'#c84040');
+  if(autohide)setTimeout(()=>{b.style.opacity='0';setTimeout(()=>{b.style.display='none';b.style.opacity='1';},600);},3200);
+}
+
+function addAnswer(speaker,text){
+  const box=$('dialogBox');
+  const cls=speaker.toLowerCase()==='you'?'you':'orchestrator';
+  // Split disclosure header from answer body
+  let disclosure='',body=text;
+  if(cls==='orchestrator'&&text.startsWith('[')){
+    const nl=text.indexOf('\n');
+    if(nl>-1){disclosure=text.slice(0,nl+1);body=text.slice(nl+1);}
+  }
+  const disclosureHtml=disclosure?`<span class="disclosure">${disclosure.trim()}</span>`:'';
+  box.insertAdjacentHTML('beforeend',`<div class="dialog-line ${cls}"><span class="speaker ${cls}">${speaker}</span>${disclosureHtml}${body}</div>`);
+  box.scrollTop=box.scrollHeight;
+}
+function addLitigantDialog(speaker,text,isAdversarial){
+  const box=$('deliberationBox');
+  const borderColor=isAdversarial?'#c84040':'var(--soft)';
+  box.insertAdjacentHTML('beforeend',`<div class="dialog-line" style="border-left:3px solid ${borderColor};padding-left:8px;"><span class="speaker" style="color:${isAdversarial?'#ff9a9a':'var(--soft)'};">${speaker}${isAdversarial?' ⚔':''}</span>${text}</div>`);
+  box.scrollTop=box.scrollHeight;
+}
+function toggleDeliberation(){
+  const box=$('deliberationBox');
+  const btn=document.querySelector('[data-action="toggleDeliberation"]');
+  const open=box.style.display==='none';
+  box.style.display=open?'block':'none';
+  if(btn)btn.textContent=open?'▼ Hide':'▶ Show';
+}
+
+// ─── GRADING & FEEDBACK ───────────────────────────────────────────────────────
+const GradeState={
+  seats:{
+    orchestrator:{grade:'A',  runs:0,good:0,bad:0,history:[]},
+    moderator:   {grade:'A-', runs:0,good:0,bad:0,history:[]},
+    auditor:     {grade:'B+', runs:0,good:0,bad:0,history:[]},
+    architect:   {grade:'A',  runs:0,good:0,bad:0,history:[]},
+    builder:     {grade:'B+', runs:0,good:0,bad:0,history:[]}
+  },
+  litigants:{}
+};
+const GRADE_SCALE=['F','D','D+','C-','C','C+','B-','B','B+','A-','A','A+'];
+function gradeToIndex(g){const i=GRADE_SCALE.indexOf(g);return i>=0?i:8;}
+function indexToGrade(i){return GRADE_SCALE[Math.max(0,Math.min(GRADE_SCALE.length-1,i))];}
+
+function applyFeedback(thumbs,reasonCode,flow){
+  const delta=thumbs==='good'?1:thumbs==='bad'?-1:0;
+  const seatsToScore=flow==='build'?['orchestrator','moderator','architect','builder','auditor']:['orchestrator','moderator'];
+  for(const seatId of seatsToScore){
+    const s=GradeState.seats[seatId];if(!s)continue;
+    s.runs++;if(thumbs==='good')s.good++;if(thumbs==='bad')s.bad++;
+    s.history.push({thumbs,reasonCode,ts:Date.now()});
+    if(s.history.length>20)s.history.shift();
+    s.grade=indexToGrade(gradeToIndex(s.grade)+delta);
+  }
+  BrainState.litigants.forEach((lit,i)=>{
+    const key=lit.ai+'_'+i;
+    if(!GradeState.litigants[key])GradeState.litigants[key]={grade:aiById(lit.ai).grade,runs:0,good:0,bad:0};
+    const l=GradeState.litigants[key];l.runs++;
+    if(thumbs==='good'){l.good++;l.grade=indexToGrade(gradeToIndex(l.grade)+1);}
+    if(thumbs==='bad'&&reasonCode==='nodebate'){l.bad++;l.grade=indexToGrade(gradeToIndex(l.grade)-1);}
+  });
+  for(const[id,s]of Object.entries(GradeState.seats)){if(SEAT_DEFS[id])SEAT_DEFS[id].grade=s.grade;}
+  renderSeats();renderLitigants();
+  // FIREBASE STUB: write GradeState to brain_seat_grades/{userId}
+  feedRuntime('[Grades] Updated: '+thumbs+(reasonCode?' ('+reasonCode+')':''));
+}
+
+function getGradeSummary(seatId){
+  const s=GradeState.seats[seatId];
+  if(!s||s.runs===0)return'No runs yet';
+  return`${s.runs} run${s.runs!==1?'s':''} — ${s.good} 👍 ${s.bad} 👎`;
+}
+
+function renderFeedbackBar(runIndex,flow){
+  const box=$('dialogBox');
+  if(document.getElementById('feedback-'+runIndex))return;
+  const bar=document.createElement('div');
+  bar.id='feedback-'+runIndex;
+  bar.className='feedback-bar';
+  bar.innerHTML=`<span class="fb-label">Was this helpful?</span>
+    <button class="feedback-btn" data-fb="good" data-run="${runIndex}" data-flow="${flow}">👍</button>
+    <button class="feedback-btn" data-fb="bad"  data-run="${runIndex}" data-flow="${flow}">👎</button>
+    <button class="feedback-btn" data-fb="warn" data-run="${runIndex}" data-flow="${flow}">⚠️</button>
+    <span class="fb-label" id="fb-status-${runIndex}" style="color:var(--line);display:none;">✓ Thanks — grades updated</span>`;
+  const reasons=document.createElement('div');
+  reasons.id='fb-reasons-'+runIndex;
+  reasons.style.cssText='display:none;margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,.15);border:1px solid var(--dim);';
+  reasons.innerHTML=`<div style="font-size:11px;color:var(--soft);margin-bottom:4px;">What was the problem?</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="reason-btn" data-reason="wrong"    data-run="${runIndex}" data-flow="${flow}">Wrong answer</button>
+      <button class="reason-btn" data-reason="nodebate" data-run="${runIndex}" data-flow="${flow}">Didn't really debate</button>
+      <button class="reason-btn" data-reason="vague"    data-run="${runIndex}" data-flow="${flow}">Too vague</button>
+      <button class="reason-btn" data-reason="other"    data-run="${runIndex}" data-flow="${flow}">Something else</button>
+    </div>`;
+  box.appendChild(bar);box.appendChild(reasons);
+  box.scrollTop=box.scrollHeight;
+}
+
+// ─── DOCUMENT CONTEXT ────────────────────────────────────────────────────────
+function toggleDocContext(){
+  const body=$('docContextBody');
+  const btn=$('docContextToggleBtn');
+  const open=body.style.display==='none'||body.style.display==='';
+  body.style.display=open?'block':'none';
+  btn.textContent=open?'▼ Hide':'▶ Add';
+}
+function clearDocContext(){
+  $('docContextInput').value='';
+  $('docContextCount').textContent='0 characters';
+  $('docActiveBadge').style.display='none';
+}
+function getDocContext(){
+  const val=$('docContextInput')?$('docContextInput').value.trim():'';
+  return val;
+}
+// Update char count and active badge as user types
+// Doc context char counter — wired at init since script is at bottom of body
+function initDocContextCounter(){
+  const inp=$('docContextInput');
+  if(inp){inp.addEventListener('input',()=>{
+    const len=inp.value.trim().length;
+    $('docContextCount').textContent=len.toLocaleString()+' characters';
+    $('docActiveBadge').style.display=len>0?'inline':'none';
+  });}
+}
+
+// ─── CONSCIENCE ───────────────────────────────────────────────────────────────
+function toggleConscience(){
+  const isOn=BrainState.conscienceMode.includes('ON');
+  BrainState.conscienceMode=isOn?'Conscience OFF':'Conscience ON';
+  updateConscienceBadge();
+  // sync config select if open
+  const sel=$('conscienceMode');
+  if(sel)sel.value=BrainState.conscienceMode;
+  document.body.style.filter=BrainState.conscienceMode.includes('OFF')?'saturate(1.25)':'saturate(1)';
+}
+function updateConscienceBadge(){
+  const badge=$('conscienceBadge');if(!badge)return;
+  const on=BrainState.conscienceMode.includes('ON');
+  badge.className='on'+(on?'':'').replace('on','')+(on?'on':'off');
+  badge.className=on?'on':'off';
+  // re-apply id
+  badge.id='conscienceBadge';
+  badge.innerHTML=`<span class="dot"></span>Conscience ${on?'ON':'OFF'}`;
+}
+
+// Evaluate conscience before running — returns { ok, reasons }
+async function evaluateConscience(question){
+  if(BrainState.conscienceMode.includes('OFF'))return{ok:true,reasons:[]};
+  // Conscience rules — maps to AI-Guardrails logic adapted for in-browser use
+  const reasons=[];
+  const q=question.toLowerCase();
+  // Rule K1: detect requests for fabricated facts
+  if(/(make up|fabricate|pretend|lie|false(ly)?|fake)\s+(that|a|an|the|some)?\s*(fact|answer|response|result|data|statistic)/i.test(question)){
+    reasons.push('Request appears to ask for fabricated information.');
+  }
+  // Rule K2: detect requests to ignore previous instructions or bypass safety
+  if(/(ignore|forget|override|bypass|disregard).{0,30}(instruction|rule|guideline|conscience|safety|policy)/i.test(question)){
+    reasons.push('Request appears to ask the system to bypass its own rules.');
+  }
+  // Rule K3: detect prompt injection patterns
+  if(/(system prompt|you are now|act as if|pretend you are|jailbreak|DAN|do anything now)/i.test(question)){
+    reasons.push('Request contains prompt injection patterns.');
+  }
+  // Rule K4: detect requests for harmful content
+  if(/(how to (make|build|create|synthesize).{0,30}(weapon|bomb|drug|poison|malware|virus))/i.test(question)){
+    reasons.push('Request may seek harmful technical instructions.');
+  }
+  // Rule K5: flag if question is extremely vague with high confidence target
+  if(question.trim().length<10&&BrainState.confidenceTarget>=95){
+    reasons.push('Question is very short but confidence target is very high — results may be unreliable.');
+  }
+  return{ok:reasons.length===0,reasons};
+}
+
+// Show conscience modal and return a promise resolving to true (proceed) or false (cancel)
+function showConscienceModal(reasons){
+  return new Promise(resolve=>{
+    const box=$('conscienceReasons');
+    box.innerHTML=reasons.map(r=>`<div style="margin-bottom:4px;">• ${r}</div>`).join('');
+    $('conscienceModal').style.display='flex';
+    $('conscienceProceedBtn').onclick=()=>{
+      $('conscienceModal').style.display='none';
+      const ob=$('conscienceOverrideBadge');if(ob)ob.style.display='block';
+      resolve(true);
+    };
+    $('conscienceCancelBtn').onclick=()=>{
+      $('conscienceModal').style.display='none';
+      resolve(false);
+    };
+  });
+}
+function pathRoundedRect(x,y,w,h,r){return`M ${x+r} ${y} L ${x+w-r} ${y} Q ${x+w} ${y} ${x+w} ${y+r} L ${x+w} ${y+h-r} Q ${x+w} ${y+h} ${x+w-r} ${y+h} L ${x+r} ${y+h} Q ${x} ${y+h} ${x} ${y+h-r} L ${x} ${y+r} Q ${x} ${y} ${x+r} ${y}`}
+function pathCourtCounterClockwise(){const c=G.court,r=c.rx;return`M ${c.left} ${G.yMid} L ${c.left} ${c.bottom-r} Q ${c.left} ${c.bottom} ${c.left+r} ${c.bottom} L ${c.right-r} ${c.bottom} Q ${c.right} ${c.bottom} ${c.right} ${c.bottom-r} L ${c.right} ${c.top+r} Q ${c.right} ${c.top} ${c.right-r} ${c.top} L ${c.left+r} ${c.top} Q ${c.left} ${c.top} ${c.left} ${c.top+r} L ${c.left} ${G.yMid}`}
+function defineRoutes(){
+  const f=G.frame,c=G.court,s=G.seats;
+  const routes={
+    'route-user-orchestrator':    `M ${s.user.x} ${s.user.y} L ${s.orchestrator.x} ${s.orchestrator.y}`,
+    'route-orchestrator-moderator':`M ${s.orchestrator.x} ${s.orchestrator.y} L ${f.left} ${f.top} L ${s.moderator.x} ${s.moderator.y}`,
+    'route-moderator-courtroom':  `M ${s.moderator.x+s.moderator.r} ${s.moderator.y} L ${c.left} ${G.yMid}`,
+    'route-courtroom-loop':       pathCourtCounterClockwise(),
+    'route-courtroom-moderator':  `M ${c.left} ${G.yMid} L ${s.moderator.x} ${s.moderator.y}`,
+    'route-moderator-orchestrator':`M ${s.moderator.x} ${s.moderator.y} L ${f.left} ${f.top} L ${s.orchestrator.x} ${s.orchestrator.y}`,
+    'route-orchestrator-user':    `M ${s.orchestrator.x} ${s.orchestrator.y} L ${s.user.x} ${s.user.y}`,
+    'route-moderator-architect':  `M ${s.moderator.x} ${s.moderator.y} L ${f.left} ${f.bottom} L ${s.architect.x} ${s.architect.y}`,
+    'route-architect-builder':    `M ${s.architect.x} ${s.architect.y} L ${s.builder.x} ${s.builder.y}`,
+    'route-builder-architect':    `M ${s.builder.x} ${s.builder.y} L ${s.architect.x} ${s.architect.y}`,
+    'route-architect-auditor':    `M ${s.architect.x} ${s.architect.y} L ${f.right} ${f.bottom} L ${s.auditor.x} ${s.auditor.y}`,
+    'route-auditor-orchestrator': `M ${s.auditor.x} ${s.auditor.y} L ${f.right} ${f.top} L ${s.orchestrator.x} ${s.orchestrator.y}`
+  };
+  $('routeDefs').querySelectorAll('path').forEach(p=>p.remove());
+  for(const[id,d]of Object.entries(routes))$('routeDefs').insertAdjacentHTML('beforeend',`<path id="${id}" d="${d}"></path>`);
+}
+const ROUTES={
+  userToOrchestrator:    {path:'route-user-orchestrator',    active:'orchestrator',location:'User → Orchestrator'},
+  orchestratorToModerator:{path:'route-orchestrator-moderator',active:'moderator',  location:'Orchestrator → Moderator'},
+  moderatorToCourtroom:  {path:'route-moderator-courtroom',  active:'moderator',   location:'Moderator → Courtroom'},
+  courtroomLoop:         {path:'route-courtroom-loop',       active:null,          location:'Courtroom circuit'},
+  courtroomToModerator:  {path:'route-courtroom-moderator',  active:'moderator',   location:'Courtroom → Moderator'},
+  moderatorToOrchestrator:{path:'route-moderator-orchestrator',active:'orchestrator',location:'Moderator → Orchestrator'},
+  orchestratorToUser:    {path:'route-orchestrator-user',    active:'user',        location:'Orchestrator → User'},
+  moderatorToArchitect:  {path:'route-moderator-architect',  active:'architect',   location:'Moderator → Architect'},
+  architectToBuilder:    {path:'route-architect-builder',    active:'builder',     location:'Architect → Builder'},
+  builderToArchitect:    {path:'route-builder-architect',    active:'architect',   location:'Builder → Architect'},
+  architectToAuditor:    {path:'route-architect-auditor',    active:'auditor',     location:'Architect → Auditor'},
+  auditorToOrchestrator: {path:'route-auditor-orchestrator', active:'orchestrator',location:'Auditor → Orchestrator'}
+};
+const FLOWS={
+  answer:['userToOrchestrator','orchestratorToModerator','moderatorToCourtroom','courtroomLoop','courtroomToModerator','moderatorToOrchestrator','orchestratorToUser'],
+  build: ['userToOrchestrator','orchestratorToModerator','moderatorToCourtroom','courtroomLoop','courtroomToModerator','moderatorToArchitect','architectToBuilder','builderToArchitect','architectToAuditor','auditorToOrchestrator','orchestratorToUser']
+};
+
+function renderRails(){
+  const f=G.frame,c=G.court;
+  const outerD=pathRoundedRect(f.left,f.top,f.right-f.left,f.bottom-f.top,f.rx);
+  const innerD=pathRoundedRect(c.left,c.top,c.right-c.left,c.bottom-c.top,c.rx);
+  $('railLayer').innerHTML=`
+    <path class="rail-shadow" d="${outerD}"></path>
+    <path class="rail-body" d="${outerD}"></path>
+    <path class="rail-inner-cut" d="${outerD}"></path>
+    <path class="rail-ridge" d="${outerD}"></path>
+    <path class="chamber-shadow" d="${innerD}"></path>
+    <path class="chamber-body" d="${innerD}"></path>
+    <path class="chamber-ridge" d="${innerD}"></path>`;
+  $('guideLayer').innerHTML='';
+  ['route-user-orchestrator','route-architect-builder','route-orchestrator-moderator','route-moderator-architect','route-architect-auditor','route-auditor-orchestrator','route-courtroom-loop'].forEach(id=>$('guideLayer').insertAdjacentHTML('beforeend',`<use href="#${id}" class="route"></use>`));
+}
+function renderSeats(){
+  const layer=$('seatLayer');layer.innerHTML='';
+  Object.values(G.seats).forEach(seat=>{
+    const def=SEAT_DEFS[seat.id];
+    const aiName=def&&def.ai!=='human'?aiById(def.ai).name:'';
+    let icon='';
+    if(seat.id==='user'){
+      icon=`<circle cx="${seat.x}" cy="${seat.y-18}" r="10" fill="none" stroke="#fff" stroke-width="2"/>
+            <path d="M ${seat.x-14} ${seat.y+2} Q ${seat.x} ${seat.y-8} ${seat.x+14} ${seat.y+2}" fill="none" stroke="#fff" stroke-width="2"/>`;
+    } else if(seat.id==='orchestrator'){
+      icon=`<circle cx="${seat.x}" cy="${seat.y-16}" r="4" fill="#fff"/>
+            <line x1="${seat.x}" y1="${seat.y-12}" x2="${seat.x}" y2="${seat.y+2}" stroke="#fff" stroke-width="2"/>
+            <line x1="${seat.x-10}" y1="${seat.y-4}" x2="${seat.x+10}" y2="${seat.y-4}" stroke="#fff" stroke-width="2"/>`;
+    } else if(seat.id==='moderator'){
+      icon=`<line x1="${seat.x}" y1="${seat.y-28}" x2="${seat.x}" y2="${seat.y-8}" stroke="#fff" stroke-width="2"/>
+            <line x1="${seat.x-12}" y1="${seat.y-22}" x2="${seat.x+12}" y2="${seat.y-22}" stroke="#fff" stroke-width="2"/>
+            <circle cx="${seat.x-10}" cy="${seat.y-12}" r="4" fill="none" stroke="#fff" stroke-width="2"/>
+            <circle cx="${seat.x+10}" cy="${seat.y-12}" r="4" fill="none" stroke="#fff" stroke-width="2"/>`;
+    } else if(seat.id==='auditor'){
+      icon=`<path d="M ${seat.x-10} ${seat.y-16} L ${seat.x-2} ${seat.y-6} L ${seat.x+12} ${seat.y-24}" fill="none" stroke="#fff" stroke-width="3"/>`;
+    } else if(seat.id==='architect'){
+      icon=`<rect x="${seat.x-12}" y="${seat.y-28}" width="24" height="16" fill="none" stroke="#fff" stroke-width="2"/>
+            <line x1="${seat.x-8}" y1="${seat.y-24}" x2="${seat.x+8}" y2="${seat.y-16}" stroke="#fff" stroke-width="2"/>`;
+    } else if(seat.id==='builder'){
+      icon=`<path d="M ${seat.x-10} ${seat.y-24} L ${seat.x} ${seat.y-14} L ${seat.x+10} ${seat.y-24}" fill="none" stroke="#fff" stroke-width="2"/>
+            <line x1="${seat.x}" y1="${seat.y-14}" x2="${seat.x}" y2="${seat.y-2}" stroke="#fff" stroke-width="3"/>`;
+    }
+    layer.insertAdjacentHTML('beforeend',`<g><circle id="seat-${seat.id}" class="node" cx="${seat.x}" cy="${seat.y}" r="${seat.r}" data-seat-click="${seat.id}"></circle>${icon}<text class="txt" x="${seat.x}" y="${seat.y+14}" font-size="12">${seat.short}</text>${aiName?`<text class="smalltxt" x="${seat.x}" y="${seat.y+29}" font-size="10">${aiName}</text>`:''}</g>`);
+  });
+}
+function courtroomPerimeterPoints(count){
+  const c=G.court,w=c.right-c.left,h=c.bottom-c.top,per=2*(w+h),step=per/count,pts=[];
+  for(let i=0;i<count;i++){let d=i*step,x,y;if(d<h){x=c.left;y=c.top+d}else if(d<h+w){x=c.left+(d-h);y=c.bottom}else if(d<2*h+w){x=c.right;y=c.bottom-(d-h-w)}else{x=c.right-(d-2*h-w);y=c.top}pts.push({x,y})}
+  return pts;
+}
+function renderLitigants(){
+  const layer=$('litigantLayer');layer.innerHTML='';
+  courtroomPerimeterPoints(BrainState.litigants.length).forEach((pt,i)=>{
+    const id=`litigant-${i+1}`;const litAi=aiById(BrainState.litigants[i].ai);
+    const aiIcon={gpt:'GPT',claude:'CLD',grok:'GRK',gemini:'GEM',local:'LOC'}[litAi.id]||('AI'+(i+1));
+    layer.insertAdjacentHTML('beforeend',`<g><circle id="seat-${id}" class="lit" cx="${pt.x}" cy="${pt.y}" r="30" data-seat-click="${id}"></circle><text class="txt" x="${pt.x}" y="${pt.y-3}" font-size="13">${aiIcon}</text><text class="smalltxt" x="${pt.x}" y="${pt.y+13}" font-size="9">L${i+1}</text></g>`);
+  });
+  renderMeters();updateEstimate();
+}
+function renderCourtControls(){
+  const x=(G.court.left+G.court.right)/2,y=G.yMid;
+  $('courtControlsLayer').innerHTML=`
+    <g>
+      <circle cx="${x-58}" cy="${y}" r="48" fill="rgba(0,200,83,.08)" stroke="#00c853" stroke-width="6" data-action="openAddAgent" style="cursor:pointer;"></circle>
+      <line x1="${x-80}" y1="${y}" x2="${x-36}" y2="${y}" stroke="#ffffff" stroke-width="8" stroke-linecap="round" pointer-events="none"></line>
+      <line x1="${x-58}" y1="${y-22}" x2="${x-58}" y2="${y+22}" stroke="#ffffff" stroke-width="8" stroke-linecap="round" pointer-events="none"></line>
+    </g>
+    <g>
+      <circle cx="${x+58}" cy="${y}" r="48" fill="rgba(0,200,83,.08)" stroke="#00c853" stroke-width="6" data-action="openRemoveAgent" style="cursor:pointer;"></circle>
+      <line x1="${x+36}" y1="${y}" x2="${x+80}" y2="${y}" stroke="#ffffff" stroke-width="8" stroke-linecap="round" pointer-events="none"></line>
+    </g>`;
+}
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+function updateConfigFromModal(){
+  BrainState.courtMode=$('courtMode').value;
+  BrainState.conscienceMode=$('conscienceMode').value;
+  BrainState.assignmentMode=$('assignmentMode').value;
+  BrainState.outputMode=$('outputMode').value;
+  BrainState.outputStrategy=$('outputStrategy')?$('outputStrategy').value:BrainState.outputStrategy;
+  BrainState.responseMode=$('responseMode')?$('responseMode').value:BrainState.responseMode;
+  BrainState.deliberationMode=$('deliberationMode')?$('deliberationMode').value:BrainState.deliberationMode;
+  BrainState.formatMode=$('formatMode').value;
+  BrainState.confidenceTarget=parseInt($('confidenceTarget').value,10);
+  BrainState.maxIterations=parseInt($('maxIterations').value,10);
+  BrainState.maxCredits=parseInt($('maxCredits').value,10);
+  const ob=$('outputModeBadge');if(ob)ob.textContent=BrainState.responseMode;
+  updateConscienceBadge();
+  document.documentElement.style.setProperty('--line',BrainState.courtMode==='Collaborative'?'#35e27d':'#00c853');
+  document.documentElement.style.setProperty('--hot',BrainState.conscienceMode.includes('OFF')?'#d7ff77':'#b6ff6a');
+  document.body.style.filter=BrainState.conscienceMode.includes('OFF')?'saturate(1.25)':'saturate(1)';
+  renderMeters();updateEstimate();
+}
+function updateEstimate(){
+  if(!$('estimateLow'))return;
+  const lit=BrainState.litigants.length;
+  const target=parseInt($('confidenceTarget')?.value||BrainState.confidenceTarget,10);
+  const mode=$('courtMode')?.value||BrainState.courtMode;
+  const modeMult=mode==='Adversarial'?1.25:1;
+  const targetMult={80:.8,90:1.2,95:1.8,99:3}[target]||1.2;
+  const consciencePremium=BrainState.conscienceMode.includes('ON')?1:0;
+  let low=Math.ceil(lit*2*modeMult*targetMult)+consciencePremium;
+  let high=Math.ceil(low*1.55);
+  $('estimateLow').textContent=low;$('estimateHigh').textContent=high;
+  $('estimateText').textContent=`Based on ${lit} litigants, ${mode} mode, ${target}% target${consciencePremium?' + conscience gate (+1 Cr)':''}.`;
+}
+
+// ─── SEAT / AGENT MANAGEMENT ──────────────────────────────────────────────────
+function openSeatInspector(id){
+  BrainState.selectedSeatId=id;
+  let label,aiId,grade,purpose;
+  if(id.startsWith('litigant-')){
+    const n=parseInt(id.split('-')[1],10),ai=aiById(BrainState.litigants[n-1].ai);
+    label='Litigant '+n;aiId=ai.id;grade=ai.grade;purpose='Participates in courtroom reasoning and debate.';
+  } else {
+    const def=SEAT_DEFS[id],ai=aiById(def.ai);
+    label=G.seats[id].label;aiId=def.ai;grade=def.grade||ai.grade;purpose=def.purpose;
+  }
+  $('seatTitle').textContent=label;fillAiSelect($('seatAiSelect'),aiId);
+  $('seatGrade').textContent=grade+' — '+getGradeSummary(id.startsWith('litigant-')?null:id);
+  $('seatPurpose').textContent=purpose;showModal('seatModal');
+}
+function updateSeatAi(){
+  const id=BrainState.selectedSeatId;if(!id)return;
+  const aiId=$('seatAiSelect').value;
+  if(id.startsWith('litigant-')){BrainState.litigants[parseInt(id.split('-')[1],10)-1].ai=aiId;$('seatGrade').textContent=aiById(aiId).grade;}
+  else{SEAT_DEFS[id].ai=aiId;$('seatGrade').textContent=aiById(aiId).grade;}
+  emitLocation('Seat AI updated');
+}
+function openAddAgent(){
+  const next=BrainState.litigants.length+1;$('addSeatName').textContent=`Litigant ${next}`;
+  const pos=$('addSeatPosition');pos.innerHTML=`<option value="end">Next available seat</option>`;
+  for(let i=0;i<BrainState.litigants.length;i++){pos.insertAdjacentHTML('beforeend',`<option value="after-${i}">After Litigant ${i+1}</option>`);pos.insertAdjacentHTML('beforeend',`<option value="before-${i}">Before Litigant ${i+1}</option>`);}
+  fillAiSelect($('addAiSelect'),'gpt');updateAddPreview();showModal('addModal');
+}
+function openRemoveAgent(){
+  if(BrainState.litigants.length<=2){feedRuntime('[Courtroom] Minimum 2 litigants required.');return;}
+  const sel=$('removeSeatSelect');
+  sel.innerHTML=BrainState.litigants.map((l,i)=>'<option value="'+i+'">'+'Litigant '+(i+1)+' — '+aiById(l.ai).name+'</option>').join('');
+  sel.onchange=()=>{$('removeAiName').textContent=aiById(BrainState.litigants[parseInt(sel.value,10)].ai).name;};
+  sel.onchange();
+  showModal('removeModal');
+}
+function updateAddPreview(){const ai=aiById($('addAiSelect').value);$('addAiDesc').textContent=ai.desc;$('addAiGrade').textContent=ai.grade}
+function confirmAddAgent(){
+  const maxLit=TIERS[UserSession.plan].maxLitigants;
+  if(BrainState.litigants.length>=maxLit){feedRuntime('['+TIERS[UserSession.plan].label+'] Max '+maxLit+' litigants for your plan.');closeModals();return;}
+  const newAgent={ai:$('addAiSelect').value};const choice=$('addSeatPosition').value;
+  if(choice==='end'){BrainState.litigants.push(newAgent)}else{const parts=choice.split('-');BrainState.litigants.splice(parts[0]==='before'?parseInt(parts[1],10):parseInt(parts[1],10)+1,0,newAgent)}
+  renderLitigants();closeModals();emitLocation('Agent added');
+}
+function confirmRemoveAgent(){const idx=parseInt($('removeSeatSelect').value,10);if(BrainState.litigants.length>2){BrainState.litigants.splice(idx,1);renderLitigants();emitLocation('Agent removed');}closeModals();}
+
+// ─── ANIMATION ────────────────────────────────────────────────────────────────
+function pathSegmentD(path,start,len,samples=9){
+  const total=path.getTotalLength(),s=Math.max(0,Math.min(start,total)),e=Math.max(0,Math.min(start+len,total));
+  let d='';for(let i=0;i<=samples;i++){const t=s+(e-s)*(i/samples),p=path.getPointAtLength(t);d+=(i===0?'M':' L')+p.x.toFixed(1)+' '+p.y.toFixed(1)}return d;
+}
+function pathSegmentDClosed(path,start,len,samples=14){
+  const total=path.getTotalLength();
+  let s=((start%total)+total)%total;
+  let e=s+len;
+  function build(a,b,count){
+    let d='';
+    for(let i=0;i<=count;i++){const t=a+((b-a)*(i/count));const p=path.getPointAtLength(t);d+=(i===0?'M':' L')+p.x.toFixed(1)+' '+p.y.toFixed(1);}
+    return d;
+  }
+  if(e<=total)return build(s,e,samples);
+  return build(s,total,samples)+' '+build(0,e-total,samples);
+}
+async function waitIfPaused(){while(BrainState.paused&&!BrainState.stop)await new Promise(r=>setTimeout(r,120))}
+async function animateRoute(routeKey,duration=950){
+  const route=ROUTES[routeKey];emitLocation(route.location);
+  const path=$(route.path),wake=$('logicWake'),trace=$('logicTrace'),core=$('logicCore'),total=path.getTotalLength(),seg=Math.min(110,total*.55),start=performance.now();
+  return new Promise(resolve=>{
+    function frame(now){
+      if(BrainState.stop){wake.setAttribute('d','');wake.style.opacity='0';trace.setAttribute('d','');core.setAttribute('d','');resolve();return}
+      if(BrainState.paused){requestAnimationFrame(frame);return}
+      const t=Math.min(1,(now-start)/duration),pos=t*(total+seg)-seg,d=pathSegmentD(path,pos,seg,14);
+      const wakeD=pathSegmentD(path,0,Math.max(0,Math.min(pos+seg*.75,total)),28);
+      wake.setAttribute('d',wakeD);wake.style.opacity=t<.98?'.72':'.18';
+      trace.setAttribute('d',d);core.setAttribute('d',d);
+      if(t<1)requestAnimationFrame(frame);
+      else{wake.setAttribute('d','');wake.style.opacity='0';trace.setAttribute('d','');core.setAttribute('d','');if(route.active)setActiveSeat(route.active);spendCredits(1);resolve()}
+    }
+    requestAnimationFrame(frame);
+  });
+}
+// Animate the pulse along the courtroom loop path to the nth litigant position
+function animateRouteToLitigant(litIndex){
+  if(BrainState.stop)return;
+  const path=$('route-courtroom-loop');
+  if(!path)return;
+  const wake=$('logicWake'),trace=$('logicTrace'),core=$('logicCore');
+  const total=path.getTotalLength();
+  const pts=courtroomPerimeterPoints(BrainState.litigants.length);
+  const target=pts[litIndex];
+  // Find the point on the path closest to the litigant position
+  let closestT=0,minDist=Infinity;
+  for(let s=0;s<=100;s++){const t=(s/100)*total;const p=path.getPointAtLength(t);const d=Math.hypot(p.x-target.x,p.y-target.y);if(d<minDist){minDist=d;closestT=t;}}
+  const seg=90,duration=700,start=performance.now();
+  function frame(now){
+    if(BrainState.stop){wake.setAttribute('d','');wake.style.opacity='0';trace.setAttribute('d','');core.setAttribute('d','');return;}
+    const t=Math.min(1,(now-start)/duration);
+    const pos=t*closestT;
+    const d=pathSegmentDClosed(path,pos-seg,seg,14);
+    const wakeD=pathSegmentDClosed(path,pos-seg*1.6,seg*1.6,20);
+    wake.setAttribute('d',wakeD);wake.style.opacity='.5';
+    trace.setAttribute('d',d);core.setAttribute('d',d);
+    if(t<1)requestAnimationFrame(frame);
+    else{wake.style.opacity='0';}
+  }
+  requestAnimationFrame(frame);
+}
+// Flash the litigant node hot when its API response lands
+function flashLitigant(litIndex){
+  const el=$('seat-litigant-'+(litIndex+1));
+  if(!el)return;
+  el.classList.add('active');
+  // Clear wake/trace
+  const wake=$('logicWake'),trace=$('logicTrace'),core=$('logicCore');
+  wake.setAttribute('d','');wake.style.opacity='0';trace.setAttribute('d','');core.setAttribute('d','');
+  setTimeout(()=>el.classList.remove('active'),900);
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function callClaude(systemPrompt,userMsg,seatLabel,configuredModel,messages,retries=3){
+  try{
+    const msgs=messages&&messages.length?messages:[{role:'user',content:userMsg}];
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:msgs})});
+    if(res.status===429&&retries>0){
+      const wait=(4-retries)*2000;
+      feedRuntime('[API] Rate limited — retrying in '+(wait/1000)+'s…');
+      setBadge('⏳ Rate limited — retrying…','rgba(243,210,106,.15)');
+      await new Promise(r=>setTimeout(r,wait));
+      return callClaude(systemPrompt,userMsg,seatLabel,configuredModel,messages,retries-1);
+    }
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    const text=d.content?.[0]?.text||'[no response]';
+    const disclosure=seatLabel?`[${seatLabel} | Configured: ${configuredModel||'Claude Sonnet'} | Responding: Claude Sonnet 4.6]\n`:'';
+    return disclosure+text;
+  }catch(e){setBadge('⚠ API Error: '+e.message,'rgba(200,64,64,.15)',true);return'[API error: '+e.message+']';}
+}
+
+// ─── RUN BRAIN ────────────────────────────────────────────────────────────────
+function chooseFlow(){return /(build|create|make|generate|download|zip|pdf|html|file|artifact)/.test($('questionBox').value.toLowerCase())?'build':'answer'}
+
+async function runBrain(){
+  if(BrainState.running)return;
+  if(window.speechSynthesis)window.speechSynthesis.cancel();
+  const runBtn=document.querySelector('[data-action="runBrain"]');
+  if(runBtn){runBtn.disabled=true;runBtn.style.opacity='.4';}
+  updateConfigFromModal();
+  BrainState.running=true;BrainState.paused=false;BrainState.stop=false;
+  BrainState.usedCredits=0;BrainState.currentCredits=BrainState.startCredits;
+  BrainState.iterations=0;BrainState.confidence=0;
+  renderMeters();setActiveSeat('user');
+  const feedEl=$('runtimeFeed');const feedIcon=$('feedToggleIcon');
+  if(feedEl)feedEl.style.display='block';if(feedIcon)feedIcon.textContent='▼';
+  setBadge('⚡ Brain is thinking…','rgba(0,200,83,.15)');
+  const wrap=$('deliberationWrap');
+  if(wrap)wrap.style.display=BrainState.responseMode==='All Voices'?'block':'none';
+  if(BrainState.responseMode==='All Voices'){
+    const dbox=$('deliberationBox');const dbtn=document.querySelector('[data-action="toggleDeliberation"]');
+    if(dbox)dbox.style.display='block';if(dbtn)dbtn.textContent='▼ Hide';
+    const oppBadge=$('oppositionBadge');if(oppBadge)oppBadge.style.display=BrainState.courtMode==='Adversarial'?'inline-block':'none';
+  }
+  const type=chooseFlow();
+  const q=$('questionBox').value.trim();
+  if(!q){if(runBtn){runBtn.disabled=false;runBtn.style.opacity='1';}BrainState.running=false;return;}
+
+  // Reset override badge
+  const ob=$('conscienceOverrideBadge');if(ob)ob.style.display='none';
+
+  // ── Conscience gate ──────────────────────────────────────────────────────────
+  const cResult=await evaluateConscience(q);
+  if(!cResult.ok){
+    setBadge('⚠ Conscience flagged — review required','rgba(243,210,106,.15)');
+    const proceed=await showConscienceModal(cResult.reasons);
+    if(!proceed){
+      if(runBtn){runBtn.disabled=false;runBtn.style.opacity='1';}
+      BrainState.running=false;
+      setBadge('⏹ Cancelled by conscience gate','rgba(243,210,106,.15)',true);
+      return;
+    }
+    feedRuntime('[Conscience] User overrode conscience flag. Proceeding.');
+  } else if(BrainState.conscienceMode.includes('ON')){
+    feedRuntime('[Conscience] ✓ Cleared.');
+    spendCredits(1); // conscience premium — you built it, you charge for it
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  $('questionBox').value='';
+  if($('dialogBox').children.length>0){$('dialogBox').insertAdjacentHTML('beforeend','<div style="border-top:1px solid #1d331d;margin:8px 0;"></div>');}
+  addAnswer('You',q);
+  // Also inject question at top of deliberation box so user can follow logic
+  if(BrainState.responseMode==='All Voices'){
+    if($('deliberationBox').children.length>0){$('deliberationBox').insertAdjacentHTML('beforeend','<div style="border-top:1px solid #1d331d;margin:8px 0;"></div>');}
+    $('deliberationBox').insertAdjacentHTML('beforeend',`<div style="font-size:12px;font-weight:800;color:#4a9eff;padding:4px 8px;margin-bottom:6px;border-left:3px solid #4a9eff;background:rgba(0,120,255,.06);border-radius:6px;">❓ ${q}</div>`);
+  }
+
+  const conscience=BrainState.conscienceMode.includes('OFF')?'':'Apply ethical reasoning. Flag anything harmful or incomplete.';
+  const courtDirective=BrainState.courtMode==='Adversarial'?'Challenge assumptions. Be constructively critical.':'Strengthen the argument. Build consensus.';
+  const priorSynthesis=BrainState.conversationHistory.length>0?' Prior session consensus: '+BrainState.conversationHistory[BrainState.conversationHistory.length-1].a:'';
+  const docContext=getDocContext();
+  const docContextBlock=docContext?'\n\nDOCUMENT CONTEXT PROVIDED BY USER — base your reasoning on this document:\n"""\n'+docContext.slice(0,8000)+'\n"""'+(docContext.length>8000?' [truncated at 8000 chars]':''):'';
+  const sessionContext='SESSION CONTEXT: You are operating inside the Fluba Brain multi-agent courtroom system. Court mode: '+BrainState.courtMode+'. AI Reasoning: '+BrainState.deliberationMode+'. Safety filter: '+BrainState.conscienceMode+'. There are '+BrainState.litigants.length+' litigants: '+BrainState.litigants.map((l,i)=>'L'+(i+1)+' ('+aiById(l.ai).name+')').join(', ')+'.'+(BrainState.conversationHistory.length>0?' Follow-up question.':' First question.')+priorSynthesis+docContextBlock+' Maintain full engagement. Do not shorten or simplify responses.';
+
+  const dialogMessages=[];
+  for(const h of BrainState.conversationHistory.slice(-6)){dialogMessages.push({role:'user',content:h.q});dialogMessages.push({role:'assistant',content:h.a});}
+  dialogMessages.push({role:'user',content:q});
+
+  const ctx={question:q,orchestratorBrief:'',moderatorBrief:'',courtroomNotes:'',architectPlan:'',builderOutput:'',auditorVerdict:'',finalResponse:''};
+
+  for(const key of FLOWS[type]){
+    if(BrainState.stop)break;
+    if(BrainState.usedCredits>=BrainState.maxCredits){emitLocation('Stopped: credit cap reached');break;}
+
+    if(key==='courtroomLoop'){
+      const isAdversarial=BrainState.courtMode==='Adversarial';
+      const oppBadge=$('oppositionBadge');if(oppBadge)oppBadge.style.display=isAdversarial?'inline-block':'none';
+      const oppositionDirective=isAdversarial?' CRITICAL INSTRUCTION: You are an adversarial lawyer. You MUST argue AGAINST the most likely consensus answer. Take the opposing position. Find reasons to challenge, dispute, complicate, or undermine it — even if you personally agree. Do NOT agree with other litigants or the Orchestrator. Make the strongest possible counterargument.':'';
+      while(BrainState.confidence<BrainState.confidenceTarget&&BrainState.iterations<BrainState.maxIterations&&BrainState.usedCredits<BrainState.maxCredits&&!BrainState.stop){
+        await waitIfPaused();
+        if(BrainState.stop)break;
+        feedRuntime('[Courtroom] Round '+(BrainState.iterations+1)+' — confidence at '+BrainState.confidence+'%');
+        setLiveStatus('Courtroom round '+(BrainState.iterations+1)+' — '+BrainState.litigants.length+' AIs debating… ('+BrainState.confidence+'% confidence)');
+        const litNotes=[];
+        for(let i=0;i<BrainState.litigants.length;i++){
+          if(BrainState.stop)break;
+          const litAi=aiById(BrainState.litigants[i].ai);
+          // Animate the route TO this litigant while API call is in flight
+          setActiveSeat(`litigant-${i+1}`);
+          animateRouteToLitigant(i);
+          feedRuntime('[Litigant '+(i+1)+' / '+litAi.name+'] reasoning...');
+          const priorContext=BrainState.deliberationMode==='Chain'&&litNotes.length>0?'\n\nPrior litigant responses:\n'+litNotes.join('\n')+'\n\nBuild on, challenge, or add to what has already been said. Do not repeat points already made.':'';
+          const r=await callClaude(sessionContext+' You are Litigant '+(i+1)+' ('+litAi.name+') in the Fluba Brain courtroom. '+courtDirective+oppositionDirective+' '+conscience+' Respond in 2-3 sentences only.','Question: '+ctx.question+'\nModerator frame: '+ctx.moderatorBrief+priorContext,'Litigant '+(i+1),litAi.name,dialogMessages);
+          litNotes.push('L'+(i+1)+' ('+litAi.name+'): '+r);
+          addLitigantDialog('Litigant '+(i+1)+' ('+litAi.name+')',r,isAdversarial);
+          // Flash pulse on this litigant when response lands
+          flashLitigant(i);
+        }
+        ctx.courtroomNotes=litNotes.join('\n');
+        // Confidence and credit update after all litigants respond
+        BrainState.iterations++;
+        BrainState.confidence=Math.min(99,BrainState.confidence+Math.ceil((BrainState.confidenceTarget-BrainState.confidence)/2));
+        spendCredits(Math.max(2,BrainState.litigants.length));
+        renderMeters();
+        feedRuntime('[Courtroom] Round complete — confidence now '+BrainState.confidence+'%');
+      }
+      if(BrainState.confidence>=BrainState.confidenceTarget)emitLocation('Confidence target reached: '+BrainState.confidence+'%');
+      else if(BrainState.iterations>=BrainState.maxIterations)emitLocation('Max iterations reached');
+      else if(BrainState.usedCredits>=BrainState.maxCredits)emitLocation('Credit cap reached');
+    } else {
+      await animateRoute(key,key.includes('Moderator')||key.includes('Auditor')?1350:850);
+    }
+
+    if(BrainState.stop)break;
+    if(key==='userToOrchestrator'){
+      feedRuntime('[Orchestrator] routing...');
+      setLiveStatus('Orchestrator routing…');
+      ctx.orchestratorBrief=await callClaude(sessionContext+' You are the Orchestrator in Fluba Brain. Receive the user question, summarize the task and routing plan. Court mode: '+BrainState.courtMode+'. Output strategy: '+BrainState.outputStrategy+'. '+conscience+' 2-3 sentences only.',q,'Orchestrator',aiById(SEAT_DEFS.orchestrator.ai).name,dialogMessages);
+      clearLiveStatus();
+      addAnswer('Orchestrator',ctx.orchestratorBrief);
+    }
+    else if(key==='orchestratorToModerator'){
+      feedRuntime('[Moderator] framing...');
+      setLiveStatus('Moderator framing the deliberation…');
+      ctx.moderatorBrief=await callClaude(sessionContext+' You are the Moderator in Fluba Brain. '+courtDirective+' '+conscience+' Prepare the deliberation frame. 2-3 sentences only.','Question: '+ctx.question+'\nOrchestrator brief: '+ctx.orchestratorBrief,'Moderator',aiById(SEAT_DEFS.moderator.ai).name,dialogMessages);
+      clearLiveStatus();
+      addAnswer('Moderator',ctx.moderatorBrief);
+    }
+    else if(key==='courtroomToModerator'){
+      feedRuntime('[Moderator] synthesizing...');
+      setLiveStatus('Moderator synthesizing '+BrainState.iterations+' round(s) of debate…');
+      ctx.moderatorBrief=await callClaude(sessionContext+' You are the Moderator. Synthesize all litigant perspectives into a coherent briefing. Output strategy: '+BrainState.outputStrategy+'. '+conscience+' Be concise.','Question: '+ctx.question+'\nCourtroom notes:\n'+ctx.courtroomNotes,'Moderator (Synthesis)',aiById(SEAT_DEFS.moderator.ai).name,dialogMessages);
+      clearLiveStatus();
+      addAnswer('Moderator',ctx.moderatorBrief);
+    }
+    else if(key==='moderatorToOrchestrator'){
+      feedRuntime('[Orchestrator] formulating final answer...');
+      setLiveStatus('Orchestrator writing final answer…');
+      ctx.finalResponse=await callClaude(sessionContext+' You are the Orchestrator. Deliver the final answer to the user based on the moderator synthesis. Be clear and direct. '+conscience,'Original question: '+ctx.question+'\nSynthesis: '+ctx.moderatorBrief,'Orchestrator (Final)',aiById(SEAT_DEFS.orchestrator.ai).name,dialogMessages);
+      clearLiveStatus();
+      addAnswer('Orchestrator',ctx.finalResponse);
+    }
+    else if(key==='orchestratorToUser'){
+      // Already shown above — only show if nothing was displayed yet
+      const lastEntry=$('dialogBox').lastElementChild;
+      if(!lastEntry||lastEntry.classList.contains('you')){
+        const answer=ctx.finalResponse||ctx.moderatorBrief||ctx.orchestratorBrief;
+        if(answer){clearLiveStatus();addAnswer('Orchestrator',answer);}
+      }
+    }
+    else if(key==='moderatorToArchitect'){
+      feedRuntime('[Architect] planning build...');
+      ctx.architectPlan=await callClaude(sessionContext+' You are the Architect in Fluba Brain. Define the build plan: structure, components, approach. '+conscience+' Be concise.','Request: '+ctx.question+'\nSynthesis: '+ctx.moderatorBrief,'Architect',aiById(SEAT_DEFS.architect.ai).name);
+    }
+    else if(key==='architectToBuilder'){
+      feedRuntime('[Builder] building...');
+      ctx.builderOutput=await callClaude(sessionContext+' You are the Builder in Fluba Brain. Produce the actual output based on the architect plan. '+conscience,'Build request: '+ctx.question+'\nArchitect plan: '+ctx.architectPlan,'Builder',aiById(SEAT_DEFS.builder.ai).name);
+    }
+    else if(key==='builderToArchitect'){
+      feedRuntime('[Architect] reviewing...');
+      const rev=await callClaude(sessionContext+' You are the Architect. Review the Builder output. Confirm it meets the spec or flag issues. 2-3 sentences.','Plan: '+ctx.architectPlan+'\nBuilder output: '+ctx.builderOutput,'Architect (Review)',aiById(SEAT_DEFS.architect.ai).name);
+      ctx.architectPlan=ctx.architectPlan+'\nReview: '+rev;
+    }
+    else if(key==='architectToAuditor'){
+      feedRuntime('[Auditor] auditing...');
+      ctx.auditorVerdict=await callClaude(sessionContext+' You are the Auditor in Fluba Brain. Audit for quality, safety, and completeness. Approve or flag for revision. '+conscience+' 2-3 sentences.','Request: '+ctx.question+'\nBuild output: '+ctx.builderOutput,'Auditor',aiById(SEAT_DEFS.auditor.ai).name);
+    }
+    else if(key==='auditorToOrchestrator'){
+      feedRuntime('[Orchestrator] final delivery...');
+      ctx.finalResponse=await callClaude(sessionContext+' You are the Orchestrator. Deliver the final build response to the user. '+conscience,'Original request: '+ctx.question+'\nAudited output: '+(ctx.auditorVerdict||ctx.builderOutput),'Orchestrator (Delivery)',aiById(SEAT_DEFS.orchestrator.ai).name);
+    }
+  }
+
+  // Safety net — if flow was cut short and answer was never shown, display now
+  const finalAnswer = ctx.finalResponse || ctx.moderatorBrief || ctx.orchestratorBrief;
+  const lastEntry = $('dialogBox').lastElementChild;
+  const alreadyShown = lastEntry && lastEntry.classList.contains('orchestrator');
+  clearLiveStatus();
+  if(finalAnswer && !alreadyShown) addAnswer('Orchestrator', finalAnswer);
+
+  emitLocation(BrainState.stop?'Run stopped':type==='answer'?'Answer flow complete':'Build flow complete');
+  if(BrainState.stop){
+    setBadge('⏹ Stopped by user — '+BrainState.confidence+'% confidence after '+BrainState.iterations+' round(s)','rgba(243,210,106,.15)',false);
+  } else if(BrainState.confidence>=BrainState.confidenceTarget){
+    setBadge('✓ Done — '+BrainState.confidenceTarget+'% confidence reached in '+BrainState.iterations+' round(s)','rgba(0,200,83,.15)',false);
+  } else if(BrainState.iterations>=BrainState.maxIterations){
+    setBadge('⏹ Stopped — '+BrainState.maxIterations+' round limit reached at '+BrainState.confidence+'% confidence','rgba(243,210,106,.15)',false);
+  } else if(BrainState.usedCredits>=BrainState.maxCredits){
+    setBadge('⏹ Stopped — credit cap of '+BrainState.maxCredits+' reached at '+BrainState.confidence+'% confidence','rgba(243,210,106,.15)',false);
+  } else {
+    setBadge('✓ Complete — '+BrainState.confidence+'% confidence','rgba(0,200,83,.15)',false);
+  }
+
+  if(!BrainState.stop){
+    const finalAnswer=ctx.finalResponse||ctx.moderatorBrief||'Flow complete.';
+    BrainState.conversationHistory.push({q,a:finalAnswer,ts:Date.now(),flow:type,confidence:BrainState.confidence,creditsUsed:BrainState.usedCredits,deliberation:[],feedback:null});
+    renderFeedbackBar(BrainState.conversationHistory.length-1,type);
+    await saveSession(finalAnswer,ctx,type);
+  }
+  $('pauseResumeBtn').textContent='Pause';
+  BrainState.running=false;
+  if(runBtn){runBtn.disabled=false;runBtn.style.opacity='1';}
+  $('questionBox').focus();
+  checkSignupPrompt();
+}
+
+// ─── SAVE / EXPORT ────────────────────────────────────────────────────────────
+function saveDeliberation(){
+  const lines=[];
+  $('deliberationBox').querySelectorAll('.dialog-line').forEach(el=>{
+    const speaker=el.querySelector('.speaker');
+    const text=el.textContent.replace(speaker?speaker.textContent:'','').trim();
+    if(speaker)lines.push(speaker.textContent.toUpperCase()+'\n'+text+'\n');
+  });
+  if(!lines.length)return;
+  const blob=new Blob(['FLUBA BRAIN V28 — Litigant Voices Export\n'+new Date().toLocaleString()+'\n\n'+lines.join('\n---\n\n')],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FlubaBrain_Litigants_'+Date.now()+'.txt';a.click();
+}
+function saveConversation(){
+  const lines=[];
+  $('dialogBox').querySelectorAll('.dialog-line').forEach(el=>{
+    const speaker=el.querySelector('.speaker');
+    const text=el.textContent.replace(speaker?speaker.textContent:'','').trim();
+    if(speaker)lines.push(speaker.textContent.toUpperCase()+'\n'+text+'\n');
+  });
+  if(!lines.length)return;
+  const blob=new Blob(['FLUBA BRAIN V20 — Conversation Export\n'+new Date().toLocaleString()+'\n\n'+lines.join('\n---\n\n')],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FlubaBrain_'+Date.now()+'.txt';a.click();
+}
+function printConversation(){window.print();}
+function toggleFeed(){const f=$('runtimeFeed');const icon=$('feedToggleIcon');const open=f.style.display==='none';f.style.display=open?'block':'none';if(icon)icon.textContent=open?'▼':'▶';}
+function saveConfig(){updateConfigFromModal();closeModals();feedRuntime('Configuration saved.');}
+function togglePauseResume(){if(!BrainState.running)return;BrainState.paused=!BrainState.paused;$('pauseResumeBtn').textContent=BrainState.paused?'Resume':'Pause';emitLocation(BrainState.paused?'Paused':'Resumed');setBadge(BrainState.paused?'⏸ Paused — tap Resume to continue':'⚡ Brain is thinking…','rgba(0,200,83,.15)');}
+
+// ─── SESSION STORAGE ──────────────────────────────────────────────────────────
+// PRE-WIRE: Firebase collections: brain_sessions, brain_session_shares, brain_user_prefs
+// Replace every FIREBASE STUB with real calls using Firebase SDK
+function buildSessionDoc(sessionId,userId,finalAnswer,ctx,type){
+  const now=Date.now();
+  const firstQ=BrainState.conversationHistory.length>0?BrainState.conversationHistory[0].q:ctx.question;
+  const title=firstQ.length>60?firstQ.slice(0,57)+'...':firstQ;
+  const turn={turn:BrainState.conversationHistory.length,timestamp:now,question:ctx.question,flow:type,deliberation:[],consensus:finalAnswer,confidence:BrainState.confidence,creditsUsed:BrainState.usedCredits};
+  const totalCredits=BrainState.conversationHistory.reduce((s,h)=>s+(h.creditsUsed||0),0)+BrainState.usedCredits;
+  const avgConf=BrainState.conversationHistory.length>0?Math.round((BrainState.conversationHistory.reduce((s,h)=>s+(h.confidence||0),0)+BrainState.confidence)/(BrainState.conversationHistory.length+1)):BrainState.confidence;
+  return{sessionId,userId,createdAt:BrainState.sessionCreatedAt||now,updatedAt:now,title,tags:[],shared:false,shareToken:null,shareExpiresAt:null,config:{courtMode:BrainState.courtMode,deliberationMode:BrainState.deliberationMode,responseMode:BrainState.responseMode,conscienceMode:BrainState.conscienceMode,outputStrategy:BrainState.outputStrategy,confidenceTarget:BrainState.confidenceTarget,maxIterations:BrainState.maxIterations,maxCredits:BrainState.maxCredits,litigants:BrainState.litigants.map((l,i)=>({seat:i+1,configuredModel:aiById(l.ai).name,grade:aiById(l.ai).grade})),seats:{orchestrator:aiById(SEAT_DEFS.orchestrator.ai).name,moderator:aiById(SEAT_DEFS.moderator.ai).name,auditor:aiById(SEAT_DEFS.auditor.ai).name,architect:aiById(SEAT_DEFS.architect.ai).name,builder:aiById(SEAT_DEFS.builder.ai).name}},history:[...BrainState.conversationHistory.map((h,i)=>({turn:i+1,timestamp:h.ts,question:h.q,flow:h.flow,deliberation:h.deliberation||[],consensus:h.a,confidence:h.confidence,creditsUsed:h.creditsUsed})),turn],totalCreditsUsed:totalCredits,averageConfidence:avgConf,status:'active'};
+}
+async function saveSession(finalAnswer,ctx,type){
+  if(!BrainState.sessionId){BrainState.sessionId='sess_'+Date.now()+'_'+UserSession.userId;BrainState.sessionCreatedAt=Date.now();}
+  const doc=buildSessionDoc(BrainState.sessionId,UserSession.userId,finalAnswer,ctx,type);
+  // FIREBASE STUB: await setDoc(doc(db,'brain_sessions',doc.sessionId),doc);
+  feedRuntime('[Session] Stub — wire Firebase to persist.');
+}
+function openSessionsModal(){
+  // FIREBASE STUB: query brain_sessions where userId == UserSession.userId, render list
+  $('sessionsList').innerHTML='<div style="color:var(--soft);padding:12px;">No saved sessions yet. Sign in to save your history.</div>';
+  showModal('sessionsModal');
+}
+// STUB: restoreSession — wire to Firebase session load
+
+// ─── SIGNUP & ECONOMICS ───────────────────────────────────────────────────────
+let signupBannerDismissed=false;let selectedPlan='starter';let runsCompleted=0;
+function showSignupBanner(){if(signupBannerDismissed||UserSession.userId!=='guest')return;const b=$('signupBanner');if(b)b.style.display='block';}
+function dismissBanner(){signupBannerDismissed=true;const b=$('signupBanner');if(b)b.style.display='none';}
+function openSignup(){closeModals();dismissBanner();showModal('signupModal');}
+function openEconomics(){closeModals();showModal('economicsModal');}
+function selectPlan(plan){
+  selectedPlan=plan;
+  const starter=$('planStarter'),pro=$('planPro');
+  if(starter&&pro){starter.style.border=plan==='starter'?'2px solid var(--line)':'1px solid var(--dim)';starter.style.background=plan==='starter'?'rgba(0,200,83,.08)':'transparent';pro.style.border=plan==='pro'?'2px solid var(--line)':'1px solid var(--dim)';pro.style.background=plan==='pro'?'rgba(0,200,83,.08)':'transparent';}
+}
+function submitSignup(){
+  const name=$('signupName').value.trim();const email=$('signupEmail').value.trim();const msg=$('signupMsg');
+  if(!name){if(msg){msg.textContent='Please enter your name.';msg.style.display='block';}return;}
+  if(!email||!email.includes('@')){if(msg){msg.textContent='Please enter a valid email address.';msg.style.display='block';}return;}
+  if(msg){msg.style.display='none';}
+  // FIREBASE STUB: createUserWithEmailAndPassword + sendEmailVerification
+  // FIREBASE STUB: setDoc(brain_user_prefs, { name, email, plan: selectedPlan, creditBalance: 50 })
+  if(msg){msg.style.color='#b6ff6a';msg.textContent='✓ Verification email sent to '+email+'. Click the link to activate your 50 free credits.';msg.style.display='block';}
+  feedRuntime('[Signup] Stub — wire Firebase Auth to activate.');
+  setTimeout(()=>closeModals(),3500);
+}
+function checkSignupPrompt(){runsCompleted++;if(runsCompleted===1&&UserSession.userId==='guest')setTimeout(showSignupBanner,1200);}
+
+// ─── EVENT LISTENERS ──────────────────────────────────────────────────────────
+document.addEventListener('click',e=>{
+  e.stopPropagation();
+  const fb=e.target.dataset.fb;
+  const fbRun=e.target.dataset.run;
+  const fbFlow=e.target.dataset.flow;
+  const reason=e.target.dataset.reason;
+  if(fb&&fbRun!==undefined){
+    document.querySelectorAll(`[data-run="${fbRun}"].feedback-btn`).forEach(b=>b.classList.remove('selected-good','selected-bad','selected-warn'));
+    e.target.classList.add('selected-'+fb);
+    if(fb==='bad'){const r=document.getElementById('fb-reasons-'+fbRun);if(r)r.style.display='block';}
+    else{
+      const r=document.getElementById('fb-reasons-'+fbRun);if(r)r.style.display='none';
+      applyFeedback(fb,null,fbFlow);
+      const st=document.getElementById('fb-status-'+fbRun);if(st)st.style.display='inline';
+      document.querySelectorAll(`[data-run="${fbRun}"].feedback-btn`).forEach(b=>b.disabled=true);
+    }
+    return;
+  }
+  if(reason&&fbRun!==undefined){
+    applyFeedback('bad',reason,fbFlow);
+    const r=document.getElementById('fb-reasons-'+fbRun);if(r)r.style.display='none';
+    const st=document.getElementById('fb-status-'+fbRun);if(st)st.style.display='inline';
+    document.querySelectorAll(`[data-run="${fbRun}"].feedback-btn`).forEach(b=>b.disabled=true);
+    return;
+  }
+  const target=e.target.closest('[data-action]')||e.target;
+  const a=target.dataset.action;
+  const s=e.target.dataset.seatClick||e.target.closest('[data-seat-click]')?.dataset.seatClick;
+  if(s)openSeatInspector(s);
+  if(a==='openConfigure'){showModal('configureModal');updateEstimate();}
+  if(a==='saveConversation')saveConversation();
+  if(a==='saveDeliberation')saveDeliberation();
+  if(a==='printConversation')printConversation();
+  if(a==='toggleFeed')toggleFeed();
+  if(a==='openSessions')openSessionsModal();
+  if(a==='openSignup')openSignup();
+  if(a==='openEconomics')openEconomics();
+  if(a==='dismissBanner')dismissBanner();
+  if(a==='submitSignup')submitSignup();
+  if(a==='runBrain')runBrain();
+  if(a==='openAddAgent')openAddAgent();
+  if(a==='openRemoveAgent')openRemoveAgent();
+  if(a==='confirmAddAgent')confirmAddAgent();
+  if(a==='confirmRemoveAgent')confirmRemoveAgent();
+  if(a==='closeModals')closeModals();
+  if(a==='saveConfig')saveConfig();
+  if(a==='togglePause')togglePauseResume();
+  if(a==='toggleDeliberation')toggleDeliberation();
+  if(a==='stopRun'){BrainState.stop=true;BrainState.paused=false;$('pauseResumeBtn').textContent='Pause';emitLocation('Stopping...');}
+  const plan=e.target.dataset.plan;if(plan)selectPlan(plan);
+});
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target.classList.contains('modal'))closeModals()}));
+['courtMode','conscienceMode','assignmentMode','outputMode','outputStrategy','responseMode','deliberationMode','formatMode','confidenceTarget','maxIterations','maxCredits'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',updateConfigFromModal)});
+$('seatAiSelect').addEventListener('change',updateSeatAi);
+$('addAiSelect').addEventListener('change',updateAddPreview);
+document.getElementById('questionBox').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!BrainState.running)runBrain();}});
+if(window.speechSynthesis)window.speechSynthesis.cancel();
+
+setInterval(()=>{
+  const c=$('confidenceNow'),b=$('confidenceBar');if(c&&b)b.style.width=(parseInt(c.textContent||0,10))+'%';
+  const used=$('usedCredits'),cb=$('creditBar');if(used&&cb){const v=parseInt(used.textContent||0,10);cb.style.width=Math.min(100,v)+'%';}
+},300);
+
+defineRoutes();renderRails();renderSeats();renderLitigants();renderCourtControls();renderMeters();setActiveSeat('user');updateEstimate();updateConscienceBadge();initDocContextCounter();
+
+// ─── ONBOARDING WIZARD ────────────────────────────────────────────────────────
+// STUB: replace localStorage checks with Firebase user profile reads when auth is live
+const OB={
+  idx:0,captured:false,
+  steps:[
+    {step:'Welcome',msg:'<strong style="font-size:19px;color:#b6ff6a;">Welcome to Fluba Brain.</strong><br><br>This is a multi-AI courtroom that debates your question until it reaches a confidence target. Let\'s get you set up in 3 quick steps.',nextLabel:'Get started →',pulse:null,action:'openConfig'},
+    {step:'Step 1 of 3 — Configure',msg:'First, set up your courtroom. We\'re opening <strong>Configure</strong> for you now — choose your court mode, AI models, and confidence target. Tap <strong>Save</strong> when done.',nextLabel:'Done →',pulse:'openConfigure',action:null},
+    {step:'Step 2 of 3 — Save your session',msg:'<strong>Get 50 free credits</strong> and save your session history. Enter your name and email — we\'ll send a verification link. No password needed.',nextLabel:'Claim credits →',pulse:null,action:'capture'},
+    {step:'Step 3 of 3 — Ask your question',msg:'You\'re all set. Type your question below and tap <strong>▶</strong> to start the courtroom.',nextLabel:'Got it ✓',pulse:'questionBox',action:'done'}
+  ]
+};
+function obClearPulse(){document.querySelectorAll('.onboard-pulse,.onboard-pulse-hot').forEach(el=>el.classList.remove('onboard-pulse','onboard-pulse-hot'));}
+function obPulse(id,hot){obClearPulse();const el=document.querySelector('[data-action="'+id+'"]')||document.getElementById(id);if(el)el.classList.add(hot?'onboard-pulse-hot':'onboard-pulse');}
+function obRender(){
+  const s=OB.steps[OB.idx];
+  $('onboardStep').textContent=s.step;$('onboardMsg').innerHTML=s.msg;$('onboardNext').textContent=s.nextLabel;
+  $('onboardCapture').style.display=s.action==='capture'?'block':'none';
+  $('onboardCaptureMsg').style.display='none';
+  obClearPulse();if(s.pulse)obPulse(s.pulse,s.pulse==='runBrain');
+  if(s.action==='openConfig'){setTimeout(()=>{document.querySelector('[data-action="openConfigure"]').click();setTimeout(()=>obPulse('openConfigure',false),100);},500);}
+}
+function obNext(){
+  const s=OB.steps[OB.idx];
+  if(s.action==='capture'){
+    const name=$('onboardName').value.trim();const email=$('onboardEmail').value.trim();const msg=$('onboardCaptureMsg');
+    if(!name){msg.style.color='#ff9a9a';msg.textContent='Please enter your name.';msg.style.display='block';return;}
+    if(!email||!email.includes('@')){msg.style.color='#ff9a9a';msg.textContent='Please enter a valid email.';msg.style.display='block';return;}
+    // FIREBASE STUB: createUserWithEmailAndPassword + sendEmailVerification
+    // FIREBASE STUB: setDoc(brain_user_prefs, { name, email, plan:'starter', creditBalance:50, onboarded:true })
+    msg.style.color='#b6ff6a';msg.textContent='✓ Check your email to activate 50 free credits.';msg.style.display='block';
+    OB.captured=true;
+    try{localStorage.setItem('fb_ob_email',email);localStorage.setItem('fb_ob_name',name);}catch(e){}
+    setTimeout(()=>obAdvance(),1800);return;
+  }
+  if(s.action==='done'){obFinish();return;}
+  obAdvance();
+}
+function obAdvance(){OB.idx++;if(OB.idx>=OB.steps.length){obFinish();return;}obRender();}
+function obFinish(){
+  $('onboardOverlay').style.display='none';obClearPulse();
+  try{localStorage.setItem('fb_onboarded','1');}catch(e){}
+  obPulse('runBrain',true);setTimeout(obClearPulse,6000);
+}
+function startOnboarding(){
+  if(obDevSkip)return;
+  try{if(localStorage.getItem('fb_onboarded')==='1')return;}catch(e){}
+  OB.idx=0;$('onboardOverlay').style.display='block';obRender();
+}
+document.getElementById('onboardNext').addEventListener('click',obNext);
+document.getElementById('onboardSkip').addEventListener('click',obFinish);
+document.addEventListener('click',e=>{
+  if((e.target.dataset.action==='saveConfig'||e.target.dataset.action==='closeModals')&&OB.idx===1)setTimeout(obAdvance,400);
+});
+setTimeout(startOnboarding,700);
+</script>
+</body>
+</html>
