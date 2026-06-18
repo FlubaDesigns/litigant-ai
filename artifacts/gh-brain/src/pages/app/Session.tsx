@@ -465,7 +465,9 @@ export default function SessionPage() {
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
+  const [activityLogOpen, setActivityLogOpen] = useState(true);
   const feedRef = useRef<HTMLDivElement>(null);
+  const activityLogRef = useRef<HTMLDivElement>(null);
 
   // Load provider credit info for accurate session cost estimate
   useEffect(() => {
@@ -500,6 +502,13 @@ export default function SessionPage() {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
   }, [state.runtimeFeed, state.phase]);
+
+  // Auto-scroll activity log
+  useEffect(() => {
+    if (activityLogRef.current && activityLogOpen) {
+      activityLogRef.current.scrollTop = activityLogRef.current.scrollHeight;
+    }
+  }, [state.activityLog, activityLogOpen]);
 
   /** Assemble a structured question from template input field values */
   function assembleFieldQuestion(): string {
@@ -851,21 +860,57 @@ export default function SessionPage() {
           </div>
         )}
 
-        {/* RUNNING — live feed streaming in real time */}
+        {/* RUNNING — Activity Log + content feed */}
         {(isRunning || state.phase === "paused") && (
           <div ref={feedRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-            {state.activeRole && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono sticky top-0 bg-[#070f07]/90 backdrop-blur py-1 z-10 border-b border-white/5">
-                <span className="text-primary animate-pulse">▸</span>
-                <span className="text-primary/80">{state.activeRole}</span>
-                <span className="opacity-40">deliberating</span>
-                <span className="flex gap-0.5 ml-1">
-                  {[0, 150, 300].map((d) => (
-                    <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                  ))}
+            {/* Activity Log — collapsible status stream */}
+            <div className="rounded-lg border border-primary/20 overflow-hidden">
+              <button
+                onClick={() => setActivityLogOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono bg-primary/5 hover:bg-primary/10 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-primary font-bold tracking-wide">Activity Log</span>
+                  {isRunning && (
+                    <span className="flex gap-0.5">
+                      {[0, 120, 240].map((d) => (
+                        <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                      ))}
+                    </span>
+                  )}
                 </span>
-              </div>
-            )}
+                <span className="text-primary/50">{activityLogOpen ? "▼" : "▶"}</span>
+              </button>
+              {activityLogOpen && (
+                <div
+                  ref={activityLogRef}
+                  className="px-3 py-2 max-h-44 overflow-y-auto space-y-0.5"
+                  style={{ background: "rgba(0,0,0,0.35)" }}
+                >
+                  {state.activityLog.map((entry, i) => {
+                    const isCourtroom = entry.startsWith("[Courtroom]");
+                    const isOrch = entry.startsWith("[Orchestrator]");
+                    const isMod = entry.startsWith("[Moderator]");
+                    const isSystem = entry.startsWith("[System]");
+                    const color = isCourtroom ? "text-primary/70"
+                      : isOrch ? "text-yellow-400/90"
+                      : isMod ? "text-cyan-400/90"
+                      : isSystem ? "text-muted-foreground/60"
+                      : "text-primary";
+                    return (
+                      <div key={i} className={cn("text-[11px] font-mono leading-relaxed", color)}>
+                        {entry}
+                      </div>
+                    );
+                  })}
+                  {state.activityLog.length === 0 && (
+                    <div className="text-[11px] font-mono text-muted-foreground/40">Waiting…</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Content feed — actual AI reasoning text */}
             <AnimatePresence>
               {state.runtimeFeed.map((item) => (
                 <FeedItemCard key={item.id} item={item} />
@@ -886,6 +931,39 @@ export default function SessionPage() {
               </div>
             ) : (
               <>
+                {/* Activity Log history — collapsed by default after completion */}
+                {state.activityLog.length > 0 && (
+                  <div className="rounded-lg border border-primary/15 overflow-hidden mb-3">
+                    <button
+                      onClick={() => setActivityLogOpen((v) => !v)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono bg-primary/5 hover:bg-primary/10 transition-colors"
+                    >
+                      <span className="text-primary/70 font-bold tracking-wide">Activity Log</span>
+                      <span className="text-primary/40">{activityLogOpen ? "▼" : "▶"}</span>
+                    </button>
+                    {activityLogOpen && (
+                      <div className="px-3 py-2 max-h-36 overflow-y-auto space-y-0.5" style={{ background: "rgba(0,0,0,0.25)" }}>
+                        {state.activityLog.map((entry, i) => {
+                          const isCourtroom = entry.startsWith("[Courtroom]");
+                          const isOrch = entry.startsWith("[Orchestrator]");
+                          const isMod = entry.startsWith("[Moderator]");
+                          const isSystem = entry.startsWith("[System]");
+                          const color = isCourtroom ? "text-primary/60"
+                            : isOrch ? "text-yellow-400/70"
+                            : isMod ? "text-cyan-400/70"
+                            : isSystem ? "text-muted-foreground/50"
+                            : "text-primary/80";
+                          return (
+                            <div key={i} className={cn("text-[11px] font-mono leading-relaxed", color)}>
+                              {entry}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Credit summary after session */}
                 <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg border border-primary/15 bg-primary/5 text-xs">
                   <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />

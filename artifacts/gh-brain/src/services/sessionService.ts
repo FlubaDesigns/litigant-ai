@@ -43,6 +43,7 @@ export interface SSEEvent {
   artifacts?: string;
   message?: string;
   guestLimitReached?: boolean;
+  provider?: string;
 }
 
 export function runBrainSession(

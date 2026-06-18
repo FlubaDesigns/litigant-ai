@@ -28,6 +28,8 @@ export interface SessionState {
   config: CourtConfig;
   sessionId: string | null;
   runtimeFeed: FeedItem[];
+  activityLog: string[];
+  courtHappened: boolean;
   activeRole: string | null;
   confidence: number;
   creditsUsed: number;
@@ -47,10 +49,10 @@ type Action =
   | { type: "SET_CONFIG"; config: Partial<CourtConfig> }
   | { type: "SET_PHASE"; phase: SessionPhase }
   | { type: "SESSION_STARTED"; sessionId: string; estimatedCredits: number }
-  | { type: "ROLE_START"; role: string; round: number }
+  | { type: "ROLE_START"; role: string; round: number; roleIndex: number; provider: string }
   | { type: "CONTENT_CHUNK"; role: string; content: string }
   | { type: "ROLE_END"; role: string }
-  | { type: "ROUND_START"; round: number }
+  | { type: "ROUND_START"; round: number; confidence: number }
   | { type: "CONFIDENCE_UPDATE"; confidence: number; creditsUsed: number }
   | {
       type: "SESSION_DONE";
@@ -76,6 +78,8 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     config: { ...DEFAULT_CONFIG, ...initialConfig },
     sessionId: null,
     runtimeFeed: [],
+    activityLog: [],
+    courtHappened: false,
     activeRole: null,
     confidence: 0,
     creditsUsed: 0,
@@ -111,6 +115,8 @@ function reducer(state: SessionState, action: Action): SessionState {
         sessionId: action.sessionId,
         estimatedCredits: action.estimatedCredits,
         runtimeFeed: [],
+        activityLog: ["[System] Session started — courtroom assembling…"],
+        courtHappened: false,
         confidence: 0,
         creditsUsed: 0,
         currentRound: 0,
@@ -121,23 +127,44 @@ function reducer(state: SessionState, action: Action): SessionState {
         artifacts: "",
         errorMessage: null,
       };
-    case "ROLE_START":
+    case "ROLE_START": {
+      const { role, round, roleIndex, provider } = action;
+      const isLitigant = roleIndex >= 0 && roleIndex !== 99;
+      const isVerdict = roleIndex === 99 || role === "Verdict";
+      let logEntry = "";
+      let nextCourtHappened = state.courtHappened;
+      if (isVerdict) {
+        logEntry = `[Orchestrator] formulating final answer…`;
+      } else if (isLitigant) {
+        nextCourtHappened = true;
+        const providerLabel = provider ? ` / ${provider}` : "";
+        logEntry = `[Litigant ${roleIndex + 1}${providerLabel}] reasoning…`;
+      } else if (role === "Orchestrator") {
+        logEntry = `[Orchestrator] routing…`;
+      } else if (role === "Moderator") {
+        logEntry = state.courtHappened ? `[Moderator] synthesizing…` : `[Moderator] framing…`;
+      } else {
+        logEntry = `[${role}] working…`;
+      }
       return {
         ...state,
-        activeRole: action.role,
-        currentRound: action.round > 0 ? action.round : state.currentRound,
+        activeRole: role,
+        currentRound: round > 0 ? round : state.currentRound,
+        courtHappened: nextCourtHappened,
+        activityLog: [...state.activityLog, logEntry],
         runtimeFeed: [
           ...state.runtimeFeed,
           {
-            id: `${action.role}-${action.round}-${Date.now()}`,
-            role: action.role,
+            id: `${role}-${round}-${Date.now()}`,
+            role,
             content: "",
-            round: action.round,
+            round,
             timestamp: Date.now(),
             isComplete: false,
           },
         ],
       };
+    }
     case "CONTENT_CHUNK": {
       const feed = [...state.runtimeFeed];
       const lastIdx = feed.findLastIndex((f) => f.role === action.role && !f.isComplete);
@@ -152,10 +179,19 @@ function reducer(state: SessionState, action: Action): SessionState {
       );
       return { ...state, runtimeFeed: feed, activeRole: null };
     }
-    case "ROUND_START":
-      return { ...state, currentRound: action.round };
-    case "CONFIDENCE_UPDATE":
-      return { ...state, confidence: action.confidence, creditsUsed: action.creditsUsed };
+    case "ROUND_START": {
+      const logEntry = `[Courtroom] Round ${action.round} — confidence at ${action.confidence}%`;
+      return { ...state, currentRound: action.round, activityLog: [...state.activityLog, logEntry] };
+    }
+    case "CONFIDENCE_UPDATE": {
+      const logEntry = `[Courtroom] Round complete — confidence now ${action.confidence}%`;
+      return {
+        ...state,
+        confidence: action.confidence,
+        creditsUsed: action.creditsUsed,
+        activityLog: [...state.activityLog, logEntry],
+      };
+    }
     case "SESSION_DONE":
       return {
         ...state,
@@ -169,6 +205,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         caveats: action.payload.caveats,
         artifacts: action.payload.artifacts,
         sessionId: action.payload.sessionId,
+        activityLog: [...state.activityLog, `[Orchestrator] final delivery — ${action.payload.confidence}% confidence`],
       };
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
@@ -190,7 +227,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
         dispatch({ type: "SESSION_STARTED", sessionId: event.sessionId!, estimatedCredits: event.estimatedCredits ?? 0 });
         break;
       case "role_start":
-        dispatch({ type: "ROLE_START", role: event.role!, round: event.round ?? 0 });
+        dispatch({ type: "ROLE_START", role: event.role!, round: event.round ?? 0, roleIndex: event.roleIndex ?? -1, provider: event.provider ?? "" });
         break;
       case "content":
         dispatch({ type: "CONTENT_CHUNK", role: event.role!, content: event.content! });
@@ -199,7 +236,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
         dispatch({ type: "ROLE_END", role: event.role! });
         break;
       case "round_start":
-        dispatch({ type: "ROUND_START", round: event.round! });
+        dispatch({ type: "ROUND_START", round: event.round!, confidence: event.confidence ?? 0 });
         break;
       case "confidence_update":
         dispatch({ type: "CONFIDENCE_UPDATE", confidence: event.confidence!, creditsUsed: event.creditsUsed! });
