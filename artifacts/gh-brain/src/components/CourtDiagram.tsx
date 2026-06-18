@@ -183,8 +183,10 @@ export function CourtDiagram({
   const [flashedLitigants, setFlashedLitigants] = useState<Set<number>>(new Set());
   const litIndexRef = useRef(0);
   const prevRoleRef = useRef<string | null>(null);
+  const activeRouteRef = useRef("route-courtroom-loop");
+  const directionRef = useRef(1);
 
-  // Map activeRole → seat/litigant to highlight
+  // Map activeRole → seat + animation route
   useEffect(() => {
     if (!activeRole) {
       if (complete) {
@@ -209,15 +211,22 @@ export function CourtDiagram({
     } else if (activeRole === "Verdict") {
       setActiveSeatId("orchestrator");
       setLogicText("Orchestrator delivering verdict…");
+    } else if (activeRole === "Architect") {
+      setActiveSeatId("architect");
+      setLogicText("Architect planning the build…");
+    } else if (activeRole === "Builder") {
+      setActiveSeatId("builder");
+      setLogicText("Builder executing…");
+    } else if (activeRole === "Auditor") {
+      setActiveSeatId("auditor");
+      setLogicText("Auditor quality-checking output…");
     } else if (LITIGANT_ROLES.has(activeRole)) {
-      // Advance litigant index only when the role changes
       if (prev !== activeRole || !LITIGANT_ROLES.has(prev || "")) {
         litIndexRef.current = (litIndexRef.current + 1) % Math.max(1, litigantCount);
       }
       const idx = litIndexRef.current;
       setActiveSeatId(`litigant-${idx}`);
       setLogicText(`${activeRole} deliberating (L${idx + 1})…`);
-      // Flash node briefly
       setFlashedLitigants((prev) => new Set(prev).add(idx));
       setTimeout(() => {
         setFlashedLitigants((prev) => {
@@ -229,7 +238,23 @@ export function CourtDiagram({
     }
   }, [activeRole, running, complete, litigantCount]);
 
-  // Courtroom loop meteor animation
+  // Switch animation route when active seat changes
+  useEffect(() => {
+    const routeMap: Record<string, string> = {
+      architect: "route-moderator-architect",
+      builder:   "route-architect-builder",
+      auditor:   "route-architect-auditor",
+      moderator: "route-orchestrator-moderator",
+    };
+    const newRoute = routeMap[activeSeatId] ?? "route-courtroom-loop";
+    if (activeRouteRef.current !== newRoute) {
+      activeRouteRef.current = newRoute;
+      posRef.current = 0;
+      directionRef.current = 1;
+    }
+  }, [activeSeatId]);
+
+  // Meteor animation — courtroom loop (closed) or build routes (ping-pong)
   useEffect(() => {
     runningRef.current = running;
     if (!running) {
@@ -250,22 +275,36 @@ export function CourtDiagram({
       const svg = svgRef.current;
       if (!svg) { rafRef.current = requestAnimationFrame(frame); return; }
 
-      const loopPath = svg.getElementById("route-courtroom-loop") as SVGPathElement | null;
-      if (!loopPath) { rafRef.current = requestAnimationFrame(frame); return; }
+      const routeId = activeRouteRef.current;
+      const isLoop = routeId === "route-courtroom-loop";
+      const path = svg.getElementById(routeId) as SVGPathElement | null;
+      if (!path) { rafRef.current = requestAnimationFrame(frame); return; }
 
-      const total = loopPath.getTotalLength();
+      const total = path.getTotalLength();
       const seg = 90;
-      posRef.current = (posRef.current + dt * 0.28) % total;
 
-      const wakeD = pathSegmentDClosed(loopPath, posRef.current - seg * 0.7, seg * 0.7, 20);
-      const traceD = pathSegmentDClosed(loopPath, posRef.current, seg, 14);
+      let wakeD: string, traceD: string;
+
+      if (isLoop) {
+        posRef.current = (posRef.current + dt * 0.28) % total;
+        wakeD  = pathSegmentDClosed(path, posRef.current - seg * 0.7, seg * 0.7, 20);
+        traceD = pathSegmentDClosed(path, posRef.current, seg, 14);
+      } else {
+        // Ping-pong along linear build routes
+        posRef.current += dt * 0.38 * directionRef.current;
+        if (posRef.current >= total) { posRef.current = total; directionRef.current = -1; }
+        if (posRef.current <= 0)     { posRef.current = 0;     directionRef.current =  1; }
+        const start = Math.max(0, posRef.current - seg);
+        wakeD  = pathSegmentD(path, Math.max(0, start - seg * 0.4), seg * 0.4, 14);
+        traceD = pathSegmentD(path, start, seg, 14);
+      }
 
       if (wakeRef.current) {
         wakeRef.current.setAttribute("d", wakeD);
         wakeRef.current.style.opacity = "0.55";
       }
       if (traceRef.current) traceRef.current.setAttribute("d", traceD);
-      if (coreRef.current) coreRef.current.setAttribute("d", traceD);
+      if (coreRef.current)  coreRef.current.setAttribute("d", traceD);
 
       rafRef.current = requestAnimationFrame(frame);
     }
