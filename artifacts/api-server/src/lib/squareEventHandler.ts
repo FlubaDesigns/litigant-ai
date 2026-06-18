@@ -50,9 +50,11 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
   if (!isFirebaseConfigured()) return;
 
   switch (event.type) {
-    case "payment.completed": {
+    case "payment.updated": {
       const payment = event.data.object["payment"];
       if (!payment) return;
+      // Only process when payment reaches COMPLETED status
+      if (payment.status !== "COMPLETED") return;
 
       const note: string = payment.note ?? "";
       const match = note.match(/LITIGANT:userId=([^,]+),creditAmount=(\d+)/);
