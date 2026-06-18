@@ -67,6 +67,7 @@ const GUIDE_ROUTE_IDS = [
   "route-orchestrator-moderator", "route-moderator-architect",
   "route-architect-auditor", "route-auditor-orchestrator",
   "route-courtroom-loop",
+  "route-courtroom-moderator", "route-moderator-orchestrator", "route-orchestrator-user",
 ];
 
 // ── Path segment utilities (ported from V29) ──────────────────────────────────
@@ -176,6 +177,7 @@ export function CourtDiagram({
   const coreRef = useRef<SVGPathElement>(null);
   const rafRef = useRef<number>(0);
   const runningRef = useRef(running);
+  const completeRef = useRef(complete);
   const posRef = useRef(0);
 
   const [activeSeatId, setActiveSeatId] = useState<string>("user");
@@ -184,13 +186,24 @@ export function CourtDiagram({
   const litIndexRef = useRef(0);
   const prevRoleRef = useRef<string | null>(null);
   const activeRouteRef = useRef("route-courtroom-loop");
+  // Tracks whether we have passed through the courtroom — enables return-path routing
+  const postCourtroomRef = useRef(false);
 
-  // Map activeRole → seat + animation route
+  function switchRoute(newRoute: string) {
+    if (activeRouteRef.current !== newRoute) {
+      activeRouteRef.current = newRoute;
+      posRef.current = 0;
+    }
+  }
+
+  // Map activeRole → seat + animation route (context-sensitive for return paths)
   useEffect(() => {
     if (!activeRole) {
       if (complete) {
-        setActiveSeatId("orchestrator");
-        setLogicText("Session complete.");
+        // Final leg: orchestrator → user
+        switchRoute("route-orchestrator-user");
+        setActiveSeatId("user");
+        setLogicText("Verdict returned to user.");
       } else {
         setActiveSeatId("user");
         setLogicText(running ? "Reasoning…" : "Idle.");
@@ -202,24 +215,46 @@ export function CourtDiagram({
     prevRoleRef.current = activeRole;
 
     if (activeRole === "Orchestrator") {
+      if (postCourtroomRef.current) {
+        // Return path: moderator → orchestrator
+        switchRoute("route-moderator-orchestrator");
+      } else {
+        // Forward path: user → orchestrator
+        switchRoute("route-user-orchestrator");
+      }
       setActiveSeatId("orchestrator");
-      setLogicText("Orchestrator routing…");
+      setLogicText(postCourtroomRef.current ? "Orchestrator synthesising verdict…" : "Orchestrator routing…");
     } else if (activeRole === "Moderator") {
+      if (postCourtroomRef.current) {
+        // Return path: courtroom → moderator
+        switchRoute("route-courtroom-moderator");
+      } else {
+        // Forward path: orchestrator → moderator
+        switchRoute("route-orchestrator-moderator");
+      }
       setActiveSeatId("moderator");
-      setLogicText("Moderator framing deliberation…");
+      setLogicText(postCourtroomRef.current ? "Moderator collecting deliberation…" : "Moderator framing deliberation…");
     } else if (activeRole === "Verdict") {
+      // Explicit verdict role — always return path
+      switchRoute("route-moderator-orchestrator");
       setActiveSeatId("orchestrator");
       setLogicText("Orchestrator delivering verdict…");
     } else if (activeRole === "Architect") {
+      switchRoute("route-moderator-architect");
       setActiveSeatId("architect");
       setLogicText("Architect planning the build…");
     } else if (activeRole === "Builder") {
+      switchRoute("route-architect-builder");
       setActiveSeatId("builder");
       setLogicText("Builder executing…");
     } else if (activeRole === "Auditor") {
+      switchRoute("route-architect-auditor");
       setActiveSeatId("auditor");
       setLogicText("Auditor quality-checking output…");
     } else if (LITIGANT_ROLES.has(activeRole)) {
+      // First litigant marks entry into courtroom — enable return-path routing from here on
+      postCourtroomRef.current = true;
+      switchRoute("route-courtroom-loop");
       if (prev !== activeRole || !LITIGANT_ROLES.has(prev || "")) {
         litIndexRef.current = (litIndexRef.current + 1) % Math.max(1, litigantCount);
       }
@@ -237,28 +272,15 @@ export function CourtDiagram({
     }
   }, [activeRole, running, complete, litigantCount]);
 
-  // Switch route when active seat changes — always reset to start of new segment
-  useEffect(() => {
-    const routeMap: Record<string, string> = {
-      orchestrator: "route-user-orchestrator",
-      moderator:    "route-orchestrator-moderator",
-      architect:    "route-moderator-architect",
-      builder:      "route-architect-builder",
-      auditor:      "route-architect-auditor",
-    };
-    // Litigants stay on the courtroom loop; everything else maps above
-    const isLitigant = activeSeatId.startsWith("litigant-");
-    const newRoute = isLitigant ? "route-courtroom-loop" : (routeMap[activeSeatId] ?? "route-courtroom-loop");
-    if (activeRouteRef.current !== newRoute) {
-      activeRouteRef.current = newRoute;
-      posRef.current = 0;
-    }
-  }, [activeSeatId]);
-
-  // Meteor animation — one direction only, always forward
+  // Meteor animation — one direction only, always forward.
+  // Runs during `running` AND during `complete` (final return-to-user leg).
   useEffect(() => {
     runningRef.current = running;
-    if (!running) {
+    completeRef.current = complete;
+
+    const active = running || complete;
+
+    if (!active) {
       cancelAnimationFrame(rafRef.current);
       if (wakeRef.current) wakeRef.current.setAttribute("d", "");
       if (traceRef.current) traceRef.current.setAttribute("d", "");
@@ -269,7 +291,8 @@ export function CourtDiagram({
     let last = performance.now();
 
     function frame(now: number) {
-      if (!runningRef.current) return;
+      const stillActive = runningRef.current || completeRef.current;
+      if (!stillActive) return;
       const dt = now - last;
       last = now;
 
@@ -314,7 +337,7 @@ export function CourtDiagram({
 
     rafRef.current = requestAnimationFrame(frame);
     return () => { cancelAnimationFrame(rafRef.current); };
-  }, [running]);
+  }, [running, complete]);
 
   // Reset state on new run
   useEffect(() => {
@@ -322,6 +345,7 @@ export function CourtDiagram({
       litIndexRef.current = 0;
       prevRoleRef.current = null;
       posRef.current = 0;
+      postCourtroomRef.current = false;
       setFlashedLitigants(new Set());
     }
   }, [running]);
