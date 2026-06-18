@@ -184,7 +184,6 @@ export function CourtDiagram({
   const litIndexRef = useRef(0);
   const prevRoleRef = useRef<string | null>(null);
   const activeRouteRef = useRef("route-courtroom-loop");
-  const directionRef = useRef(1);
 
   // Map activeRole → seat + animation route
   useEffect(() => {
@@ -238,23 +237,25 @@ export function CourtDiagram({
     }
   }, [activeRole, running, complete, litigantCount]);
 
-  // Switch animation route when active seat changes
+  // Switch route when active seat changes — always reset to start of new segment
   useEffect(() => {
     const routeMap: Record<string, string> = {
-      architect: "route-moderator-architect",
-      builder:   "route-architect-builder",
-      auditor:   "route-architect-auditor",
-      moderator: "route-orchestrator-moderator",
+      orchestrator: "route-user-orchestrator",
+      moderator:    "route-orchestrator-moderator",
+      architect:    "route-moderator-architect",
+      builder:      "route-architect-builder",
+      auditor:      "route-architect-auditor",
     };
-    const newRoute = routeMap[activeSeatId] ?? "route-courtroom-loop";
+    // Litigants stay on the courtroom loop; everything else maps above
+    const isLitigant = activeSeatId.startsWith("litigant-");
+    const newRoute = isLitigant ? "route-courtroom-loop" : (routeMap[activeSeatId] ?? "route-courtroom-loop");
     if (activeRouteRef.current !== newRoute) {
       activeRouteRef.current = newRoute;
       posRef.current = 0;
-      directionRef.current = 1;
     }
   }, [activeSeatId]);
 
-  // Meteor animation — courtroom loop (closed) or build routes (ping-pong)
+  // Meteor animation — one direction only, always forward
   useEffect(() => {
     runningRef.current = running;
     if (!running) {
@@ -286,17 +287,19 @@ export function CourtDiagram({
       let wakeD: string, traceD: string;
 
       if (isLoop) {
+        // Courtroom loop: continuous forward rotation, never reverses
         posRef.current = (posRef.current + dt * 0.28) % total;
         wakeD  = pathSegmentDClosed(path, posRef.current - seg * 0.7, seg * 0.7, 20);
         traceD = pathSegmentDClosed(path, posRef.current, seg, 14);
       } else {
-        // Ping-pong along linear build routes
-        posRef.current += dt * 0.38 * directionRef.current;
-        if (posRef.current >= total) { posRef.current = total; directionRef.current = -1; }
-        if (posRef.current <= 0)     { posRef.current = 0;     directionRef.current =  1; }
-        const start = Math.max(0, posRef.current - seg);
-        wakeD  = pathSegmentD(path, Math.max(0, start - seg * 0.4), seg * 0.4, 14);
-        traceD = pathSegmentD(path, start, seg, 14);
+        // Linear route: advance forward, clamp at end — meteor arrives and glows at destination
+        if (posRef.current < total) {
+          posRef.current = Math.min(total, posRef.current + dt * 0.45);
+        }
+        const head = posRef.current;
+        const wakeStart = Math.max(0, head - seg * 1.2);
+        wakeD  = pathSegmentD(path, wakeStart, head - wakeStart, 20);
+        traceD = pathSegmentD(path, Math.max(0, head - seg), Math.min(seg, head), 14);
       }
 
       if (wakeRef.current) {
