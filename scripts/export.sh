@@ -107,3 +107,12 @@ print(f"\n  Zip:    {zip_path}  ({size_kb} KB)")
 PYEOF
 
 echo "  Manifest: ${MANIFEST}  Commit: ${GIT_SHA}"
+
+# ── Step 5: copy zip into downloads folders ───────────────────────────────────
+DOWNLOADS_FIXED="litigant-ai-latest.zip"
+for DEST in "downloads" "artifacts/gh-brain/public/downloads"; do
+  if [[ -d "$DEST" ]]; then
+    cp "${OUTDIR}/${ZIPNAME}" "${DEST}/${DOWNLOADS_FIXED}"
+    echo "  Copied  → ${DEST}/${DOWNLOADS_FIXED}"
+  fi
+done
