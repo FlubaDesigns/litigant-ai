@@ -1118,14 +1118,25 @@ export default function SessionPage() {
           </>
         )}
 
-        {/* Idle state — credit info */}
+        {/* Idle state — credit info + single template entry point */}
         {isIdle && (
-          <div style={{ fontSize: 12, color: "#3a5a3a", textAlign: "center", padding: "4px 0" }}>
-            {credits} credits available · {plan} ·{" "}
-            <span style={{ color: "#7ab87a", textDecoration: "underline", cursor: "pointer" }} onClick={() => setTemplateSheetOpen(true)}>Templates</span>
-            {insufficientCredits && (
-              <span> · <span style={{ color: "#ff6b6b", cursor: "pointer", textDecoration: "underline" }} onClick={() => navigate("/billing")}>top up</span></span>
-            )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 12, color: "#3a5a3a", textAlign: "center" }}>
+              {credits} credits available · {plan}
+              {insufficientCredits && (
+                <span> · <span style={{ color: "#ff6b6b", cursor: "pointer", textDecoration: "underline" }} onClick={() => navigate("/billing")}>top up</span></span>
+              )}
+            </div>
+            <button
+              onClick={() => setTemplateSheetOpen(true)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(0,200,83,.04)", border: "1px solid rgba(0,200,83,.15)", borderRadius: 9, cursor: "pointer", textAlign: "left", width: "100%", transition: "border-color .15s" }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,200,83,.35)")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(0,200,83,.15)")}
+            >
+              <LayoutTemplate style={{ width: 15, height: 15, color: "#7ab87a", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "#7ab87a", fontWeight: 600 }}>Use a template</span>
+              <span style={{ fontSize: 11, color: "#3a5a3a", marginLeft: "auto" }}>{TEMPLATES.length} available →</span>
+            </button>
           </div>
         )}
 
