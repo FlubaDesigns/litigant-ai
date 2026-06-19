@@ -27,7 +27,9 @@ echo "[1/3] Listing deployable source files..."
 GIT_SHA=$(git --no-optional-locks rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 FILES=$(git --no-optional-locks ls-files | grep -vE \
-  '^(attached_assets/|\.firebase/|pnpm-lock\.yaml$|.*\.tsbuildinfo$|exports/)' \
+  '^(attached_assets/|\.firebase/|pnpm-lock\.yaml$|.*\.tsbuildinfo$|exports/|downloads/)' \
+  | grep -vE \
+  '(\.zip$|firebase-functions/lib/|firebase-functions/package-lock\.json$|/public/downloads/)' \
   | sort)
 
 FILE_COUNT=$(echo "$FILES" | grep -c . || true)
