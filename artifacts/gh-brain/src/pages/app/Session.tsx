@@ -881,9 +881,42 @@ export default function SessionPage() {
   const filteredTemplates =
     activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
 
+  // Activity log renderer (shared across idle/running/complete)
+  function ActivityLogSection() {
+    return (
+      <div style={{ border: "1px solid rgba(0,200,83,.2)", borderRadius: 9, overflow: "hidden" }}>
+        <button
+          onClick={() => setActivityLogOpen((v) => !v)}
+          style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "rgba(0,200,83,.05)", cursor: "pointer", border: "none", color: "#eef7ee" }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab87a" }}>
+            Activity Log
+            {isRunning && [0, 120, 240].map((d) => (
+              <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce inline-block" style={{ animationDelay: `${d}ms` }} />
+            ))}
+          </span>
+          <span style={{ fontSize: 12, color: "#7ab87a" }}>{activityLogOpen ? "▼" : "▶"}</span>
+        </button>
+        {activityLogOpen && (
+          <div ref={activityLogRef} style={{ padding: "8px 12px", maxHeight: 160, overflowY: "auto", background: "rgba(0,0,0,.3)" }}>
+            {state.activityLog.map((entry, i) => {
+              const col = entry.startsWith("[Courtroom]") ? "#7ab87a"
+                : entry.startsWith("[Orchestrator]") ? "#d4b75a"
+                : entry.startsWith("[Moderator]") ? "#6ab4c0"
+                : entry.startsWith("[System]") ? "#5a5a5a"
+                : "#7ab87a";
+              return <div key={i} style={{ fontSize: 11, fontFamily: "monospace", lineHeight: 1.5, color: col }}>{entry}</div>;
+            })}
+            {state.activityLog.length === 0 && <div style={{ fontSize: 11, fontFamily: "monospace", color: "#3a5a3a" }}>Waiting…</div>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
-      className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden"
+      className="flex flex-col overflow-y-auto min-h-[calc(100vh-3.5rem)]"
       style={{ background: "radial-gradient(circle at top, #102010, #070f07 56%, #020402)" }}
     >
       <ConfigPanel
@@ -895,140 +928,279 @@ export default function SessionPage() {
         onboardingComplete={userProfile?.onboardingComplete}
       />
 
-      {/* ── TOP BAR — always visible, adapts to phase ── */}
-      <div className="shrink-0 border-b border-white/5 bg-black/40 backdrop-blur-sm px-3 py-2 flex items-start gap-2">
-        {isIdle ? (
-          <>
-            <div className="flex-1 min-w-0">
-              {state.template && (
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Badge variant="outline" className="text-primary border-primary/40 bg-primary/10 text-[10px] h-5">
-                    {state.template.title}
-                  </Badge>
-                  <button onClick={() => setTemplate(null)} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              {state.template && state.template.inputFields.length > 0 ? (
-                <div className="space-y-1.5">
-                  {state.template.inputFields.map((field) => (
-                    <div key={field.id} className="flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground shrink-0 w-20 truncate">{field.label}</span>
-                      <Input
-                        type={field.type === "url" ? "url" : "text"}
-                        placeholder={field.placeholder}
-                        value={fieldValues[field.id] ?? ""}
-                        onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                        className="h-7 text-xs bg-transparent border-white/10 focus-visible:ring-1 focus-visible:ring-primary/50 flex-1"
-                      />
-                    </div>
-                  ))}
-                </div>
+      {/* ── HEADER NAV — Configure | Sessions | state controls ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: "7px 8px", borderBottom: "1px solid #1d331d", background: "rgba(4,8,4,.96)", flexShrink: 0 }}>
+        <button
+          onClick={() => setConfigOpen(true)}
+          style={{ background: "#0d1a0d", color: "#eef7ee", border: "1px solid #1d331d", borderRadius: 9, fontSize: 15, minHeight: 40, cursor: "pointer", fontWeight: 600 }}
+        >
+          ⚙ Configure
+        </button>
+        <button
+          onClick={() => navigate("/sessions")}
+          style={{ background: "#0d1a0d", color: "#eef7ee", border: "1px solid #1d331d", borderRadius: 9, fontSize: 15, minHeight: 40, cursor: "pointer", fontWeight: 600 }}
+        >
+          📂 Sessions
+        </button>
+        {isRunning && (
+          <button
+            onClick={handleStop}
+            style={{ gridColumn: "1 / -1", background: "rgba(200,64,64,.12)", color: "#ff6b6b", border: "1px solid #c8404055", borderRadius: 9, fontSize: 14, minHeight: 36, cursor: "pointer", fontWeight: 700 }}
+          >
+            ⏹ Stop Trial
+          </button>
+        )}
+        {(isComplete || isError) && (
+          <button
+            onClick={handleReset}
+            style={{ gridColumn: "1 / -1", background: "rgba(0,200,83,.1)", color: "#00c853", border: "1px solid #00c85355", borderRadius: 9, fontSize: 14, minHeight: 36, cursor: "pointer", fontWeight: 700 }}
+          >
+            ↺ New Trial
+          </button>
+        )}
+      </div>
+
+      {/* ── CONVERSATION PANEL ── */}
+      <div style={{ border: "1px solid #1d331d", borderRadius: 12, margin: "8px", padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.95),rgba(7,16,7,.95))", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800, marginBottom: 2 }}>Conversation</div>
+
+        {/* Confidence + Credits bars — always visible */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#7ab87a", marginBottom: 3 }}>
+              <span>Confidence</span>
+              <span style={{ fontFamily: "monospace", color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
+                {state.confidence}% / {state.config.confidenceTarget}%
+              </span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.4)", overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 3, background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%`, transition: "width .5s" }} />
+            </div>
+          </div>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#7ab87a", marginBottom: 3 }}>
+              <span>Credits Used</span>
+              <span style={{ fontFamily: "monospace" }}>{state.creditsUsed} / ~{estimatedCredits} est</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.4)", overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 3, background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%`, transition: "width .5s" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Running/paused status badge */}
+        {isRunning && (
+          <div style={{ background: "rgba(0,200,83,.12)", border: "1px solid #00c853", borderRadius: 8, padding: "6px 10px", fontSize: 12, color: "#b6ff6a", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
+            ⚡ Brain is thinking…
+            {state.currentRound > 0 && state.currentRound < 99 && (
+              <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 11, color: "#7ab87a" }}>
+                Revolution {state.currentRound} / {state.config.maxIterations}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Paused decision card */}
+        {isPaused && state.pauseReason && (
+          <div style={{ background: "rgba(243,210,106,.07)", border: "1px solid rgba(243,210,106,.35)", borderRadius: 9, padding: "10px 12px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3d26a", marginBottom: 6 }}>
+              ⏸ {state.pauseReason === "credit_cap" ? `Credit cap reached — ${Math.round(state.confidence)}% confidence` : `${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
+            </div>
+            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+              {credits === 0 ? (
+                <button onClick={() => navigate("/billing")} style={{ flex: 1, padding: "8px 0", borderRadius: 8, background: "#00c853", color: "#000", fontSize: 13, fontWeight: 800, border: "none", cursor: "pointer" }}>Top Up Wallet</button>
               ) : (
+                <button onClick={() => { void continueSession(); }} style={{ flex: 1, padding: "8px 0", borderRadius: 8, background: "#00c853", color: "#000", fontSize: 13, fontWeight: 800, border: "none", cursor: "pointer" }}>Continue — {credits} cr</button>
+              )}
+              <button onClick={acceptPartial} style={{ flex: 1, padding: "8px 0", borderRadius: 8, background: "transparent", color: "#7ab87a", fontSize: 13, border: "1px solid #1d331d", cursor: "pointer" }}>Accept answer</button>
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {isError && (
+          <div style={{ background: "rgba(200,64,64,.08)", border: "1px solid rgba(200,64,64,.3)", borderRadius: 9, padding: "16px", textAlign: "center" }}>
+            <div style={{ fontSize: 14, color: "#ff6b6b", fontWeight: 700, marginBottom: 6 }}>Session Error</div>
+            <div style={{ fontSize: 12, color: "#9a5a5a", marginBottom: 10 }}>{state.errorMessage}</div>
+            <button onClick={handleReset} style={{ background: "transparent", border: "1px solid #c84040", borderRadius: 8, color: "#ff6b6b", padding: "6px 16px", cursor: "pointer", fontSize: 13 }}>Try Again</button>
+          </div>
+        )}
+
+        {/* V29 conversation boxes — shown when there's a question */}
+        {state.question && !isIdle && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
+              <LitigantVoicesBox
+                items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
+                adversarial={state.config.courtMode === "adversarial"}
+              />
+            )}
+            <OrchestratorBox
+              question={state.question}
+              items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
+            />
+          </div>
+        )}
+
+        {/* Complete: feedback + export + output tabs */}
+        {isComplete && (
+          <>
+            {/* Feedback + export */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "6px 0" }}>
+              <span style={{ fontSize: 12, color: "#7ab87a" }}>Helpful?</span>
+              {(["good", "bad", "warn"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => handleFeedback(r)}
+                  disabled={feedbackGiven !== null}
+                  style={{
+                    width: 34, height: 34, borderRadius: 8, fontSize: 16,
+                    background: feedbackGiven === r ? "rgba(0,200,83,.15)" : "transparent",
+                    border: feedbackGiven === r ? "1px solid #00c853" : "1px solid #1d331d",
+                    cursor: feedbackGiven !== null ? "default" : "pointer", color: "#eef7ee",
+                  }}
+                >
+                  {r === "good" ? "👍" : r === "bad" ? "👎" : "⚠️"}
+                </button>
+              ))}
+              <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                <button onClick={handleCopyMarkdown} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Copy</button>
+                <button onClick={handleDownloadMarkdown} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>MD</button>
+                <button onClick={handleExportPDF} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Print</button>
+              </div>
+            </div>
+
+            {/* Output tabs */}
+            <Tabs defaultValue="answer">
+              <TabsList className="bg-black/30 border border-white/8 mb-2 flex-wrap h-auto gap-y-1">
+                <TabsTrigger value="answer" className="text-xs">Final Answer</TabsTrigger>
+                <TabsTrigger value="debate" className="text-xs">Debate</TabsTrigger>
+                <TabsTrigger value="transcript" className="text-xs">Transcript</TabsTrigger>
+                <TabsTrigger value="caveats" className="text-xs">Caveats</TabsTrigger>
+              </TabsList>
+              <TabsContent value="answer">
+                <div style={{ border: "1px solid rgba(0,200,83,.2)", borderRadius: 10, background: "rgba(0,200,83,.05)", padding: "14px" }}>
+                  <div style={{ fontSize: 11, color: "#00c853", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                    Verdict — {state.confidence}% confidence
+                  </div>
+                  <div style={{ fontSize: 14, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap" }}>
+                    {state.finalAnswer || "No final answer generated."}
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="debate">
+                <div style={{ border: "1px solid #1d331d", borderRadius: 10, padding: "14px", background: "rgba(0,0,0,.12)" }}>
+                  <div style={{ fontSize: 11, color: "#7ab87a", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Debate Notes</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.6, color: "#9aaa9a", whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
+                    {state.debateNotes || "No debate notes recorded."}
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="transcript">
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
+                    <LitigantVoicesBox items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))} adversarial={state.config.courtMode === "adversarial"} />
+                  )}
+                  <OrchestratorBox question={state.question} items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))} />
+                </div>
+              </TabsContent>
+              <TabsContent value="caveats">
+                <div style={{ border: "1px solid rgba(243,210,106,.2)", borderRadius: 10, background: "rgba(243,210,106,.04)", padding: "14px" }}>
+                  <div style={{ fontSize: 11, color: "#f3d26a", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Sources & Caveats</div>
+                  <div style={{ fontSize: 14, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap", marginBottom: 10 }}>{state.caveats}</div>
+                  <div style={{ fontSize: 12, color: "#5a5a3a", borderTop: "1px solid rgba(243,210,106,.1)", paddingTop: 10 }}>
+                    Litigant AI provides AI-generated reasoning. Not legal, medical, financial, or professional advice.
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+
+        {/* Idle state — credit info */}
+        {isIdle && (
+          <div style={{ fontSize: 12, color: "#3a5a3a", textAlign: "center", padding: "4px 0" }}>
+            {credits} credits available · {plan} ·{" "}
+            <span style={{ color: "#7ab87a", textDecoration: "underline", cursor: "pointer" }} onClick={() => setTemplateSheetOpen(true)}>Templates</span>
+            {insufficientCredits && (
+              <span> · <span style={{ color: "#ff6b6b", cursor: "pointer", textDecoration: "underline" }} onClick={() => navigate("/billing")}>top up</span></span>
+            )}
+          </div>
+        )}
+
+        {/* ── INPUT: BIG TEXTAREA + BIG GREEN ▶ BUTTON ── */}
+        {(isIdle || isComplete) && (
+          <>
+            {state.template && state.template.inputFields.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 11, color: "#7ab87a", fontWeight: 700 }}>{state.template.title}</span>
+                  <button onClick={() => setTemplate(null)} style={{ background: "transparent", border: "none", color: "#5a5a5a", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>✕</button>
+                </div>
+                {state.template.inputFields.map((field) => (
+                  <div key={field.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, color: "#7ab87a", whiteSpace: "nowrap", width: 80, flexShrink: 0 }}>{field.label}</span>
+                    <Input
+                      type={field.type === "url" ? "url" : "text"}
+                      placeholder={field.placeholder}
+                      value={fieldValues[field.id] ?? ""}
+                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
+                      className="h-9 text-sm flex-1"
+                      style={{ background: "#0d1a0d", border: "1px solid #1d331d", color: "#eef7ee" }}
+                    />
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    onClick={handleRun}
+                    disabled={insufficientCredits}
+                    style={{ flex: 1, minHeight: 48, borderRadius: 9, background: "#00c853", color: "#000", fontSize: 22, fontWeight: 900, border: "none", cursor: insufficientCredits ? "not-allowed" : "pointer", opacity: insufficientCredits ? 0.4 : 1 }}
+                  >▶</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                 <Textarea
-                  placeholder="What do you want to put on trial?"
+                  placeholder={isComplete ? "Ask a follow-up question…" : "Ask a question or follow up…"}
                   value={state.question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                  rows={2}
-                  className="w-full resize-none text-sm bg-transparent border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/40 leading-relaxed min-h-0"
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isRunning) handleRun(); } }}
+                  style={{ flex: 1, minHeight: 90, resize: "none", fontSize: 16, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 9, color: "#eef7ee", padding: "10px 12px", lineHeight: 1.5 }}
+                  className="focus-visible:ring-1 focus-visible:ring-primary/60"
                 />
-              )}
-            </div>
-            <div className="shrink-0 flex flex-col gap-1 items-end pt-0.5">
-              <Button
-                onClick={handleRun}
-                disabled={(!state.question.trim() && !(state.template && state.template.inputFields.length > 0)) || insufficientCredits}
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 h-8 px-4 text-xs font-semibold"
-              >
-                <Play className="w-3 h-3" />
-                Run Trial
-              </Button>
-              <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setTemplateSheetOpen(true)}
-                  className="text-[10px] text-muted-foreground/60 hover:text-primary flex items-center gap-1 transition-colors px-1.5 py-1 rounded border border-white/5 hover:border-primary/30"
-                >
-                  <LayoutTemplate className="w-3 h-3" />
-                  Templates
-                </button>
-                <button
-                  onClick={() => setConfigOpen(true)}
-                  className="text-[10px] text-muted-foreground/60 hover:text-primary flex items-center gap-1 transition-colors px-1.5 py-1 rounded border border-white/5 hover:border-primary/30"
-                >
-                  <Settings2 className="w-3 h-3" />
-                  <span className="capitalize">{state.config.courtMode}</span>
-                  <span className="opacity-40">·</span>
-                  <span>{state.config.litigantCount}×</span>
-                  <span className="opacity-40">·</span>
-                  <span>{state.config.confidenceTarget}%</span>
-                </button>
-              </div>
-            </div>
-          </>
-        ) : isRunning || state.phase === "paused" ? (
-          <>
-            <Brain className="w-4 h-4 text-primary shrink-0 animate-pulse mt-0.5" />
-            <p className="flex-1 text-sm text-muted-foreground/80 truncate min-w-0 leading-tight">{state.question}</p>
-            {state.currentRound > 0 && state.currentRound < 99 && (
-              <div className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs font-mono text-primary">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                Revolution {state.currentRound} / {state.config.maxIterations}
+                  onClick={handleRun}
+                  disabled={!state.question.trim() || insufficientCredits}
+                  style={{ minWidth: 64, alignSelf: "stretch", borderRadius: 9, background: "#00c853", color: "#000", fontSize: 28, fontWeight: 900, border: "none", cursor: (!state.question.trim() || insufficientCredits) ? "not-allowed" : "pointer", opacity: (!state.question.trim() || insufficientCredits) ? 0.35 : 1 }}
+                >▶</button>
               </div>
             )}
-            <Button variant="destructive" size="sm" onClick={handleStop} className="gap-1.5 h-7 text-xs shrink-0">
-              <Square className="w-3 h-3" />
-              Stop
-            </Button>
-          </>
-        ) : (
-          <>
-            {isComplete
-              ? <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-              : <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />}
-            <p className="flex-1 text-sm truncate min-w-0 leading-tight">{state.question}</p>
-            {isComplete && (
-              <div className="shrink-0 flex items-center gap-2 text-xs font-mono">
-                <span className="text-primary flex items-center gap-0.5"><Target className="w-3 h-3" />{state.confidence}%</span>
-                <span className="text-muted-foreground flex items-center gap-0.5"><Zap className="w-3 h-3" />{state.creditsUsed} cr · {credits} left</span>
-              </div>
-            )}
-            <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5 h-7 text-xs shrink-0 border-white/10">
-              <RotateCcw className="w-3 h-3" />
-              New
-            </Button>
+            <div style={{ fontSize: 11, color: "#2a4a2a", textAlign: "right" }}>Shift+Enter for new line</div>
           </>
         )}
       </div>
 
-      {/* ── CREDIT WARNING STRIP (idle only) ── */}
-      {isIdle && (creditsCritical || creditsLow || insufficientCredits) && (
-        <div className={cn(
-          "shrink-0 px-3 py-1.5 flex items-center gap-2 text-xs border-b",
-          insufficientCredits || creditsCritical
-            ? "bg-red-500/10 border-red-500/20 text-red-400"
-            : "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
-        )}>
-          <AlertTriangle className="w-3 h-3 shrink-0" />
-          <span>
-            {insufficientCredits
-              ? <>Need ~{estimatedCredits} cr · you have <strong>{credits}</strong>.</>
-              : creditsCritical
-              ? <>Critical: only <strong>{credits}</strong> credits left.</>
-              : <>Low: <strong>{credits}</strong> credits (~{sessionsLeft} sessions).</>
-            }
-          </span>
-          <button onClick={() => navigate("/billing")} className="ml-auto underline underline-offset-2 font-medium">
-            Top up →
-          </button>
+      {/* ── RUNTIME CONTROL PANEL ── */}
+      {!isIdle && (
+        <div style={{ border: "1px solid #1d331d", borderRadius: 12, margin: "0 8px 8px", padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.92),rgba(7,16,7,.92))", display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800, marginBottom: 2 }}>Runtime Control</div>
+          <RuntimeControl
+            starting={credits + state.creditsUsed}
+            current={credits}
+            used={state.creditsUsed}
+            round={state.currentRound}
+            maxRound={state.config.maxIterations}
+            cap={state.estimatedCredits}
+            mode={state.config.courtMode}
+          />
+          <ActivityLogSection />
         </div>
       )}
 
-      {/* ── COURT DIAGRAM — always visible, always the hero ── */}
-      <div className="shrink-0 relative h-[160px] sm:h-[clamp(240px,44vh,500px)]">
+      {/* ── COURT DIAGRAM — at the bottom ── */}
+      <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
         <CourtDiagram
           activeRole={state.activeRole}
           litigantCount={state.config.litigantCount}
@@ -1043,474 +1215,23 @@ export default function SessionPage() {
           onAddLitigant={!isRunning ? handleAddLitigant : undefined}
           onRemoveLitigant={!isRunning ? handleRemoveLitigant : undefined}
         />
-
-        {/* Revolution counter — overlaid top-left */}
         {(isRunning || isComplete) && state.currentRound > 0 && state.currentRound < 99 && (
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-[10px] font-mono text-primary/80 pointer-events-none backdrop-blur-sm">
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-[10px] font-mono text-primary/80 pointer-events-none">
             <span className={cn("w-1.5 h-1.5 rounded-full bg-primary", isRunning && "animate-pulse")} />
             Revolution {state.currentRound} / {state.config.maxIterations}
           </div>
         )}
-
-        {/* Live credit chip — overlaid top-right (Firestore live via useUserProfile) */}
-        {(isRunning || isComplete) && (
-          <div className={cn(
-            "absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 border text-[10px] font-mono pointer-events-none backdrop-blur-sm transition-colors",
-            creditsCritical ? "border-red-500/40 text-red-400"
-            : creditsLow ? "border-yellow-500/40 text-yellow-400"
-            : "border-primary/25 text-primary/70"
-          )}>
-            <Zap className="w-2.5 h-2.5" />
-            {credits} cr
-          </div>
-        )}
-
-        {/* Idle state — config summary overlay at bottom */}
-        {isIdle && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-white/8 text-[10px] font-mono text-muted-foreground/60 pointer-events-none backdrop-blur-sm whitespace-nowrap">
-            <span className="capitalize">{state.config.courtMode}</span>
-            <span className="opacity-30">·</span>
-            <span>{state.config.litigantCount} litigants</span>
-            <span className="opacity-30">·</span>
-            <span>{state.config.confidenceTarget}% target</span>
-            <span className="opacity-30">·</span>
-            <span>~{estimatedCredits} cr</span>
-            <span className="opacity-30">·</span>
-            <span className={cn(creditsCritical ? "text-red-400" : creditsLow ? "text-yellow-400" : "text-primary/60")}>
-              {credits} available
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* ── CONFIDENCE + CREDITS STATUS STRIP (running / complete) ── */}
-      {!isIdle && (
-        <div className="shrink-0 px-3 py-1.5 border-y border-white/5 bg-black/30 flex items-center gap-3">
-          <span className="text-[9px] font-mono text-primary/50 uppercase tracking-wider shrink-0">Conf</span>
-          <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${state.confidence}%`,
-                background: state.confidence >= state.config.confidenceTarget
-                  ? "#00c853"
-                  : "rgba(0,200,83,0.6)",
-              }}
-            />
-          </div>
-          <span className={cn(
-            "text-[10px] font-mono font-bold tabular-nums shrink-0",
-            state.confidence >= state.config.confidenceTarget ? "text-primary" : "text-primary/60"
-          )}>
-            {state.confidence}%<span className="text-muted-foreground/40 font-normal">/{state.config.confidenceTarget}%</span>
-          </span>
-          <span className="text-white/10 shrink-0">|</span>
-          <span className="text-[10px] font-mono text-muted-foreground/50 shrink-0">
-            {state.creditsUsed > 0 ? `${state.creditsUsed} used` : `~${estimatedCredits} est`}
-          </span>
+        <div className={cn(
+          "absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 border text-[10px] font-mono pointer-events-none",
+          creditsCritical ? "border-red-500/40 text-red-400"
+          : creditsLow ? "border-yellow-500/40 text-yellow-400"
+          : "border-primary/25 text-primary/70"
+        )}>
+          <Zap className="w-2.5 h-2.5" />
+          {credits} cr
         </div>
-      )}
-
-      {/* ── BOTTOM PANEL ── */}
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-
-        {/* IDLE — prompt to ask a question */}
-        {isIdle && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-mono text-primary/70">
-              <Sparkles className="w-3 h-3" />
-              Don't just ask AI. Put the question on trial.
-            </div>
-            <p className="text-xs text-muted-foreground/50 max-w-sm">
-              Type your question above, pick a template, or adjust the court configuration — then press <strong className="text-primary/70">Run Trial</strong>.
-            </p>
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-mono mt-1",
-              creditsCritical ? "border-red-500/30 bg-red-500/10 text-red-400"
-              : creditsLow ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
-              : "border-primary/20 bg-primary/5 text-primary/60"
-            )}>
-              <Zap className="w-2.5 h-2.5" />
-              {credits} credits · {plan}
-              {insufficientCredits && (
-                <button onClick={() => navigate("/billing")} className="ml-1 underline underline-offset-2">top up</button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* RUNNING — Runtime Control + Activity Log + content feed */}
-        {isRunning && (
-          <div ref={feedRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-            {/* Runtime Control — live 6-metric stats grid */}
-            <RuntimeControl
-              starting={credits + state.creditsUsed}
-              current={credits}
-              used={state.creditsUsed}
-              round={state.currentRound}
-              maxRound={state.config.maxIterations}
-              cap={state.estimatedCredits}
-              mode={state.config.courtMode}
-            />
-
-            {/* Activity Log — collapsible status stream */}
-            <div className="rounded-lg border border-primary/20 overflow-hidden">
-              <button
-                onClick={() => setActivityLogOpen((v) => !v)}
-                className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono bg-primary/5 hover:bg-primary/10 transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-primary font-bold tracking-wide">Activity Log</span>
-                  {isRunning && (
-                    <span className="flex gap-0.5">
-                      {[0, 120, 240].map((d) => (
-                        <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                      ))}
-                    </span>
-                  )}
-                </span>
-                <span className="text-primary/50">{activityLogOpen ? "▼" : "▶"}</span>
-              </button>
-              {activityLogOpen && (
-                <div
-                  ref={activityLogRef}
-                  className="px-3 py-2 max-h-44 overflow-y-auto space-y-0.5"
-                  style={{ background: "rgba(0,0,0,0.35)" }}
-                >
-                  {state.activityLog.map((entry, i) => {
-                    const isCourtroom = entry.startsWith("[Courtroom]");
-                    const isOrch = entry.startsWith("[Orchestrator]");
-                    const isMod = entry.startsWith("[Moderator]");
-                    const isSystem = entry.startsWith("[System]");
-                    const color = isCourtroom ? "text-primary/70"
-                      : isOrch ? "text-yellow-400/90"
-                      : isMod ? "text-cyan-400/90"
-                      : isSystem ? "text-muted-foreground/60"
-                      : "text-primary";
-                    return (
-                      <div key={i} className={cn("text-[11px] font-mono leading-relaxed", color)}>
-                        {entry}
-                      </div>
-                    );
-                  })}
-                  {state.activityLog.length === 0 && (
-                    <div className="text-[11px] font-mono text-muted-foreground/40">Waiting…</div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* V29 two-box conversation */}
-            {state.question && (
-              <div className="space-y-2">
-                {/* Litigant Voices — shown only when there are litigant turns */}
-                {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
-                  <LitigantVoicesBox
-                    items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
-                    adversarial={state.config.courtMode === "adversarial"}
-                  />
-                )}
-                {/* Orchestrator / Consensus box */}
-                <OrchestratorBox
-                  question={state.question}
-                  items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* COMPLETE / PAUSED / ERROR — results */}
-        {(isComplete || isPaused || isError) && (
-          <div className="flex-1 overflow-y-auto px-3 py-3">
-            {isError ? (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center">
-                <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" />
-                <p className="font-semibold mb-2">Session Error</p>
-                <p className="text-sm text-muted-foreground mb-4">{state.errorMessage}</p>
-                <Button onClick={handleReset} variant="outline">Try Again</Button>
-              </div>
-            ) : (
-              <>
-                {/* ── Pause decision card (credit cap / iteration limit) ── */}
-                {isPaused && state.pauseReason && (
-                  <div className="rounded-lg border border-orange-500/40 bg-orange-500/5 p-4 mb-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base">⏸</span>
-                      <span className="font-bold text-[13px] text-orange-300">
-                        {state.pauseReason === "credit_cap"
-                          ? `Credit cap reached — at ${Math.round(state.confidence)}% confidence`
-                          : `${state.config.maxIterations} round${state.config.maxIterations !== 1 ? "s" : ""} complete — at ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/70 mb-3">
-                      {state.pauseReason === "credit_cap"
-                        ? "You've used your credit cap. Want to keep going?"
-                        : "Ran out of debate rounds before hitting your confidence target. Want more?"}
-                    </p>
-
-                    {/* Confidence bar */}
-                    <div className="space-y-1.5 mb-3">
-                      <div className="flex justify-between text-[10px] text-muted-foreground/60">
-                        <span>Confidence</span>
-                        <span className="font-mono text-orange-300">{Math.round(state.confidence)}% / {state.config.confidenceTarget}%</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-black/40 overflow-hidden">
-                        <div className="h-full rounded-full bg-orange-400 transition-all"
-                          style={{ width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
-                      </div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground/60">
-                        <span>Credits used</span>
-                        <span className="font-mono">{state.creditsUsed} · <span className={credits === 0 ? "text-red-400" : "text-primary"}>{credits} remaining</span></span>
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      {credits === 0 ? (
-                        <button
-                          onClick={() => navigate("/billing")}
-                          className="flex-1 py-2 rounded-lg bg-primary text-black text-xs font-bold text-center hover:bg-primary/90 transition-colors"
-                        >
-                          Top Up Wallet
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => { void continueSession(); }}
-                          className="flex-1 py-2 rounded-lg bg-primary text-black text-xs font-bold hover:bg-primary/90 transition-colors"
-                        >
-                          Continue — {credits} credits available
-                        </button>
-                      )}
-                      <button
-                        onClick={acceptPartial}
-                        className="flex-1 py-2 rounded-lg border border-white/15 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-white/30 transition-colors"
-                      >
-                        Accept this answer
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── V29 Completion banner (only when fully complete, not paused) ── */}
-                {!isPaused && (
-                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 mb-3">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-base">🛑</span>
-                    <span className="font-bold text-[13px] text-yellow-300">
-                      Stopped — {state.currentRound} round{state.currentRound !== 1 ? "s" : ""} reached at{" "}
-                      {Math.round(state.confidence)}% confidence
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground/70 mb-1">
-                        <span>Confidence</span>
-                        <span className="font-mono text-primary">
-                          {Math.round(state.confidence)}% / {state.config.confidenceTarget}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-black/40 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all"
-                          style={{ width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground/70 mb-1">
-                        <span>Credits Used</span>
-                        <span className="font-mono text-primary">{state.creditsUsed} credits</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-black/40 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all"
-                          style={{ width: `${Math.min(100, (state.creditsUsed / Math.max(state.estimatedCredits, 1)) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                )}
-
-                {/* Activity Log history — collapsed by default after completion */}
-                {state.activityLog.length > 0 && (
-                  <div className="rounded-lg border border-primary/15 overflow-hidden mb-3">
-                    <button
-                      onClick={() => setActivityLogOpen((v) => !v)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-mono bg-primary/5 hover:bg-primary/10 transition-colors"
-                    >
-                      <span className="text-primary/70 font-bold tracking-wide">Activity Log</span>
-                      <span className="text-primary/40">{activityLogOpen ? "▼" : "▶"}</span>
-                    </button>
-                    {activityLogOpen && (
-                      <div className="px-3 py-2 max-h-36 overflow-y-auto space-y-0.5" style={{ background: "rgba(0,0,0,0.25)" }}>
-                        {state.activityLog.map((entry, i) => {
-                          const isCourtroom = entry.startsWith("[Courtroom]");
-                          const isOrch = entry.startsWith("[Orchestrator]");
-                          const isMod = entry.startsWith("[Moderator]");
-                          const isSystem = entry.startsWith("[System]");
-                          const color = isCourtroom ? "text-primary/60"
-                            : isOrch ? "text-yellow-400/70"
-                            : isMod ? "text-cyan-400/70"
-                            : isSystem ? "text-muted-foreground/50"
-                            : "text-primary/80";
-                          return (
-                            <div key={i} className={cn("text-[11px] font-mono leading-relaxed", color)}>
-                              {entry}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Credit summary after session */}
-                <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg border border-primary/15 bg-primary/5 text-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-muted-foreground">Session complete —</span>
-                  <span className="font-mono text-primary">{state.creditsUsed} credits used</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className={cn(
-                    "font-mono",
-                    creditsCritical ? "text-red-400" : creditsLow ? "text-yellow-400" : "text-muted-foreground"
-                  )}>
-                    {credits} remaining
-                  </span>
-                  {(creditsCritical || creditsLow) && (
-                    <button onClick={() => navigate("/billing")} className="ml-auto text-primary underline underline-offset-2">Top up</button>
-                  )}
-                </div>
-
-                {/* Feedback + Export bar */}
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" />
-                    Helpful?
-                  </span>
-                  {(["good", "bad", "warn"] as const).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => handleFeedback(r)}
-                      disabled={feedbackGiven !== null}
-                      className={cn(
-                        "w-7 h-7 rounded-lg border flex items-center justify-center transition-colors",
-                        feedbackGiven === r
-                          ? r === "good" ? "border-primary/50 bg-primary/10 text-primary"
-                          : r === "bad" ? "border-destructive/50 bg-destructive/10 text-destructive"
-                          : "border-yellow-500/50 bg-yellow-500/10 text-yellow-500"
-                          : "border-border/40 text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {r === "good" && <ThumbsUp className="w-3.5 h-3.5" />}
-                      {r === "bad" && <ThumbsDown className="w-3.5 h-3.5" />}
-                      {r === "warn" && <AlertTriangle className="w-3.5 h-3.5" />}
-                    </button>
-                  ))}
-                  <div className="ml-auto flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" onClick={handleCopyMarkdown} className="gap-1 h-7 text-xs border-white/10">
-                      <Copy className="w-3 h-3" />Copy
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleDownloadMarkdown} className="gap-1 h-7 text-xs border-white/10">
-                      <Download className="w-3 h-3" />MD
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1 h-7 text-xs border-white/10">
-                      <Printer className="w-3 h-3" />Print
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Output tabs */}
-                <Tabs defaultValue="answer">
-                  <TabsList className="bg-black/30 border border-white/8 mb-3 flex-wrap h-auto gap-y-1">
-                    <TabsTrigger value="answer" className="text-xs">Final Answer</TabsTrigger>
-                    <TabsTrigger value="artifacts" className="text-xs">Artifacts</TabsTrigger>
-                    <TabsTrigger value="debate" className="text-xs">Debate</TabsTrigger>
-                    <TabsTrigger value="transcript" className="text-xs">Transcript</TabsTrigger>
-                    <TabsTrigger value="caveats" className="text-xs">Caveats</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="answer">
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Brain className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-semibold text-primary">Verdict</span>
-                        <Badge variant="outline" className="ml-auto text-primary border-primary/30 text-xs">
-                          {state.confidence}% confidence
-                        </Badge>
-                      </div>
-                      <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                        {state.finalAnswer || "No final answer generated."}
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="artifacts">
-                    <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Package className="w-4 h-4 text-blue-400" />
-                        <span className="text-sm font-semibold text-blue-400">Artifacts</span>
-                      </div>
-                      <div className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                        {state.artifacts || "No artifacts generated."}
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="debate">
-                    <div className="rounded-xl border border-border/40 bg-card/30 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Scale className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Debate Notes</span>
-                      </div>
-                      <div className="text-xs leading-relaxed text-foreground/70 whitespace-pre-wrap font-mono">
-                        {state.debateNotes || "No debate notes recorded."}
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="transcript">
-                    <div className="space-y-2">
-                      {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
-                        <LitigantVoicesBox
-                          items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
-                          adversarial={state.config.courtMode === "adversarial"}
-                        />
-                      )}
-                      <OrchestratorBox
-                        question={state.question}
-                        items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
-                      />
-                      {!state.runtimeFeed.some((f) => f.content) && (
-                        <p className="text-muted-foreground text-xs text-center py-6">Transcript unavailable.</p>
-                      )}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="caveats">
-                    <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                        <span className="text-sm font-semibold text-yellow-500">Sources & Caveats</span>
-                      </div>
-                      <div className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap mb-3">
-                        {state.caveats}
-                      </div>
-                      <p className="text-xs text-muted-foreground/60 border-t border-yellow-500/10 pt-3">
-                        <strong className="text-yellow-500/80">Disclaimer: </strong>
-                        Litigant AI provides AI-generated reasoning and decision support. Not legal, medical, financial, or professional advice.
-                      </p>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ── TEMPLATE SHEET — bottom drawer ── */}
       {/* ── SEAT INSPECTOR ── */}
       {inspectorSeat && (
         <SeatInspector
@@ -1520,9 +1241,7 @@ export default function SessionPage() {
           seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
           grades={state.grades}
           onClose={() => setInspectorSeat(null)}
-          onUpdate={(seatId, assignment, li) =>
-            handleSeatUpdate(seatId, assignment, li)
-          }
+          onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
         />
       )}
 
