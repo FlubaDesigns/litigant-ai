@@ -1,11 +1,12 @@
 import OpenAI from "openai";
-import type { AIProvider, ChatMessage, ProviderName } from "./types.js";
+import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
 
 export class OpenAIProvider implements AIProvider {
   readonly name: ProviderName = "openai";
   readonly displayName = "OpenAI";
   private model: string;
   private client: OpenAI;
+  private _lastUsage: TokenUsageSnapshot | null = null;
 
   constructor(model = "gpt-4o", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
@@ -28,14 +29,34 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
+  getLastUsage(): TokenUsageSnapshot | null {
+    return this._lastUsage;
+  }
+
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
+    this._lastUsage = null;
+
     const stream = await this.client.chat.completions.create(
-      { model: this.model, max_completion_tokens: maxTokens, stream: true, messages },
+      {
+        model: this.model,
+        max_completion_tokens: maxTokens,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages,
+      },
       { signal }
     );
+
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) yield content;
+
+      if (chunk.usage) {
+        this._lastUsage = {
+          inputTokens: chunk.usage.prompt_tokens ?? 0,
+          outputTokens: chunk.usage.completion_tokens ?? 0,
+        };
+      }
     }
   }
 }

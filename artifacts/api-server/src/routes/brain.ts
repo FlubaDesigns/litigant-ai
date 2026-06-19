@@ -72,18 +72,46 @@ async function createAutoRefillUrl(priceId: string, uid: string): Promise<string
 }
 
 /**
- * In-memory guest session tracking.
- * One free session is allowed per client IP. The Set resets on server restart —
- * intentional, since guests are only meant for quick trials.
- * TODO: replace with Firestore `guest_sessions` collection for durability
- * across restarts when Firebase is configured.
+ * Guest session tracking — checks/writes Firestore `guest_sessions/{ip}` when
+ * Firebase is configured (production). Falls back to an in-memory Set when
+ * Firebase is not available (development / unit tests).
+ *
+ * Firestore document shape: { ip: string, usedAt: Timestamp }
  */
-const guestSessionIPs = new Set<string>();
+const _guestMemoryFallback = new Set<string>();
 
 function getClientIp(req: import("express").Request): string {
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
   return req.socket.remoteAddress ?? "unknown";
+}
+
+async function hasGuestUsed(ip: string): Promise<boolean> {
+  const db = getFirestoreDb();
+  if (!db) return _guestMemoryFallback.has(ip);
+  try {
+    const doc = await db.collection("guest_sessions").doc(ip.replace(/[./]/g, "_")).get();
+    return doc.exists;
+  } catch {
+    return _guestMemoryFallback.has(ip);
+  }
+}
+
+async function markGuestUsed(ip: string): Promise<void> {
+  const db = getFirestoreDb();
+  const safeKey = ip.replace(/[./]/g, "_");
+  if (!db) {
+    _guestMemoryFallback.add(ip);
+    return;
+  }
+  try {
+    await db.collection("guest_sessions").doc(safeKey).set({
+      ip,
+      usedAt: new Date(),
+    });
+  } catch {
+    _guestMemoryFallback.add(ip);
+  }
 }
 
 /**
@@ -247,9 +275,10 @@ router.post("/run-brain", async (req, res) => {
       return;
     }
   } else {
-    // Guest mode: one free session per IP, then require signup
+    // Guest mode: one free session per IP, then require signup.
+    // Mark BEFORE starting so concurrent requests from the same IP can't both slip through.
     const ip = getClientIp(req);
-    if (guestSessionIPs.has(ip)) {
+    if (await hasGuestUsed(ip)) {
       res.status(402).json({
         message:
           "Guest sessions are limited to one free trial. Create a free account to continue — you'll receive 50 credits.",
@@ -257,6 +286,7 @@ router.post("/run-brain", async (req, res) => {
       });
       return;
     }
+    await markGuestUsed(ip);
   }
 
   // ── SSE headers ────────────────────────────────────────────────────────────
@@ -293,12 +323,6 @@ router.post("/run-brain", async (req, res) => {
 
     runSucceeded = true;
     actualCost = result.creditsUsed;
-
-    // Mark guest IP as used after successful run
-    if (!uid) {
-      const ip = getClientIp(req);
-      guestSessionIPs.add(ip);
-    }
 
     // ── Post-run: reconcile credits + persist session ───────────────────────
     if (db && uid) {

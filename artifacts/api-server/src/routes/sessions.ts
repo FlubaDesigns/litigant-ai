@@ -7,8 +7,12 @@ router.get("/sessions", async (req, res) => {
   const db = getFirestoreDb();
   const authHeader = req.headers["authorization"];
 
-  if (!db || !authHeader?.startsWith("Bearer ")) {
-    res.json([]);
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  if (!db) {
+    res.status(503).json({ message: "Service unavailable" });
     return;
   }
 

@@ -189,7 +189,7 @@ async function resolveSeatProvider(
   }
 }
 
-/** Stream a role's response, tracking output character count for token estimation */
+/** Stream a role's response, using real provider token counts when available */
 async function streamRole(
   provider: AIProvider,
   messages: ChatMessage[],
@@ -198,9 +198,9 @@ async function streamRole(
   usage: TokenUsage,
   signal?: AbortSignal
 ): Promise<string> {
-  // Estimate input tokens from message content length
+  // Optimistic estimate for input (used only if provider doesn't return real counts)
   const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
-  usage.inputTokens += charsToTokens(inputChars);
+  const estimatedInput = charsToTokens(inputChars);
 
   let output = "";
   try {
@@ -216,8 +216,15 @@ async function streamRole(
     onChunk(fallback);
   }
 
-  // Track actual output tokens
-  usage.outputTokens += charsToTokens(output.length);
+  // Use real token counts from provider if available; fall back to char estimation
+  const realUsage = provider.getLastUsage?.();
+  if (realUsage && (realUsage.inputTokens > 0 || realUsage.outputTokens > 0)) {
+    usage.inputTokens += realUsage.inputTokens;
+    usage.outputTokens += realUsage.outputTokens;
+  } else {
+    usage.inputTokens += estimatedInput;
+    usage.outputTokens += charsToTokens(output.length);
+  }
 
   return output;
 }

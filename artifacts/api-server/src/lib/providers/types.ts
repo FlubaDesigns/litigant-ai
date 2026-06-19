@@ -5,6 +5,11 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface TokenUsageSnapshot {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface AIProvider {
   name: ProviderName;
   displayName: string;
@@ -13,6 +18,8 @@ export interface AIProvider {
     maxTokens: number,
     signal?: AbortSignal
   ): AsyncIterable<string>;
+  /** Returns real token counts from the most recent streamChat call, if available. */
+  getLastUsage?(): TokenUsageSnapshot | null;
 }
 
 export interface ProviderConfig {
