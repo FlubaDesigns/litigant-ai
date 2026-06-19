@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Brain, Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
   Stethoscope, Scale, Search, FlaskConical, Settings2, Play, Square,
-  ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download, ChevronDown,
+  ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
-  Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Gavel, Bot,
-  Users, Shuffle, Crown, ClipboardCopy, Check,
+  Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Shuffle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -425,205 +424,171 @@ function RuntimeControl({
   );
 }
 
-// ── Role meta helpers ─────────────────────────────────────────────────────────
+// ── V29 Conversation helpers ──────────────────────────────────────────────────
+
 const PROVIDER_SHORT: Record<string, string> = {
-  anthropic: "Claude",
-  openai: "GPT",
-  grok: "Grok",
-  gemini: "Gemini",
+  anthropic: "Claude", openai: "GPT", grok: "Grok", gemini: "Gemini",
 };
 
-const PROVIDER_DOT: Record<string, string> = {
-  anthropic: "#a78bfa",
-  openai:    "#34d399",
-  grok:      "#60a5fa",
-  gemini:    "#f59e0b",
-};
-
-function getRoleMeta(role: string): {
-  Icon: React.ComponentType<{ className?: string }>;
-  borderCls: string;
-  labelCls: string;
-  bgCls: string;
-} {
-  if (role === "Verdict" || role === "Orchestrator")
-    return { Icon: Crown,  borderCls: "border-l-yellow-400/70", labelCls: "text-yellow-300", bgCls: "bg-yellow-400/5" };
-  if (role === "Moderator")
-    return { Icon: Gavel,  borderCls: "border-l-cyan-400/70",   labelCls: "text-cyan-300",   bgCls: "bg-cyan-400/5" };
-  if (role.startsWith("Litigant"))
-    return { Icon: Users,  borderCls: "border-l-primary/70",    labelCls: "text-primary",    bgCls: "bg-primary/5" };
-  return   { Icon: Bot,    borderCls: "border-l-primary/40",    labelCls: "text-primary/80", bgCls: "bg-card/40" };
+function isLitigantRole(role: string) {
+  return role.toLowerCase().startsWith("litigant");
+}
+function isOrchestratorRole(role: string) {
+  return role === "Orchestrator" || role === "Verdict" || role === "Moderator";
 }
 
-// ── TranscriptTurn ────────────────────────────────────────────────────────────
-function TranscriptTurn({
-  item, Icon, labelCls, bgCls, providerShort, providerDot, ts,
-}: {
-  item: FeedItem;
-  Icon: React.ComponentType<{ className?: string }>;
-  labelCls: string;
-  bgCls: string;
-  providerShort: string | null;
-  providerDot: string | null;
-  ts: string;
-}) {
-  const [copied, setCopied] = useState(false);
-  function handleCopy() {
-    navigator.clipboard.writeText(item.content).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    });
+// A single dialog line — matches V29 .dialog-line exactly
+function DialogLine({ item, adversarial }: { item: FeedItem; adversarial?: boolean }) {
+  const isYou = item.role === "You";
+  const isLit = isLitigantRole(item.role);
+
+  // Determine colors
+  let borderColor: string;
+  let speakerColor: string;
+  let bgStyle: React.CSSProperties;
+
+  if (isYou) {
+    borderColor = "#4a9eff";
+    speakerColor = "#4a9eff";
+    bgStyle = { background: "rgba(0,120,255,.08)" };
+  } else if (isLit) {
+    borderColor = adversarial ? "#c84040" : "#7ab87a";
+    speakerColor = adversarial ? "#ff9a9a" : "#7ab87a";
+    bgStyle = { background: "rgba(0,0,0,.12)" };
+  } else {
+    // Orchestrator / Moderator / Verdict
+    borderColor = "#7ab87a";
+    speakerColor = "#7ab87a";
+    bgStyle = { background: "rgba(0,0,0,.15)" };
   }
+
+  // Extract disclosure header from "[Seat | Model | …]\n" pattern
+  let disclosure = "";
+  let body = item.content;
+  if (!isYou && !isLit && body.startsWith("[")) {
+    const nl = body.indexOf("\n");
+    if (nl > -1) { disclosure = body.slice(0, nl + 1); body = body.slice(nl + 1); }
+  }
+
+  const providerShort = item.provider ? (PROVIDER_SHORT[item.provider] ?? null) : null;
+  const speakerLabel = `${item.role}${isLit && adversarial ? " ⚔" : ""}${providerShort ? ` · ${providerShort}` : ""}`;
+
   return (
-    <div className={cn("px-4 py-3 group", bgCls)}>
-      {/* Turn header */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className={cn("w-4 h-4 flex items-center justify-center shrink-0", labelCls)}>
-          <Icon className="w-3 h-3" />
-        </span>
-        <span className={cn("text-[10px] font-black uppercase tracking-widest", labelCls)}>
-          {item.role}
-        </span>
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.16 }}
+      style={{ ...bgStyle, borderLeft: `3px solid ${borderColor}`, borderRadius: 8, marginBottom: 8, padding: "6px 8px", lineHeight: 1.5, fontSize: 14 }}
+    >
+      <span style={{ fontWeight: 800, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 2, color: speakerColor }}>
+        {speakerLabel}
         {item.round > 0 && item.round < 99 && (
-          <span className="text-[9px] font-mono text-muted-foreground/40 border border-white/8 rounded px-1">
-            R{item.round}
+          <span style={{ fontWeight: 400, color: "#4a6a4a", marginLeft: 6, fontSize: 10 }}>R{item.round}</span>
+        )}
+        {!item.isComplete && (
+          <span style={{ marginLeft: 6, display: "inline-flex", gap: 2, verticalAlign: "middle" }}>
+            {[0, 130, 260].map((d) => (
+              <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce inline-block" style={{ animationDelay: `${d}ms` }} />
+            ))}
           </span>
         )}
-        {providerShort && (
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: providerDot ?? "#9ca3af" }} />
-            <span className="text-[9px] font-mono text-muted-foreground/50">{providerShort}</span>
-          </span>
-        )}
-        <span className="flex-1" />
-        <span className="text-[9px] font-mono text-muted-foreground/30 hidden sm:block">{ts}</span>
-        <button
-          onClick={handleCopy}
-          className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-white/8 text-muted-foreground/40 hover:text-muted-foreground/80 transition-all"
-        >
-          {copied ? <Check className="w-3 h-3 text-primary" /> : <ClipboardCopy className="w-3 h-3" />}
-        </button>
+      </span>
+      {disclosure && (
+        <span style={{ fontSize: 11, color: "#3a5a3a", fontStyle: "italic", display: "block", marginBottom: 4, lineHeight: 1.3 }}>
+          {disclosure.trim()}
+        </span>
+      )}
+      {body || (!item.isComplete ? "" : <span style={{ color: "#4a6a4a", fontStyle: "italic" }}>No content.</span>)}
+    </motion.div>
+  );
+}
+
+// Litigant Voices box — collapsible, shown only in All Voices mode
+function LitigantVoicesBox({
+  items, adversarial, scrollRef,
+}: { items: FeedItem[]; adversarial: boolean; scrollRef?: React.RefObject<HTMLDivElement> }) {
+  const [open, setOpen] = useState(true);
+
+  function handleSave() {
+    const lines = items.filter(f => f.content).map(f =>
+      `${f.role.toUpperCase()}\n${f.content}\n`
+    ).join("\n---\n\n");
+    if (!lines) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["Litigant Voices Export\n\n" + lines], { type: "text/plain" }));
+    a.download = `LitigantVoices_${Date.now()}.txt`;
+    a.click();
+  }
+
+  return (
+    <div style={{ border: "1px solid #7ab87a", borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "rgba(122,184,122,.07)", borderBottom: "1px solid #1d331d" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#7ab87a", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 800 }}>Litigant Voices</span>
+          {adversarial && (
+            <span style={{ fontSize: 10, fontWeight: 900, color: "#ff6b6b", border: "1px solid #c84040", borderRadius: 999, padding: "2px 8px", letterSpacing: "0.06em" }}>⚔ ADVERSARIAL</span>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <button onClick={handleSave} style={{ fontSize: 12, padding: "4px 8px", minHeight: 28, background: "transparent", border: "1px solid #7ab87a", borderRadius: 7, cursor: "pointer", color: "#eef7ee" }}>⬇</button>
+          <button onClick={() => setOpen(v => !v)} style={{ fontSize: 12, padding: "4px 10px", minHeight: 28, background: "transparent", border: "1px solid #7ab87a", borderRadius: 7, color: "#7ab87a", cursor: "pointer" }}>
+            {open ? "▼ Hide" : "▶ Show"}
+          </button>
+        </div>
       </div>
-      {/* Content */}
-      <p className="text-[12px] leading-relaxed text-foreground/70 whitespace-pre-wrap pl-6">
-        {item.content}
-      </p>
+      {/* Body */}
+      {open && (
+        <div ref={scrollRef} style={{ minHeight: 80, maxHeight: 280, overflowY: "auto", padding: 10, background: "rgba(0,0,0,.12)" }}>
+          {items.length === 0 ? (
+            <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic" }}>Waiting for litigant debate…</div>
+          ) : (
+            items.map(item => <DialogLine key={item.id} item={item} adversarial={adversarial} />)
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── FeedItemCard ──────────────────────────────────────────────────────────────
-function FeedItemCard({ item }: { item: FeedItem }) {
-  const [expanded, setExpanded] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const { Icon, borderCls, labelCls, bgCls } = getRoleMeta(item.role);
-
-  const providerShort = item.provider ? (PROVIDER_SHORT[item.provider] ?? item.provider) : null;
-  const providerDot   = item.provider ? (PROVIDER_DOT[item.provider] ?? "#9ca3af") : null;
-
-  const ts = new Date(item.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-  function handleCopy(e: React.MouseEvent) {
-    e.stopPropagation();
-    navigator.clipboard.writeText(item.content).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    });
+// Orchestrator / Consensus box — always open
+function OrchestratorBox({
+  question, items, scrollRef,
+}: { question: string; items: FeedItem[]; scrollRef?: React.RefObject<HTMLDivElement> }) {
+  function handleSave() {
+    const youLine = `YOU\n${question}\n`;
+    const lines = items.filter(f => f.content).map(f =>
+      `${f.role.toUpperCase()}\n${f.content}\n`
+    ).join("\n---\n\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["Litigant AI — Conversation Export\n\n" + youLine + "\n---\n\n" + lines], { type: "text/plain" }));
+    a.download = `LitigantAI_${Date.now()}.txt`;
+    a.click();
   }
 
+  function handlePrint() { window.print(); }
+
+  const youItem: FeedItem = { id: "you", role: "You", provider: "", content: question, round: 0, timestamp: 0, isComplete: true };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
-      className={cn(
-        "rounded-xl border border-white/8 border-l-2 overflow-hidden",
-        borderCls, bgCls,
-      )}
-    >
-      {/* Header row */}
-      <button
-        onClick={() => setExpanded((e) => !e)}
-        className="w-full flex items-center gap-2.5 px-3 pt-2.5 pb-2 text-left"
-      >
-        {/* Role icon */}
-        <span className={cn("shrink-0 w-5 h-5 flex items-center justify-center", labelCls)}>
-          <Icon className="w-3.5 h-3.5" />
-        </span>
-
-        {/* Role name */}
-        <span className={cn("text-[11px] font-black uppercase tracking-widest shrink-0", labelCls)}>
-          {item.role}
-        </span>
-
-        {/* Round badge */}
-        {item.round > 0 && item.round < 99 && (
-          <span className="text-[9px] font-mono text-muted-foreground/50 border border-white/10 rounded px-1 shrink-0">
-            R{item.round}
-          </span>
+    <div style={{ border: "1px solid #00c853", borderRadius: 12, overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "rgba(0,200,83,.07)", borderBottom: "1px solid #1d331d" }}>
+        <span style={{ fontSize: 12, color: "#00c853", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 800 }}>Orchestrator / Consensus</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={handleSave} style={{ fontSize: 12, padding: "4px 10px", minHeight: 28, background: "transparent", border: "1px solid #00c853", borderRadius: 7, cursor: "pointer", color: "#eef7ee" }}>⬇ Save</button>
+          <button onClick={handlePrint} style={{ fontSize: 12, padding: "4px 10px", minHeight: 28, background: "transparent", border: "1px solid #00c853", borderRadius: 7, cursor: "pointer", color: "#eef7ee" }}>🖨 Print</button>
+        </div>
+      </div>
+      {/* Body */}
+      <div ref={scrollRef} style={{ minHeight: 120, maxHeight: 360, overflowY: "auto", padding: "10px 10px 6px", fontSize: 14, lineHeight: 1.6, background: "rgba(0,0,0,.12)" }}>
+        {question && <DialogLine key="you" item={youItem} />}
+        {items.map(item => <DialogLine key={item.id} item={item} />)}
+        {items.length === 0 && question && (
+          <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic", marginTop: 6 }}>Courtroom assembling…</div>
         )}
-
-        {/* Provider badge */}
-        {providerShort && (
-          <span className="flex items-center gap-1 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: providerDot ?? "#9ca3af" }} />
-            <span className="text-[9px] text-muted-foreground/60 font-mono">{providerShort}</span>
-          </span>
-        )}
-
-        {/* Streaming dots */}
-        {!item.isComplete && (
-          <span className="flex gap-0.5 items-center shrink-0">
-            {[0, 140, 280].map((d) => (
-              <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
-            ))}
-          </span>
-        )}
-
-        {/* Spacer */}
-        <span className="flex-1" />
-
-        {/* Timestamp */}
-        <span className="text-[9px] font-mono text-muted-foreground/35 shrink-0 hidden sm:block">{ts}</span>
-
-        {/* Copy button — only when complete */}
-        {item.isComplete && item.content && (
-          <span
-            role="button"
-            onClick={handleCopy}
-            className="shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-white/8 text-muted-foreground/40 hover:text-muted-foreground/80 transition-colors"
-          >
-            {copied ? <Check className="w-3 h-3 text-primary" /> : <ClipboardCopy className="w-3 h-3" />}
-          </span>
-        )}
-
-        <ChevronDown className={cn("w-3 h-3 text-muted-foreground/30 shrink-0 transition-transform duration-150", !expanded && "-rotate-90")} />
-      </button>
-
-      {/* Content */}
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.15 }}
-            className="overflow-hidden"
-          >
-            {item.content ? (
-              <div className="px-3 pb-3 pt-0.5 text-[13px] leading-relaxed text-foreground/85 whitespace-pre-wrap font-sans max-h-80 overflow-y-auto border-t border-white/5">
-                {item.content}
-              </div>
-            ) : (
-              <div className="px-3 pb-3 pt-0.5 text-[11px] text-muted-foreground/40 italic border-t border-white/5">
-                Waiting for response…
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -1235,19 +1200,21 @@ export default function SessionPage() {
               )}
             </div>
 
-            {/* Conversation — YOU box + role cards */}
-            {state.runtimeFeed.length > 0 && (
+            {/* V29 two-box conversation */}
+            {state.question && (
               <div className="space-y-2">
-                {/* YOU question box */}
-                <div className="rounded-lg border border-blue-500/25 bg-blue-500/8 px-3 py-2.5">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-blue-400/80 mb-1">You</div>
-                  <div className="text-[13px] leading-relaxed text-foreground/90">{state.question}</div>
-                </div>
-                <AnimatePresence>
-                  {state.runtimeFeed.map((item) => (
-                    <FeedItemCard key={item.id} item={item} />
-                  ))}
-                </AnimatePresence>
+                {/* Litigant Voices — shown only when there are litigant turns */}
+                {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
+                  <LitigantVoicesBox
+                    items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
+                    adversarial={state.config.courtMode === "adversarial"}
+                  />
+                )}
+                {/* Orchestrator / Consensus box */}
+                <OrchestratorBox
+                  question={state.question}
+                  items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
+                />
               </div>
             )}
           </div>
@@ -1504,39 +1471,20 @@ export default function SessionPage() {
                   </TabsContent>
 
                   <TabsContent value="transcript">
-                    <div className="rounded-xl border border-border/40 bg-card/30 overflow-hidden">
-                      {/* Header */}
-                      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/6">
-                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Full Transcript</span>
-                        <span className="ml-auto text-[10px] font-mono text-muted-foreground/40">
-                          {state.runtimeFeed.filter((f) => f.content).length} turns
-                        </span>
-                      </div>
-                      {/* Turns */}
-                      <div className="divide-y divide-white/5">
-                        {state.runtimeFeed.filter((f) => f.content).map((f) => {
-                          const { Icon: TIcon, labelCls: tLabel, bgCls: tBg } = getRoleMeta(f.role);
-                          const tProvShort = f.provider ? (PROVIDER_SHORT[f.provider] ?? f.provider) : null;
-                          const tProvDot   = f.provider ? (PROVIDER_DOT[f.provider] ?? "#9ca3af") : null;
-                          const tTs = new Date(f.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-                          return (
-                            <TranscriptTurn
-                              key={f.id}
-                              item={f}
-                              Icon={TIcon}
-                              labelCls={tLabel}
-                              bgCls={tBg}
-                              providerShort={tProvShort}
-                              providerDot={tProvDot}
-                              ts={tTs}
-                            />
-                          );
-                        })}
-                        {!state.runtimeFeed.some((f) => f.content) && (
-                          <p className="px-4 py-6 text-muted-foreground text-xs text-center">Transcript unavailable.</p>
-                        )}
-                      </div>
+                    <div className="space-y-2">
+                      {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
+                        <LitigantVoicesBox
+                          items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
+                          adversarial={state.config.courtMode === "adversarial"}
+                        />
+                      )}
+                      <OrchestratorBox
+                        question={state.question}
+                        items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
+                      />
+                      {!state.runtimeFeed.some((f) => f.content) && (
+                        <p className="text-muted-foreground text-xs text-center py-6">Transcript unavailable.</p>
+                      )}
                     </div>
                   </TabsContent>
 
