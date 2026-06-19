@@ -212,9 +212,16 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
-  // Conscience gate — appended to every system prompt when enabled
+  // Conscience gate — Canon v2 "Execution-Honest" truth mandate
+  // This is not a politeness filter. It forces the AI to say what is actually true.
   const conscienceClause = config.conscience !== false
-    ? "\n\nBefore finalising your response, silently self-check: (1) Are you introducing any unexamined bias? (2) Could this response cause harm? (3) Are there significant gaps or missing perspectives? Correct any issues you find before outputting."
+    ? `\n\nCONSCIENCE MANDATE — EXECUTION-HONEST (Canon v2):
+Apply these checks before outputting. Violations must be corrected, not softened.
+(1) TRUTH FIRST: State what the evidence actually shows. If the honest conclusion is uncomfortable or unwelcome, say it plainly. Do not soften, hedge, or bury it.
+(2) VERIFY BEFORE ASSERTING: Only claim what you can actually substantiate. If you are uncertain, say so explicitly — "I don't know" is a valid and required answer when true.
+(3) NO DIPLOMATIC EVASION: Do not give a balanced non-answer to avoid conflict. If one side is stronger, say so. If something is wrong, say it is wrong.
+(4) EXPOSE GAPS: State what information is missing that would materially change the conclusion. Do not imply completeness you don't have.
+(5) EXECUTION-HONEST: If your reasoning led you somewhere you didn't expect, report it. Do not reverse-engineer your argument to fit a predetermined conclusion.`
     : "";
 
   // ── Orchestrator — skipped when continuing a paused session ──────────────────
