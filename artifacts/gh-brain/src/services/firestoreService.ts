@@ -44,18 +44,39 @@ export interface UserProfile {
   stripeCustomerId?: string;
   onboardingComplete?: boolean;
   defaultSettings: {
-    courtMode: string;
-    litigantCount: number;
-    confidenceTarget: number;
-    responseMode: string;
-    outputFormat: string;
+    // V29 Mission Briefing fields
+    conscience?: boolean;
+    outputScope?: string;
+    debateMode?: string;
+    aiReasoning?: string;
+    seatAssignment?: string;
+    outputStrategy?: string;
+    outputPreference?: string;
+    format?: string;
+    confidenceTarget?: number;
+    maxIterations?: number;
+    maxCredits?: number;
+    litigantCount?: number;
+    // Legacy
+    courtMode?: string;
+    responseMode?: string;
+    outputFormat?: string;
     provider?: string;
+    model?: string;
   };
   notifications?: {
     sessionComplete: boolean;
     weeklyDigest: boolean;
     productUpdates: boolean;
   };
+}
+
+export async function saveUserConfig(
+  uid: string,
+  settings: UserProfile["defaultSettings"]
+): Promise<void> {
+  const ref = doc(db, "users", uid);
+  await updateDoc(ref, { defaultSettings: settings });
 }
 
 export async function createUserProfile(uid: string, data: Omit<UserProfile, "userId">): Promise<void> {

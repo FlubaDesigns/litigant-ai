@@ -9,10 +9,26 @@ export interface TemplateInputField {
 export type ProviderName = "openai" | "anthropic" | "grok" | "gemini";
 
 export interface CourtConfig {
-  courtMode: "adversarial" | "socratic" | "analysis" | "critique";
+  // ── V29 Mission Briefing (user-facing) ──────────────────────────────────
+  conscience: boolean;
+  outputScope: "consensus" | "all-voices";
+  debateMode: "adversarial" | "collaborative";
+  aiReasoning: "independent" | "chain";
+  seatAssignment: "manual" | "auto";
+  outputStrategy:
+    | "moderator-consensus"
+    | "individual"
+    | "consensus+individual"
+    | "transcript"
+    | "artifact";
+  outputPreference: "chat" | "download" | "both";
+  format: "text" | "markdown" | "json";
+  confidenceTarget: number;  // 80 | 90 | 95 | 99
+  maxIterations: number;     // 1 | 3 | 5 | 10
+  maxCredits: number;
   litigantCount: number;
-  confidenceTarget: number;
-  maxIterations: number;
+  // ── Internal / API compat ────────────────────────────────────────────────
+  courtMode: "adversarial" | "socratic" | "analysis" | "critique";
   responseMode: "balanced" | "thorough" | "concise";
   outputFormat: "report" | "memo" | "bullets" | "verdict";
   provider?: ProviderName;
@@ -32,10 +48,21 @@ export interface Template {
 }
 
 export const DEFAULT_CONFIG: CourtConfig = {
+  // V29 Mission Briefing
+  conscience: true,
+  outputScope: "consensus",
+  debateMode: "adversarial",
+  aiReasoning: "independent",
+  seatAssignment: "manual",
+  outputStrategy: "moderator-consensus",
+  outputPreference: "chat",
+  format: "text",
+  confidenceTarget: 90,
+  maxIterations: 5,
+  maxCredits: 25,
+  litigantCount: 4,
+  // Internal
   courtMode: "adversarial",
-  litigantCount: 3,
-  confidenceTarget: 80,
-  maxIterations: 3,
   responseMode: "balanced",
   outputFormat: "report",
 };

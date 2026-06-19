@@ -23,6 +23,7 @@ import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
 import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
+import { saveUserConfig } from "@/services/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation } from "wouter";
@@ -94,16 +95,34 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
   );
 }
 
+// ── V29 field wrapper ─────────────────────────────────────────────────────────
+function V29Field({
+  label, desc, children,
+}: { label: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">{label}</div>
+      {children}
+      {desc && <p className="text-[11px] text-muted-foreground/70 leading-relaxed">{desc}</p>}
+    </div>
+  );
+}
+
+const V29_SELECT = "bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 focus:border-primary h-10";
+
 // ── ConfigPanel ───────────────────────────────────────────────────────────────
 function ConfigPanel({
-  open, onClose, config, onChange,
+  open, onClose, config, onChange, uid, onboardingComplete,
 }: {
   open: boolean;
   onClose: () => void;
   config: CourtConfig;
   onChange: (c: Partial<CourtConfig>) => void;
+  uid?: string;
+  onboardingComplete?: boolean;
 }) {
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -118,33 +137,200 @@ function ConfigPanel({
     (m) => m.id === (config.model ?? selectedProvider.defaultModel)
   ) ?? selectedProvider?.models[0];
 
-  const estimatedCredits = selectedModel?.creditInfo
-    ? estimateCredits(
-        selectedModel.creditInfo,
-        config.litigantCount,
-        config.maxIterations,
-        config.responseMode
-      )
+  const credBase = selectedModel?.creditInfo
+    ? estimateCredits(selectedModel.creditInfo, config.litigantCount, config.maxIterations, config.responseMode)
     : config.litigantCount * config.maxIterations * 3 + 6;
+  const credLow = credBase;
+  const credHigh = credBase + (config.conscience ? 1 : 0) + Math.ceil(credBase * 0.4);
+
+  const confidenceLabel = {
+    80: "80% Fast", 90: "90% Standard", 95: "95% Deep", 99: "99% Maximum",
+  }[config.confidenceTarget as 80 | 90 | 95 | 99] ?? `${config.confidenceTarget}%`;
+
+  async function handleSave() {
+    onClose();
+    if (!uid || !onboardingComplete) return;
+    setSaving(true);
+    try {
+      await saveUserConfig(uid, {
+        conscience: config.conscience,
+        outputScope: config.outputScope,
+        debateMode: config.debateMode,
+        aiReasoning: config.aiReasoning,
+        seatAssignment: config.seatAssignment,
+        outputStrategy: config.outputStrategy,
+        outputPreference: config.outputPreference,
+        format: config.format,
+        confidenceTarget: config.confidenceTarget,
+        maxIterations: config.maxIterations,
+        maxCredits: config.maxCredits,
+        litigantCount: config.litigantCount,
+        courtMode: config.courtMode,
+        responseMode: config.responseMode,
+        outputFormat: config.outputFormat,
+        provider: config.provider,
+        model: config.model,
+      });
+      toast.success("Configuration saved");
+    } catch {
+      toast.error("Could not save configuration");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-80 bg-card border-l border-border overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Settings2 className="w-4 h-4 text-primary" />
-            Court Configuration
-          </SheetTitle>
-        </SheetHeader>
-        <div className="mt-6 space-y-6">
+      <SheetContent
+        side="right"
+        className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 overflow-y-auto p-0"
+      >
+        <div className="px-5 py-5 space-y-5">
+          {/* Header */}
+          <SheetHeader className="pb-0">
+            <SheetTitle className="text-xl font-bold text-primary tracking-tight">
+              Mission Briefing
+            </SheetTitle>
+          </SheetHeader>
 
-          {/* ── AI Provider ── */}
+          {/* SAFETY FILTER */}
+          <V29Field label="Safety Filter" desc="ON: self-checks for bias, harm, and gaps. OFF: raw output.">
+            <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => onChange({ conscience: v === "on" })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="on">Conscience ON</SelectItem>
+                <SelectItem value="off">Conscience OFF</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* RESPONSE MODE */}
+          <V29Field label="Response Mode" desc="Consensus Only: one clean answer. All Voices: each AI's response shown.">
+            <Select value={config.outputScope} onValueChange={(v) => onChange({ outputScope: v as CourtConfig["outputScope"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="consensus">Consensus Only</SelectItem>
+                <SelectItem value="all-voices">All Voices</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* DEBATE MODE */}
+          <V29Field label="Debate Mode" desc="Adversarial: AIs challenge each other. Collaborative: AIs build on each other.">
+            <Select value={config.debateMode} onValueChange={(v) => onChange({ debateMode: v as CourtConfig["debateMode"], courtMode: v === "adversarial" ? "adversarial" : "analysis" })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="adversarial">Adversarial</SelectItem>
+                <SelectItem value="collaborative">Collaborative</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* AI REASONING */}
+          <V29Field label="AI Reasoning" desc="Independent: each AI thinks alone. Chain: each reads prior responses first.">
+            <Select value={config.aiReasoning} onValueChange={(v) => onChange({ aiReasoning: v as CourtConfig["aiReasoning"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="independent">Independent</SelectItem>
+                <SelectItem value="chain">Chain</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* SEAT ASSIGNMENT */}
+          <V29Field label="Seat Assignment" desc="Manual: you pick seats. Auto: grade order fills them.">
+            <Select value={config.seatAssignment} onValueChange={(v) => onChange({ seatAssignment: v as CourtConfig["seatAssignment"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manual">Manual</SelectItem>
+                <SelectItem value="auto">Auto by Grade</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* OUTPUT STRATEGY */}
+          <V29Field label="Output Strategy">
+            <Select value={config.outputStrategy} onValueChange={(v) => onChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
+                <SelectItem value="individual">Individual Responses</SelectItem>
+                <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
+                <SelectItem value="transcript">Court Transcript</SelectItem>
+                <SelectItem value="artifact">Artifact Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* OUTPUT PREFERENCE */}
+          <V29Field label="Output Preference">
+            <Select value={config.outputPreference} onValueChange={(v) => onChange({ outputPreference: v as CourtConfig["outputPreference"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="chat">Display in chat</SelectItem>
+                <SelectItem value="download">Download only</SelectItem>
+                <SelectItem value="both">Display + download</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* FORMAT */}
+          <V29Field label="Format">
+            <Select value={config.format} onValueChange={(v) => onChange({ format: v as CourtConfig["format"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="markdown">Markdown</SelectItem>
+                <SelectItem value="json">JSON</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* CONFIDENCE TARGET */}
+          <V29Field label="Confidence Target">
+            <Select value={String(config.confidenceTarget)} onValueChange={(v) => onChange({ confidenceTarget: Number(v) })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="80">80% Fast</SelectItem>
+                <SelectItem value="90">90% Standard</SelectItem>
+                <SelectItem value="95">95% Deep</SelectItem>
+                <SelectItem value="99">99% Maximum</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* MAXIMUM ITERATIONS */}
+          <V29Field label="Maximum Iterations">
+            <Select value={String(config.maxIterations)} onValueChange={(v) => onChange({ maxIterations: Number(v) })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* MAXIMUM CREDITS */}
+          <V29Field label="Maximum Credits">
+            <Select value={String(config.maxCredits)} onValueChange={(v) => onChange({ maxCredits: Number(v) })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="15">15</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* AI PROVIDER */}
           {availableProviders.length > 0 && (
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                <Cpu className="w-3 h-3" /> AI Provider
-              </label>
-              <div className="grid grid-cols-2 gap-1.5 mb-3">
+            <div className="space-y-2 pt-1 border-t border-primary/10">
+              <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">AI Provider</div>
+              <div className="grid grid-cols-2 gap-1.5">
                 {availableProviders.map((p) => (
                   <button
                     key={p.name}
@@ -153,7 +339,7 @@ function ConfigPanel({
                       "flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-xs font-medium transition-all",
                       config.provider === p.name || (!config.provider && p === availableProviders[0])
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border/60 bg-background text-muted-foreground hover:border-primary/40"
+                        : "border-border/40 bg-transparent text-muted-foreground hover:border-primary/30"
                     )}
                   >
                     <span>{PROVIDER_ICONS[p.name as ProviderName]}</span>
@@ -162,13 +348,8 @@ function ConfigPanel({
                 ))}
               </div>
               {selectedProvider && selectedProvider.models.length > 0 && (
-                <Select
-                  value={config.model ?? selectedProvider.defaultModel}
-                  onValueChange={(v) => onChange({ model: v })}
-                >
-                  <SelectTrigger className="bg-background border-border/60 text-xs h-8">
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
+                <Select value={config.model ?? selectedProvider.defaultModel} onValueChange={(v) => onChange({ model: v })}>
+                  <SelectTrigger className={V29_SELECT + " text-xs h-8"}><SelectValue placeholder="Select model" /></SelectTrigger>
                   <SelectContent>
                     {selectedProvider.models.map((m) => (
                       <SelectItem key={m.id} value={m.id} className="text-xs">{m.label}</SelectItem>
@@ -179,122 +360,34 @@ function ConfigPanel({
             </div>
           )}
 
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-              Court Mode
-            </label>
-            <Select value={config.courtMode} onValueChange={(v) => onChange({ courtMode: v as CourtConfig["courtMode"] })}>
-              <SelectTrigger className="bg-background border-border/60">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="adversarial">⚔️ Adversarial — debate</SelectItem>
-                <SelectItem value="socratic">❓ Socratic — questioning</SelectItem>
-                <SelectItem value="analysis">🔬 Analysis — examination</SelectItem>
-                <SelectItem value="critique">🔍 Critique — review</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              {config.courtMode === "adversarial" && "AI roles argue for and against the proposition."}
-              {config.courtMode === "socratic" && "Questioner probes assumptions, Defender clarifies."}
-              {config.courtMode === "analysis" && "Each AI examines a different analytical dimension."}
-              {config.courtMode === "critique" && "Structured criticism and defense of the subject."}
+          {/* ESTIMATED RUN COST */}
+          <div className="rounded-lg border border-primary/25 bg-primary/5 p-4 space-y-1">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
+            <div className="text-2xl font-bold text-primary">{credLow}–{credHigh} Credits</div>
+            <div className="text-xs text-muted-foreground leading-relaxed">
+              Based on {config.litigantCount} litigants, {config.debateMode} mode,{" "}
+              {confidenceLabel}{config.conscience ? " + conscience gate (+1 Cr)" : ""}.
+            </div>
+          </div>
+
+          {/* BUTTONS */}
+          <div className="flex gap-2 pb-2">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 bg-white text-black hover:bg-white/90 font-semibold"
+            >
+              {saving ? "Saving…" : "Save Configuration"}
+            </Button>
+            <Button onClick={onClose} variant="outline" className="flex-1 border-primary/30 text-foreground">
+              Close
+            </Button>
+          </div>
+          {!onboardingComplete && uid && (
+            <p className="text-[11px] text-muted-foreground/60 text-center -mt-2">
+              Complete onboarding to save as default
             </p>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 block">
-              Litigants — {config.litigantCount}
-            </label>
-            <Slider
-              min={2} max={4} step={1}
-              value={[config.litigantCount]}
-              onValueChange={([v]) => onChange({ litigantCount: v })}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-2">
-              <span>2 fast</span><span>3 balanced</span><span>4 thorough</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 block">
-              Confidence Target — {config.confidenceTarget}%
-            </label>
-            <Slider
-              min={60} max={95} step={5}
-              value={[config.confidenceTarget]}
-              onValueChange={([v]) => onChange({ confidenceTarget: v })}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-2">
-              <span>60% quick</span><span>80% standard</span><span>95% deep</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 block">
-              Max Rounds — {config.maxIterations}
-            </label>
-            <Slider
-              min={1} max={4} step={1}
-              value={[config.maxIterations]}
-              onValueChange={([v]) => onChange({ maxIterations: v })}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-2">
-              <span>1 round</span><span>2–3</span><span>4 deep</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-              Response Depth
-            </label>
-            <Select value={config.responseMode} onValueChange={(v) => onChange({ responseMode: v as CourtConfig["responseMode"] })}>
-              <SelectTrigger className="bg-background border-border/60">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="concise">Concise — fast, brief</SelectItem>
-                <SelectItem value="balanced">Balanced — standard</SelectItem>
-                <SelectItem value="thorough">Thorough — detailed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-              Output Format
-            </label>
-            <Select value={config.outputFormat} onValueChange={(v) => onChange({ outputFormat: v as CourtConfig["outputFormat"] })}>
-              <SelectTrigger className="bg-background border-border/60">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="report">Analytical Report</SelectItem>
-                <SelectItem value="memo">Decision Memo</SelectItem>
-                <SelectItem value="bullets">Bullet Points</SelectItem>
-                <SelectItem value="verdict">Direct Verdict</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-1.5">
-            <div className="text-xs text-muted-foreground">Estimated credit cost</div>
-            <div className="text-2xl font-bold text-primary font-mono">
-              ~{estimatedCredits} credits
-            </div>
-            <div className="text-xs text-muted-foreground">
-              = ${(estimatedCredits * 0.01).toFixed(2)} USD
-            </div>
-            {selectedModel?.creditInfo && (
-              <div className="text-xs text-muted-foreground/70 pt-1 border-t border-border/40">
-                {selectedModel.label} · {selectedModel.creditInfo.multiplier}× margin
-              </div>
-            )}
-          </div>
-
-          <Button onClick={onClose} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-            Save Configuration
-          </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -669,7 +762,14 @@ export default function SessionPage() {
       className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden"
       style={{ background: "radial-gradient(circle at top, #102010, #070f07 56%, #020402)" }}
     >
-      <ConfigPanel open={configOpen} onClose={() => setConfigOpen(false)} config={state.config} onChange={setConfig} />
+      <ConfigPanel
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        config={state.config}
+        onChange={setConfig}
+        uid={user?.uid}
+        onboardingComplete={userProfile?.onboardingComplete}
+      />
 
       {/* ── TOP BAR — always visible, adapts to phase ── */}
       <div className="shrink-0 border-b border-white/5 bg-black/40 backdrop-blur-sm px-3 py-2 flex items-start gap-2">
@@ -1001,6 +1101,45 @@ export default function SessionPage() {
               </div>
             ) : (
               <>
+                {/* ── V29 Completion banner ── */}
+                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 mb-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-base">🛑</span>
+                    <span className="font-bold text-[13px] text-yellow-300">
+                      Stopped — {state.currentRound} round{state.currentRound !== 1 ? "s" : ""} reached at{" "}
+                      {Math.round(state.confidence)}% confidence
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground/70 mb-1">
+                        <span>Confidence</span>
+                        <span className="font-mono text-primary">
+                          {Math.round(state.confidence)}% / {state.config.confidenceTarget}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-black/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground/70 mb-1">
+                        <span>Credits Used</span>
+                        <span className="font-mono text-primary">{state.creditsUsed} credits</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-black/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${Math.min(100, (state.creditsUsed / Math.max(state.estimatedCredits, 1)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Activity Log history — collapsed by default after completion */}
                 {state.activityLog.length > 0 && (
                   <div className="rounded-lg border border-primary/15 overflow-hidden mb-3">
