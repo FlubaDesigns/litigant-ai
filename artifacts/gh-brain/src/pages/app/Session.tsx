@@ -729,6 +729,7 @@ export default function SessionPage() {
   }, [state.template?.id]);
 
   // Pre-select template from ?templateId= URL param
+  const [toolBanner, setToolBanner] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tid = params.get("templateId");
@@ -737,6 +738,7 @@ export default function SessionPage() {
       if (template) {
         setTemplate(template);
         setConfig(template.defaultConfig);
+        setToolBanner(template.title);
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -963,6 +965,21 @@ export default function SessionPage() {
       {/* ── CONVERSATION PANEL ── */}
       <div style={{ border: "1px solid #1d331d", borderRadius: 12, margin: "8px", padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.95),rgba(7,16,7,.95))", display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800, marginBottom: 2 }}>Conversation</div>
+
+        {/* Tool page pre-load banner */}
+        {toolBanner && isIdle && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "rgba(0,200,83,.07)", border: "1px solid rgba(0,200,83,.2)", borderRadius: 8 }}>
+            <LayoutTemplate style={{ width: 13, height: 13, color: "#7ab87a", flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: "#7ab87a", flex: 1 }}>
+              Pre-loaded: <strong>{toolBanner}</strong>
+            </span>
+            <button
+              onClick={() => { setTemplate(null); setToolBanner(null); }}
+              style={{ background: "transparent", border: "none", color: "#3a5a3a", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "0 2px" }}
+              title="Start fresh instead"
+            >✕</button>
+          </div>
+        )}
 
         {/* Confidence + Credits bars — always visible */}
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

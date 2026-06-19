@@ -43,9 +43,10 @@ const registerSchema = z.object({
 });
 
 export default function RegisterPage() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { signUp, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const next = new URLSearchParams(location.split("?")[1] ?? "").get("next") ?? "/session";
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -65,11 +66,10 @@ export default function RegisterPage() {
         values.organization?.trim() || undefined,
       );
       toast.success("Account created — please verify your email.");
-      // Send Starter-plan choosers straight to billing to complete their purchase
       if (values.plan === "starter") {
         setLocation("/billing");
       } else {
-        setLocation("/verify-email");
+        setLocation(`/verify-email?next=${encodeURIComponent(next)}`);
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account.");
@@ -82,7 +82,7 @@ export default function RegisterPage() {
     try {
       await signInGoogle();
       toast.success("Signed in with Google.");
-      setLocation("/session");
+      setLocation(next);
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in with Google.");
     }

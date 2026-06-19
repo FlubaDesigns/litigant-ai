@@ -10,6 +10,7 @@ export interface ToolBenefit {
 
 export interface ToolPage {
   slug: string;
+  templateId: string;
   title: string;
   metaTitle: string;
   metaDescription: string;
@@ -29,6 +30,7 @@ export interface ToolPage {
 export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "business-plan-analyzer",
+    templateId: "business-plan",
     title: "Business Plan Analyzer",
     metaTitle: "AI Business Plan Analyzer — Stress-Test Your Business Idea | Litigant AI",
     metaDescription: "Use multiple competing AI models to stress-test your business plan across viability, market fit, financials, and competition. Get a structured verdict in minutes.",
@@ -59,6 +61,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "website-audit",
+    templateId: "website-audit",
     title: "AI Website Audit",
     metaTitle: "AI Website Audit Tool — UX, Conversion & Content Review | Litigant AI",
     metaDescription: "Get a multi-model AI audit of any website covering UX, content effectiveness, conversion optimization, and technical performance. Actionable findings in minutes.",
@@ -89,6 +92,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "marketing-strategy",
+    templateId: "marketing-strategy",
     title: "Marketing Strategy Analyzer",
     metaTitle: "AI Marketing Strategy Analyzer — Evaluate Your Marketing Plan | Litigant AI",
     metaDescription: "Multiple AI models evaluate your marketing strategy across channels, messaging, audience fit, and ROI potential. Get an adversarial critique before you spend a dollar.",
@@ -119,6 +123,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "code-review",
+    templateId: "code-audit",
     title: "AI Code Review",
     metaTitle: "AI Code Review Tool — Security, Architecture & Performance Audit | Litigant AI",
     metaDescription: "Get a multi-model AI review of your code or system architecture covering security vulnerabilities, performance issues, and maintainability. Fast and brutally honest.",
@@ -149,6 +154,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "contract-review",
+    templateId: "contract-review",
     title: "AI Contract Review Prep",
     metaTitle: "AI Contract Review Prep — Identify Risks & Negotiation Points | Litigant AI",
     metaDescription: "Use AI to identify unfavorable clauses, hidden risks, and negotiation opportunities in any contract before you sign. Not legal advice — a thinking tool for smarter decisions.",
@@ -179,6 +185,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "decision-analysis",
+    templateId: "major-decision",
     title: "AI Decision Analysis",
     metaTitle: "AI Decision Analysis Tool — Pros, Cons & Confidence Score | Litigant AI",
     metaDescription: "Analyze any major decision with multiple AI perspectives. Get a structured pros/cons analysis, risk assessment, second-order effects, and a confidence-scored recommendation.",
@@ -209,6 +216,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "medical-appointment-prep",
+    templateId: "medical-prep",
     title: "Medical Appointment Prep",
     metaTitle: "AI Medical Appointment Prep — Questions to Ask Your Doctor | Litigant AI",
     metaDescription: "Use AI to prepare informed questions for any medical appointment. Understand your situation better and walk in knowing what to ask your doctor. Not medical advice.",
@@ -239,6 +247,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "product-validator",
+    templateId: "product-stress-test",
     title: "AI Product Idea Validator",
     metaTitle: "AI Product Idea Validator — Stress-Test Before You Build | Litigant AI",
     metaDescription: "Multiple AI models adversarially challenge your product idea's core assumptions, market fit, competitive positioning, and viability before you invest in building it.",
@@ -269,6 +278,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "manuscript-critique",
+    templateId: "book-critique",
     title: "AI Writing & Manuscript Critique",
     metaTitle: "AI Writing & Manuscript Critique — Structure, Clarity & Impact | Litigant AI",
     metaDescription: "Get a multi-model AI critique of any writing — books, essays, reports, or articles — covering argument strength, structure, clarity, and audience impact.",
@@ -299,6 +309,7 @@ export const TOOL_PAGES: ToolPage[] = [
   },
   {
     slug: "research-summarizer",
+    templateId: "research-summary",
     title: "AI Research Summarizer",
     metaTitle: "AI Research Summarizer — Synthesize & Stress-Test Findings | Litigant AI",
     metaDescription: "Use multiple AI models to synthesize research findings, identify consensus vs. contested areas, surface methodological concerns, and extract practical implications.",

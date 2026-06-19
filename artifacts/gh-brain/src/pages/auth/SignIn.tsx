@@ -17,9 +17,10 @@ const signInSchema = z.object({
 });
 
 export default function SignInPage() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { signIn, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const next = new URLSearchParams(location.split("?")[1] ?? "").get("next") ?? "/session";
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -31,7 +32,7 @@ export default function SignInPage() {
     try {
       await signIn(values.email, values.password);
       toast.success("Authentication successful. Session initiated.");
-      setLocation("/session");
+      setLocation(next);
     } catch (error: any) {
       toast.error(error.message || "Failed to authenticate.");
     } finally {
@@ -43,7 +44,7 @@ export default function SignInPage() {
     try {
       await signInGoogle();
       toast.success("Google authentication successful. Session initiated.");
-      setLocation("/session");
+      setLocation(next);
     } catch (error: any) {
       toast.error(error.message || "Failed to authenticate with Google.");
     }

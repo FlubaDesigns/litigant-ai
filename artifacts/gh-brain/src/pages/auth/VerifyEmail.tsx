@@ -7,12 +7,13 @@ import { Brain, ArrowRight, Mail, Loader2, LogOut } from "lucide-react";
 
 export default function VerifyEmailPage() {
   const { resendVerification, logOut, user } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isResending, setIsResending] = useState(false);
+  const next = new URLSearchParams(location.split("?")[1] ?? "").get("next") ?? "/session";
 
-  // If they somehow got here but are verified, send them to session
+  // If they somehow got here but are verified, send them on
   if (user?.emailVerified) {
-    setLocation("/session");
+    setLocation(next);
     return null;
   }
 
@@ -60,7 +61,9 @@ export default function VerifyEmailPage() {
           </p>
 
           <Button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              if (user?.emailVerified) { setLocation(next); } else { window.location.reload(); }
+            }}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
             I have verified my clearance

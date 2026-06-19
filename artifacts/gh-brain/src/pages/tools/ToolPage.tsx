@@ -26,6 +26,9 @@ function FAQ({ q, a }: { q: string; a: string }) {
 export default function ToolPage() {
   const { slug } = useParams<{ slug: string }>();
   const tool = getToolBySlug(slug);
+  const sessionTarget = tool ? `/session?templateId=${tool.templateId}` : "/session";
+  const registerHref = tool ? `/register?next=${encodeURIComponent(sessionTarget)}` : "/register";
+  const signInHref  = tool ? `/sign-in?next=${encodeURIComponent(sessionTarget)}`  : "/sign-in";
 
   usePageMeta({
     title: tool?.metaTitle ?? "Tool Not Found | Litigant AI",
@@ -83,10 +86,10 @@ export default function ToolPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> All tools
         </Link>
         <div className="ml-auto flex items-center gap-2">
-          <Link href="/sign-in">
+          <Link href={signInHref}>
             <Button variant="ghost" size="sm">Sign in</Button>
           </Link>
-          <Link href="/register">
+          <Link href={registerHref}>
             <Button size="sm" className="font-semibold">Try free</Button>
           </Link>
         </div>
@@ -105,12 +108,12 @@ export default function ToolPage() {
             {tool.subheadline}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/register">
+            <Link href={registerHref}>
               <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto">
                 {tool.ctaLabel} <ChevronRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/sign-in">
+            <Link href={signInHref}>
               <Button variant="outline" size="lg" className="w-full sm:w-auto">
                 Sign in
               </Button>
@@ -220,7 +223,7 @@ export default function ToolPage() {
           50 free credits on signup. No credit card required. Your first session takes less than 2 minutes.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/register">
+          <Link href={registerHref}>
             <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto">
               {tool.ctaLabel} — it's free <ChevronRight className="w-4 h-4" />
             </Button>
