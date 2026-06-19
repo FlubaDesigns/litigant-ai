@@ -320,6 +320,7 @@ router.post("/run-brain", async (req, res) => {
           transcript: result.debateNotes ? result.transcript.join("\n\n---\n\n") : "",
           caveats: result.caveats,
           artifacts: result.artifacts,
+          conscienceVersion: result.conscienceVersion,
           shared: false,
           shareId: null,
           createdAt: FieldValue.serverTimestamp(),

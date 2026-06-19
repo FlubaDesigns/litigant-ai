@@ -6,6 +6,7 @@ import {
   calculateActualCredits,
   charsToTokens,
 } from "./creditEngine.js";
+import { getConscienceClause } from "./conscienceConfig.js";
 
 export type CourtMode = "adversarial" | "socratic" | "analysis" | "critique";
 export type ResponseMode = "balanced" | "thorough" | "concise";
@@ -123,6 +124,8 @@ export interface BrainRunResult {
   provider: ProviderName;
   model: string;
   tokenUsage: TokenUsage;
+  /** Which conscience canon version governed this session (e.g. "v2.0-canon"). */
+  conscienceVersion: string;
   /** Present when the session stopped before hitting the confidence target. */
   pauseReason?: PauseReason;
 }
@@ -213,16 +216,12 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
   // Conscience gate — Canon v2 "Execution-Honest" truth mandate
-  // This is not a politeness filter. It forces the AI to say what is actually true.
-  const conscienceClause = config.conscience !== false
-    ? `\n\nCONSCIENCE MANDATE — EXECUTION-HONEST (Canon v2):
-Apply these checks before outputting. Violations must be corrected, not softened.
-(1) TRUTH FIRST: State what the evidence actually shows. If the honest conclusion is uncomfortable or unwelcome, say it plainly. Do not soften, hedge, or bury it.
-(2) VERIFY BEFORE ASSERTING: Only claim what you can actually substantiate. If you are uncertain, say so explicitly — "I don't know" is a valid and required answer when true.
-(3) NO DIPLOMATIC EVASION: Do not give a balanced non-answer to avoid conflict. If one side is stronger, say so. If something is wrong, say it is wrong.
-(4) EXPOSE GAPS: State what information is missing that would materially change the conclusion. Do not imply completeness you don't have.
-(5) EXECUTION-HONEST: If your reasoning led you somewhere you didn't expect, report it. Do not reverse-engineer your argument to fit a predetermined conclusion.`
-    : "";
+  // Loaded from Firestore system_config/conscience with 5-min TTL; falls back to Canon v2 hardcoded text.
+  const { text: conscienceText, version: conscienceVersion } =
+    config.conscience !== false
+      ? await getConscienceClause()
+      : { text: "", version: "disabled" };
+  const conscienceClause = conscienceText;
 
   // ── Orchestrator — skipped when continuing a paused session ──────────────────
   if (!continueFromTranscript?.length) {
@@ -411,6 +410,7 @@ Output format: ${config.outputFormat}`;
     provider: providerName,
     model: modelName,
     tokenUsage: usage,
+    conscienceVersion,
     ...(pauseReason ? { pauseReason } : {}),
   });
 
@@ -427,6 +427,7 @@ Output format: ${config.outputFormat}`;
     provider: providerName,
     model: modelName,
     tokenUsage: usage,
+    conscienceVersion,
     pauseReason,
   };
 }

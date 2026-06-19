@@ -13,6 +13,11 @@ import {
   saveApiKey,
   deleteApiKey,
 } from "../lib/apiKeyStore.js";
+import {
+  CANON_V2_FALLBACK_TEXT,
+  CANON_V2_FALLBACK_VERSION,
+  invalidateConscienceCache,
+} from "../lib/conscienceConfig.js";
 
 const router = Router();
 
@@ -621,6 +626,77 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
         { merge: true }
       );
     return res.json({ success: true, name: req.params["name"], value });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Canon / Conscience Config ─────────────────────────────────────────────────
+
+/**
+ * GET /admin/conscience
+ * Returns the current conscience clause stored in Firestore, or the Canon v2
+ * fallback if the document doesn't exist yet.
+ */
+router.get("/admin/conscience", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  try {
+    const doc = await db.collection("system_config").doc("conscience").get();
+
+    if (!doc.exists) {
+      return res.json({
+        exists: false,
+        version: CANON_V2_FALLBACK_VERSION,
+        text: CANON_V2_FALLBACK_TEXT,
+        updatedAt: null,
+        updatedBy: null,
+        note: "No Firestore document found — Canon v2 fallback is in use.",
+      });
+    }
+
+    return res.json({ exists: true, ...serializeDoc(doc) });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/conscience
+ * Body: { text: string, version?: string }
+ * Writes a new conscience clause to Firestore and invalidates the local cache.
+ * All new sessions on this instance will pick up the new text immediately;
+ * other Cloud Run instances will pick it up within 5 minutes (TTL window).
+ */
+router.patch("/admin/conscience", requireAdmin, async (req: any, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  const { text, version } = req.body as { text?: string; version?: string };
+
+  if (!text?.trim()) {
+    return res.status(400).json({ error: "text (string) is required and must not be empty" });
+  }
+
+  const newVersion = version?.trim() || `v-${new Date().toISOString().slice(0, 10)}`;
+
+  try {
+    await db.collection("system_config").doc("conscience").set({
+      text: text.trim(),
+      version: newVersion,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: req.adminUid as string,
+    });
+
+    // Invalidate this instance's cache immediately
+    invalidateConscienceCache();
+
+    return res.json({
+      success: true,
+      version: newVersion,
+      note: "This instance cache cleared. Other Cloud Run instances update within 5 minutes.",
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
