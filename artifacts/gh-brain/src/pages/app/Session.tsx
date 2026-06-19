@@ -591,12 +591,25 @@ export default function SessionPage() {
   const { credits, plan } = useUserProfile();
   const savedConfig = userProfile?.defaultSettings
     ? {
-        courtMode:        userProfile.defaultSettings.courtMode as CourtConfig["courtMode"],
+        // Core settings
+        courtMode:        (userProfile.defaultSettings.courtMode as CourtConfig["courtMode"]) ?? "adversarial",
         litigantCount:    userProfile.defaultSettings.litigantCount ?? 3,
         confidenceTarget: userProfile.defaultSettings.confidenceTarget ?? 80,
-        responseMode:     userProfile.defaultSettings.responseMode as CourtConfig["responseMode"],
-        outputFormat:     userProfile.defaultSettings.outputFormat as CourtConfig["outputFormat"],
+        maxIterations:    userProfile.defaultSettings.maxIterations ?? 2,
+        responseMode:     (userProfile.defaultSettings.responseMode as CourtConfig["responseMode"]) ?? "balanced",
+        outputFormat:     (userProfile.defaultSettings.outputFormat as CourtConfig["outputFormat"]) ?? "report",
         provider:         (userProfile.defaultSettings.provider as CourtConfig["provider"]) ?? undefined,
+        model:            userProfile.defaultSettings.model ?? undefined,
+        // V29 Mission Briefing fields
+        conscience:       userProfile.defaultSettings.conscience ?? true,
+        aiReasoning:      (userProfile.defaultSettings.aiReasoning as CourtConfig["aiReasoning"]) ?? "chain",
+        debateMode:       (userProfile.defaultSettings.debateMode as CourtConfig["debateMode"]) ?? "adversarial",
+        maxCredits:       userProfile.defaultSettings.maxCredits ?? undefined,
+        outputScope:      (userProfile.defaultSettings.outputScope as CourtConfig["outputScope"]) ?? undefined,
+        seatAssignment:   (userProfile.defaultSettings.seatAssignment as CourtConfig["seatAssignment"]) ?? undefined,
+        outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? undefined,
+        outputPreference: (userProfile.defaultSettings.outputPreference as CourtConfig["outputPreference"]) ?? undefined,
+        format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? undefined,
       }
     : undefined;
   const { state, run, stop, reset, acceptPartial, continueSession, setQuestion, setTemplate, setConfig } = useBrainSession(savedConfig);
