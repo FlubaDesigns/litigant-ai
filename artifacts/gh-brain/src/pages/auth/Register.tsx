@@ -65,7 +65,12 @@ export default function RegisterPage() {
         values.organization?.trim() || undefined,
       );
       toast.success("Account created — please verify your email.");
-      setLocation("/verify-email");
+      // Send Starter-plan choosers straight to billing to complete their purchase
+      if (values.plan === "starter") {
+        setLocation("/billing");
+      } else {
+        setLocation("/verify-email");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account.");
     } finally {

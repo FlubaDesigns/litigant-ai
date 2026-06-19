@@ -542,12 +542,7 @@ export default function BillingPage() {
   async function handleBuy(priceId: string) {
     if (!user) {
       toast.error("Please sign in to purchase credits.");
-      return;
-    }
-    if (priceId.startsWith("price_") && !priceId.startsWith("price_s") && priceId.length < 20) {
-      toast.error(
-        "Stripe is not yet connected. Connect it via the Integrations tab to enable purchases."
-      );
+      navigate("/sign-in");
       return;
     }
     setCheckoutLoading(priceId);
@@ -608,7 +603,7 @@ export default function BillingPage() {
           <p className="text-muted-foreground text-sm mb-4">
             Sign in to view your balance and purchase credits.
           </p>
-          <Button onClick={() => navigate("/login")} className="bg-primary text-primary-foreground">
+          <Button onClick={() => navigate("/sign-in")} className="bg-primary text-primary-foreground">
             Sign In
           </Button>
         </div>
