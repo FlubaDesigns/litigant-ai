@@ -8,7 +8,7 @@ import {
   grantSignupBonus,
   setAutoRefillPreference,
 } from "../lib/creditLedger.js";
-import { CREDIT_PACKS } from "../lib/creditPacks.js";
+import { CREDIT_PACKS, CREDITS_PER_DOLLAR } from "../lib/creditPacks.js";
 
 const router = Router();
 
@@ -189,6 +189,54 @@ router.post("/billing/checkout", async (req, res) => {
     return res.json({ url: link.url });
   } catch (err: any) {
     console.error("[Billing] Square checkout error:", err.message);
+    return res.status(500).json({ error: "Failed to create checkout link" });
+  }
+});
+
+/**
+ * POST /billing/checkout/custom
+ * Creates a Square Payment Link for an arbitrary dollar amount.
+ * Rate: 100 credits per dollar (CREDITS_PER_DOLLAR).
+ * Min $1, max $500.
+ */
+router.post("/billing/checkout/custom", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+
+  if (!isSquareConfigured()) {
+    return res.status(503).json({ error: "Square not configured" });
+  }
+
+  const { dollars } = req.body as { dollars?: number };
+  if (!dollars || typeof dollars !== "number" || dollars < 1 || dollars > 500) {
+    return res.status(400).json({ error: "dollars must be a number between 1 and 500" });
+  }
+
+  const roundedDollars = Math.floor(dollars);
+  const amountCents = roundedDollars * 100;
+  const creditAmount = roundedDollars * CREDITS_PER_DOLLAR;
+
+  const origin =
+    (req.headers["origin"] as string | undefined) ||
+    (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
+    `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
+
+  try {
+    const idempotencyKey = crypto.randomUUID();
+    const note = `LITIGANT:userId=${user.uid},creditAmount=${creditAmount},pack=custom`;
+
+    const link = await createPaymentLink({
+      name: `Custom Top-Up — ${creditAmount.toLocaleString()} Credits`,
+      amountCents,
+      note,
+      redirectUrl: `${origin}/billing?success=true`,
+      buyerEmail: user.email,
+      idempotencyKey,
+    });
+
+    return res.json({ url: link.url, creditAmount, amountCents });
+  } catch (err: any) {
+    console.error("[Billing] Square custom checkout error:", err.message);
     return res.status(500).json({ error: "Failed to create checkout link" });
   }
 });

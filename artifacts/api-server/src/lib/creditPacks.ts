@@ -25,13 +25,19 @@ export interface CreditPack {
   prices: CreditPackPrice[];
 }
 
+/**
+ * Base rate: 100 credits per dollar ($0.01/credit).
+ * Fixed packs offer a small bonus for buying in bulk.
+ */
+export const CREDITS_PER_DOLLAR = 100;
+
 export const CREDIT_PACKS: CreditPack[] = [
   {
     id: "starter_pack",
     name: "Starter Pack",
-    description: "100 credits — great for exploring Litigant AI",
+    description: "500 credits — perfect for getting started",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "100" },
+    metadata: { type: "credit_pack", creditAmount: "500" },
     prices: [
       {
         id: "price_starter",
@@ -40,16 +46,16 @@ export const CREDIT_PACKS: CreditPack[] = [
         currency: "usd",
         recurring: null,
         active: true,
-        metadata: { creditAmount: "100" },
+        metadata: { creditAmount: "500" },
       },
     ],
   },
   {
     id: "pro_pack",
     name: "Pro Pack",
-    description: "500 credits — best value for power users",
+    description: "2,200 credits — 10% bonus credits",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "500" },
+    metadata: { type: "credit_pack", creditAmount: "2200" },
     prices: [
       {
         id: "price_pro_pack",
@@ -58,16 +64,16 @@ export const CREDIT_PACKS: CreditPack[] = [
         currency: "usd",
         recurring: null,
         active: true,
-        metadata: { creditAmount: "500" },
+        metadata: { creditAmount: "2200" },
       },
     ],
   },
   {
     id: "mega_pack",
     name: "Mega Pack",
-    description: "1,000 credits — maximum savings",
+    description: "4,200 credits — 20% bonus credits",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "1000" },
+    metadata: { type: "credit_pack", creditAmount: "4200" },
     prices: [
       {
         id: "price_mega_pack",
@@ -76,7 +82,7 @@ export const CREDIT_PACKS: CreditPack[] = [
         currency: "usd",
         recurring: null,
         active: true,
-        metadata: { creditAmount: "1000" },
+        metadata: { creditAmount: "4200" },
       },
     ],
   },

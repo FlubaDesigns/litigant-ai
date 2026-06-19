@@ -21,16 +21,19 @@ import {
   getPaymentHistory,
   setAutoRefill,
   createCheckoutSession,
+  createCustomCheckoutSession,
   PLAN_LIMITS,
   type BillingProduct,
   type CreditTransaction,
   type PaymentHistoryItem,
 } from "@/services/billingService";
 
+const CREDITS_PER_DOLLAR = 100;
+
 const CREDIT_PACKS_LABELS: Record<string, { credits: number; badge?: string }> = {
-  "Starter Pack": { credits: 100 },
-  "Pro Pack": { credits: 500, badge: "Popular" },
-  "Mega Pack": { credits: 1000, badge: "Best Value" },
+  "Starter Pack": { credits: 500 },
+  "Pro Pack": { credits: 2200, badge: "Popular" },
+  "Mega Pack": { credits: 4200, badge: "Best Value" },
 };
 
 const TX_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -421,6 +424,8 @@ export default function BillingPage() {
   const [loadingMoreTx, setLoadingMoreTx] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading] = useState(false);
+  const [customDollars, setCustomDollars] = useState<string>("");
+  const [customLoading, setCustomLoading] = useState(false);
 
   const [params] = useState(() => new URLSearchParams(window.location.search));
   const didSucceed = params.get("success") === "true";
@@ -557,6 +562,25 @@ export default function BillingPage() {
       toast.error(err.message ?? "Failed to start checkout.");
     } finally {
       setCheckoutLoading(null);
+    }
+  }
+
+  async function handleCustomCheckout() {
+    const dollars = parseInt(customDollars, 10);
+    if (!user) { toast.error("Please sign in first."); return; }
+    if (!dollars || dollars < 1 || dollars > 500) {
+      toast.error("Enter an amount between $1 and $500.");
+      return;
+    }
+    setCustomLoading(true);
+    try {
+      const result = await createCustomCheckoutSession(dollars);
+      if (result?.url) window.location.href = result.url;
+      else toast.error("Failed to create checkout link.");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to start checkout.");
+    } finally {
+      setCustomLoading(false);
     }
   }
 
@@ -715,10 +739,67 @@ export default function BillingPage() {
 
           {/* ── Right column ────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* Custom Top-Up */}
+            <div className="rounded-xl border border-border/60 bg-card/50 p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-semibold">Custom Top-Up</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Add any amount — you get <span className="text-primary font-semibold">100 credits per dollar</span>.
+              </p>
+              <div className="flex gap-2 mb-3">
+                {[5, 10, 25, 50].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setCustomDollars(String(amt))}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-mono border transition-colors",
+                      customDollars === String(amt)
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                    )}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={500}
+                    value={customDollars}
+                    onChange={(e) => setCustomDollars(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCustomCheckout()}
+                    placeholder="0"
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-border/60 bg-background text-sm font-mono focus:outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                <Button
+                  onClick={handleCustomCheckout}
+                  disabled={customLoading || !customDollars || parseInt(customDollars) < 1}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                >
+                  {customLoading ? (
+                    <RefreshCw className="w-3 h-3 animate-spin mr-1.5" />
+                  ) : (
+                    <Zap className="w-3 h-3 mr-1.5" />
+                  )}
+                  {customDollars && parseInt(customDollars) >= 1
+                    ? `Add ${(parseInt(customDollars) * CREDITS_PER_DOLLAR).toLocaleString()} credits`
+                    : "Top Up"}
+                </Button>
+              </div>
+            </div>
+
             {/* Credit Packs */}
             <div>
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                Buy Credits
+                Credit Packs
               </h2>
               {!loadingProducts && paymentsAvailable === false && (
                 <div className="mb-3 flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm text-yellow-400">
@@ -941,31 +1022,31 @@ const FALLBACK_PACKS: BillingProduct[] = [
   {
     id: "starter_pack",
     name: "Starter Pack",
-    description: "100 credits — great for exploring Litigant AI",
+    description: "500 credits — perfect for getting started",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "100" },
+    metadata: { type: "credit_pack", creditAmount: "500" },
     prices: [
-      { id: "price_starter", product: "starter_pack", unit_amount: 499, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "100" } },
+      { id: "price_starter", product: "starter_pack", unit_amount: 499, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "500" } },
     ],
   },
   {
     id: "pro_pack",
     name: "Pro Pack",
-    description: "500 credits — best value for power users",
+    description: "2,200 credits — 10% bonus credits",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "500" },
+    metadata: { type: "credit_pack", creditAmount: "2200" },
     prices: [
-      { id: "price_pro_pack", product: "pro_pack", unit_amount: 1999, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "500" } },
+      { id: "price_pro_pack", product: "pro_pack", unit_amount: 1999, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "2200" } },
     ],
   },
   {
     id: "mega_pack",
     name: "Mega Pack",
-    description: "1,000 credits — maximum savings",
+    description: "4,200 credits — 20% bonus credits",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "1000" },
+    metadata: { type: "credit_pack", creditAmount: "4200" },
     prices: [
-      { id: "price_mega_pack", product: "mega_pack", unit_amount: 3499, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "1000" } },
+      { id: "price_mega_pack", product: "mega_pack", unit_amount: 3499, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "4200" } },
     ],
   },
 ];

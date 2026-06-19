@@ -185,6 +185,27 @@ export async function createCheckoutSession(priceId: string): Promise<string | n
 }
 
 /**
+ * Creates a Square Payment Link for an arbitrary dollar amount.
+ * Rate: 100 credits per dollar. Min $1, max $500.
+ */
+export async function createCustomCheckoutSession(
+  dollars: number
+): Promise<{ url: string; creditAmount: number } | null> {
+  const headers = await authHeaders();
+  const res = await fetch(`${API_BASE}/billing/checkout/custom`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ dollars }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to create checkout link");
+  }
+  const data = await res.json();
+  return { url: data.url, creditAmount: data.creditAmount };
+}
+
+/**
  * Not available — Square does not have a hosted billing portal.
  * Returns null so the UI can hide the portal button gracefully.
  */
