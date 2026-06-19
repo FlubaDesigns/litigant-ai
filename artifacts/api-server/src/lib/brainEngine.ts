@@ -96,12 +96,16 @@ export function estimateCreditCost(config: CourtConfig): number {
   });
 }
 
+export type PauseReason = "credit_cap" | "iteration_limit";
+
 export interface BrainRunOptions {
   question: string;
   config: CourtConfig;
   templateId?: string;
   templateSystemPrompt?: string;
   sessionId?: string;
+  /** When continuing a paused session, pass the accumulated transcript lines. */
+  continueFromTranscript?: string[];
   res: Response;
   abortSignal?: AbortSignal;
 }
@@ -119,6 +123,8 @@ export interface BrainRunResult {
   provider: ProviderName;
   model: string;
   tokenUsage: TokenUsage;
+  /** Present when the session stopped before hitting the confidence target. */
+  pauseReason?: PauseReason;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -182,7 +188,7 @@ async function streamRole(
 }
 
 export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunResult> {
-  const { question, config, templateSystemPrompt, res, abortSignal } = opts;
+  const { question, config, templateSystemPrompt, res, abortSignal, continueFromTranscript } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
   const maxTokens = getMaxOutputTokens(config.responseMode);
@@ -197,7 +203,8 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
   sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });
 
-  const transcript: string[] = [];
+  // Pre-populate transcript when continuing a paused session
+  const transcript: string[] = continueFromTranscript ? [...continueFromTranscript] : [];
   const turns: TurnRecord[] = [];
   let confidence = 20;
 
@@ -210,30 +217,32 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? "\n\nBefore finalising your response, silently self-check: (1) Are you introducing any unexamined bias? (2) Could this response cause harm? (3) Are there significant gaps or missing perspectives? Correct any issues you find before outputting."
     : "";
 
-  // ── Orchestrator ─────────────────────────────────────────────────────────────
-  throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
+  // ── Orchestrator — skipped when continuing a paused session ──────────────────
+  if (!continueFromTranscript?.length) {
+    throwIfAborted(abortSignal);
+    sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
 
-  const orchMessages: ChatMessage[] = [
-    {
-      role: "system",
-      content: `You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).${conscienceClause}`,
-    },
-    {
-      role: "user",
-      content: `${baseContext}\n\nCourt mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`,
-    },
-  ];
+    const orchMessages: ChatMessage[] = [
+      {
+        role: "system",
+        content: `You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).${conscienceClause}`,
+      },
+      {
+        role: "user",
+        content: `${baseContext}\n\nCourt mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`,
+      },
+    ];
 
-  const orchestratorFrame = await streamRole(
-    provider, orchMessages, 400,
-    (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
-    usage, abortSignal
-  );
+    const orchestratorFrame = await streamRole(
+      provider, orchMessages, 400,
+      (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
+      usage, abortSignal
+    );
 
-  transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
-  turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
-  sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
+    transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
+    turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
+    sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
+  }
 
   // ── Debate rounds ─────────────────────────────────────────────────────────────
   const debateNotesList: string[] = [];
@@ -292,11 +301,25 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       // Stream live credit update based on actual tokens so far
       const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-4o", usage.inputTokens, usage.outputTokens);
       sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
+
+      // Credit cap — stop debate early and fall through to partial verdict
+      if (creditsUsedSoFar >= creditCap) {
+        creditCapHit = true;
+        break;
+      }
     }
 
     sendSSE(res, { type: "round_end", round, confidence });
+    if (creditCapHit) break;
     if (confidence >= config.confidenceTarget && round >= 2) break;
   }
+
+  // ── Determine why we stopped ──────────────────────────────────────────────
+  const pauseReason: PauseReason | undefined = creditCapHit
+    ? "credit_cap"
+    : confidence < config.confidenceTarget
+    ? "iteration_limit"
+    : undefined;
 
   // ── Final Verdict ─────────────────────────────────────────────────────────────
   throwIfAborted(abortSignal);
@@ -375,11 +398,13 @@ Output format: ${config.outputFormat}`;
     finalAnswer: cleanFinalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript: transcript.join("\n\n---\n\n"),
+    transcriptLines: transcript,
     caveats,
     artifacts,
     provider: providerName,
     model: modelName,
     tokenUsage: usage,
+    ...(pauseReason ? { pauseReason } : {}),
   });
 
   return {
@@ -395,5 +420,6 @@ Output format: ${config.outputFormat}`;
     provider: providerName,
     model: modelName,
     tokenUsage: usage,
+    pauseReason,
   };
 }

@@ -599,7 +599,7 @@ export default function SessionPage() {
         provider:         (userProfile.defaultSettings.provider as CourtConfig["provider"]) ?? undefined,
       }
     : undefined;
-  const { state, run, stop, reset, setQuestion, setTemplate, setConfig } = useBrainSession(savedConfig);
+  const { state, run, stop, reset, acceptPartial, continueSession, setQuestion, setTemplate, setConfig } = useBrainSession(savedConfig);
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -740,6 +740,7 @@ export default function SessionPage() {
   }
 
   const isRunning = state.phase === "running";
+  const isPaused = state.phase === "paused";
   const isComplete = state.phase === "complete";
   const isError = state.phase === "error";
   const isIdle = state.phase === "idle";
@@ -1011,7 +1012,7 @@ export default function SessionPage() {
         )}
 
         {/* RUNNING — Runtime Control + Activity Log + content feed */}
-        {(isRunning || state.phase === "paused") && (
+        {isRunning && (
           <div ref={feedRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
             {/* Runtime Control — live 6-metric stats grid */}
             <RuntimeControl
@@ -1089,8 +1090,8 @@ export default function SessionPage() {
           </div>
         )}
 
-        {/* COMPLETE / ERROR — results */}
-        {(isComplete || isError) && (
+        {/* COMPLETE / PAUSED / ERROR — results */}
+        {(isComplete || isPaused || isError) && (
           <div className="flex-1 overflow-y-auto px-3 py-3">
             {isError ? (
               <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center">
@@ -1101,7 +1102,68 @@ export default function SessionPage() {
               </div>
             ) : (
               <>
-                {/* ── V29 Completion banner ── */}
+                {/* ── Pause decision card (credit cap / iteration limit) ── */}
+                {isPaused && state.pauseReason && (
+                  <div className="rounded-lg border border-orange-500/40 bg-orange-500/5 p-4 mb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">⏸</span>
+                      <span className="font-bold text-[13px] text-orange-300">
+                        {state.pauseReason === "credit_cap"
+                          ? `Credit cap reached — at ${Math.round(state.confidence)}% confidence`
+                          : `${state.config.maxIterations} round${state.config.maxIterations !== 1 ? "s" : ""} complete — at ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/70 mb-3">
+                      {state.pauseReason === "credit_cap"
+                        ? "You've used your credit cap. Want to keep going?"
+                        : "Ran out of debate rounds before hitting your confidence target. Want more?"}
+                    </p>
+
+                    {/* Confidence bar */}
+                    <div className="space-y-1.5 mb-3">
+                      <div className="flex justify-between text-[10px] text-muted-foreground/60">
+                        <span>Confidence</span>
+                        <span className="font-mono text-orange-300">{Math.round(state.confidence)}% / {state.config.confidenceTarget}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-black/40 overflow-hidden">
+                        <div className="h-full rounded-full bg-orange-400 transition-all"
+                          style={{ width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground/60">
+                        <span>Credits used</span>
+                        <span className="font-mono">{state.creditsUsed} · <span className={credits === 0 ? "text-red-400" : "text-primary"}>{credits} remaining</span></span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      {credits === 0 ? (
+                        <button
+                          onClick={() => navigate("/billing")}
+                          className="flex-1 py-2 rounded-lg bg-primary text-black text-xs font-bold text-center hover:bg-primary/90 transition-colors"
+                        >
+                          Top Up Wallet
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { void continueSession(); }}
+                          className="flex-1 py-2 rounded-lg bg-primary text-black text-xs font-bold hover:bg-primary/90 transition-colors"
+                        >
+                          Continue — {credits} credits available
+                        </button>
+                      )}
+                      <button
+                        onClick={acceptPartial}
+                        className="flex-1 py-2 rounded-lg border border-white/15 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-white/30 transition-colors"
+                      >
+                        Accept this answer
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── V29 Completion banner (only when fully complete, not paused) ── */}
+                {!isPaused && (
                 <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 mb-3">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-base">🛑</span>
@@ -1139,6 +1201,7 @@ export default function SessionPage() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Activity Log history — collapsed by default after completion */}
                 {state.activityLog.length > 0 && (

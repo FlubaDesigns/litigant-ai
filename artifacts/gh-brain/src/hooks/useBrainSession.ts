@@ -1,5 +1,5 @@
 import { useReducer, useRef, useCallback } from "react";
-import { runBrainSession, type SSEEvent, type BrainRunRequest } from "@/services/sessionService";
+import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason } from "@/services/sessionService";
 import type { Template, CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +41,10 @@ export interface SessionState {
   caveats: string;
   artifacts: string;
   errorMessage: string | null;
+  /** Set when the session stopped before hitting the confidence target. */
+  pauseReason: PauseReason | null;
+  /** Raw transcript lines preserved for continuation. */
+  pauseTranscript: string[] | null;
 }
 
 type Action =
@@ -65,6 +69,8 @@ type Action =
         caveats: string;
         artifacts: string;
         sessionId: string;
+        pauseReason?: PauseReason;
+        pauseTranscript?: string[];
       };
     }
   | { type: "ERROR"; message: string }
@@ -91,6 +97,8 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     caveats: "",
     artifacts: "",
     errorMessage: null,
+    pauseReason: null,
+    pauseTranscript: null,
   };
 }
 
@@ -195,7 +203,7 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "SESSION_DONE":
       return {
         ...state,
-        phase: "complete",
+        phase: action.payload.pauseReason ? "paused" : "complete",
         activeRole: null,
         confidence: action.payload.confidence,
         creditsUsed: action.payload.creditsUsed,
@@ -205,6 +213,8 @@ function reducer(state: SessionState, action: Action): SessionState {
         caveats: action.payload.caveats,
         artifacts: action.payload.artifacts,
         sessionId: action.payload.sessionId,
+        pauseReason: action.payload.pauseReason ?? null,
+        pauseTranscript: action.payload.pauseTranscript ?? null,
         activityLog: [...state.activityLog, `[Orchestrator] final delivery — ${action.payload.confidence}% confidence`],
       };
     case "ERROR":
@@ -253,6 +263,8 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
             caveats: event.caveats || "",
             artifacts: event.artifacts || "",
             sessionId: event.sessionId!,
+            pauseReason: event.pauseReason,
+            pauseTranscript: event.transcriptLines,
           },
         });
         break;
@@ -311,9 +323,53 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     dispatch({ type: "RESET" });
   }, []);
 
+  /** Accept the partial answer as-is — moves from paused → complete without re-running. */
+  const acceptPartial = useCallback(() => {
+    dispatch({ type: "SET_PHASE", phase: "complete" });
+  }, []);
+
+  // continueSession uses a ref for live state so the closure never goes stale
+  const stateRef = useRef<SessionState>(state);
+  stateRef.current = state;
+
+  /**
+   * Continue a paused session — sends the accumulated transcript back to the API
+   * so the engine resumes from the next round. Stateless: works across Cloud Run
+   * restarts because all context travels in the request body.
+   */
+  const continueSessionFn = useCallback(async () => {
+    const s = stateRef.current;
+    if (!s.pauseTranscript?.length) return;
+
+    abortRef.current = new AbortController();
+
+    let idToken: string | undefined;
+    try {
+      idToken = (await user?.getIdToken()) ?? undefined;
+    } catch { /* guest */ }
+
+    const request: BrainRunRequest = {
+      question: s.question,
+      config: s.config,
+      templateId: s.template?.id,
+      idToken,
+      continueFromTranscript: s.pauseTranscript,
+    };
+
+    dispatch({ type: "SET_PHASE", phase: "running" });
+
+    try {
+      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        dispatch({ type: "ERROR", message: err?.message || "Continuation failed" });
+      }
+    }
+  }, [user, handleSSEEvent]);
+
   const setQuestion = useCallback((q: string) => dispatch({ type: "SET_QUESTION", question: q }), []);
   const setTemplate = useCallback((t: Template | null) => dispatch({ type: "SET_TEMPLATE", template: t }), []);
   const setConfig = useCallback((c: Partial<CourtConfig>) => dispatch({ type: "SET_CONFIG", config: c }), []);
 
-  return { state, run, stop, pause, reset, setQuestion, setTemplate, setConfig };
+  return { state, run, stop, pause, reset, acceptPartial, continueSession: continueSessionFn, setQuestion, setTemplate, setConfig };
 }

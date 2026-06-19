@@ -6,12 +6,16 @@ function getApiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
+export type PauseReason = "credit_cap" | "iteration_limit";
+
 export interface BrainRunRequest {
   question: string;
   config: CourtConfig;
   templateId?: string;
   sessionId?: string;
   idToken?: string;
+  /** Raw transcript lines from a paused session — resumes debate from this point. */
+  continueFromTranscript?: string[];
 }
 
 export type SSEEventType =
@@ -39,11 +43,14 @@ export interface SSEEvent {
   finalAnswer?: string;
   debateNotes?: string;
   transcript?: string;
+  transcriptLines?: string[];
   caveats?: string;
   artifacts?: string;
   message?: string;
   guestLimitReached?: boolean;
   provider?: string;
+  /** Present when the session hit a stopping condition before the confidence target. */
+  pauseReason?: PauseReason;
 }
 
 export function runBrainSession(
@@ -68,6 +75,7 @@ export function runBrainSession(
           config: request.config,
           templateId: request.templateId,
           sessionId: request.sessionId,
+          continueFromTranscript: request.continueFromTranscript,
         }),
         signal,
       });

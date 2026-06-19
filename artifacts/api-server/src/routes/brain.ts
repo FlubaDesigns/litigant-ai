@@ -187,11 +187,12 @@ async function reconcileCredits(
 }
 
 router.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId } = req.body as {
+  const { question, config, templateId, sessionId, continueFromTranscript } = req.body as {
     question: string;
     config: CourtConfig;
     templateId?: string;
     sessionId?: string;
+    continueFromTranscript?: string[];
   };
 
   if (!question?.trim()) {
@@ -285,6 +286,7 @@ router.post("/run-brain", async (req, res) => {
       config: effectiveConfig,
       templateId,
       sessionId,
+      continueFromTranscript,
       res,
       abortSignal: abortCtrl.signal,
     });
