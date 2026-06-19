@@ -4,6 +4,7 @@ import { Brain, ChevronRight, Check, ArrowLeft, Zap, Shield, BarChart3 } from "l
 import { Button } from "@/components/ui/button";
 import { getToolBySlug } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { funnelTo } from "@/lib/funnel";
 import NotFoundPage from "@/pages/not-found";
 import { useState } from "react";
 
@@ -26,9 +27,9 @@ function FAQ({ q, a }: { q: string; a: string }) {
 export default function ToolPage() {
   const { slug } = useParams<{ slug: string }>();
   const tool = getToolBySlug(slug);
-  const sessionTarget = tool ? `/session?templateId=${tool.templateId}` : "/session";
-  const registerHref = tool ? `/register?next=${encodeURIComponent(sessionTarget)}` : "/register";
-  const signInHref  = tool ? `/sign-in?next=${encodeURIComponent(sessionTarget)}`  : "/sign-in";
+  const { register: registerHref, signIn: signInHref } = tool
+    ? funnelTo(`/session?templateId=${tool.templateId}`)
+    : { register: "/register", signIn: "/sign-in" };
 
   usePageMeta({
     title: tool?.metaTitle ?? "Tool Not Found | Litigant AI",
