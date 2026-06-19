@@ -20,6 +20,11 @@ export interface CourtConfig {
   outputFormat: OutputFormat;
   provider?: ProviderName;
   model?: string;
+  // V29 Mission Briefing fields
+  conscience?: boolean;
+  aiReasoning?: "independent" | "chain";
+  maxCredits?: number;
+  debateMode?: "adversarial" | "collaborative";
 }
 
 interface RoleDefinition {
@@ -200,6 +205,11 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
+  // Conscience gate — appended to every system prompt when enabled
+  const conscienceClause = config.conscience !== false
+    ? "\n\nBefore finalising your response, silently self-check: (1) Are you introducing any unexamined bias? (2) Could this response cause harm? (3) Are there significant gaps or missing perspectives? Correct any issues you find before outputting."
+    : "";
+
   // ── Orchestrator ─────────────────────────────────────────────────────────────
   throwIfAborted(abortSignal);
   sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
@@ -207,7 +217,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const orchMessages: ChatMessage[] = [
     {
       role: "system",
-      content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).",
+      content: `You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).${conscienceClause}`,
     },
     {
       role: "user",
@@ -227,6 +237,8 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
   // ── Debate rounds ─────────────────────────────────────────────────────────────
   const debateNotesList: string[] = [];
+  const creditCap = config.maxCredits ?? Infinity;
+  let creditCapHit = false;
 
   for (let round = 1; round <= config.maxIterations; round++) {
     throwIfAborted(abortSignal);
@@ -243,14 +255,18 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `${baseContext}\n\nYour role: ${role.persona}. ${role.instruction}\n\nBe sharp, specific, and argumentative. Do not be vague.`,
+          content: `${baseContext}\n\nYour role: ${role.persona}. ${role.instruction}\n\nBe sharp, specific, and argumentative. Do not be vague.${conscienceClause}`,
         },
         {
           role: "user",
-          content:
-            round === 1 && i === 0
-              ? `Begin your examination of the question.`
-              : `Previous discussion:\n\n${previousTranscript}\n\nNow give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`,
+          content: (() => {
+            const isIndependent = config.aiReasoning === "independent";
+            if (round === 1 && i === 0) return `Begin your examination of the question.`;
+            if (isIndependent) {
+              return `Give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. Think independently — do not assume you know what others have argued.`;
+            }
+            return `Previous discussion:\n\n${previousTranscript}\n\nNow give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`;
+          })(),
         },
       ];
 
@@ -316,7 +332,7 @@ Output format: ${config.outputFormat}`;
   const verdictMessages: ChatMessage[] = [
     {
       role: "system",
-      content: "You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections.",
+      content: `You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections.${conscienceClause}`,
     },
     { role: "user", content: verdictPrompt },
   ];
