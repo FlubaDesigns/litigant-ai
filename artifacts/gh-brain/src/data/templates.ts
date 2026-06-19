@@ -6,6 +6,8 @@ export interface TemplateInputField {
   required: boolean;
 }
 
+import type { SeatMapConfig } from "./seatTypes";
+
 export type ProviderName = "openai" | "anthropic" | "grok" | "gemini";
 
 export interface CourtConfig {
@@ -14,7 +16,6 @@ export interface CourtConfig {
   outputScope: "consensus" | "all-voices";
   debateMode: "adversarial" | "collaborative";
   aiReasoning: "independent" | "chain";
-  seatAssignment: "manual" | "auto";
   outputStrategy:
     | "moderator-consensus"
     | "individual"
@@ -27,6 +28,8 @@ export interface CourtConfig {
   maxIterations: number;     // 1 | 3 | 5 | 10
   maxCredits: number;
   litigantCount: number;
+  // ── Per-seat AI assignment (V29 node inspector) ───────────────────────────
+  seatMap?: SeatMapConfig;
   // ── Internal / API compat ────────────────────────────────────────────────
   courtMode: "adversarial" | "socratic" | "analysis" | "critique";
   responseMode: "balanced" | "thorough" | "concise";
@@ -53,7 +56,6 @@ export const DEFAULT_CONFIG: CourtConfig = {
   outputScope: "consensus",
   debateMode: "adversarial",
   aiReasoning: "independent",
-  seatAssignment: "manual",
   outputStrategy: "moderator-consensus",
   outputPreference: "chat",
   format: "text",

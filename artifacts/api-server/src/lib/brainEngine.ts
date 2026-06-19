@@ -157,6 +157,38 @@ async function resolveProvider(config: CourtConfig): Promise<AIProvider> {
   );
 }
 
+/**
+ * Resolve a provider for a specific seat.
+ * Uses the seatMap assignment if configured; falls back to the global provider.
+ */
+async function resolveSeatProvider(
+  seatId: string,
+  config: CourtConfig,
+  globalProvider: AIProvider,
+  configured: string[],
+  litIndex?: number
+): Promise<AIProvider> {
+  const seatMap = (config as any).seatMap;
+  if (!seatMap) return globalProvider;
+
+  let assignment: { provider?: string; model?: string } | undefined;
+  if (seatId === "litigant" && litIndex !== undefined) {
+    assignment = seatMap.litigants?.[litIndex];
+  } else {
+    assignment = seatMap[seatId];
+  }
+
+  if (!assignment?.provider) return globalProvider;
+  const pid = assignment.provider;
+  if (!configured.includes(pid)) return globalProvider;
+
+  try {
+    return await createProviderAsync(pid, assignment.model);
+  } catch {
+    return globalProvider;
+  }
+}
+
 /** Stream a role's response, tracking output character count for token estimation */
 async function streamRole(
   provider: AIProvider,
@@ -197,9 +229,14 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const maxTokens = getMaxOutputTokens(config.responseMode);
   const estimatedCredits = estimateCreditCost(config);
 
+  const configured = await getConfiguredProvidersAsync();
   const provider = await resolveProvider(config);
   const providerName = provider.name;
   const modelName = config.model ?? "";
+
+  // Per-seat providers — fall back to global provider when seat not configured
+  const orchProvider   = await resolveSeatProvider("orchestrator", config, provider, configured);
+  const modProvider    = await resolveSeatProvider("moderator",    config, provider, configured);
 
   // Cumulative token tracker — passed by reference into every streamRole call
   const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
@@ -240,7 +277,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ];
 
     const orchestratorFrame = await streamRole(
-      provider, orchMessages, 400,
+      orchProvider, orchMessages, 400,
       (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
       usage, abortSignal
     );
@@ -265,7 +302,8 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       throwIfAborted(abortSignal);
 
       const role = roles[i];
-      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: providerName });
+      const litProvider = await resolveSeatProvider("litigant", config, provider, configured, i);
+      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
 
       const messages: ChatMessage[] = [
         {
@@ -286,7 +324,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       ];
 
       const roleOutput = await streamRole(
-        provider, messages, maxTokens,
+        litProvider, messages, maxTokens,
         (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
         usage, abortSignal
       );
@@ -367,7 +405,7 @@ Output format: ${config.outputFormat}`;
   ];
 
   const finalAnswer = await streamRole(
-    provider, verdictMessages, 1600,
+    orchProvider, verdictMessages, 1600,
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
     usage, abortSignal
   );

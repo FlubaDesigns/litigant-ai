@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getSeatAIShortName, type GradeMap, type SeatMapConfig } from "@/data/seatTypes";
 
 // ── Geometry (mirrors V29 constants exactly) ─────────────────────────────────
 const F = { left: 140, top: 220, right: 1060, bottom: 720, rx: 34 };
@@ -160,6 +161,11 @@ interface CourtDiagramProps {
   confidence: number;
   creditsUsed: number;
   estimatedCredits: number;
+  seatMap?: SeatMapConfig;
+  grades?: GradeMap;
+  onSeatClick?: (seatId: string, litIndex?: number) => void;
+  onAddLitigant?: () => void;
+  onRemoveLitigant?: () => void;
 }
 
 export function CourtDiagram({
@@ -170,6 +176,11 @@ export function CourtDiagram({
   confidence,
   creditsUsed,
   estimatedCredits,
+  seatMap,
+  grades,
+  onSeatClick,
+  onAddLitigant,
+  onRemoveLitigant,
 }: CourtDiagramProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const wakeRef = useRef<SVGPathElement>(null);
@@ -486,14 +497,24 @@ export function CourtDiagram({
           <g>
             {(Object.entries(SEATS) as [string, typeof SEATS[keyof typeof SEATS]][]).map(([id, s]) => {
               const isActive = activeSeatId === id;
+              const isUser = id === "user";
+              const seatKey = id as keyof Omit<typeof seatMap, "litigants">;
+              const assignment = (!isUser && seatMap) ? (seatMap as any)[seatKey] : null;
+              const aiShort = assignment ? getSeatAIShortName(assignment.provider) : null;
+              const grade = (!isUser && grades) ? grades[id]?.grade : null;
+              const isClickable = !isUser && !!onSeatClick;
               return (
-                <g key={id}>
+                <g
+                  key={id}
+                  onClick={isClickable ? () => onSeatClick!(id) : undefined}
+                  style={{ cursor: isClickable ? "pointer" : "default" }}
+                >
                   <circle
                     id={`seat-${id}`}
                     cx={s.x} cy={s.y} r={s.r}
                     fill={isActive ? "url(#nodePodActive)" : "url(#nodePod)"}
                     stroke={isActive ? "#d7ff77" : "rgba(137,255,160,.9)"}
-                    strokeWidth={isActive ? 4 : 4}
+                    strokeWidth={4}
                     filter={isActive ? "url(#podHot)" : "url(#podShadow)"}
                     style={{ transition: "filter 0.2s" }}
                   />
@@ -502,6 +523,18 @@ export function CourtDiagram({
                     style={{ pointerEvents: "none", textShadow: "0 0 7px rgba(255,255,255,.45)" }}>
                     {s.short}
                   </text>
+                  {aiShort && (
+                    <text x={s.x} y={s.y + 28} textAnchor="middle" fill="#7ab87a" fontSize={9}
+                      style={{ pointerEvents: "none" }}>
+                      {aiShort}
+                    </text>
+                  )}
+                  {grade && (
+                    <text x={s.x} y={s.y + 40} textAnchor="middle" fill="#d7ff77" fontSize={9} fontWeight={800}
+                      style={{ pointerEvents: "none" }}>
+                      {grade}
+                    </text>
+                  )}
                 </g>
               );
             })}
@@ -513,9 +546,14 @@ export function CourtDiagram({
               const isActive = activeSeatId === `litigant-${i}`;
               const isFlashed = flashedLitigants.has(i);
               const hot = isActive || isFlashed;
-              const labels = ["L1","L2","L3","L4","L5","L6","L7","L8"];
+              const litAssignment = seatMap?.litigants?.[i];
+              const aiName = litAssignment ? getSeatAIShortName(litAssignment.provider) : "AI";
               return (
-                <g key={i}>
+                <g
+                  key={i}
+                  onClick={onSeatClick ? () => onSeatClick("litigant", i) : undefined}
+                  style={{ cursor: onSeatClick ? "pointer" : "default" }}
+                >
                   <circle
                     id={`seat-litigant-${i}`}
                     cx={pt.x} cy={pt.y} r={30}
@@ -525,13 +563,13 @@ export function CourtDiagram({
                     filter={hot ? "url(#podHot)" : "url(#podShadow)"}
                     style={{ transition: "filter 0.15s" }}
                   />
-                  <text x={pt.x} y={pt.y - 3} textAnchor="middle" fill="white" fontSize={13} fontWeight={800}
+                  <text x={pt.x} y={pt.y - 3} textAnchor="middle" fill="white" fontSize={11} fontWeight={800}
                     style={{ pointerEvents: "none" }}>
-                    AI
+                    {aiName}
                   </text>
                   <text x={pt.x} y={pt.y + 13} textAnchor="middle" fill="#7ab87a" fontSize={9}
                     style={{ pointerEvents: "none" }}>
-                    {labels[i] ?? `L${i+1}`}
+                    L{i + 1}
                   </text>
                 </g>
               );
@@ -540,11 +578,21 @@ export function CourtDiagram({
 
           {/* Court controls (+/−) in center */}
           <g>
-            <circle cx={CX - 58} cy={Y_MID} r={48} fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6} />
-            <line x1={CX - 80} y1={Y_MID} x2={CX - 36} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" />
-            <line x1={CX - 58} y1={Y_MID - 22} x2={CX - 58} y2={Y_MID + 22} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" />
-            <circle cx={CX + 58} cy={Y_MID} r={48} fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6} />
-            <line x1={CX + 36} y1={Y_MID} x2={CX + 80} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" />
+            <circle
+              cx={CX - 58} cy={Y_MID} r={48}
+              fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
+              onClick={onAddLitigant}
+              style={{ cursor: onAddLitigant ? "pointer" : "default" }}
+            />
+            <line x1={CX - 80} y1={Y_MID} x2={CX - 36} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
+            <line x1={CX - 58} y1={Y_MID - 22} x2={CX - 58} y2={Y_MID + 22} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
+            <circle
+              cx={CX + 58} cy={Y_MID} r={48}
+              fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
+              onClick={onRemoveLitigant}
+              style={{ cursor: onRemoveLitigant ? "pointer" : "default" }}
+            />
+            <line x1={CX + 36} y1={Y_MID} x2={CX + 80} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
           </g>
 
           {/* Meteor animation paths */}

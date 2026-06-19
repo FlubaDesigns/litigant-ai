@@ -33,6 +33,9 @@ import {
 } from "@/services/providerService";
 import { Input } from "@/components/ui/input";
 import { CourtDiagram } from "@/components/CourtDiagram";
+import { SeatInspector } from "@/components/SeatInspector";
+import { makeDefaultSeatMap } from "@/data/seatTypes";
+import type { SeatAssignment } from "@/data/seatTypes";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -157,7 +160,6 @@ function ConfigPanel({
         outputScope: config.outputScope,
         debateMode: config.debateMode,
         aiReasoning: config.aiReasoning,
-        seatAssignment: config.seatAssignment,
         outputStrategy: config.outputStrategy,
         outputPreference: config.outputPreference,
         format: config.format,
@@ -233,17 +235,6 @@ function ConfigPanel({
               <SelectContent>
                 <SelectItem value="independent">Independent</SelectItem>
                 <SelectItem value="chain">Chain</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* SEAT ASSIGNMENT */}
-          <V29Field label="Seat Assignment" desc="Manual: you pick seats. Auto: grade order fills them.">
-            <Select value={config.seatAssignment} onValueChange={(v) => onChange({ seatAssignment: v as CourtConfig["seatAssignment"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="manual">Manual</SelectItem>
-                <SelectItem value="auto">Auto by Grade</SelectItem>
               </SelectContent>
             </Select>
           </V29Field>
@@ -606,19 +597,19 @@ export default function SessionPage() {
         debateMode:       (userProfile.defaultSettings.debateMode as CourtConfig["debateMode"]) ?? "adversarial",
         maxCredits:       userProfile.defaultSettings.maxCredits ?? undefined,
         outputScope:      (userProfile.defaultSettings.outputScope as CourtConfig["outputScope"]) ?? undefined,
-        seatAssignment:   (userProfile.defaultSettings.seatAssignment as CourtConfig["seatAssignment"]) ?? undefined,
         outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? undefined,
         outputPreference: (userProfile.defaultSettings.outputPreference as CourtConfig["outputPreference"]) ?? undefined,
         format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? undefined,
       }
     : undefined;
-  const { state, run, stop, reset, acceptPartial, continueSession, setQuestion, setTemplate, setConfig } = useBrainSession(savedConfig);
+  const { state, run, stop, reset, acceptPartial, continueSession, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = useBrainSession(savedConfig);
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
+  const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(true);
@@ -738,6 +729,9 @@ export default function SessionPage() {
 
   async function handleFeedback(rating: "good" | "bad" | "warn") {
     setFeedbackGiven(rating);
+    if (rating === "good" || rating === "bad") {
+      applyFeedbackGrades(rating, state.courtHappened ? "answer" : "answer");
+    }
     try {
       await submitFeedback({
         userId: user?.uid ?? null,
@@ -746,10 +740,28 @@ export default function SessionPage() {
         role: "Verdict",
         rating,
       });
-      toast.success("Feedback recorded — thank you.");
+      toast.success("Feedback recorded — grades updated.");
     } catch {
       toast.error("Failed to save feedback.");
     }
+  }
+
+  function handleSeatClick(seatId: string, litIndex?: number) {
+    setInspectorSeat({ seatId, litIndex });
+  }
+
+  function handleSeatUpdate(seatId: string, assignment: SeatAssignment, litIndex?: number) {
+    setSeatAI(seatId, assignment, litIndex);
+  }
+
+  function handleAddLitigant() {
+    const next = Math.min(state.config.litigantCount + 1, 8);
+    setConfig({ litigantCount: next });
+  }
+
+  function handleRemoveLitigant() {
+    const next = Math.max(state.config.litigantCount - 1, 2);
+    setConfig({ litigantCount: next });
   }
 
   const isRunning = state.phase === "running";
@@ -927,6 +939,11 @@ export default function SessionPage() {
           creditsUsed={state.creditsUsed}
           estimatedCredits={state.estimatedCredits}
           complete={isComplete}
+          seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
+          grades={state.grades}
+          onSeatClick={handleSeatClick}
+          onAddLitigant={!isRunning ? handleAddLitigant : undefined}
+          onRemoveLitigant={!isRunning ? handleRemoveLitigant : undefined}
         />
 
         {/* Revolution counter — overlaid top-left */}
@@ -1401,6 +1418,21 @@ export default function SessionPage() {
       </div>
 
       {/* ── TEMPLATE SHEET — bottom drawer ── */}
+      {/* ── SEAT INSPECTOR ── */}
+      {inspectorSeat && (
+        <SeatInspector
+          seatId={inspectorSeat.seatId}
+          litIndex={inspectorSeat.litIndex}
+          litigantCount={state.config.litigantCount}
+          seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
+          grades={state.grades}
+          onClose={() => setInspectorSeat(null)}
+          onUpdate={(seatId, assignment, li) =>
+            handleSeatUpdate(seatId, assignment, li)
+          }
+        />
+      )}
+
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
           <SheetHeader className="shrink-0 pb-3 border-b border-white/5">
