@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 import clashImage from "@/assets/images/hero-clash.png";
 import neuralImage from "@/assets/images/neural-court.png";
@@ -178,6 +179,9 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 // ── Landing Page ──────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const isSignedIn = !loading && !!user;
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30">
 
@@ -195,12 +199,20 @@ export default function LandingPage() {
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              Operator Login
-            </Link>
-            <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Link href="/register">Request Access</Link>
-            </Button>
+            {isSignedIn ? (
+              <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Link href="/session">Open App</Link>
+              </Button>
+            ) : (
+              <>
+                <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Sign In
+                </Link>
+                <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Link href="/register">Start Free</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -233,8 +245,8 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button asChild size="lg" className="h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground text-base rounded-none">
-                  <Link href="/register">
-                    Initiate Session <ChevronRight className="ml-2 w-5 h-5" />
+                  <Link href={isSignedIn ? "/session" : "/register"}>
+                    {isSignedIn ? "Open App" : "Start Free"} <ChevronRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="h-14 px-8 border-border hover:bg-secondary text-base rounded-none">
@@ -500,8 +512,8 @@ export default function LandingPage() {
                         : "bg-secondary text-foreground hover:bg-secondary/80"
                     )}
                   >
-                    <Link href="/register">
-                      {plan.name === "Team" ? "Contact Sales" : "Get Started"}
+                    <Link href={plan.name === "Team" ? "#" : isSignedIn ? "/billing" : "/register"}>
+                      {plan.name === "Team" ? "Contact Sales" : isSignedIn ? "Buy Credits" : "Get Started"}
                     </Link>
                   </Button>
                 </motion.div>
@@ -556,13 +568,15 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <Button asChild size="lg" className="h-14 px-12 bg-primary hover:bg-primary/90 text-primary-foreground text-base rounded-none">
-                  <Link href="/register">
-                    Request Clearance <ChevronRight className="ml-2 w-5 h-5" />
+                  <Link href={isSignedIn ? "/session" : "/register"}>
+                    {isSignedIn ? "Open App" : "Start Free — 50 credits included"} <ChevronRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="h-14 px-8 border-border hover:bg-secondary text-base rounded-none">
-                  <Link href="/sign-in">Operator Login</Link>
-                </Button>
+                {!isSignedIn && (
+                  <Button asChild variant="outline" size="lg" className="h-14 px-8 border-border hover:bg-secondary text-base rounded-none">
+                    <Link href="/sign-in">Sign In</Link>
+                  </Button>
+                )}
               </div>
             </motion.div>
           </div>
