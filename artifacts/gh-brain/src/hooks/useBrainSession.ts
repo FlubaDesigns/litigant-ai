@@ -25,6 +25,7 @@ export type SessionPhase =
 export interface FeedItem {
   id: string;
   role: string;
+  provider: string;
   content: string;
   round: number;
   timestamp: number;
@@ -236,6 +237,7 @@ function reducer(state: SessionState, action: Action): SessionState {
           {
             id: `${role}-${round}-${Date.now()}`,
             role,
+            provider: provider ?? "",
             content: "",
             round,
             timestamp: Date.now(),
