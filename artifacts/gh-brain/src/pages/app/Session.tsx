@@ -523,23 +523,23 @@ function LitigantVoicesBox({
   return (
     <div style={{ border: "1px solid #7ab87a", borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "rgba(122,184,122,.07)", borderBottom: "1px solid #1d331d" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "#7ab87a", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 800 }}>Litigant Voices</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", background: "rgba(122,184,122,.07)", borderBottom: "1px solid #1d331d", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
+          <span style={{ fontSize: 11, color: "#7ab87a", letterSpacing: "0.07em", textTransform: "uppercase", fontWeight: 800, whiteSpace: "nowrap" }}>Litigant Voices</span>
           {adversarial && (
-            <span style={{ fontSize: 10, fontWeight: 900, color: "#ff6b6b", border: "1px solid #c84040", borderRadius: 999, padding: "2px 8px", letterSpacing: "0.06em" }}>⚔ ADVERSARIAL</span>
+            <span style={{ fontSize: 9, fontWeight: 900, color: "#ff6b6b", border: "1px solid #c84040", borderRadius: 999, padding: "1px 6px", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>⚔ ADV</span>
           )}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <button onClick={handleSave} style={{ fontSize: 12, padding: "4px 8px", minHeight: 28, background: "transparent", border: "1px solid #7ab87a", borderRadius: 7, cursor: "pointer", color: "#eef7ee" }}>⬇</button>
-          <button onClick={() => setOpen(v => !v)} style={{ fontSize: 12, padding: "4px 10px", minHeight: 28, background: "transparent", border: "1px solid #7ab87a", borderRadius: 7, color: "#7ab87a", cursor: "pointer" }}>
-            {open ? "▼ Hide" : "▶ Show"}
+        <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
+          <button onClick={handleSave} title="Export" style={{ fontSize: 12, padding: "3px 7px", minHeight: 26, background: "transparent", border: "1px solid #7ab87a", borderRadius: 6, cursor: "pointer", color: "#eef7ee" }}>⬇</button>
+          <button onClick={() => setOpen(v => !v)} style={{ fontSize: 11, padding: "3px 8px", minHeight: 26, background: "transparent", border: "1px solid #7ab87a", borderRadius: 6, color: "#7ab87a", cursor: "pointer", whiteSpace: "nowrap" }}>
+            {open ? "▼" : "▶"}
           </button>
         </div>
       </div>
       {/* Body */}
       {open && (
-        <div ref={scrollRef} style={{ minHeight: 80, maxHeight: 280, overflowY: "auto", padding: 10, background: "rgba(0,0,0,.12)" }}>
+        <div ref={scrollRef} style={{ minHeight: 80, maxHeight: "clamp(120px,22vh,280px)", overflowY: "auto", padding: 10, background: "rgba(0,0,0,.12)" }}>
           {items.length === 0 ? (
             <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic" }}>Waiting for litigant debate…</div>
           ) : (
@@ -573,15 +573,15 @@ function OrchestratorBox({
   return (
     <div style={{ border: "1px solid #00c853", borderRadius: 12, overflow: "hidden" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "rgba(0,200,83,.07)", borderBottom: "1px solid #1d331d" }}>
-        <span style={{ fontSize: 12, color: "#00c853", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 800 }}>Orchestrator / Consensus</span>
-        <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={handleSave} style={{ fontSize: 12, padding: "4px 10px", minHeight: 28, background: "transparent", border: "1px solid #00c853", borderRadius: 7, cursor: "pointer", color: "#eef7ee" }}>⬇ Save</button>
-          <button onClick={handlePrint} style={{ fontSize: 12, padding: "4px 10px", minHeight: 28, background: "transparent", border: "1px solid #00c853", borderRadius: 7, cursor: "pointer", color: "#eef7ee" }}>🖨 Print</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", background: "rgba(0,200,83,.07)", borderBottom: "1px solid #1d331d", gap: 6 }}>
+        <span style={{ fontSize: 11, color: "#00c853", letterSpacing: "0.07em", textTransform: "uppercase", fontWeight: 800, whiteSpace: "nowrap", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>Orchestrator / Consensus</span>
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+          <button onClick={handleSave} title="Save" style={{ fontSize: 12, padding: "3px 7px", minHeight: 26, background: "transparent", border: "1px solid #00c853", borderRadius: 6, cursor: "pointer", color: "#eef7ee" }}>⬇</button>
+          <button onClick={handlePrint} title="Print" style={{ fontSize: 12, padding: "3px 7px", minHeight: 26, background: "transparent", border: "1px solid #00c853", borderRadius: 6, cursor: "pointer", color: "#eef7ee" }}>🖨</button>
         </div>
       </div>
       {/* Body */}
-      <div ref={scrollRef} style={{ minHeight: 120, maxHeight: 360, overflowY: "auto", padding: "10px 10px 6px", fontSize: 14, lineHeight: 1.6, background: "rgba(0,0,0,.12)" }}>
+      <div ref={scrollRef} style={{ minHeight: 80, maxHeight: "clamp(160px,32vh,360px)", overflowY: "auto", padding: "10px 10px 6px", fontSize: 14, lineHeight: 1.6, background: "rgba(0,0,0,.12)" }}>
         {question && <DialogLine key="you" item={youItem} />}
         {items.map(item => <DialogLine key={item.id} item={item} />)}
         {items.length === 0 && question && (
@@ -1028,7 +1028,7 @@ export default function SessionPage() {
       )}
 
       {/* ── COURT DIAGRAM — always visible, always the hero ── */}
-      <div className="shrink-0 relative" style={{ height: "clamp(240px, 44vh, 500px)" }}>
+      <div className="shrink-0 relative h-[160px] sm:h-[clamp(240px,44vh,500px)]">
         <CourtDiagram
           activeRole={state.activeRole}
           litigantCount={state.config.litigantCount}
