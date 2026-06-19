@@ -301,47 +301,97 @@ function ConfigPanel({
   );
 }
 
+// ── RuntimeControl ────────────────────────────────────────────────────────────
+const COURT_MODE_LABELS: Record<string, string> = {
+  adversarial: "Adversarial",
+  socratic: "Socratic",
+  analysis: "Analysis",
+  critique: "Critique",
+};
+
+function RuntimeControl({
+  starting, current, used, round, maxRound, cap, mode,
+}: {
+  starting: number; current: number; used: number;
+  round: number; maxRound: number; cap: number; mode: string;
+}) {
+  const cells = [
+    { label: "STARTING", value: String(starting), color: "text-white" },
+    { label: "CURRENT",  value: String(current),  color: current < 10 ? "text-red-400" : current < 30 ? "text-yellow-400" : "text-primary" },
+    { label: "USED",     value: String(used),      color: "text-white" },
+    { label: "ROUND",    value: `${round} / ${maxRound}`, color: "text-white" },
+    { label: "CREDIT CAP", value: cap > 0 ? `~${cap}` : "—", color: "text-muted-foreground" },
+    { label: "MODE",     value: COURT_MODE_LABELS[mode] ?? mode, color: "text-primary/80" },
+  ];
+  return (
+    <div className="rounded-lg border border-primary/20 overflow-hidden">
+      <div className="px-3 py-1.5 border-b border-primary/10 bg-primary/5">
+        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Runtime Control</span>
+      </div>
+      <div className="grid grid-cols-2 gap-px bg-primary/10">
+        {cells.map(({ label, value, color }) => (
+          <div key={label} className="bg-[#070f07] px-3 py-2">
+            <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-0.5">{label}</div>
+            <div className={cn("text-[15px] font-bold font-mono leading-none", color)}>{value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── FeedItemCard ──────────────────────────────────────────────────────────────
 function FeedItemCard({ item }: { item: FeedItem }) {
   const [expanded, setExpanded] = useState(true);
-  const style = getRoleStyle(item.role);
   const isVerdict = item.role === "Verdict";
+  const isOrchestrator = item.role === "Orchestrator";
+  const isModerator = item.role === "Moderator";
+
+  const borderColor = isVerdict || isOrchestrator
+    ? "border-l-yellow-400/80"
+    : isModerator
+    ? "border-l-cyan-400/80"
+    : "border-l-primary/60";
+
+  const roleColor = isVerdict || isOrchestrator
+    ? "text-yellow-400"
+    : isModerator
+    ? "text-cyan-400"
+    : "text-primary";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-lg border p-4 text-sm",
-        isVerdict ? "border-primary/40 bg-primary/5" : "border-border/40 bg-card/60",
+        "rounded-lg border border-border/30 border-l-2 bg-card/50 overflow-hidden",
+        borderColor,
       )}
     >
+      {/* Role header */}
       <button
         onClick={() => setExpanded((e) => !e)}
-        className="w-full flex items-center gap-2 text-left"
+        className="w-full flex items-center justify-between px-3 pt-2.5 pb-1.5 text-left"
       >
-        <Badge variant="outline" className={cn("text-xs shrink-0 font-semibold", style)}>
-          {item.role}
-        </Badge>
-        {item.round > 0 && item.round < 99 && (
-          <span className="text-xs text-muted-foreground">Round {item.round}</span>
-        )}
-        {!item.isComplete && (
-          <span className="flex gap-0.5 items-center ml-1">
-            <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
-            <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
-            <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={cn("text-[10px] font-black uppercase tracking-widest shrink-0", roleColor)}>
+            {item.role}
           </span>
-        )}
-        {item.isComplete && <CheckCircle2 className="w-3 h-3 text-primary/50 ml-auto shrink-0" />}
-        <ChevronDown
-          className={cn(
-            "w-3 h-3 text-muted-foreground shrink-0 transition-transform",
-            item.isComplete ? "ml-0" : "ml-auto",
-            !expanded && "-rotate-90"
+          {item.round > 0 && item.round < 99 && (
+            <span className="text-[9px] text-muted-foreground/50 font-mono">R{item.round}</span>
           )}
-        />
+          {!item.isComplete && (
+            <span className="flex gap-0.5 items-center">
+              {[0, 150, 300].map((d) => (
+                <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
+              ))}
+            </span>
+          )}
+        </div>
+        <ChevronDown className={cn("w-3 h-3 text-muted-foreground/40 shrink-0 transition-transform", !expanded && "-rotate-90")} />
       </button>
+
+      {/* Content */}
       <AnimatePresence>
         {expanded && item.content && (
           <motion.div
@@ -350,7 +400,7 @@ function FeedItemCard({ item }: { item: FeedItem }) {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 text-xs leading-relaxed text-foreground/80 whitespace-pre-wrap font-sans max-h-64 overflow-y-auto">
+            <div className="px-3 pb-3 text-[13px] leading-relaxed text-foreground/85 whitespace-pre-wrap font-sans max-h-72 overflow-y-auto">
               {item.content}
             </div>
           </motion.div>
@@ -860,9 +910,20 @@ export default function SessionPage() {
           </div>
         )}
 
-        {/* RUNNING — Activity Log + content feed */}
+        {/* RUNNING — Runtime Control + Activity Log + content feed */}
         {(isRunning || state.phase === "paused") && (
           <div ref={feedRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+            {/* Runtime Control — live 6-metric stats grid */}
+            <RuntimeControl
+              starting={credits + state.creditsUsed}
+              current={credits}
+              used={state.creditsUsed}
+              round={state.currentRound}
+              maxRound={state.config.maxIterations}
+              cap={state.estimatedCredits}
+              mode={state.config.courtMode}
+            />
+
             {/* Activity Log — collapsible status stream */}
             <div className="rounded-lg border border-primary/20 overflow-hidden">
               <button
@@ -910,12 +971,21 @@ export default function SessionPage() {
               )}
             </div>
 
-            {/* Content feed — actual AI reasoning text */}
-            <AnimatePresence>
-              {state.runtimeFeed.map((item) => (
-                <FeedItemCard key={item.id} item={item} />
-              ))}
-            </AnimatePresence>
+            {/* Conversation — YOU box + role cards */}
+            {state.runtimeFeed.length > 0 && (
+              <div className="space-y-2">
+                {/* YOU question box */}
+                <div className="rounded-lg border border-blue-500/25 bg-blue-500/8 px-3 py-2.5">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-blue-400/80 mb-1">You</div>
+                  <div className="text-[13px] leading-relaxed text-foreground/90">{state.question}</div>
+                </div>
+                <AnimatePresence>
+                  {state.runtimeFeed.map((item) => (
+                    <FeedItemCard key={item.id} item={item} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         )}
 
