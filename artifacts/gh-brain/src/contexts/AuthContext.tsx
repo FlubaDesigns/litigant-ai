@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth, isConfigured } from "@/lib/firebase";
 import { onUserProfileSnapshot, type UserProfile } from "@/services/firestoreService";
@@ -11,23 +11,9 @@ import {
   sendEmailVerification,
   deleteAccount,
 } from "@/services/authService";
+import { AuthContext, type AuthContextValue } from "./authContextDef";
 
-interface AuthContextValue {
-  user: User | null;
-  userProfile: UserProfile | null;
-  loading: boolean;
-  isAdmin: boolean;
-  firebaseReady: boolean;
-  signUp: (email: string, password: string, displayName: string, role?: string, organization?: string) => Promise<User>;
-  signIn: (email: string, password: string) => Promise<User>;
-  signInGoogle: () => Promise<User>;
-  logOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  resendVerification: () => Promise<void>;
-  removeAccount: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+export type { AuthContextValue };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
