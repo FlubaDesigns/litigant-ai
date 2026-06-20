@@ -1,0 +1,80 @@
+modules = ["nodejs-24", "python-3.11"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[[ports]]
+localPort = 8031
+externalPort = 3000
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 8372
+externalPort = 5173
+
+[[ports]]
+localPort = 8408
+externalPort = 3003
+
+[[ports]]
+localPort = 8582
+externalPort = 3002
+
+[[ports]]
+localPort = 8842
+externalPort = 5000
+
+[[ports]]
+localPort = 8976
+externalPort = 4200
+
+[[ports]]
+localPort = 18396
+externalPort = 3001
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+VITE_FIREBASE_API_KEY = "AIzaSyDVCA3xld3uApfSs8gvhA7QVpARwP6hMSI"
+VITE_FIREBASE_AUTH_DOMAIN = "litigant-ai.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID = "litigant-ai"
+VITE_FIREBASE_STORAGE_BUCKET = "litigant-ai.firebasestorage.app"
+VITE_FIREBASE_MESSAGING_SENDER_ID = "781960492360"
+VITE_FIREBASE_APP_ID = "1:781960492360:web:d735854efafcee8728ef7d"
+FIREBASE_SERVICE_ACCOUNT_JSON = '{"type":"service_account","project_id":"litigant-ai","private_key_id":"4b1f9dc4e3d182fdc5d58459a49ff3d4cb646a62","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDVlaFdZsqTJIGc\nGWIKRIiWl0opDUFkRtFxO0CMUtwuVH/LD2QDh35BiJOBUOW3lxCMK8d1UM2MLSaQ\ntdWic23ZAfyeYqSODt96blSG6rETmdfom0R9+VslmMPKEwbB1zPCLLk1renB2uX/\nmsxUD9VVe6bQmUUKSAWwyOX5tGinU/PbyWeKqyPFBTYHJzjIMKA/9dtt/Dp77OGf\nVjdYYVLF0E6TRr+oSfyigl2+V/ufWjAPBvbqzdvWv/0PETCVwxNjv2s0cGWTWnhz\nDoizgmoevKvjTVKWV1UaxfcQLdTJepcd/lELykvyummlhhV7PjMCk+51/UjRws2+\nhpgcT0EZAgMBAAECggEAGAtfpoIKS2EUWcBGSBlhxpE60y8HteweizikSj/QQ4N1\n/QRLKjYMTcCcOXZD3CSMo3kQu+loMHALS8Z6qc6EluXpPGPmukrcl/34dFVSsL4U\nnz4uil+CZjPB09uLOtJ5JFKQWaWN36ne02UH/G0pYzWXyJs+mVsVD+s376Hil7aQ\nKl/qAJsqF6MrndngwQth5jPoGJKP3DILRAJGu1EOnhozPPw9zOCcZnb9kYBOwAA+\n8GLcavKwmBFd4xXuEkcxS+hUWq3Y3uz+HrlcocbdaGPrRDlVbB7eDHReSpx4eWF4\nl9ZhLWvTTTkmiYvP9a+oC2cyVlL/NQAAckPyXfCvoQKBgQD4Zre8nIOGbz10jEf4\nCnqpDc86qB67hoMBX2hmSIEU6tK9wzdbibw4E49cmucnNMxrvwVdVrh/rxDVST5t\nZQjI4s2GaVlO8NnBhbx/atsglsERAJZ+kBkR/2XfqTj7OaeBSaYn+TR+3X+Vx36F\nPi+M1xcwY7ZORrmkOtMkmUS7oQKBgQDcHkFegaojda9aoiNFYEAcPfoMMgKXPi3n\n1FhmzuJ107XNUfiuBusqhWtuu8H6/pF/vniUIhLwNU3+LyFjRcfKWb+uNDBVhTfB\nYHEFxSa14YKzr4SDz+VDgf+ib04pELEWDZAZFWVH39ONTkVX925Ul4442uZvDk9I\n98ic1BlSeQKBgBreeYd0YqG7DKm7ttk0wPniXYUZxGFCdo9Cc7eEpjnOAMe4Axfq\nuSpTq1E4DELoaihJfFoRVFmzZR29E3yfzih0qAifAqMQWG2ferlJpLRMukuNhbng\n+mVA/BMKafh6zwykG839HdmPOgrIjn35MQmKBp8cWg7zhYcnOcmerpmhAoGBAILf\nBjSfWT3t+Y0ke14DJPrlqmZX0YyErpx4dvrhJGmzrxLdGsK1YFqOqtpSjbmiY3WV\nFHHWdHYW60EmWm6AjZH0nG+Bnf8qzoSNx4ULu8FFzATzZRFNqNzjTM8R6GGoB/G5\nrKQNQYNjQ49vKvFrLlDjLu8Ezx7WXjNfBwqfXFLZAoGBAPdnoaboTWkr7UAT6thl\ne/3ElAepGXiyArjY/hXFA0ShdEGYk6O5ViQeffLtXypfsmiHqI6PBgRgPb21t4Uz\npULWEVb3j0kdxAx0Basx4lkeiobsOTHo1uwk93ObcMdwRMGSwS07pBtRQ4Kv+KOR\n05A6rGlqV0oKtPaihndDqtNm\n-----END PRIVATE KEY-----\n","client_email":"firebase-adminsdk-fbsvc@litigant-ai.iam.gserviceaccount.com","client_id":"116309516521563310387","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40litigant-ai.iam.gserviceaccount.com","universe_domain":"googleapis.com"}'
+FIREBASE_SERVICE_ACCOUNT = '{"type":"service_account","project_id":"litigant-ai","private_key_id":"4b1f9dc4e3d182fdc5d58459a49ff3d4cb646a62","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDVlaFdZsqTJIGc\nGWIKRIiWl0opDUFkRtFxO0CMUtwuVH/LD2QDh35BiJOBUOW3lxCMK8d1UM2MLSaQ\ntdWic23ZAfyeYqSODt96blSG6rETmdfom0R9+VslmMPKEwbB1zPCLLk1renB2uX/\nmsxUD9VVe6bQmUUKSAWwyOX5tGinU/PbyWeKqyPFBTYHJzjIMKA/9dtt/Dp77OGf\nVjdYYVLF0E6TRr+oSfyigl2+V/ufWjAPBvbqzdvWv/0PETCVwxNjv2s0cGWTWnhz\nDoizgmoevKvjTVKWV1UaxfcQLdTJepcd/lELykvyummlhhV7PjMCk+51/UjRws2+\nhpgcT0EZAgMBAAECggEAGAtfpoIKS2EUWcBGSBlhxpE60y8HteweizikSj/QQ4N1\n/QRLKjYMTcCcOXZD3CSMo3kQu+loMHALS8Z6qc6EluXpPGPmukrcl/34dFVSsL4U\nnz4uil+CZjPB09uLOtJ5JFKQWaWN36ne02UH/G0pYzWXyJs+mVsVD+s376Hil7aQ\nKl/qAJsqF6MrndngwQth5jPoGJKP3DILRAJGu1EOnhozPPw9zOCcZnb9kYBOwAA+\n8GLcavKwmBFd4xXuEkcxS+hUWq3Y3uz+HrlcocbdaGPrRDlVbB7eDHReSpx4eWF4\nl9ZhLWvTTTkmiYvP9a+oC2cyVlL/NQAAckPyXfCvoQKBgQD4Zre8nIOGbz10jEf4\nCnqpDc86qB67hoMBX2hmSIEU6tK9wzdbibw4E49cmucnNMxrvwVdVrh/rxDVST5t\nZQjI4s2GaVlO8NnBhbx/atsglsERAJZ+kBkR/2XfqTj7OaeBSaYn+TR+3X+Vx36F\nPi+M1xcwY7ZORrmkOtMkmUS7oQKBgQDcHkFegaojda9aoiNFYEAcPfoMMgKXPi3n\n1FhmzuJ107XNUfiuBusqhWtuu8H6/pF/vniUIhLwNU3+LyFjRcfKWb+uNDBVhTfB\nYHEFxSa14YKzr4SDz+VDgf+ib04pELEWDZAZFWVH39ONTkVX925Ul4442uZvDk9I\n98ic1BlSeQKBgBreeYd0YqG7DKm7ttk0wPniXYUZxGFCdo9Cc7eEpjnOAMe4Axfq\nuSpTq1E4DELoaihJfFoRVFmzZR29E3yfzih0qAifAqMQWG2ferlJpLRMukuNhbng\n+mVA/BMKafh6zwykG839HdmPOgrIjn35MQmKBp8cWg7zhYcnOcmerpmhAoGBAILf\nBjSfWT3t+Y0ke14DJPrlqmZX0YyErpx4dvrhJGmzrxLdGsK1YFqOqtpSjbmiY3WV\nFHHWdHYW60EmWm6AjZH0nG+Bnf8qzoSNx4ULu8FFzATzZRFNqNzjTM8R6GGoB/G5\nrKQNQYNjQ49vKvFrLlDjLu8Ezx7WXjNfBwqfXFLZAoGBAPdnoaboTWkr7UAT6thl\ne/3ElAepGXiyArjY/hXFA0ShdEGYk6O5ViQeffLtXypfsmiHqI6PBgRgPb21t4Uz\npULWEVb3j0kdxAx0Basx4lkeiobsOTHo1uwk93ObcMdwRMGSwS07pBtRQ4Kv+KOR\n05A6rGlqV0oKtPaihndDqtNm\n-----END PRIVATE KEY-----\n","client_email":"firebase-adminsdk-fbsvc@litigant-ai.iam.gserviceaccount.com","client_id":"116309516521563310387","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40litigant-ai.iam.gserviceaccount.com","universe_domain":"googleapis.com"}'
+ANTHROPIC_API_KEY = "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"
+SQUARE_ACCESS_TOKEN = "EAAAl4gbhvTm1iZ3wvC-WSzNCljkLlOOoVKB7gLXxd1J2zh0Fjl6YHPsQ1uw4jcF"
+SQUARE_APPLICATION_ID = "sq0idp-yOyVWVGhop7Pycv56c7XtA"
+SQUARE_LOCATION_ID = "LJPE1062H7MBN"
+SQUARE_WEBHOOK_SIGNATURE_KEY = "cJGaM1yxls5rjU-e9lH9Fg"
+SQUARE_ENVIRONMENT = "production"
+APP_DOMAIN = "litigant-ai.com"
+ADMIN_MASTER_SECRET = "PPEOC-MXcPiFbKN06KyqSjfWpCYcBo95bF25mYFUmr8"
+RESEND_API_KEY = "re_K2z9RWDa_JK3jC5mhorjq2oTU24tXXEs7"
