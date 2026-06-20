@@ -113,7 +113,7 @@ function SystemNotesCard() {
         </li>
         <li className="flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-          Stripe webhook auto-refill not yet wired into usage flow — manual refund available below
+          Auto-refill via Square not yet wired into usage flow — manual refund available below
         </li>
       </ul>
     </div>
@@ -991,7 +991,7 @@ function RefundModal({
 // ─── Feature Flags Tab ────────────────────────────────────────────────────────
 const FLAG_DESCRIPTIONS: Record<string, string> = {
   guestMode: "Allow unverified/unauthenticated access to the app in demo mode",
-  proUpgrade: "Show Pro upgrade prompts and Stripe checkout",
+  proUpgrade: "Show Pro upgrade prompts and Square checkout",
   exportPdf: "Enable PDF export of session reports",
   shareReports: "Allow users to generate public share links for sessions",
   templateLibrary: "Show the templates page and template selector in session",

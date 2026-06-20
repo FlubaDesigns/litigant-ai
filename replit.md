@@ -15,7 +15,7 @@ Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents
 - Frontend: React + Vite + Wouter (routing) + Tailwind + shadcn/ui + Framer Motion
 - Backend: Express 5 + esbuild bundle
 - Auth + DB: Firebase Auth + Firestore (graceful fallback when unconfigured)
-- Payments: Stripe (via `stripe-replit-sync` connector)
+- Payments: Square (credit packs via Square Payment Links + webhooks)
 - Brand: electric green `#00c853` on near-black
 
 ## Where things live
@@ -24,7 +24,7 @@ Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents
 - `artifacts/gh-brain/src/services/` — API clients (adminService, authService, sessionService, etc.)
 - `artifacts/gh-brain/src/hooks/` — useFeatureFlag, useBrainSession, useUserProfile
 - `artifacts/api-server/src/routes/` — all Express routes
-- `artifacts/api-server/src/lib/` — brainEngine, firebaseAdmin, creditLedger, stripeClient
+- `artifacts/api-server/src/lib/` — brainEngine, firebaseAdmin, creditLedger, squareClient
 - `scripts/src/set-admin-claim.ts` — one-time CLI to promote a user to admin
 
 ## Architecture decisions
@@ -32,7 +32,7 @@ Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents
 - All credit mutations go through `addCredits()` / `reserveCredits()` / `reconcileCredits()` — never raw `FieldValue.increment()`. Every call writes an immutable `credit_transactions` ledger entry.
 - Admin data reads use Express routes with `requireAdmin` middleware (checks `admin: true` Firebase custom claim) instead of Cloud Functions — equivalent security, simpler ops.
 - Feature flags live in Firestore `config/featureFlags` and are publicly readable via `GET /api/feature-flags`. Writes require admin.
-- Stripe webhook idempotency: `stripe_events/{eventId}` is checked atomically before any credit grant.
+- Square webhook idempotency: `square_events/{eventId}` is checked atomically before any credit grant.
 - Firebase not configured in dev → all Firebase paths skip gracefully; app runs in guest mode.
 
 ## Admin Setup
@@ -75,7 +75,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-- Stripe deps are installed at workspace root (`-w` flag) but not in `api-server/package.json` — works via hoisting but is brittle for isolated installs.
+- Square client is instantiated in `artifacts/api-server/src/lib/squareClient.ts` — requires `SQUARE_ACCESS_TOKEN`, `SQUARE_ENVIRONMENT`, and `SQUARE_LOCATION_ID` to be set.
 - Admin user search: email searches use Firestore range query (prefix match). Name searches fetch up to 200 records and filter client-side (no full-text index).
 - Ban endpoint: sets Firestore `banned` flag AND disables Firebase Auth account. If Auth update fails, Firestore flag is still set and `authWarning` is returned in the response.
 - `api_logs` collection starts empty until brain.ts writes to it. Error Logs tab falls back to `sessions.status === "error"` in the meantime.

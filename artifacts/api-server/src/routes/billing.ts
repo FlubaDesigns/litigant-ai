@@ -102,7 +102,7 @@ router.get("/billing/transactions", async (req, res) => {
 
 /**
  * GET /billing/payment-history
- * Returns purchase transactions from Firestore (replaces Stripe payment intent history).
+ * Returns purchase transactions from Firestore (Square payment history).
  */
 router.get("/billing/payment-history", async (req, res) => {
   const user = await requireAuth(req, res);

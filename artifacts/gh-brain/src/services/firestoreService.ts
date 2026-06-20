@@ -41,7 +41,7 @@ export interface UserProfile {
   createdAt: string;
   lastLoginAt: string;
   subscriptionStatus: "none" | "active" | "cancelled" | "past_due";
-  stripeCustomerId?: string;
+  squareCustomerId?: string;
   onboardingComplete?: boolean;
   defaultSettings: {
     // V29 Mission Briefing fields

@@ -203,9 +203,9 @@ Users acquire credits through several paths. All are handled by `addCredits()` i
 
 | Source              | `CreditTxType`        | When it fires |
 |---------------------|-----------------------|---------------|
-| Stripe purchase     | `purchase`            | Stripe `checkout.session.completed` webhook |
-| Subscription grant  | `subscription_grant`  | Stripe subscription renewal webhook |
-| Signup bonus        | `signup_bonus`        | First login after email verification (50 credits, idempotent) |
+| Square purchase     | `purchase`            | Square `payment.updated` webhook |
+| Subscription grant  | `subscription_grant`  | Subscription renewal webhook |
+| Signup bonus        | `signup_bonus`        | First login after email verification (100 credits, idempotent) |
 | Admin adjustment    | `admin_adjustment`    | `POST /admin/users/:uid/credits` |
 | Brain usage         | `usage`               | Session credit reservation |
 | Reconciliation refund | `refund`            | Post-session settlement or failure |
@@ -213,11 +213,11 @@ Users acquire credits through several paths. All are handled by `addCredits()` i
 ### Idempotency
 
 `addCredits()` accepts an optional `idempotencyKey`. When provided:
-1. The key is checked against `stripe_events` collection before any write.
+1. The key is checked against `square_events` collection before any write.
 2. If found → operation is skipped (`{ skipped: true }` returned).
 3. If not found → key is written atomically alongside the balance mutation.
 
-This prevents Stripe webhooks from double-granting credits if delivered more than once.
+This prevents Square webhooks from double-granting credits if delivered more than once.
 
 ---
 
@@ -230,7 +230,7 @@ This prevents Stripe webhooks from double-granting credits if delivered more tha
 | `creditBalance`     | number   | Current balance in credits |
 | `plan`              | string   | `"free"` \| `"starter"` \| `"pro"` \| `"team"` |
 | `subscriptionStatus`| string   | `"none"` \| `"active"` \| `"cancelled"` \| `"past_due"` |
-| `stripeCustomerId`  | string?  | Stripe customer ID for lookup |
+| `squareCustomerId`  | string?  | Square customer ID for lookup |
 | `autoRefill`        | object?  | `{ enabled, thresholdCredits, packPriceId }` |
 | `updatedAt`         | Timestamp| Last balance change |
 
@@ -244,9 +244,9 @@ Every balance movement — in either direction — writes one immutable document
 | `type`              | string   | One of the `CreditTxType` values |
 | `amount`            | number   | Positive = credit grant; negative = deduction |
 | `balanceAfter`      | number   | Balance after this transaction |
-| `source`            | string   | Human-readable event source (e.g. `"brain_reservation"`, `"stripe_checkout"`) |
+| `source`            | string   | Human-readable event source (e.g. `"brain_reservation"`, `"square_checkout"`) |
 | `sessionId`         | string?  | Brain session ID if usage-related |
-| `stripePaymentId`   | string?  | Stripe payment intent or charge ID |
+| `squarePaymentId`   | string?  | Square payment ID |
 | `createdAt`         | Timestamp| Immutable write time |
 
 ### `config/pricing`
