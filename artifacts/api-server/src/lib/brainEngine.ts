@@ -312,6 +312,15 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       const litProvider = await resolveSeatProvider("litigant", config, provider, configured, i);
       sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
 
+      // In independent mode each agent only sees its OWN prior turns —
+      // it can build on its own reasoning across rounds but cannot hear
+      // what the other seats argued. This keeps input tokens flat (no
+      // transcript compounding) while still letting positions evolve.
+      const myPriorTurns = turns
+        .filter((t) => t.role === role.name)
+        .map((t) => `Round ${t.round}: ${t.content}`)
+        .join("\n\n");
+
       const messages: ChatMessage[] = [
         {
           role: "system",
@@ -323,7 +332,10 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
             const isIndependent = config.aiReasoning === "independent";
             if (round === 1 && i === 0) return `Begin your examination of the question.`;
             if (isIndependent) {
-              return `Give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. Think independently — do not assume you know what others have argued.`;
+              const ownHistory = myPriorTurns
+                ? `Your previous arguments:\n\n${myPriorTurns}\n\nNow give your round ${round} argument as ${role.persona}. Build on your own reasoning — you have not heard the other seats.`
+                : `Give your opening argument as ${role.persona}. Reason independently.`;
+              return ownHistory;
             }
             return `Previous discussion:\n\n${previousTranscript}\n\nNow give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`;
           })(),

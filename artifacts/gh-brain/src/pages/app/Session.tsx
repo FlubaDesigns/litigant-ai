@@ -229,14 +229,38 @@ function ConfigPanel({
           </V29Field>
 
           {/* AI REASONING */}
-          <V29Field label="AI Reasoning" desc="Independent: each AI thinks alone. Chain: each reads prior responses first.">
-            <Select value={config.aiReasoning} onValueChange={(v) => onChange({ aiReasoning: v as CourtConfig["aiReasoning"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="independent">Independent</SelectItem>
-                <SelectItem value="chain">Chain</SelectItem>
-              </SelectContent>
-            </Select>
+          <V29Field label="AI Reasoning">
+            <div className="flex flex-col gap-1.5">
+              {(["independent", "chain"] as const).map((mode) => {
+                const isSelected = config.aiReasoning === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onChange({ aiReasoning: mode })}
+                    className={cn(
+                      "text-left px-3 py-2.5 rounded border text-xs transition-colors",
+                      isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border/50 bg-background text-muted-foreground hover:border-border hover:text-foreground"
+                    )}
+                  >
+                    <div className="font-semibold capitalize mb-0.5">{mode}</div>
+                    {mode === "independent" ? (
+                      <div className="text-[11px] leading-snug opacity-80">
+                        Each AI builds on its own prior arguments only — other seats are not heard. Lower credit cost.
+                      </div>
+                    ) : (
+                      <div className="text-[11px] leading-snug opacity-80">
+                        Each AI reads the full debate before responding. Richer cross-examination —{" "}
+                        <span className={isSelected ? "text-yellow-400" : "text-yellow-500"}>uses significantly more credits</span>{" "}
+                        because all agents re-read the entire transcript each turn.
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </V29Field>
 
           {/* OUTPUT STRATEGY */}
