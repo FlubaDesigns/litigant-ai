@@ -62,7 +62,7 @@ export const PLAN_LIMITS = {
     trialCredits: 50,
     creditsPerMonth: null,
     features: [
-      "50 trial credits included",
+      "100 trial credits included",
       "Standard AI models",
       "Export to Markdown",
       "Session history (last 10)",
@@ -127,7 +127,7 @@ export async function getSubscription(): Promise<null> {
 
 /**
  * Called by authService after new user creation.
- * The server grants 50 trial credits idempotently.
+ * The server grants 100 trial credits idempotently.
  */
 export async function grantSignupBonus(user: User): Promise<void> {
   try {

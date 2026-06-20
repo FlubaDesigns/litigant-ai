@@ -159,7 +159,7 @@ export default function ToolsIndexPage() {
       <section className="border-t border-border/60 bg-card/20 px-6 py-16 text-center">
         <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-          50 free credits on signup. No credit card required.
+          100 free credits on signup. No credit card required.
         </p>
         <Link href="/register">
           <Button size="lg" className="font-semibold gap-2">

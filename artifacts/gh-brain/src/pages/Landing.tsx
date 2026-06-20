@@ -564,12 +564,12 @@ export default function LandingPage() {
             >
               <h2 className="text-5xl font-bold tracking-tighter mb-6">Ready to convene the court?</h2>
               <p className="text-muted-foreground mb-10 text-lg">
-                Start free. No credit card required. Your first 50 credits are on us.
+                Start free. No credit card required. Your first 100 credits are on us.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <Button asChild size="lg" className="h-14 px-12 bg-primary hover:bg-primary/90 text-primary-foreground text-base rounded-none">
                   <Link href={isSignedIn ? "/session" : "/register"}>
-                    {isSignedIn ? "Open App" : "Start Free — 50 credits included"} <ChevronRight className="ml-2 w-5 h-5" />
+                    {isSignedIn ? "Open App" : "Start Free — 100 credits included"} <ChevronRight className="ml-2 w-5 h-5" />
                   </Link>
                 </Button>
                 {!isSignedIn && (

@@ -17,7 +17,7 @@ const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/ap
 /**
  * Server-side equivalent of a Firebase Auth onCreate Cloud Function.
  * Called after signup/first login — the server creates the user doc and
- * grants the 50-credit bonus atomically (amount & logic are server-controlled).
+ * grants the 100-credit bonus atomically (amount & logic are server-controlled).
  */
 async function provisionUser(
   user: User,

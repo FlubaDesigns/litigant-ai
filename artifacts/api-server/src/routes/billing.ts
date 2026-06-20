@@ -31,7 +31,7 @@ async function requireAuth(
 
 /**
  * POST /billing/signup-grant
- * Idempotently grants 50 trial credits to a new user.
+ * Idempotently grants 100 trial credits to a new user.
  */
 router.post("/billing/signup-grant", async (req, res) => {
   const user = await requireAuth(req, res);

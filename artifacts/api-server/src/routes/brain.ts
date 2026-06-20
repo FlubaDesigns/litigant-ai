@@ -281,7 +281,7 @@ router.post("/run-brain", async (req, res) => {
     if (await hasGuestUsed(ip)) {
       res.status(402).json({
         message:
-          "Guest sessions are limited to one free trial. Create a free account to continue — you'll receive 50 credits.",
+          "Guest sessions are limited to one free trial. Create a free account to continue — you'll receive 100 credits.",
         guestLimitReached: true,
       });
       return;

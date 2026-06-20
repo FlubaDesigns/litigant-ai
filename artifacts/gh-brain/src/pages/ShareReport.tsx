@@ -371,7 +371,7 @@ export default function ShareReportPage() {
             </Button>
           </Link>
           <p className="text-xs text-muted-foreground">
-            No credit card required · 50 free credits on signup
+            No credit card required · 100 free credits on signup
           </p>
         </motion.div>
 

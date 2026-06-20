@@ -21,7 +21,7 @@ const PLANS = [
     id: "free" as const,
     name: "Free",
     price: "$0",
-    credits: "50 credits",
+    credits: "100 credits",
     features: ["3 sessions/month", "2 AI models", "PDF export"],
   },
   {
@@ -100,7 +100,7 @@ export default function RegisterPage() {
           </Link>
           <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Create an account</h1>
           <p className="text-muted-foreground text-center text-sm">
-            Get 50 free credits to explore the adversarial reasoning engine.
+            Get 100 free credits to explore the adversarial reasoning engine.
           </p>
         </div>
 

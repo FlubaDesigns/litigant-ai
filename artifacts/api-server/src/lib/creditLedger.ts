@@ -12,7 +12,7 @@
  * ## Transaction types (CreditTxType)
  *   purchase           — Square one-time credit pack checkout
  *   subscription_grant — Subscription renewal top-up
- *   signup_bonus       — 50 free credits on first verified login
+ *   signup_bonus       — 100 free credits on first verified login
  *   usage              — session credit reservation (negative amount)
  *   refund             — post-session reconciliation or failure refund (positive)
  *   admin_adjustment   — manual admin grant or deduction
@@ -36,7 +36,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 export type CreditTxType =
   | "purchase"           // Square one-time credit pack
   | "subscription_grant" // subscription renewal top-up
-  | "signup_bonus"       // 50 free trial credits
+  | "signup_bonus"       // 100 free trial credits
   | "usage"              // session deduction (negative amount)
   | "refund"             // post-session reconciliation or failure (positive amount)
   | "admin_adjustment";  // manual admin grant or deduction
@@ -237,13 +237,13 @@ export async function updateUserPlan(
 }
 
 /**
- * Idempotently grants 50 trial credits to a new user on first sign-in.
+ * Idempotently grants 100 trial credits to a new user on first sign-in.
  *
  * Uses "signup_bonus_{uid}" as the idempotency key so this fires at most
  * once per user even if the auth webhook fires multiple times.
  */
 export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean }> {
-  const result = await addCredits(uid, 50, "signup_bonus", {
+  const result = await addCredits(uid, 100, "signup_bonus", {
     source:          "signup_trial",
     idempotencyKey:  `signup_bonus_${uid}`,
   });
