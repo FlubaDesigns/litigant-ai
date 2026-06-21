@@ -14,22 +14,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import clashImage from "@/assets/images/hero-clash.png";
 import neuralImage from "@/assets/images/neural-court.png";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
+import { TOOL_PAGES } from "@/data/toolPages";
 
-// ── Use-case data ────────────────────────────────────────────────────────────
-const USE_CASES = [
-  { icon: Briefcase, title: "Due Diligence", desc: "Challenge acquisition assumptions with adversarial stress-testing before you sign." },
-  { icon: FlaskConical, title: "Research Validation", desc: "Pit competing scientific interpretations against each other to expose weak methodology." },
-  { icon: Newspaper, title: "Media Fact-Checking", desc: "Let skeptic models dismantle news claims with source cross-examination in real time." },
-  { icon: Vote, title: "Policy Analysis", desc: "Test legislative proposals across ideological lenses before forming a position." },
-  { icon: TrendingUp, title: "Investment Theses", desc: "Run bull and bear cases simultaneously to stress-test your conviction before deploying capital." },
-  { icon: Globe, title: "Geopolitical Risk", desc: "Model competing interpretations of regional events from expert perspectives." },
-  { icon: Code2, title: "Architecture Reviews", desc: "Have AI skeptics challenge system design decisions before you commit to the build." },
-  { icon: BookOpen, title: "Legal Research", desc: "Test arguments from opposing counsel before entering the courtroom." },
-  { icon: Search, title: "Competitive Intelligence", desc: "Pressure-test your product positioning against the steelman of the competition." },
-  { icon: MessageSquare, title: "Debate Preparation", desc: "Identify the strongest counterarguments to your position so you're never blindsided." },
-  { icon: Lightbulb, title: "Hypothesis Testing", desc: "Stress-test a new idea with a Socratic cross-examination before you invest in it." },
-  { icon: FileText, title: "Report Critique", desc: "Surface hidden assumptions and logical gaps in long-form documents before they publish." },
-];
+// ── Tool page icon map ────────────────────────────────────────────────────────
+const TOOL_ICON_MAP: Record<string, React.ElementType> = {
+  Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
+  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
+};
 
 // ── How it works ─────────────────────────────────────────────────────────────
 const HOW_IT_WORKS = [
@@ -433,27 +424,36 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="max-w-2xl mb-16"
             >
-              <h2 className="text-4xl font-bold tracking-tight mb-4">Who Convenes the Court?</h2>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">Put Your Toughest Questions on Trial</h2>
               <p className="text-lg text-muted-foreground">
-                Wherever contested claims meet high stakes, Litigant AI delivers adversarial clarity.
+                14 purpose-built tools — each one deploys a panel of AI models to cross-examine your question and deliver a verdict.
               </p>
             </motion.div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {USE_CASES.map((uc, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.04 }}
-                  className="p-5 border border-border/40 bg-card/60 hover:border-primary/40 hover:bg-card transition-all group"
-                >
-                  <uc.icon className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
-                  <h3 className="font-semibold text-sm mb-1.5">{uc.title}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{uc.desc}</p>
-                </motion.div>
-              ))}
+              {TOOL_PAGES.map((tool, i) => {
+                const Icon = TOOL_ICON_MAP[tool.icon] ?? Briefcase;
+                return (
+                  <motion.div
+                    key={tool.slug}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.04 }}
+                  >
+                    <Link href={`/tools/${tool.slug}`}>
+                      <div className="p-5 border border-border/40 bg-card/60 hover:border-primary/40 hover:bg-card transition-all group cursor-pointer h-full">
+                        <Icon className="w-6 h-6 text-primary mb-3 group-hover:scale-110 transition-transform" />
+                        <h3 className="font-semibold text-sm mb-1.5 group-hover:text-primary transition-colors">{tool.title}</h3>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{tool.metaDescription}</p>
+                        <div className="mt-3 flex items-center gap-1 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                          Try free <ChevronRight className="w-3 h-3" />
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </section>
