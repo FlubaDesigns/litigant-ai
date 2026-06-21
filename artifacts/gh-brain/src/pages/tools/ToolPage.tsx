@@ -35,6 +35,7 @@ export default function ToolPage() {
     title: tool?.metaTitle ?? "Tool Not Found | Litigant AI",
     description: tool?.metaDescription,
     canonicalPath: tool ? `/tools/${tool.slug}` : undefined,
+    ogImage: tool?.image,
     jsonLd: tool
       ? [
           {
@@ -122,6 +123,18 @@ export default function ToolPage() {
           </div>
         </motion.div>
       </section>
+
+      {/* Hero image */}
+      <div className="relative w-full max-w-4xl mx-auto px-6 pb-4">
+        <div className="rounded-2xl overflow-hidden border border-border/40 shadow-2xl shadow-black/40 aspect-video">
+          <img
+            src={tool.image}
+            alt={`${tool.title} — Litigant AI`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/5" />
+        </div>
+      </div>
 
       {/* Credibility strip */}
       <div className="border-y border-border/40 bg-card/20 px-6 py-4">

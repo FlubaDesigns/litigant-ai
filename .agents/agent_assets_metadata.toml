@@ -12,6 +12,90 @@ uri = "file://artifacts/gh-brain/src/assets/images/neural-court.png"
 type = "image"
 title = "Glowing green neural pathways"
 
+[[generated]]
+id = "GW_YBmbdibnzZCLbgYLHD"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/business-plan-analyzer.png"
+type = "image"
+title = "business plan chess strategy"
+
+[[generated]]
+id = "UXP4BM-uxGMqwK1KLfUrF"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/website-audit.png"
+type = "image"
+title = "website network audit nodes"
+
+[[generated]]
+id = "kZD7Gg-J8aNcTmTcTMqXi"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/marketing-strategy.png"
+type = "image"
+title = "marketing growth light trajectory"
+
+[[generated]]
+id = "fiB5eMX2-bvuvdq8SWLUl"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/code-review.png"
+type = "image"
+title = "code terminal green streams"
+
+[[generated]]
+id = "qAdfoomr-NqgoyUQb-nN6"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/contract-review.png"
+type = "image"
+title = "legal scales neon green"
+
+[[generated]]
+id = "s3SNG5FPnXUnuqZCK5R7B"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/decision-analysis.png"
+type = "image"
+title = "decision tree branching paths"
+
+[[generated]]
+id = "eVQY_cDOlMJIAeNHXLoYs"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/medical-appointment-prep.png"
+type = "image"
+title = "medical cross green light"
+
+[[generated]]
+id = "8lvXt_aBZ_iE9JoTm72zq"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/product-validator.png"
+type = "image"
+title = "product prototype holographic emergence"
+
+[[generated]]
+id = "3bO_h4xH7sRXJwozXLRF4"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/manuscript-critique.png"
+type = "image"
+title = "manuscript book glowing particles"
+
+[[generated]]
+id = "BkQzKWtGg3yd47KgLdKXL"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/competitive-intelligence.png"
+type = "image"
+title = "radar sonar competitive scanning"
+
+[[generated]]
+id = "4cunwksW8JY4ya0lwulwH"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/debate-prep.png"
+type = "image"
+title = "debate two orbs confrontation"
+
+[[generated]]
+id = "5Eohcq2a0qdTB62U72Jh3"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/hypothesis-testing.png"
+type = "image"
+title = "hypothesis molecular structure flask"
+
+[[generated]]
+id = "W5hAA9DSkIc-r5OPjnFqS"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/report-critique.png"
+type = "image"
+title = "report document green critique marks"
+
+[[generated]]
+id = "C1itgbzVnF2_0tRwjwBBZ"
+uri = "file://artifacts/gh-brain/src/assets/images/tools/research-summarizer.png"
+type = "image"
+title = "research knowledge graph constellation"
+
 [[outputs]]
 id = "oHu2SZNBZ0NyJBnLPlLe_"
 uri = "file://downloads/website.zip"

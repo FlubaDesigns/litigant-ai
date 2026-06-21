@@ -127,25 +127,33 @@ export default function ToolsIndexPage() {
                 transition={{ duration: 0.3, delay: i * 0.04 }}
               >
                 <Link href={`/tools/${tool.slug}`}>
-                  <div className="group rounded-xl border border-border/60 bg-card/40 p-5 h-full hover:border-primary/40 hover:bg-primary/5 transition-all duration-150 cursor-pointer">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-primary" />
-                      </div>
-                      <div>
+                  <div className="group rounded-xl border border-border/60 bg-card/40 overflow-hidden h-full hover:border-primary/40 hover:bg-primary/5 transition-all duration-150 cursor-pointer flex flex-col">
+                    <div className="relative h-36 overflow-hidden bg-card/60">
+                      <img
+                        src={tool.image}
+                        alt={tool.title}
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+                      <div className="absolute top-2 left-2">
                         <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded border", CATEGORY_COLORS[tool.category])}>
                           {tool.badge}
                         </span>
                       </div>
+                      <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-background/70 backdrop-blur-sm border border-border/40 flex items-center justify-center">
+                        <Icon className="w-3.5 h-3.5 text-primary" />
+                      </div>
                     </div>
-                    <h2 className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">
-                      {tool.title}
-                    </h2>
-                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                      {tool.metaDescription}
-                    </p>
-                    <div className="mt-3 flex items-center gap-1 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                      Try it free <ChevronRight className="w-3 h-3" />
+                    <div className="p-4 flex flex-col flex-1">
+                      <h2 className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">
+                        {tool.title}
+                      </h2>
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+                        {tool.metaDescription}
+                      </p>
+                      <div className="mt-3 flex items-center gap-1 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        Try it free <ChevronRight className="w-3 h-3" />
+                      </div>
                     </div>
                   </div>
                 </Link>

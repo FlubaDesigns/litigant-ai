@@ -4,6 +4,7 @@ interface PageMetaOptions {
   title: string;
   description?: string;
   canonicalPath?: string;
+  ogImage?: string;
   jsonLd?: object | object[];
 }
 
@@ -42,7 +43,7 @@ function removeJsonLd(id: string) {
   document.getElementById(id)?.remove();
 }
 
-export function usePageMeta({ title, description, canonicalPath, jsonLd }: PageMetaOptions) {
+export function usePageMeta({ title, description, canonicalPath, ogImage, jsonLd }: PageMetaOptions) {
   useEffect(() => {
     const BASE_URL = "https://litigant-ai.com";
     const prevTitle = document.title;
@@ -52,6 +53,8 @@ export function usePageMeta({ title, description, canonicalPath, jsonLd }: PageM
     const prevOgTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.content ?? "";
     const prevOgDesc = document.querySelector<HTMLMetaElement>('meta[property="og:description"]')?.content ?? "";
     const prevOgUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.content ?? "";
+    const prevOgImage = document.querySelector<HTMLMetaElement>('meta[property="og:image"]')?.content ?? "";
+    const prevTwImage = document.querySelector<HTMLMetaElement>('meta[name="twitter:image"]')?.content ?? "";
     const prevTwTitle = document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')?.content ?? "";
     const prevTwDesc = document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')?.content ?? "";
 
@@ -61,6 +64,12 @@ export function usePageMeta({ title, description, canonicalPath, jsonLd }: PageM
       setOgTag("og:description", description);
       setNameTag("twitter:title", title);
       setNameTag("twitter:description", description);
+    }
+
+    if (ogImage) {
+      const fullUrl = ogImage.startsWith("http") ? ogImage : `${BASE_URL}${ogImage}`;
+      setOgTag("og:image", fullUrl);
+      setNameTag("twitter:image", fullUrl);
     }
 
     if (canonicalPath) {
@@ -87,6 +96,10 @@ export function usePageMeta({ title, description, canonicalPath, jsonLd }: PageM
         setOgTag("og:description", prevOgDesc);
         setNameTag("twitter:title", prevTwTitle);
         setNameTag("twitter:description", prevTwDesc);
+      }
+      if (ogImage) {
+        setOgTag("og:image", prevOgImage);
+        setNameTag("twitter:image", prevTwImage);
       }
       if (canonicalPath) {
         setOgTag("og:url", prevOgUrl);
