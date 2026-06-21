@@ -69,6 +69,18 @@ export interface UserProfile {
     weeklyDigest: boolean;
     productUpdates: boolean;
   };
+  /**
+   * Auto-refill preference — written by POST /billing/auto-refill
+   * (setAutoRefillPreference in creditLedger.ts). Was missing from this type,
+   * causing Billing.tsx to cast to `any` to read it.
+   */
+  autoRefill?: {
+    enabled: boolean;
+    thresholdCredits: number;
+    packPriceId: string;
+  };
+  /** Server-written Square checkout URL; cleared by the client via deleteField() once consumed. */
+  autoRefillCheckoutUrl?: string;
 }
 
 export async function saveUserConfig(

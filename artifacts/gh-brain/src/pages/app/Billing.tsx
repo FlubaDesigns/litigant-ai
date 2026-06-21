@@ -509,7 +509,7 @@ export default function BillingPage() {
 
   // Sync auto-refill toggle from user profile when it loads
   useEffect(() => {
-    const pref = (userProfile as any)?.autoRefill;
+    const pref = userProfile?.autoRefill;
     if (pref && typeof pref.enabled === "boolean") {
       setAutoRefillEnabled(pref.enabled);
     }
