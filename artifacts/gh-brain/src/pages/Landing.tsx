@@ -309,7 +309,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── 2. Core Features ── */}
+        {/* ── 2. The Briefing Room ── */}
         <section className="py-28 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
             <motion.div
@@ -318,56 +318,106 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="max-w-3xl mb-16"
             >
-              <h2 className="text-4xl font-bold tracking-tight mb-4">You Control the Court</h2>
+              <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary mb-4">⚙ Mission Briefing</div>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">The Briefing Room</h2>
               <p className="text-lg text-muted-foreground">
-                Every session is configured by you. These are the real controls — not marketing abstractions.
+                Before the court convenes, you set the rules. Every session is configured by you — here is exactly what each control does.
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-5">
               {[
                 {
-                  icon: Gavel,
-                  title: "Court Mode",
-                  desc: "Choose how the models engage: Adversarial (models attack each other's positions), Socratic (probing questions only), Analysis (structured breakdown), or Critique (find the flaws). Same question, completely different dynamics.",
+                  num: "01",
+                  label: "Safety Filter",
+                  options: ["Conscience ON", "Conscience OFF"],
+                  desc: "When ON, each AI model performs a self-check at the end of its response — flagging potential bias, gaps in reasoning, or harmful outputs before they reach you. When OFF, you get the raw, unfiltered output. Most users leave this ON.",
                 },
                 {
-                  icon: Scale,
-                  title: "How Many Models",
-                  desc: "Run 2 to 8 independent AI litigants per session. Each is assigned a distinct role — Advocate, Skeptic, Devil's Advocate, Analyst. More models means more angles covered, and a higher credit cost.",
+                  num: "02",
+                  label: "Response Mode",
+                  options: ["Consensus Only", "All Voices"],
+                  desc: "Consensus Only gives you a single synthesized answer — the court's agreed position. All Voices shows you every litigant's individual response in full, so you can read each model's reasoning and see exactly where they agree or diverge.",
                 },
                 {
-                  icon: Crosshair,
-                  title: "Confidence Target",
-                  desc: "You set the bar: 80%, 90%, 95%, or 99%. The court keeps deliberating until cross-model agreement clears your threshold — or you decide the partial result is enough.",
+                  num: "03",
+                  label: "Debate Mode",
+                  options: ["Adversarial", "Collaborative"],
+                  desc: "Adversarial: the AIs actively challenge and attack each other's positions — designed to find weaknesses and surface contradictions. Collaborative: the AIs build on each other's ideas toward a shared answer. Adversarial is harder on a claim. Collaborative is better for creative or exploratory questions.",
                 },
                 {
-                  icon: BarChart3,
-                  title: "Reasoning Mode",
-                  desc: "Independent: each model reasons from scratch without seeing the others' work — maximum diversity of thought. Chain: each model builds on the prior response — deeper refinement, less redundancy.",
+                  num: "04",
+                  label: "AI Reasoning",
+                  options: ["Independent", "Chain"],
+                  desc: "Independent: each AI responds only from its own prior reasoning — it never reads the other models' turns. Maximum diversity, lower cost. Chain: each AI reads the full debate transcript before responding — richer cross-examination, but significantly more credits because every model re-reads everything each round.",
                 },
                 {
-                  icon: Shield,
-                  title: "Max Rounds",
-                  desc: "Control how many full rounds of cross-examination run before the court is forced to decide. 1 round is fast and cheap. 10 rounds is a deep deliberation. You can accept a partial result any time.",
+                  num: "05",
+                  label: "Output Strategy",
+                  options: ["Moderator Consensus", "Individual Responses", "Consensus + Individual", "Court Transcript", "Artifact Only"],
+                  desc: "Controls what the court actually produces. Moderator Consensus is a clean synthesized ruling. Individual Responses gives each model's answer separately. Transcript gives you the full back-and-forth. Artifact Only is for when you just want the downloadable file with no on-screen display.",
                 },
                 {
-                  icon: FileText,
-                  title: "Output Format",
-                  desc: "Get the verdict your way: a full analytical Report, a concise Memo, a bullet-point Summary, or a stripped-down Verdict only. Export as PDF or Markdown. Share a read-only link with anyone — no login needed.",
+                  num: "06",
+                  label: "Output Preference",
+                  options: ["Display in chat", "Download only", "Display + download"],
+                  desc: "Where you want the result to appear. Display in chat shows it live as the session runs. Download only saves it as a file without rendering it on screen. Display + download does both.",
                 },
-              ].map((f, i) => (
+                {
+                  num: "07",
+                  label: "Format",
+                  options: ["Text", "Markdown", "JSON"],
+                  desc: "The file format for your verdict. Text is plain readable output. Markdown is formatted and ready to paste into Notion, GitHub, or any editor that renders it. JSON is structured data — useful if you're piping the output into another tool or system.",
+                },
+                {
+                  num: "08",
+                  label: "Confidence Target",
+                  options: ["80% Fast", "90% Standard", "95% Deep", "99% Maximum"],
+                  desc: "The threshold the court must reach before it can deliver a verdict. 80% is fast and cheap — good for quick questions. 99% means the court keeps deliberating until near-unanimous agreement is reached. You can always accept a partial result early if the reasoning is already good enough.",
+                },
+                {
+                  num: "09",
+                  label: "Maximum Iterations",
+                  options: ["1", "3", "5", "10"],
+                  desc: "How many full rounds of cross-examination the court runs before it's forced to a verdict. One round is a single pass — fast. Ten rounds means every model challenges every other model repeatedly until positions are exhausted. More iterations = higher cost, deeper output.",
+                },
+                {
+                  num: "10",
+                  label: "Maximum Credits",
+                  options: ["10", "15", "25", "50", "100"],
+                  desc: "A hard spending cap per session. The court will stop and pause for your decision if it hits this limit mid-deliberation — you can accept the partial result or add more credits and continue. This protects you from runaway costs on complex questions.",
+                },
+                {
+                  num: "11",
+                  label: "AI Provider & Model",
+                  options: ["Gemini", "Grok", "Custom"],
+                  desc: "Which AI engine powers the court. Each provider has different models at different credit costs. You can lock all litigants to one provider, or let the system assign them. Bring your own API key via Custom to use any OpenAI-compatible model.",
+                },
+              ].map((item, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.07 }}
-                  className="p-7 border border-border/50 bg-card hover:border-primary/40 transition-colors group cursor-default"
+                  transition={{ delay: i * 0.04 }}
+                  className="p-6 border border-border/50 bg-card hover:border-primary/30 transition-colors"
                 >
-                  <f.icon className="w-9 h-9 text-primary mb-5 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-lg font-bold mb-3">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  <div className="flex items-start gap-4">
+                    <div className="text-3xl font-bold font-mono text-primary/20 leading-none select-none shrink-0 mt-0.5">
+                      {item.num}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold mb-2">{item.label}</h3>
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {item.options.map((opt) => (
+                          <span key={opt} className="text-[11px] font-mono px-2 py-0.5 rounded border border-primary/25 bg-primary/5 text-primary/80">
+                            {opt}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
                 </motion.div>
               ))}
             </div>
