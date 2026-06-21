@@ -8,8 +8,10 @@ import { logger } from "./logger.js";
  * Square computes: Base64( HMAC-SHA256( signingKey, notificationUrl + rawBody ) )
  * and sends it in the "x-square-hmacsha256-signature" header.
  *
- * If SQUARE_WEBHOOK_SIGNATURE_KEY is not set we log a warning and allow the
- * request through — useful during initial sandbox testing.
+ * If SQUARE_WEBHOOK_SIGNATURE_KEY is not set, the webhook is REJECTED (fail-closed).
+ * Credits are minted from this endpoint, so an unverified webhook is an open door
+ * to free credits for anyone who knows the documented payment-note format.
+ * There is no safe "skip verification" mode.
  */
 export function verifySquareWebhook(
   rawBody: string,
@@ -18,16 +20,27 @@ export function verifySquareWebhook(
 ): boolean {
   const signingKey = process.env["SQUARE_WEBHOOK_SIGNATURE_KEY"];
   if (!signingKey) {
-    logger.warn(
-      "[SquareWebhook] SQUARE_WEBHOOK_SIGNATURE_KEY not set — skipping verification (set it in production)"
+    logger.error(
+      "[SquareWebhook] SQUARE_WEBHOOK_SIGNATURE_KEY not set — rejecting webhook. " +
+        "Set this env var from the Square Developer Dashboard before going live; " +
+        "without it, credit-granting webhooks cannot be verified and are refused."
     );
-    return true;
+    return false;
   }
 
   const hmac = crypto.createHmac("sha256", signingKey);
   hmac.update(notificationUrl + rawBody);
   const expected = hmac.digest("base64");
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+
+  // timingSafeEqual throws (does not return false) if buffer lengths differ.
+  // A mismatched or truncated signature header must be a clean rejection,
+  // not an unhandled exception crashing the request.
+  if (expectedBuf.length !== signatureBuf.length) return false;
+
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf);
 }
 
 interface SquareWebhookEvent {
@@ -68,6 +81,18 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
       const userId = match[1];
       const creditAmount = parseInt(match[2], 10);
       if (!userId || !creditAmount) return;
+
+      // Defense-in-depth: no legitimate credit pack or custom top-up (see
+      // creditPacks.ts, max $500 → 50,000 credits) ever produces a value
+      // this large. Catches a malformed/forged note even if signature
+      // verification is ever misconfigured.
+      const MAX_CREDIT_GRANT = 100_000;
+      if (creditAmount > MAX_CREDIT_GRANT) {
+        logger.error(
+          `[SquareEvent] Rejected suspicious creditAmount=${creditAmount} for ${userId} — exceeds ${MAX_CREDIT_GRANT} cap`
+        );
+        return;
+      }
 
       const result = await addCredits(userId, creditAmount, "purchase", {
         source: "square_checkout",

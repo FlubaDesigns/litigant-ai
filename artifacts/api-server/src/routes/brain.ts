@@ -215,7 +215,7 @@ async function reconcileCredits(
 }
 
 router.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId, continueFromTranscript } = req.body as {
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript } = req.body as {
     question: string;
     config: CourtConfig;
     templateId?: string;
@@ -227,6 +227,18 @@ router.post("/run-brain", async (req, res) => {
     res.status(400).json({ message: "question is required" });
     return;
   }
+
+  // Mint the real session ID server-side before any credit movement so the
+  // reservation, the run, and any failure-refund all reference the same ID.
+  // Previously this fell through to `sessionId ?? "pending"` / `?? "failed"`
+  // because the frontend never sends a sessionId on a new run — it only learns
+  // the ID from the "start" SSE event, which fires after reservation. That
+  // stamped every fresh reservation and failure-refund with the literal string
+  // "pending" or "failed", breaking ledger auditability.
+  // Resumed sessions still pass their existing sessionId from the client and
+  // we honor it, since that ID was already generated server-side on the original run.
+  const sessionId =
+    clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const effectiveConfig: CourtConfig = config ?? {
     courtMode: "adversarial",
@@ -262,7 +274,7 @@ router.post("/run-brain", async (req, res) => {
     // Optimistic credit reservation: deduct estimatedCost upfront.
     // Every balance change (reservation, refund, failure refund) is ledgered atomically.
     try {
-      const reserved = await reserveCredits(uid, estimatedCost, sessionId ?? "pending");
+      const reserved = await reserveCredits(uid, estimatedCost, sessionId);
       if (!reserved) {
         res.status(402).json({
           message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
@@ -406,7 +418,7 @@ router.post("/run-brain", async (req, res) => {
   } finally {
     // If run failed and credits were reserved, refund the full reservation as a ledger entry
     if (!runSucceeded && uid && db) {
-      await reconcileCredits(uid, estimatedCost, sessionId ?? "failed", "brain_failure_refund");
+      await reconcileCredits(uid, estimatedCost, sessionId, "brain_failure_refund");
     }
 
     clearTimeout(sessionTimer);

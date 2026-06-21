@@ -2,15 +2,52 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read and write their own profile document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Server-only fields on the user document. These must never be writable
+    // directly from the client SDK — they are mutated exclusively by the
+    // backend (Admin SDK) via creditLedger.ts / admin.ts, which bypasses
+    // these rules entirely. Listing them here blocks the client-SDK path.
+    //
+    // Note: create uses keys().hasAny() (checks all fields in the new doc)
+    //       because diff(resource.data) is unreliable on create — resource.data
+    //       does not exist yet. Update uses diff().affectedKeys() so that a
+    //       normal profile save (which doesn't touch these fields) still works
+    //       even after a creditBalance has been written server-side.
+    function protectedUserFields() {
+      return [
+        'creditBalance', 'plan', 'subscriptionStatus',
+        'banned', 'bannedReason', 'bannedAt', 'bannedBy',
+        'autoRefill', 'autoRefillCheckoutUrl', 'autoRefillTriggeredAt'
+      ];
     }
 
-    // Sessions: owner can read/write; shared sessions readable by anyone with the shareId
+    // Users can read their own profile. Writes are allowed only for
+    // non-financial fields (displayName, defaultSettings, notifications, etc.)
+    // creditBalance and plan/ban state can only change via the Admin SDK.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && !request.resource.data.keys().hasAny(protectedUserFields());
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedUserFields());
+    }
+
+    // Sessions: owner can read/write; shared sessions readable by anyone.
+    // Field name is "shared" — the app (brain.ts / sessions.ts) never sets
+    // "isPublic", so the old clause never matched anything.
     match /sessions/{sessionId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow read: if resource.data.isPublic == true;
+      allow read: if resource.data.shared == true;
+    }
+
+    // Feedback: any signed-in user (or guest, where userId is null) may
+    // create a feedback entry; nobody can read, update, or delete via the
+    // client SDK. Without this block, all feedback submissions silently fail
+    // because feedbackService.ts calls addDoc() directly from the browser and
+    // the default deny-all catch-all rejects every write.
+    match /feedback/{feedbackId} {
+      allow create: if request.resource.data.userId == null
+                    || (request.auth != null && request.auth.uid == request.resource.data.userId);
+      allow read, update, delete: if false;
     }
 
     // Admin-only collections
@@ -18,7 +55,10 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.token.admin == true;
     }
 
-    // Deny everything else
+    // Everything else (config/*, credit_transactions/*, payment_events/*,
+    // templates/*, system_config/*, guest_sessions/*, api_logs/*) is written
+    // and read exclusively by the backend via the Firebase Admin SDK, which
+    // bypasses these rules entirely.
     match /{document=**} {
       allow read, write: if false;
     }
