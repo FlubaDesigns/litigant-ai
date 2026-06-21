@@ -1,4 +1,7 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
     "public": "artifacts/gh-brain/dist/public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
