@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 import clashImage from "@/assets/images/hero-clash.png";
 import neuralImage from "@/assets/images/neural-court.png";
+import LandingDemoPlayer from "@/components/LandingDemoPlayer";
 
 // ── Use-case data ────────────────────────────────────────────────────────────
 const USE_CASES = [
@@ -274,6 +275,36 @@ export default function LandingPage() {
                 <div className="text-2xl font-bold">87.4%</div>
                 <div className="text-muted-foreground text-[10px] mt-1">3 models · 4 rounds</div>
               </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── 1b. Live Demo Player ── */}
+        <section className="py-20 border-b border-border" style={{ background: "radial-gradient(ellipse at top, rgba(0,200,83,.05) 0%, transparent 70%)" }}>
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-10"
+            >
+              <div className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-primary border border-primary/30 rounded-full px-4 py-1.5 mb-5" style={{ background: "rgba(0,200,83,.06)" }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
+                Live Demo — pre-scripted, no API calls
+              </div>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">Watch the Court in Session</h2>
+              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                Four AI models. One question. A verdict you can trust. This is exactly what you'll see when you run your first trial.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
+              <LandingDemoPlayer />
             </motion.div>
           </div>
         </section>
