@@ -35,7 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { CourtDiagram } from "@/components/CourtDiagram";
 import { SeatInspector } from "@/components/SeatInspector";
-import { makeDefaultSeatMap } from "@/data/seatTypes";
+import { makeDefaultSeatMap, SEAT_PURPOSES, getSeatAIShortName } from "@/data/seatTypes";
 import type { SeatAssignment } from "@/data/seatTypes";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
@@ -1231,6 +1231,97 @@ export default function SessionPage() {
                 </span>
               </div>
             </div>
+
+            {/* ── Staff Your Court ── */}
+            {(() => {
+              const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
+              const namedSeats = [
+                { id: "orchestrator", icon: "🎙", purpose: "Talks to you. Delivers the final verdict." },
+                { id: "moderator",   icon: "⚖",  purpose: "Controls courtroom flow. Builds the briefing." },
+                { id: "architect",   icon: "📐", purpose: "Defines the artifact structure before building." },
+                { id: "builder",     icon: "🔨", purpose: "Builds the requested artifact or implementation." },
+                { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
+              ];
+              return (
+                <div className="rounded-xl border border-border/30 overflow-hidden">
+                  {/* header */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border/20" style={{ background: "rgba(255,255,255,.025)" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">⚖</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70">Staff Your Court</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/40">tap any seat to assign an AI</span>
+                  </div>
+
+                  {/* Litigants row */}
+                  <div className="px-3 pt-2.5 pb-1.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">
+                        Litigants — your debaters
+                      </span>
+                      <div className="flex items-center gap-0 border border-primary/20 rounded-md overflow-hidden">
+                        <button
+                          onClick={handleRemoveLitigant}
+                          disabled={state.config.litigantCount <= 2}
+                          className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold"
+                        >−</button>
+                        <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}</span>
+                        <button
+                          onClick={handleAddLitigant}
+                          disabled={state.config.litigantCount >= 10}
+                          className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold"
+                        >+</button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {seatMap.litigants.map((seat, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSeatClick("litigant", i)}
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition-all group"
+                        >
+                          <span className="text-[10px] text-primary/50 font-mono">L{i + 1}</span>
+                          <span className="text-[11px] font-medium text-primary/80 group-hover:text-primary transition-colors">
+                            {getSeatAIShortName(seat.provider)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="mx-3 border-t border-border/15 my-1.5" />
+
+                  {/* Named support roles */}
+                  <div className="px-3 pb-2.5 pt-1">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Support roles</div>
+                    <div className="grid grid-cols-1 gap-1">
+                      {namedSeats.map(({ id, icon, purpose }) => {
+                        const assignment = seatMap[id as keyof typeof seatMap] as SeatAssignment | undefined;
+                        const aiName = assignment ? getSeatAIShortName(assignment.provider) : "Claude";
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => handleSeatClick(id)}
+                            className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border border-border/20 hover:border-border/50 hover:bg-white/5 transition-all text-left group"
+                          >
+                            <span className="text-base leading-none w-5 text-center shrink-0">{icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-semibold text-foreground/80 capitalize group-hover:text-foreground transition-colors">{id}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded border border-border/30 text-muted-foreground/60 font-mono">{aiName}</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5">{purpose}</div>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-muted-foreground/70 shrink-0 transition-colors" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Court status + credit pill */}
             <div className="flex items-center justify-between px-0.5">
