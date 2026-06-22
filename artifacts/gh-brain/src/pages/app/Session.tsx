@@ -234,7 +234,7 @@ function ConfigPanel({
 
           {/* DEBATE MODE */}
           <V29Field label="Debate Mode" desc="Adversarial: AIs challenge each other. Collaborative: AIs build on each other.">
-            <Select value={config.debateMode} onValueChange={(v) => handleChange({ debateMode: v as CourtConfig["debateMode"], courtMode: v === "adversarial" ? "adversarial" : "analysis" })}>
+            <Select value={config.debateMode} onValueChange={(v) => handleChange({ debateMode: v as CourtConfig["debateMode"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="adversarial">Adversarial</SelectItem>

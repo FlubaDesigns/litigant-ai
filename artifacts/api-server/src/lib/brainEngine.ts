@@ -79,6 +79,18 @@ function getRoles(config: CourtConfig): RoleDefinition[] {
   return allRoles.slice(0, Math.min(config.litigantCount, allRoles.length));
 }
 
+/**
+ * Returns an interaction-style clause injected into every litigant's system
+ * prompt. This is independent of courtMode (which sets *who* speaks) —
+ * debateMode sets *how* those seats engage with each other's arguments.
+ */
+function getDebateModeClause(debateMode?: "adversarial" | "collaborative"): string {
+  if (debateMode === "collaborative") {
+    return "\n\nInteraction style: Collaborative. Build on the arguments of other seats rather than attacking them. Look for where prior reasoning can be strengthened, extended, or synthesised into a more complete picture. Seek common ground and work toward collective understanding rather than individual victory.";
+  }
+  return "\n\nInteraction style: Adversarial. Actively challenge and counter the arguments of other seats. Identify contradictions, expose weak reasoning, and attack unsupported assumptions in what others have said. Winning the argument — not consensus — is the goal.";
+}
+
 function getMaxOutputTokens(responseMode: ResponseMode): number {
   return { balanced: 600, thorough: 1200, concise: 300 }[responseMode];
 }
@@ -352,7 +364,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `${seatBriefs.litigant}\n\n${baseContext}\n\nYour assigned role this session: ${role.persona}. ${role.instruction}${conscienceClause}`,
+          content: `${seatBriefs.litigant}\n\n${baseContext}\n\nYour assigned role this session: ${role.persona}. ${role.instruction}${getDebateModeClause(config.debateMode)}${conscienceClause}`,
         },
         {
           role: "user",
