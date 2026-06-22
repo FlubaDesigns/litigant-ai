@@ -7,5 +7,5 @@
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
 - [Cloud Run deployment](cloud-run-deployment.md) — use Docker + Cloud Build API to deploy; Firebase Functions buildpack ignores npm start/Procfile entirely.
 - [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
-- [Cloud Run env vars](cloud-run-env.md) — PORT is reserved (cannot set in env array); IAM allUsers must be re-granted after every redeploy; needs FIREBASE_SERVICE_ACCOUNT + AI_INTEGRATIONS_* set.
+- [Cloud Run env vars](cloud-run-env.md) — use `services replace` with plain-value YAML only; SM API enabled but IAM grant blocked; firebase-adminsdk SA cannot setIamPolicy.
 - [Canonical cost calibration](cost-calibration.md) — single source for session cost estimates; self-calibrates from last 50 sessions; FIXED_STAGE_PRIOR until 5 sessions accumulate.

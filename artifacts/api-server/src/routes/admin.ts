@@ -14,6 +14,13 @@ import {
   deleteApiKey,
 } from "../lib/apiKeyStore.js";
 import {
+  getAllCreditPacks,
+  createCreditPack,
+  updateCreditPack,
+  deactivateCreditPack,
+  CREDIT_PACK_BOUNDS,
+} from "../lib/creditPacksConfig.js";
+import {
   CANON_V2_FALLBACK_TEXT,
   CANON_V2_FALLBACK_VERSION,
   invalidateConscienceCache,
@@ -735,6 +742,163 @@ router.put("/admin/limits/:name", requireAdmin, async (req, res) => {
     return res.json({ success: true, name, value });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Credit Packs ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /admin/credit-packs
+ * Returns every pack — active and deactivated — for the admin list view.
+ * GET /billing/products (the public/customer-facing route) should call
+ * getActiveCreditPacks() instead, which filters to active: true only.
+ */
+router.get("/admin/credit-packs", requireAdmin, async (_req, res) => {
+  try {
+    const packs = await getAllCreditPacks();
+    return res.json({ packs: Object.values(packs), bounds: CREDIT_PACK_BOUNDS });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /admin/credit-packs
+ * Creates a new pack. id and the nested price id are supplied here and are
+ * permanent from this point on — see the immutability rule documented in
+ * creditPacksConfig.ts. Fails with 409 if the id is already in use.
+ */
+router.post("/admin/credit-packs", requireAdmin, async (req: any, res) => {
+  const { id, name, description, unitAmountCents, creditAmount } = req.body as {
+    id?: string;
+    name?: string;
+    description?: string;
+    unitAmountCents?: number;
+    creditAmount?: number;
+  };
+
+  if (!id || typeof id !== "string" || !/^[a-z0-9_]+$/.test(id)) {
+    return res.status(400).json({ error: "id is required and must be lowercase letters, numbers, and underscores only" });
+  }
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return res.status(400).json({ error: "name is required" });
+  }
+  if (
+    typeof unitAmountCents !== "number" ||
+    unitAmountCents < CREDIT_PACK_BOUNDS.MIN_UNIT_AMOUNT_CENTS ||
+    unitAmountCents > CREDIT_PACK_BOUNDS.MAX_UNIT_AMOUNT_CENTS
+  ) {
+    return res.status(400).json({
+      error: `unitAmountCents must be a number between ${CREDIT_PACK_BOUNDS.MIN_UNIT_AMOUNT_CENTS} and ${CREDIT_PACK_BOUNDS.MAX_UNIT_AMOUNT_CENTS}`,
+    });
+  }
+  if (
+    typeof creditAmount !== "number" ||
+    !Number.isInteger(creditAmount) ||
+    creditAmount < CREDIT_PACK_BOUNDS.MIN_CREDIT_AMOUNT ||
+    creditAmount > CREDIT_PACK_BOUNDS.MAX_CREDIT_AMOUNT
+  ) {
+    return res.status(400).json({
+      error: `creditAmount must be a whole number between ${CREDIT_PACK_BOUNDS.MIN_CREDIT_AMOUNT} and ${CREDIT_PACK_BOUNDS.MAX_CREDIT_AMOUNT}`,
+    });
+  }
+
+  try {
+    await createCreditPack({
+      id,
+      name: name.trim(),
+      description: description?.trim() ?? "",
+      active: true,
+      metadata: { type: "credit_pack", creditAmount: String(creditAmount) },
+      prices: [
+        {
+          id: `price_${id}`,
+          product: id,
+          unit_amount: unitAmountCents,
+          currency: "usd",
+          recurring: null,
+          active: true,
+          metadata: { creditAmount: String(creditAmount) },
+        },
+      ],
+    });
+    return res.json({ success: true, id });
+  } catch (err: any) {
+    const status = /already exists/i.test(err.message) ? 409 : 500;
+    return res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/credit-packs/:id
+ * Edits name/description/active/price/creditAmount on an existing pack.
+ * id itself is taken only from the URL param, never from the body.
+ */
+router.patch("/admin/credit-packs/:id", requireAdmin, async (req: any, res) => {
+  const { id } = req.params as { id: string };
+  const { name, description, active, unitAmountCents, creditAmount } = req.body as {
+    name?: string;
+    description?: string;
+    active?: boolean;
+    unitAmountCents?: number;
+    creditAmount?: number;
+  };
+
+  if (unitAmountCents !== undefined) {
+    if (
+      typeof unitAmountCents !== "number" ||
+      unitAmountCents < CREDIT_PACK_BOUNDS.MIN_UNIT_AMOUNT_CENTS ||
+      unitAmountCents > CREDIT_PACK_BOUNDS.MAX_UNIT_AMOUNT_CENTS
+    ) {
+      return res.status(400).json({
+        error: `unitAmountCents must be a number between ${CREDIT_PACK_BOUNDS.MIN_UNIT_AMOUNT_CENTS} and ${CREDIT_PACK_BOUNDS.MAX_UNIT_AMOUNT_CENTS}`,
+      });
+    }
+  }
+  if (creditAmount !== undefined) {
+    if (
+      typeof creditAmount !== "number" ||
+      !Number.isInteger(creditAmount) ||
+      creditAmount < CREDIT_PACK_BOUNDS.MIN_CREDIT_AMOUNT ||
+      creditAmount > CREDIT_PACK_BOUNDS.MAX_CREDIT_AMOUNT
+    ) {
+      return res.status(400).json({
+        error: `creditAmount must be a whole number between ${CREDIT_PACK_BOUNDS.MIN_CREDIT_AMOUNT} and ${CREDIT_PACK_BOUNDS.MAX_CREDIT_AMOUNT}`,
+      });
+    }
+  }
+  if (active !== undefined && typeof active !== "boolean") {
+    return res.status(400).json({ error: "active must be a boolean" });
+  }
+
+  try {
+    const pack = await updateCreditPack(id, {
+      name: name?.trim(),
+      description: description?.trim(),
+      active,
+      unitAmountCents,
+      creditAmount,
+    });
+    return res.json({ success: true, pack });
+  } catch (err: any) {
+    const status = /no pack with id/i.test(err.message) ? 404 : 500;
+    return res.status(status).json({ error: err.message });
+  }
+});
+
+/**
+ * DELETE /admin/credit-packs/:id
+ * Soft-delete only — sets active: false. No hard-delete endpoint exists.
+ * Reactivate via PATCH .../:id with { active: true }.
+ */
+router.delete("/admin/credit-packs/:id", requireAdmin, async (req, res) => {
+  const { id } = req.params as { id: string };
+  try {
+    await deactivateCreditPack(id);
+    return res.json({ success: true, id, active: false });
+  } catch (err: any) {
+    const status = /no pack with id/i.test(err.message) ? 404 : 500;
+    return res.status(status).json({ error: err.message });
   }
 });
 

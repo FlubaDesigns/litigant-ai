@@ -39,7 +39,7 @@ import { calculateActualCredits, estimateSessionCreditsCalibrated } from "../lib
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
-import { findPackByPriceId } from "../lib/creditPacks.js";
+import { findCreditPackByPriceId } from "../lib/creditPacksConfig.js";
 
 const router = Router();
 
@@ -49,7 +49,7 @@ const router = Router();
  */
 async function createAutoRefillUrl(priceId: string, uid: string): Promise<string | null> {
   if (!isSquareConfigured()) return null;
-  const found = findPackByPriceId(priceId);
+  const found = await findCreditPackByPriceId(priceId);
   if (!found) return null;
   const { pack, price } = found;
   const creditAmount = parseInt(price.metadata.creditAmount, 10);

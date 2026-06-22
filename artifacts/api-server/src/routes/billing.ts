@@ -4,10 +4,12 @@ import { verifyIdToken, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { isSquareConfigured, createPaymentLink } from "../lib/squareClient.js";
 import {
   getTransactions,
+  updateUserPlan,
   grantSignupBonus,
   setAutoRefillPreference,
 } from "../lib/creditLedger.js";
-import { CREDIT_PACKS, CREDITS_PER_DOLLAR } from "../lib/creditPacks.js";
+import { CREDITS_PER_DOLLAR } from "../lib/creditPacks.js";
+import { getActiveCreditPacks, findCreditPackByPriceId } from "../lib/creditPacksConfig.js";
 
 const router = Router();
 
@@ -67,33 +69,10 @@ router.patch("/billing/auto-refill", async (req, res) => {
     return res.status(400).json({ error: "enabled (boolean) is required" });
   }
 
-  if (thresholdCredits !== undefined) {
-    if (
-      typeof thresholdCredits !== "number" ||
-      !Number.isInteger(thresholdCredits) ||
-      thresholdCredits < 10 ||
-      thresholdCredits > 100_000
-    ) {
-      return res.status(400).json({ error: "thresholdCredits must be a whole number between 10 and 100 000" });
-    }
-  }
-
-  if (packPriceId !== undefined) {
-    const validPriceIds = CREDIT_PACKS.flatMap((p) => p.prices.map((pr) => pr.id));
-    if (!validPriceIds.includes(packPriceId)) {
-      return res.status(400).json({
-        error: `Invalid packPriceId. Valid values: ${validPriceIds.join(", ")}. See GET /billing/products for details.`,
-      });
-    }
-  }
-
   await setAutoRefillPreference(user.uid, {
     enabled,
     thresholdCredits: thresholdCredits ?? 20,
-    // Default to "price_starter" — the valid price ID for the Starter Pack.
-    // "starter_pack" (the pack ID) is intentionally not used here because
-    // findPackByPriceId() looks up by price ID, not pack ID.
-    packPriceId: packPriceId ?? "price_starter",
+    packPriceId: packPriceId ?? "starter_pack",
   });
 
   return res.json({ success: true });
@@ -101,10 +80,12 @@ router.patch("/billing/auto-refill", async (req, res) => {
 
 /**
  * GET /billing/products
- * Returns available credit packs.
+ * Returns available credit packs — Firestore admin overrides layered on
+ * top of the hardcoded fallback, active packs only. See creditPacksConfig.ts.
  */
 router.get("/billing/products", async (_req, res) => {
-  return res.json({ data: CREDIT_PACKS });
+  const packs = await getActiveCreditPacks();
+  return res.json({ data: packs });
 });
 
 /**
@@ -172,14 +153,11 @@ router.post("/billing/checkout", async (req, res) => {
     return res.status(400).json({ error: "priceId is required" });
   }
 
-  const product = CREDIT_PACKS.find((p) =>
-    p.prices.some((pr) => pr.id === priceId)
-  );
-  const price = product?.prices.find((pr) => pr.id === priceId);
-
-  if (!product || !price || !price.unit_amount) {
+  const found = await findCreditPackByPriceId(priceId);
+  if (!found || !found.price.unit_amount) {
     return res.status(404).json({ error: "Unknown price ID" });
   }
+  const { pack: product, price } = found;
 
   const creditAmount = parseInt(
     price.metadata?.creditAmount ?? product.metadata?.creditAmount ?? "0",
@@ -191,6 +169,7 @@ router.post("/billing/checkout", async (req, res) => {
   }
 
   const origin =
+    (req.headers["origin"] as string | undefined) ||
     (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
@@ -238,6 +217,7 @@ router.post("/billing/checkout/custom", async (req, res) => {
   const creditAmount = roundedDollars * CREDITS_PER_DOLLAR;
 
   const origin =
+    (req.headers["origin"] as string | undefined) ||
     (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
@@ -265,9 +245,7 @@ router.post("/billing/checkout/custom", async (req, res) => {
  * POST /billing/cancel-subscription
  * Not applicable — Square does not manage subscriptions here.
  */
-router.post("/billing/cancel-subscription", async (req, res) => {
-  const user = await requireAuth(req, res);
-  if (!user) return;
+router.post("/billing/cancel-subscription", async (_req, res) => {
   return res.status(501).json({ error: "Subscriptions are not available" });
 });
 

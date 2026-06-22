@@ -7,7 +7,7 @@ import {
   Ban, Zap, Clock, RefreshCw, Check, Edit3,
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
-  ChevronDown, ChevronUp, SlidersHorizontal,
+  ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,18 +33,19 @@ import {
   getAdminStats, listAdminUsers, getAdminUser, adjustUserCredits, banUser,
   listAdminSessions, getAdminSession, listAdminTransactions, issueRefund,
   getFeatureFlags, setFeatureFlag, getAdminLimits, setAdminLimit,
+  getCreditPacks, createCreditPack, updateCreditPack, deactivateCreditPack,
   listAdminTemplates, updateAdminTemplate,
   getSystemHealth, getApiUsage, getErrorLogs, getAbuseFlags,
   getPricingConfig, updateModelMultiplier, resetModelMultiplier,
   getApiKeys, saveApiKey, deleteApiKey,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
-  type PricingModel, type ProviderKeyInfo,
+  type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
-  | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "api-keys";
+  | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
@@ -57,6 +58,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "api-usage",    label: "API Usage",       icon: BarChart2 },
   { id: "errors",       label: "Error Logs",      icon: AlertCircle },
   { id: "abuse",        label: "Abuse Flags",     icon: HeartCrack },
+  { id: "credit-packs", label: "Credit Packs",    icon: Package },
   { id: "limits",       label: "Limits",          icon: SlidersHorizontal },
   { id: "flags",        label: "Feature Flags",   icon: Flag },
   { id: "templates",    label: "Templates",       icon: LayoutTemplate },
@@ -1005,6 +1007,318 @@ const PLAN_SCOPE_LABELS: Record<string, string> = {
   pro: "Pro only",
   free: "Free only",
 };
+
+// ─── Credit Packs Tab ────────────────────────────────────────────────────────
+function CreditPacksTab() {
+  const qc = useQueryClient();
+  const [editingPack, setEditingPack] = useState<AdminCreditPack | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["admin-credit-packs"],
+    queryFn: getCreditPacks,
+    retry: false,
+  });
+
+  const deactivateMut = useMutation({
+    mutationFn: (id: string) => deactivateCreditPack(id),
+    onSuccess: (_data: any, id: string) => {
+      toast.success(`${id} deactivated`);
+      qc.invalidateQueries({ queryKey: ["admin-credit-packs"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reactivateMut = useMutation({
+    mutationFn: (id: string) => updateCreditPack(id, { active: true }),
+    onSuccess: (_data: any, id: string) => {
+      toast.success(`${id} reactivated`);
+      qc.invalidateQueries({ queryKey: ["admin-credit-packs"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        Firebase not configured — credit pack config unavailable in dev mode.
+      </div>
+    );
+  }
+
+  const activePacks = data.packs.filter((p) => p.active);
+  const inactivePacks = data.packs.filter((p) => !p.active);
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
+        <Package className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <div>
+          <span className="font-medium text-foreground">How credit packs work: </span>
+          These are the one-time top-up packs customers see on the Billing page. A pack's id is
+          permanent once created — Square's checkout note embeds it, and renaming it would break the
+          lookup for any in-flight or historical purchase. Deactivating hides a pack from checkout
+          without losing its history; it can be reactivated any time.
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-muted-foreground">Active packs</h3>
+        <Button size="sm" onClick={() => setCreating(true)} className="gap-1.5">
+          <Plus className="w-3.5 h-3.5" /> New pack
+        </Button>
+      </div>
+
+      <div className="rounded-xl border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary/30">
+              <TableHead className="text-xs">Pack</TableHead>
+              <TableHead className="text-xs">Description</TableHead>
+              <TableHead className="text-xs text-right">Price</TableHead>
+              <TableHead className="text-xs text-right">Credits</TableHead>
+              <TableHead className="text-xs text-right">Rate</TableHead>
+              <TableHead className="text-xs text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {activePacks.map((pack) => {
+              const price = pack.prices[0];
+              const credits = parseInt(pack.metadata.creditAmount, 10) || 0;
+              const dollars = (price?.unit_amount ?? 0) / 100;
+              const rate = dollars > 0 ? credits / dollars : 0;
+              return (
+                <TableRow key={pack.id} className="group">
+                  <TableCell className="font-medium text-sm">
+                    {pack.name}
+                    <div className="text-[10px] font-mono text-muted-foreground">{pack.id}</div>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
+                    {pack.description}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    ${dollars.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-primary font-bold">
+                    {credits.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                    {rate.toFixed(1)}/$
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1" onClick={() => setEditingPack(pack)}>
+                        <Edit3 className="w-3 h-3" /> Edit
+                      </Button>
+                      <Button
+                        size="sm" variant="ghost"
+                        className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive"
+                        onClick={() => deactivateMut.mutate(pack.id)}
+                        disabled={deactivateMut.isPending}
+                      >
+                        <Trash2 className="w-3 h-3" /> Deactivate
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {activePacks.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                  No active packs. Create one to start selling credits.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {inactivePacks.length > 0 && (
+        <>
+          <h3 className="text-sm font-semibold text-muted-foreground">Deactivated</h3>
+          <div className="rounded-xl border border-border overflow-hidden opacity-70">
+            <Table>
+              <TableBody>
+                {inactivePacks.map((pack) => (
+                  <TableRow key={pack.id}>
+                    <TableCell className="font-medium text-sm">
+                      {pack.name}
+                      <div className="text-[10px] font-mono text-muted-foreground">{pack.id}</div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1"
+                        onClick={() => reactivateMut.mutate(pack.id)}
+                        disabled={reactivateMut.isPending}
+                      >
+                        <RotateCcw className="w-3 h-3" /> Reactivate
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
+
+      {editingPack && (
+        <CreditPackDialog
+          mode="edit"
+          pack={editingPack}
+          bounds={data.bounds}
+          onClose={() => setEditingPack(null)}
+        />
+      )}
+      {creating && (
+        <CreditPackDialog
+          mode="create"
+          bounds={data.bounds}
+          onClose={() => setCreating(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreditPackDialog({
+  mode,
+  pack,
+  bounds,
+  onClose,
+}: {
+  mode: "create" | "edit";
+  pack?: AdminCreditPack;
+  bounds: CreditPackBounds;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [id, setId] = useState(pack?.id ?? "");
+  const [name, setName] = useState(pack?.name ?? "");
+  const [description, setDescription] = useState(pack?.description ?? "");
+  const [dollars, setDollars] = useState(pack ? String((pack.prices[0]?.unit_amount ?? 0) / 100) : "");
+  const [credits, setCredits] = useState(pack ? pack.metadata.creditAmount : "");
+
+  const minDollars = bounds.MIN_UNIT_AMOUNT_CENTS / 100;
+  const maxDollars = bounds.MAX_UNIT_AMOUNT_CENTS / 100;
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const unitAmountCents = Math.round(Number(dollars) * 100);
+      const creditAmount = Number(credits);
+      if (mode === "create") {
+        await createCreditPack({ id, name, description, unitAmountCents, creditAmount });
+      } else {
+        await updateCreditPack(pack!.id, { name, description, unitAmountCents, creditAmount });
+      }
+    },
+    onSuccess: () => {
+      toast.success(mode === "create" ? "Pack created" : "Pack updated");
+      qc.invalidateQueries({ queryKey: ["admin-credit-packs"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const dollarsNum = Number(dollars);
+  const creditsNum = Number(credits);
+  const idValid = mode === "edit" || /^[a-z0-9_]+$/.test(id);
+  const dollarsValid = dollars !== "" && dollarsNum >= minDollars && dollarsNum <= maxDollars;
+  const creditsValid =
+    credits !== "" && Number.isInteger(creditsNum) && creditsNum >= bounds.MIN_CREDIT_AMOUNT && creditsNum <= bounds.MAX_CREDIT_AMOUNT;
+  const canSave = idValid && !!name.trim() && dollarsValid && creditsValid && !saveMut.isPending;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{mode === "create" ? "New credit pack" : `Edit ${pack?.name}`}</DialogTitle>
+          <DialogDescription>
+            {mode === "create"
+              ? "The id below is permanent once created."
+              : "Price, credits, name, and description can be changed any time. The pack id itself cannot be changed."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {mode === "create" && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Pack ID</label>
+              <Input
+                value={id}
+                onChange={(e) => setId(e.target.value.toLowerCase())}
+                placeholder="e.g. value_pack"
+                className="font-mono text-sm"
+              />
+              <p className="text-[11px] text-muted-foreground">Lowercase letters, numbers, underscores only. Cannot be changed later.</p>
+            </div>
+          )}
+          {mode === "edit" && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Pack ID</label>
+              <Input value={pack?.id ?? ""} disabled className="font-mono text-sm opacity-60" />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Value Pack" />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Description</label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Shown to customers on the Billing page"
+              rows={2}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Price (USD, ${minDollars.toFixed(2)}–${maxDollars.toFixed(2)})
+              </label>
+              <Input
+                type="number" step="0.01" min={minDollars} max={maxDollars}
+                value={dollars} onChange={(e) => setDollars(e.target.value)}
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Credits ({bounds.MIN_CREDIT_AMOUNT}–{bounds.MAX_CREDIT_AMOUNT.toLocaleString()})
+              </label>
+              <Input
+                type="number" step="1" min={bounds.MIN_CREDIT_AMOUNT} max={bounds.MAX_CREDIT_AMOUNT}
+                value={credits} onChange={(e) => setCredits(e.target.value)}
+                className="font-mono"
+              />
+            </div>
+          </div>
+
+          {dollarsValid && creditsValid && (
+            <p className="text-xs text-muted-foreground">
+              Rate: <span className="font-mono text-primary">{(creditsNum / dollarsNum).toFixed(1)} credits/$</span>
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => saveMut.mutate()} disabled={!canSave}>
+            {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === "create" ? "Create pack" : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ─── Limits Tab ───────────────────────────────────────────────────────────────
 
@@ -2194,6 +2508,7 @@ export default function AdminPage() {
           {activeTab === "api-usage"    && <ApiUsageTab />}
           {activeTab === "errors"       && <ErrorLogsTab />}
           {activeTab === "abuse"        && <AbuseFlagsTab />}
+          {activeTab === "credit-packs" && <CreditPacksTab />}
           {activeTab === "limits"       && <LimitsTab />}
           {activeTab === "flags"        && <FeatureFlagsTab />}
           {activeTab === "templates"    && <TemplatesTab />}

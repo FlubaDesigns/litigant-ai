@@ -218,6 +218,85 @@ export async function setAdminLimit(name: string, value: number): Promise<void> 
   }
 }
 
+// ── Credit Packs ───────────────────────────────────────────────────────────────
+
+export interface AdminCreditPackPrice {
+  id: string;
+  product: string;
+  unit_amount: number;
+  currency: string;
+  recurring: null;
+  active: boolean;
+  metadata: { creditAmount: string; [k: string]: string };
+}
+
+export interface AdminCreditPack {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  metadata: { type: string; creditAmount: string; [k: string]: string };
+  prices: AdminCreditPackPrice[];
+}
+
+export interface CreditPackBounds {
+  MIN_UNIT_AMOUNT_CENTS: number;
+  MAX_UNIT_AMOUNT_CENTS: number;
+  MIN_CREDIT_AMOUNT: number;
+  MAX_CREDIT_AMOUNT: number;
+}
+
+export async function getCreditPacks(): Promise<{ packs: AdminCreditPack[]; bounds: CreditPackBounds }> {
+  const res = await adminFetch("/admin/credit-packs");
+  if (!res.ok) throw new Error("Failed to load credit packs");
+  return res.json();
+}
+
+export async function createCreditPack(input: {
+  id: string;
+  name: string;
+  description?: string;
+  unitAmountCents: number;
+  creditAmount: number;
+}): Promise<void> {
+  const res = await adminFetch("/admin/credit-packs", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to create credit pack");
+  }
+}
+
+export async function updateCreditPack(
+  id: string,
+  updates: {
+    name?: string;
+    description?: string;
+    active?: boolean;
+    unitAmountCents?: number;
+    creditAmount?: number;
+  }
+): Promise<AdminCreditPack> {
+  const res = await adminFetch(`/admin/credit-packs/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update credit pack");
+  }
+  return res.json().then((r: any) => r.pack);
+}
+
+export async function deactivateCreditPack(id: string): Promise<void> {
+  const res = await adminFetch(`/admin/credit-packs/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to deactivate credit pack");
+}
+
 export async function updateAdminTemplate(
   id: string,
   data: {
