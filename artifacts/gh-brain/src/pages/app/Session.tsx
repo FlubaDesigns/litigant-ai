@@ -127,12 +127,20 @@ function ConfigPanel({
 }) {
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
   const [saving, setSaving] = useState(false);
+  const hasChanges = useRef(false);
 
   useEffect(() => {
     if (open) {
+      hasChanges.current = false;
       getProviders().then((p) => setAvailableProviders(p.providers));
     }
   }, [open]);
+
+  // Wrap onChange to track that the user made at least one change
+  function handleChange(partial: Partial<CourtConfig>) {
+    hasChanges.current = true;
+    onChange(partial);
+  }
 
   const selectedProvider = availableProviders.find((p) => p.name === config.provider)
     ?? availableProviders[0];
@@ -151,39 +159,42 @@ function ConfigPanel({
     80: "80% Fast", 90: "90% Standard", 95: "95% Deep", 99: "99% Maximum",
   }[config.confidenceTarget as 80 | 90 | 95 | 99] ?? `${config.confidenceTarget}%`;
 
-  async function handleSave() {
-    onClose();
-    if (!uid || !onboardingComplete) return;
-    setSaving(true);
-    try {
-      await saveUserConfig(uid, {
-        conscience: config.conscience,
-        outputScope: config.outputScope,
-        debateMode: config.debateMode,
-        aiReasoning: config.aiReasoning,
-        outputStrategy: config.outputStrategy,
-        outputPreference: config.outputPreference,
-        format: config.format,
-        confidenceTarget: config.confidenceTarget,
-        maxIterations: config.maxIterations,
-        maxCredits: config.maxCredits,
-        litigantCount: config.litigantCount,
-        courtMode: config.courtMode,
-        responseMode: config.responseMode,
-        outputFormat: config.outputFormat,
-        provider: config.provider,
-        model: config.model,
-      });
-      toast.success("Configuration saved");
-    } catch {
-      toast.error("Could not save configuration");
-    } finally {
-      setSaving(false);
+  // Auto-saves whenever the panel closes if the user made any change
+  async function handleClose() {
+    if (hasChanges.current && uid && onboardingComplete) {
+      hasChanges.current = false;
+      setSaving(true);
+      try {
+        await saveUserConfig(uid, {
+          conscience: config.conscience,
+          outputScope: config.outputScope,
+          debateMode: config.debateMode,
+          aiReasoning: config.aiReasoning,
+          outputStrategy: config.outputStrategy,
+          outputPreference: config.outputPreference,
+          format: config.format,
+          confidenceTarget: config.confidenceTarget,
+          maxIterations: config.maxIterations,
+          maxCredits: config.maxCredits,
+          litigantCount: config.litigantCount,
+          courtMode: config.courtMode,
+          responseMode: config.responseMode,
+          outputFormat: config.outputFormat,
+          provider: config.provider,
+          model: config.model,
+        });
+        toast.success("Court configured & saved to your profile");
+      } catch {
+        toast.error("Could not save configuration");
+      } finally {
+        setSaving(false);
+      }
     }
+    onClose();
   }
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+    <Sheet open={open} onOpenChange={(o) => !o && handleClose()}>
       <SheetContent
         side="right"
         className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 overflow-y-auto p-0"
@@ -198,7 +209,7 @@ function ConfigPanel({
 
           {/* SAFETY FILTER */}
           <V29Field label="Safety Filter" desc="ON: self-checks for bias, harm, and gaps. OFF: raw output.">
-            <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => onChange({ conscience: v === "on" })}>
+            <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => handleChange({ conscience: v === "on" })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="on">Conscience ON</SelectItem>
@@ -209,7 +220,7 @@ function ConfigPanel({
 
           {/* RESPONSE MODE */}
           <V29Field label="Response Mode" desc="Consensus Only: one clean answer. All Voices: each AI's response shown.">
-            <Select value={config.outputScope} onValueChange={(v) => onChange({ outputScope: v as CourtConfig["outputScope"] })}>
+            <Select value={config.outputScope} onValueChange={(v) => handleChange({ outputScope: v as CourtConfig["outputScope"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="consensus">Consensus Only</SelectItem>
@@ -220,7 +231,7 @@ function ConfigPanel({
 
           {/* DEBATE MODE */}
           <V29Field label="Debate Mode" desc="Adversarial: AIs challenge each other. Collaborative: AIs build on each other.">
-            <Select value={config.debateMode} onValueChange={(v) => onChange({ debateMode: v as CourtConfig["debateMode"], courtMode: v === "adversarial" ? "adversarial" : "analysis" })}>
+            <Select value={config.debateMode} onValueChange={(v) => handleChange({ debateMode: v as CourtConfig["debateMode"], courtMode: v === "adversarial" ? "adversarial" : "analysis" })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="adversarial">Adversarial</SelectItem>
@@ -238,7 +249,7 @@ function ConfigPanel({
                   <button
                     key={mode}
                     type="button"
-                    onClick={() => onChange({ aiReasoning: mode })}
+                    onClick={() => handleChange({ aiReasoning: mode })}
                     className={cn(
                       "text-left px-3 py-2.5 rounded border text-xs transition-colors",
                       isSelected
@@ -266,7 +277,7 @@ function ConfigPanel({
 
           {/* OUTPUT STRATEGY */}
           <V29Field label="Output Strategy">
-            <Select value={config.outputStrategy} onValueChange={(v) => onChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
+            <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
@@ -280,7 +291,7 @@ function ConfigPanel({
 
           {/* OUTPUT PREFERENCE */}
           <V29Field label="Output Preference">
-            <Select value={config.outputPreference} onValueChange={(v) => onChange({ outputPreference: v as CourtConfig["outputPreference"] })}>
+            <Select value={config.outputPreference} onValueChange={(v) => handleChange({ outputPreference: v as CourtConfig["outputPreference"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="chat">Display in chat</SelectItem>
@@ -292,7 +303,7 @@ function ConfigPanel({
 
           {/* FORMAT */}
           <V29Field label="Format">
-            <Select value={config.format} onValueChange={(v) => onChange({ format: v as CourtConfig["format"] })}>
+            <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="text">Text</SelectItem>
@@ -304,7 +315,7 @@ function ConfigPanel({
 
           {/* CONFIDENCE TARGET */}
           <V29Field label="Confidence Target">
-            <Select value={String(config.confidenceTarget)} onValueChange={(v) => onChange({ confidenceTarget: Number(v) })}>
+            <Select value={String(config.confidenceTarget)} onValueChange={(v) => handleChange({ confidenceTarget: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="80">80% Fast</SelectItem>
@@ -317,7 +328,7 @@ function ConfigPanel({
 
           {/* MAXIMUM ITERATIONS */}
           <V29Field label="Maximum Iterations">
-            <Select value={String(config.maxIterations)} onValueChange={(v) => onChange({ maxIterations: Number(v) })}>
+            <Select value={String(config.maxIterations)} onValueChange={(v) => handleChange({ maxIterations: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="1">1</SelectItem>
@@ -330,7 +341,7 @@ function ConfigPanel({
 
           {/* MAXIMUM CREDITS */}
           <V29Field label="Maximum Credits">
-            <Select value={String(config.maxCredits)} onValueChange={(v) => onChange({ maxCredits: Number(v) })}>
+            <Select value={String(config.maxCredits)} onValueChange={(v) => handleChange({ maxCredits: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="10">10</SelectItem>
@@ -350,7 +361,7 @@ function ConfigPanel({
                 {availableProviders.map((p) => (
                   <button
                     key={p.name}
-                    onClick={() => onChange({ provider: p.name as ProviderName, model: p.defaultModel })}
+                    onClick={() => handleChange({ provider: p.name as ProviderName, model: p.defaultModel })}
                     className={cn(
                       "flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-xs font-medium transition-all",
                       config.provider === p.name || (!config.provider && p === availableProviders[0])
@@ -364,7 +375,7 @@ function ConfigPanel({
                 ))}
               </div>
               {selectedProvider && selectedProvider.models.length > 0 && (
-                <Select value={config.model ?? selectedProvider.defaultModel} onValueChange={(v) => onChange({ model: v })}>
+                <Select value={config.model ?? selectedProvider.defaultModel} onValueChange={(v) => handleChange({ model: v })}>
                   <SelectTrigger className={V29_SELECT + " text-xs h-8"}><SelectValue placeholder="Select model" /></SelectTrigger>
                   <SelectContent>
                     {selectedProvider.models.map((m) => (
@@ -386,24 +397,20 @@ function ConfigPanel({
             </div>
           </div>
 
-          {/* BUTTONS */}
-          <div className="flex gap-2 pb-2">
+          {/* CLOSE — auto-saves if anything changed */}
+          <div className="flex flex-col gap-2 pb-2">
             <Button
-              onClick={handleSave}
+              onClick={handleClose}
               disabled={saving}
-              className="flex-1 bg-white text-black hover:bg-white/90 font-semibold"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
             >
-              {saving ? "Saving…" : "Save Configuration"}
+              {saving ? "Saving…" : "Done"}
             </Button>
-            <Button onClick={onClose} variant="outline" className="flex-1 border-primary/30 text-foreground">
-              Close
-            </Button>
+            {onboardingComplete
+              ? <p className="text-[11px] text-muted-foreground/50 text-center">Changes save automatically when you close</p>
+              : uid && <p className="text-[11px] text-muted-foreground/50 text-center">Complete onboarding to persist settings</p>
+            }
           </div>
-          {!onboardingComplete && uid && (
-            <p className="text-[11px] text-muted-foreground/60 text-center -mt-2">
-              Complete onboarding to save as default
-            </p>
-          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -1174,6 +1181,56 @@ export default function SessionPage() {
         {/* ── Idle state ── */}
         {isIdle && (
           <div className="flex flex-col gap-3">
+
+            {/* ── Your Court config card ── */}
+            <div className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-primary/15">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="w-3.5 h-3.5 text-primary/60" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
+                </div>
+                <button
+                  onClick={() => setConfigOpen(true)}
+                  className="flex items-center gap-1 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
+                >
+                  Configure all <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+              <div className="px-3 py-2.5 flex flex-wrap gap-2 items-center">
+                {/* Litigant count inline stepper */}
+                <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
+                  <button
+                    onClick={handleRemoveLitigant}
+                    className="w-7 h-7 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-base font-bold leading-none"
+                    disabled={state.config.litigantCount <= 2}
+                  >−</button>
+                  <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">
+                    {state.config.litigantCount} litigants
+                  </span>
+                  <button
+                    onClick={handleAddLitigant}
+                    className="w-7 h-7 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-base font-bold leading-none"
+                    disabled={state.config.litigantCount >= 10}
+                  >+</button>
+                </div>
+                {/* Mode pill */}
+                <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize bg-transparent">
+                  {state.config.debateMode}
+                </span>
+                {/* Provider pill */}
+                <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground bg-transparent">
+                  {state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}
+                </span>
+                {/* Confidence pill */}
+                <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground bg-transparent">
+                  {state.config.confidenceTarget}% target
+                </span>
+                {/* Est. cost */}
+                <span className="ml-auto text-[11px] font-mono text-primary/50">
+                  ~{estimatedCredits} cr
+                </span>
+              </div>
+            </div>
 
             {/* Court status + credit pill */}
             <div className="flex items-center justify-between px-0.5">
