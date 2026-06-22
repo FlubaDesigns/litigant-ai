@@ -101,6 +101,13 @@ export function estimateCreditCost(config: CourtConfig): number {
 
 export type PauseReason = "credit_cap" | "iteration_limit";
 
+export interface RebuttalContext {
+  challenge: string;
+  originalVerdict: string;
+  rebuttalRound: number;
+  parentSessionId?: string;
+}
+
 export interface BrainRunOptions {
   question: string;
   config: CourtConfig;
@@ -109,6 +116,8 @@ export interface BrainRunOptions {
   sessionId?: string;
   /** When continuing a paused session, pass the accumulated transcript lines. */
   continueFromTranscript?: string[];
+  /** When the user challenges a verdict — triggers a rebuttal run. */
+  rebuttalContext?: RebuttalContext;
   res: Response;
   abortSignal?: AbortSignal;
 }
@@ -232,7 +241,7 @@ async function streamRole(
 }
 
 export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunResult> {
-  const { question, config, templateSystemPrompt, res, abortSignal, continueFromTranscript } = opts;
+  const { question, config, templateSystemPrompt, res, abortSignal, continueFromTranscript, rebuttalContext } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
   const maxTokens = getMaxOutputTokens(config.responseMode);
@@ -260,7 +269,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const turns: TurnRecord[] = [];
   let confidence = 20;
 
-  const baseContext = templateSystemPrompt
+  const baseContext = rebuttalContext
+    ? `You are participating in a structured multi-AI reasoning session.\n\nOriginal question: "${question}"\n\nThe court previously delivered this verdict:\n\n${rebuttalContext.originalVerdict}\n\nThe user has challenged the verdict (Rebuttal Round ${rebuttalContext.rebuttalRound}):\n\n"${rebuttalContext.challenge}"\n\nThe court must reconvene and re-examine the question in light of this challenge. Every litigant must directly address the objection raised. Determine whether the original verdict should be upheld, amended, or reversed.`
+    : templateSystemPrompt
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
 
@@ -287,7 +298,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       },
       {
         role: "user",
-        content: `Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`,
+        content: rebuttalContext
+          ? `This is Rebuttal Round ${rebuttalContext.rebuttalRound}. The user has challenged the court's verdict with: "${rebuttalContext.challenge}". Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Acknowledge the challenge, state precisely what the court will re-examine, and route the litigants to address the specific objection.`
+          : `Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`,
       },
     ];
 

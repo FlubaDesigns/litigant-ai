@@ -1,5 +1,5 @@
 import { useReducer, useRef, useCallback } from "react";
-import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason } from "@/services/sessionService";
+import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext } from "@/services/sessionService";
 import type { Template, CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
 import {
@@ -32,6 +32,13 @@ export interface FeedItem {
   isComplete: boolean;
 }
 
+export interface RebuttalRecord {
+  round: number;
+  challenge: string;
+  sessionId: string;
+  finalAnswer: string;
+}
+
 export interface SessionState {
   phase: SessionPhase;
   question: string;
@@ -55,6 +62,10 @@ export interface SessionState {
   pauseReason: PauseReason | null;
   pauseTranscript: string[] | null;
   grades: GradeMap;
+  /** Completed rebuttal rounds — each entry is a prior challenge + the verdict it produced. */
+  rebuttals: RebuttalRecord[];
+  /** Which rebuttal round we are on (0 = original trial, 1 = first rebuttal, etc.). */
+  rebuttalRound: number;
 }
 
 type Action =
@@ -86,7 +97,8 @@ type Action =
       };
     }
   | { type: "ERROR"; message: string }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string };
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
   const litigantCount = initialConfig?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
@@ -97,6 +109,8 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
   };
   return {
     phase: "idle",
+    rebuttals: [],
+    rebuttalRound: 0,
     question: "",
     template: null,
     config,
@@ -299,6 +313,36 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
 
+    case "REBUTTAL_SUBMIT":
+      return {
+        ...state,
+        phase: "running",
+        rebuttals: [
+          ...state.rebuttals,
+          {
+            round: state.rebuttalRound,
+            challenge: action.challenge,
+            sessionId: action.prevSessionId,
+            finalAnswer: action.prevFinalAnswer,
+          },
+        ],
+        rebuttalRound: action.newRound,
+        runtimeFeed: [],
+        activityLog: [`[System] Rebuttal Round ${action.newRound} — court reconvening on your challenge…`],
+        courtHappened: false,
+        confidence: 0,
+        creditsUsed: 0,
+        currentRound: 0,
+        finalAnswer: "",
+        debateNotes: "",
+        transcript: "",
+        caveats: "",
+        artifacts: "",
+        errorMessage: null,
+        pauseReason: null,
+        pauseTranscript: null,
+      };
+
     case "RESET":
       return makeInitialState();
 
@@ -450,6 +494,51 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     dispatch({ type: "APPLY_FEEDBACK_GRADES", thumbs, flow });
   }, []);
 
+  const submitRebuttal = useCallback(async (challenge: string) => {
+    const s = stateRef.current;
+    if (!s.finalAnswer || !s.sessionId) return;
+
+    const newRound = s.rebuttalRound + 1;
+
+    dispatch({
+      type: "REBUTTAL_SUBMIT",
+      newRound,
+      challenge,
+      prevSessionId: s.sessionId,
+      prevFinalAnswer: s.finalAnswer,
+    });
+
+    abortRef.current = new AbortController();
+
+    let idToken: string | undefined;
+    try {
+      idToken = (await user?.getIdToken()) ?? undefined;
+    } catch { /* guest */ }
+
+    const rebuttalCtx: RebuttalContext = {
+      challenge,
+      originalVerdict: s.finalAnswer,
+      rebuttalRound: newRound,
+      parentSessionId: s.sessionId,
+    };
+
+    const request: BrainRunRequest = {
+      question: s.question,
+      config: s.config,
+      templateId: s.template?.id,
+      idToken,
+      rebuttalContext: rebuttalCtx,
+    };
+
+    try {
+      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        dispatch({ type: "ERROR", message: err?.message || "Rebuttal failed" });
+      }
+    }
+  }, [user, handleSSEEvent]);
+
   return {
     state,
     run,
@@ -458,6 +547,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     reset,
     acceptPartial,
     continueSession: continueSessionFn,
+    submitRebuttal,
     setQuestion,
     setTemplate,
     setConfig,

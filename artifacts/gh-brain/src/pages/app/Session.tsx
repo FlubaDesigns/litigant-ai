@@ -791,13 +791,14 @@ export default function SessionPage() {
         artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
       }
     : undefined;
-  const { state, run, stop, reset, acceptPartial, continueSession, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = useBrainSession(savedConfig);
+  const { state, run, stop, reset, acceptPartial, continueSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = useBrainSession(savedConfig);
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
+  const [rebuttalChallenge, setRebuttalChallenge] = useState("");
   const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
@@ -1224,6 +1225,88 @@ export default function SessionPage() {
                 </div>
               </TabsContent>
             </Tabs>
+
+            {/* ── Challenge the Verdict ── */}
+            <div style={{ border: "1px solid rgba(0,200,83,.25)", borderRadius: 10, background: "rgba(0,200,83,.03)", overflow: "hidden" }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderBottom: "1px solid rgba(0,200,83,.12)", background: "rgba(0,200,83,.06)" }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#00c853" }}>
+                  ⚖ Challenge the Verdict
+                </span>
+                {state.rebuttalRound > 0 && (
+                  <span style={{ fontSize: 10, padding: "2px 8px", background: "rgba(0,200,83,.12)", border: "1px solid rgba(0,200,83,.3)", borderRadius: 20, color: "#7ab87a", fontWeight: 700, marginLeft: 4 }}>
+                    Rebuttal {state.rebuttalRound}
+                  </span>
+                )}
+                <span style={{ marginLeft: "auto", fontSize: 11, color: "#3a5a3a" }}>~{estimatedCredits} cr to reconvene</span>
+              </div>
+
+              {/* Past challenge trail */}
+              {state.rebuttals.length > 0 && (
+                <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(0,200,83,.08)", display: "flex", flexDirection: "column", gap: 5 }}>
+                  {state.rebuttals.map((r) => (
+                    <div key={r.round} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 11 }}>
+                      <span style={{ color: "#3a5a3a", fontWeight: 700, whiteSpace: "nowrap", minWidth: 28 }}>R{r.round}</span>
+                      <span style={{ color: "#5a7a5a", fontStyle: "italic" }}>
+                        "{r.challenge.length > 90 ? r.challenge.slice(0, 90) + "…" : r.challenge}"
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Input */}
+              <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <textarea
+                  value={rebuttalChallenge}
+                  onChange={(e) => setRebuttalChallenge(e.target.value)}
+                  placeholder="What did the court miss? What assumption is wrong? State your objection and the court will reconvene…"
+                  rows={3}
+                  style={{ width: "100%", background: "#070f07", border: "1px solid rgba(0,200,83,.2)", borderRadius: 8, color: "#eef7ee", fontSize: 13, padding: "8px 10px", resize: "vertical", outline: "none", fontFamily: "inherit", lineHeight: 1.6 }}
+                  onFocus={(e) => { e.target.style.borderColor = "rgba(0,200,83,.5)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "rgba(0,200,83,.2)"; }}
+                />
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button
+                    onClick={() => {
+                      const challenge = rebuttalChallenge.trim();
+                      if (!challenge) return;
+                      setRebuttalChallenge("");
+                      void submitRebuttal(challenge);
+                    }}
+                    disabled={!rebuttalChallenge.trim() || insufficientCredits}
+                    style={{
+                      flex: 1,
+                      padding: "10px 0",
+                      borderRadius: 8,
+                      background: rebuttalChallenge.trim() && !insufficientCredits ? "#00c853" : "rgba(0,200,83,.1)",
+                      color: rebuttalChallenge.trim() && !insufficientCredits ? "#000" : "#2a4a2a",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      border: "none",
+                      cursor: rebuttalChallenge.trim() && !insufficientCredits ? "pointer" : "not-allowed",
+                      transition: "background .15s, color .15s",
+                    }}
+                  >
+                    ⚖ Reconvene the Court
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    style={{ padding: "10px 14px", borderRadius: 8, background: "transparent", color: "#3a5a3a", fontSize: 12, border: "1px solid #1d331d", cursor: "pointer" }}
+                  >
+                    New Case
+                  </button>
+                </div>
+                {insufficientCredits && (
+                  <div style={{ fontSize: 11, color: "#c84040", textAlign: "center" }}>
+                    Not enough credits to reconvene.{" "}
+                    <button onClick={() => navigate("/billing")} style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: 11, textDecoration: "underline", padding: 0 }}>
+                      Top up
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
 

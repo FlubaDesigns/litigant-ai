@@ -32,7 +32,7 @@
  */
 import { Router } from "express";
 import crypto from "crypto";
-import { runBrainSession, estimateCreditCost, type CourtConfig } from "../lib/brainEngine.js";
+import { runBrainSession, estimateCreditCost, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { calculateActualCredits } from "../lib/creditEngine.js";
@@ -215,12 +215,14 @@ async function reconcileCredits(
 }
 
 router.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript } = req.body as {
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId } = req.body as {
     question: string;
     config: CourtConfig;
     templateId?: string;
     sessionId?: string;
     continueFromTranscript?: string[];
+    rebuttalContext?: RebuttalContext;
+    parentSessionId?: string;
   };
 
   if (!question?.trim()) {
@@ -329,6 +331,7 @@ router.post("/run-brain", async (req, res) => {
       templateId,
       sessionId,
       continueFromTranscript,
+      rebuttalContext,
       res,
       abortSignal: abortCtrl.signal,
     });
@@ -345,7 +348,9 @@ router.post("/run-brain", async (req, res) => {
         await sessionRef.set({
           sessionId: result.sessionId,
           userId: uid,
-          title: question.slice(0, 80),
+          title: rebuttalContext
+            ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
+            : question.slice(0, 80),
           question,
           templateId: templateId ?? null,
           confidence: result.confidence,
@@ -359,6 +364,13 @@ router.post("/run-brain", async (req, res) => {
           conscienceVersion: result.conscienceVersion,
           shared: false,
           shareId: null,
+          // Rebuttal metadata — present only on challenge runs
+          ...(rebuttalContext ? {
+            isRebuttal: true,
+            rebuttalRound: rebuttalContext.rebuttalRound,
+            rebuttalChallenge: rebuttalContext.challenge,
+            parentSessionId: parentSessionId ?? null,
+          } : {}),
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         });

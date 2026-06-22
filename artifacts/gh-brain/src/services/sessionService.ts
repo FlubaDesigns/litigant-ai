@@ -8,6 +8,13 @@ function getApiUrl(path: string): string {
 
 export type PauseReason = "credit_cap" | "iteration_limit";
 
+export interface RebuttalContext {
+  challenge: string;
+  originalVerdict: string;
+  rebuttalRound: number;
+  parentSessionId?: string;
+}
+
 export interface BrainRunRequest {
   question: string;
   config: CourtConfig;
@@ -16,6 +23,8 @@ export interface BrainRunRequest {
   idToken?: string;
   /** Raw transcript lines from a paused session — resumes debate from this point. */
   continueFromTranscript?: string[];
+  /** Present when the user challenges a verdict — triggers a rebuttal run. */
+  rebuttalContext?: RebuttalContext;
 }
 
 export type SSEEventType =
@@ -76,6 +85,8 @@ export function runBrainSession(
           templateId: request.templateId,
           sessionId: request.sessionId,
           continueFromTranscript: request.continueFromTranscript,
+          rebuttalContext: request.rebuttalContext,
+          parentSessionId: request.rebuttalContext?.parentSessionId,
         }),
         signal,
       });
