@@ -9,6 +9,10 @@ initFirebaseAdmin();
 
 const app: Express = express();
 
+// Trust the first hop from Replit's reverse proxy so req.ip reflects the
+// real client address (used by rate limiters) rather than the proxy address.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

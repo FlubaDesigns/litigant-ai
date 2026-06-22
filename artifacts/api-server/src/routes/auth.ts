@@ -1,10 +1,49 @@
 import { Router } from "express";
+import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { grantSignupBonus } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendVerificationEmail, sendPasswordResetEmail, isResendConfigured } from "../lib/emailService.js";
 
 const router = Router();
+
+/**
+ * 3 password-reset emails per hour per target address.
+ * Keyed on the email from the request body so a caller can't flood one inbox
+ * by rotating IPs — Firestore-backed so the limit is global across all instances.
+ */
+const resetByEmailLimiter = makeRateLimiter({
+  keyFn: (req) => {
+    const email = (req.body as { email?: string })?.email?.trim().toLowerCase();
+    return `reset_email:${email ?? "unknown"}`;
+  },
+  limit: 3,
+  windowMs: 60 * 60 * 1000,
+  message: "Too many password reset requests for this address. Please try again in an hour.",
+});
+
+/**
+ * 10 password-reset emails per 15 minutes per IP.
+ * Catches distributed spraying across many target addresses from the same origin.
+ */
+const resetByIpLimiter = makeRateLimiter({
+  keyFn: (req) => `reset_ip:${req.ip ?? "unknown"}`,
+  limit: 10,
+  windowMs: 15 * 60 * 1000,
+  message: "Too many password reset requests from this IP. Please try again later.",
+});
+
+/**
+ * 10 verification emails per hour per IP.
+ * The endpoint requires a valid Firebase token so blast radius is limited
+ * to the authenticated user's own inbox.
+ */
+const verifyByIpLimiter = makeRateLimiter({
+  keyFn: (req) => `verify_ip:${req.ip ?? "unknown"}`,
+  limit: 10,
+  windowMs: 60 * 60 * 1000,
+  message: "Too many verification email requests. Please try again later.",
+});
 
 /**
  * POST /auth/provision
@@ -153,7 +192,7 @@ router.patch("/auth/preferences", async (req, res) => {
  * Generates a Firebase email verification link and sends it via Resend.
  * Requires a valid Bearer token (the user must be signed in).
  */
-router.post("/auth/send-verification", async (req, res) => {
+router.post("/auth/send-verification", verifyByIpLimiter, async (req, res) => {
   const authHeader = req.headers["authorization"] as string | undefined;
   if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
 
@@ -179,7 +218,7 @@ router.post("/auth/send-verification", async (req, res) => {
  * Body: { email: string }
  * Public endpoint — no auth required.
  */
-router.post("/auth/send-password-reset", async (req, res) => {
+router.post("/auth/send-password-reset", resetByEmailLimiter, resetByIpLimiter, async (req, res) => {
   const { email } = (req.body ?? {}) as { email?: string };
   if (!email || typeof email !== "string") {
     return res.status(400).json({ error: "email is required" });
