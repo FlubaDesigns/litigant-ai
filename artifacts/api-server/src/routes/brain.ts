@@ -134,7 +134,8 @@ async function markGuestUsed(ip: string): Promise<void> {
 async function reserveCredits(
   uid: string,
   amount: number,
-  sessionId: string
+  sessionId: string,
+  source = "brain_reservation"
 ): Promise<boolean> {
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore not configured");
@@ -150,14 +151,14 @@ async function reserveCredits(
     // Update balance
     txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
 
-    // Immutable ledger entry for the reservation
+    // Immutable ledger entry — source distinguishes initial reservations from overage charges
     const txRef = db.collection("credit_transactions").doc();
     txn.set(txRef, {
       userId: uid,
       type: "usage",
       amount: -amount,
       balanceAfter: newBalance,
-      source: "brain_reservation",
+      source,
       sessionId,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -388,10 +389,33 @@ router.post("/run-brain", async (req, res) => {
         if (refund > 0) {
           await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
         }
-        // If actual > estimated (rare edge case), charge the overage
+        // If actual > estimated, charge the overage.
+        // This path is not a rare edge case — the pre-run estimate converges to real cost
+        // over time via calibration (see creditEngine.ts) but a gap can remain.
         if (actualCost > estimatedCost && uid) {
           const overage = actualCost - estimatedCost;
-          await reserveCredits(uid, overage, result.sessionId).catch(() => {/* non-fatal */});
+          const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage")
+            .catch(() => false);
+          if (!overageCollected) {
+            // Balance was insufficient — session already delivered, overage uncollectable.
+            // Log a warning and write a zero-debit ledger entry so the shortfall is visible
+            // in the audit trail rather than silently vanishing.
+            console.warn(
+              `[brain] overage uncollected uid=${uid} sessionId=${result.sessionId} overage=${overage}`
+            );
+            if (db) {
+              db.collection("credit_transactions").add({
+                userId: uid,
+                type: "usage_shortfall",
+                amount: 0,
+                balanceAfter: null,
+                source: "brain_overage_uncollected",
+                sessionId: result.sessionId,
+                overage,
+                createdAt: FieldValue.serverTimestamp(),
+              }).catch((e) => console.error("[brain] failed to record overage shortfall:", e));
+            }
+          }
         }
 
         // Auto-refill: check if user's balance has dropped below their threshold
