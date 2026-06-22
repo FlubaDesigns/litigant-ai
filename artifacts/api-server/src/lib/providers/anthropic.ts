@@ -32,12 +32,15 @@ export class AnthropicProvider implements AIProvider {
     let inputTokens = 0;
     let outputTokens = 0;
 
-    const stream = this.client.messages.stream({
-      model: this.model,
-      max_tokens: maxTokens,
-      system: systemMsg,
-      messages: conversation,
-    });
+    const stream = this.client.messages.stream(
+      {
+        model: this.model,
+        max_tokens: maxTokens,
+        system: systemMsg,
+        messages: conversation,
+      },
+      { signal }  // forwards AbortSignal into the SDK — cancels the HTTP request, not just the local loop
+    );
 
     for await (const event of stream) {
       if (signal?.aborted) break;

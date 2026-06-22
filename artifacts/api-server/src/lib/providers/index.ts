@@ -43,14 +43,7 @@ export async function createProviderAsync(
     );
   }
 
-  const knownDefaults: Record<string, string> = {
-    openai:    "gpt-4o",
-    anthropic: "claude-opus-4-5",
-    grok:      "grok-3",
-    gemini:    "gemini-2.5-pro",
-  };
-
-  const resolvedModel = model ?? knownDefaults[id] ?? "gpt-4o";
+  const resolvedModel = model ?? DEFAULT_MODELS[id as ProviderName] ?? "gpt-4o";
 
   switch (id) {
     case "openai":    return new OpenAIProvider(resolvedModel, creds);
