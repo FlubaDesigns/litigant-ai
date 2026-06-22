@@ -6,6 +6,7 @@ import {
   ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
   Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Shuffle,
+  ChevronRight, Gavel,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1170,78 +1171,151 @@ export default function SessionPage() {
           </>
         )}
 
-        {/* Idle state — credit info + single template entry point */}
+        {/* ── Idle state ── */}
         {isIdle && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#3a5a3a", textAlign: "center" }}>
-              {credits} credits available · {plan}
-              {insufficientCredits && (
-                <span> · <span style={{ color: "#ff6b6b", cursor: "pointer", textDecoration: "underline" }} onClick={() => navigate("/billing")}>top up</span></span>
-              )}
+          <div className="flex flex-col gap-3">
+
+            {/* Court status + credit pill */}
+            <div className="flex items-center justify-between px-0.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
+              </div>
+              <button
+                onClick={insufficientCredits ? () => navigate("/billing") : undefined}
+                className={cn(
+                  "flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border transition-colors",
+                  creditsCritical
+                    ? "border-red-500/40 text-red-400 bg-red-500/5 hover:bg-red-500/10 cursor-pointer"
+                    : creditsLow
+                    ? "border-yellow-500/40 text-yellow-400 bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer"
+                    : "border-primary/25 text-primary/70 bg-primary/5 cursor-default"
+                )}
+              >
+                <Zap className="w-3 h-3" />
+                {credits} cr · {plan}
+                {insufficientCredits && <span className="ml-1 underline">top up</span>}
+              </button>
             </div>
+
+            {/* Suggested prompts */}
+            <div className="flex flex-col gap-1.5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 px-0.5 mb-0.5">
+                Try asking
+              </div>
+              {[
+                "Is our go-to-market strategy viable for enterprise?",
+                "Should we raise a Series A now or wait 12 months?",
+                "Is this contract clause actually enforceable?",
+                "Which of these two technical approaches is sounder?",
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => setQuestion(prompt)}
+                  className="group text-left px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground border border-border/30 hover:border-primary/35 rounded-lg bg-transparent hover:bg-primary/5 transition-all"
+                >
+                  <span className="text-primary/40 group-hover:text-primary/60 mr-1 transition-colors">"</span>
+                  {prompt}
+                  <span className="text-primary/40 group-hover:text-primary/60 transition-colors">"</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Template button */}
             <button
               onClick={() => setTemplateSheetOpen(true)}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(0,200,83,.04)", border: "1px solid rgba(0,200,83,.15)", borderRadius: 9, cursor: "pointer", textAlign: "left", width: "100%", transition: "border-color .15s" }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,200,83,.35)")}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(0,200,83,.15)")}
+              className="flex items-center gap-3 p-3 border border-primary/20 rounded-xl hover:border-primary/45 hover:bg-primary/5 transition-all text-left group"
+              style={{ background: "rgba(0,200,83,.03)" }}
             >
-              <LayoutTemplate style={{ width: 15, height: 15, color: "#7ab87a", flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: "#7ab87a", fontWeight: 600 }}>Use a template</span>
-              <span style={{ fontSize: 11, color: "#3a5a3a", marginLeft: "auto" }}>{TEMPLATES.length} available →</span>
+              <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                <LayoutTemplate className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-primary leading-none mb-0.5">Use a template</div>
+                <div className="text-[11px] text-muted-foreground">{TEMPLATES.length} purpose-built trials</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary/70 transition-colors shrink-0" />
             </button>
+
           </div>
         )}
 
-        {/* ── INPUT: BIG TEXTAREA + BIG GREEN ▶ BUTTON ── */}
+        {/* ── INPUT AREA ── */}
         {(isIdle || isComplete) && (
-          <>
+          <div className="flex flex-col gap-2 pt-1">
             {state.template && state.template.inputFields.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, color: "#7ab87a", fontWeight: 700 }}>{state.template.title}</span>
-                  <button onClick={() => setTemplate(null)} style={{ background: "transparent", border: "none", color: "#5a5a5a", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>✕</button>
+              <div className="flex flex-col gap-2">
+                {/* Template header */}
+                <div className="flex items-center gap-2 px-0.5">
+                  <Gavel className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                  <span className="text-xs font-semibold text-primary/80">{state.template.title}</span>
+                  <button
+                    onClick={() => setTemplate(null)}
+                    className="ml-auto w-5 h-5 flex items-center justify-center rounded text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                 </div>
+                {/* Template fields */}
                 {state.template.inputFields.map((field) => (
-                  <div key={field.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: "#7ab87a", whiteSpace: "nowrap", width: 80, flexShrink: 0 }}>{field.label}</span>
+                  <div key={field.id} className="flex items-center gap-2">
+                    <span className="text-[11px] text-primary/60 whitespace-nowrap w-20 shrink-0 font-medium">{field.label}</span>
                     <Input
                       type={field.type === "url" ? "url" : "text"}
                       placeholder={field.placeholder}
                       value={fieldValues[field.id] ?? ""}
                       onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
                       onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                      className="h-9 text-sm flex-1"
+                      className="h-9 text-sm flex-1 focus-visible:ring-1 focus-visible:ring-primary/60"
                       style={{ background: "#0d1a0d", border: "1px solid #1d331d", color: "#eef7ee" }}
                     />
                   </div>
                 ))}
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button
-                    onClick={handleRun}
-                    disabled={insufficientCredits}
-                    style={{ flex: 1, minHeight: 48, borderRadius: 9, background: "#00c853", color: "#000", fontSize: 22, fontWeight: 900, border: "none", cursor: insufficientCredits ? "not-allowed" : "pointer", opacity: insufficientCredits ? 0.4 : 1 }}
-                  >▶</button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
-                <Textarea
-                  placeholder={isComplete ? "Ask a follow-up question…" : "Ask a question or follow up…"}
-                  value={state.question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isRunning) handleRun(); } }}
-                  style={{ flex: 1, minHeight: 90, resize: "none", fontSize: 16, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 9, color: "#eef7ee", padding: "10px 12px", lineHeight: 1.5 }}
-                  className="focus-visible:ring-1 focus-visible:ring-primary/60"
-                />
                 <button
                   onClick={handleRun}
-                  disabled={!state.question.trim() || insufficientCredits}
-                  style={{ minWidth: 64, alignSelf: "stretch", borderRadius: 9, background: "#00c853", color: "#000", fontSize: 28, fontWeight: 900, border: "none", cursor: (!state.question.trim() || insufficientCredits) ? "not-allowed" : "pointer", opacity: (!state.question.trim() || insufficientCredits) ? 0.35 : 1 }}
-                >▶</button>
+                  disabled={insufficientCredits}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm transition-all"
+                  style={{
+                    background: insufficientCredits ? "rgba(0,200,83,.15)" : "#00c853",
+                    color: insufficientCredits ? "rgba(0,200,83,.35)" : "#000",
+                    cursor: insufficientCredits ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <Play className="w-4 h-4" />
+                  Run Trial
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <Textarea
+                    placeholder={isComplete ? "Challenge the verdict or ask a follow-up…" : "Put your question on trial…"}
+                    value={state.question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isRunning) handleRun(); } }}
+                    className="resize-none focus-visible:ring-1 focus-visible:ring-primary/60 text-sm leading-relaxed"
+                    style={{ minHeight: 96, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 12, color: "#eef7ee", padding: "12px 14px" }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground/30 flex-1">Enter to run · Shift+Enter for new line</span>
+                  <button
+                    onClick={handleRun}
+                    disabled={!state.question.trim() || insufficientCredits}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shrink-0"
+                    style={{
+                      background: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.15)" : "#00c853",
+                      color: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.3)" : "#000",
+                      cursor: (!state.question.trim() || insufficientCredits) ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Run Trial
+                  </button>
+                </div>
               </div>
             )}
-            <div style={{ fontSize: 11, color: "#2a4a2a", textAlign: "right" }}>Shift+Enter for new line</div>
-          </>
+          </div>
         )}
       </div>
 
