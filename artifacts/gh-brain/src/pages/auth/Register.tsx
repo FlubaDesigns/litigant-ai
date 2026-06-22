@@ -29,7 +29,7 @@ const PLANS = [
     name: "Starter",
     price: "$19/mo",
     credits: "500 credits",
-    features: ["Unlimited sessions", "4 AI models", "All export formats", "Custom personas"],
+    features: ["Unlimited sessions", "Up to 10 litigants", "All export formats", "Custom personas"],
   },
 ];
 

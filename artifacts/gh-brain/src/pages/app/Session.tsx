@@ -890,7 +890,7 @@ export default function SessionPage() {
   }
 
   function handleAddLitigant() {
-    const next = Math.min(state.config.litigantCount + 1, 8);
+    const next = Math.min(state.config.litigantCount + 1, 10);
     setConfig({ litigantCount: next });
   }
 

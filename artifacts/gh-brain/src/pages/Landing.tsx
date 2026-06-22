@@ -33,7 +33,7 @@ const HOW_IT_WORKS = [
   {
     step: "02",
     title: "Litigants Debate",
-    desc: "A panel of AI models — each assigned a distinct role — argue the question in real time. Advocate, Skeptic, Devil's Advocate, Empiricist. Watch them clash.",
+    desc: "A panel of AI models argue the question in real time — each holding a distinct position. Add as many as you want using the +/− control. The larger the panel, the sharper the cross-examination.",
   },
   {
     step: "03",
@@ -84,7 +84,7 @@ const COURT_SEATS = [
     color: "text-primary",
     border: "border-primary/30",
     bg: "bg-primary/5",
-    desc: "The debaters. Advocate, Skeptic, Devil's Advocate, Empiricist — each holding a distinct position, each powered by the AI you choose.",
+    desc: "The debaters. Add as many as you want — each holds a distinct position, each powered by the AI you assign. Use the +/− control to set the panel size before the trial starts.",
   },
   {
     id: "architect",
@@ -158,7 +158,7 @@ const PLANS = [
     highlight: false,
     features: [
       "Unlimited sessions",
-      "4 AI models in the courtroom",
+      "Up to 10 litigants in the courtroom",
       "Advanced confidence scoring",
       "All export formats (PDF, MD, JSON)",
       "Custom court personas",
@@ -381,7 +381,7 @@ export default function LandingPage() {
               </div>
               <h2 className="text-4xl font-bold tracking-tight mb-4">Watch the Court in Session</h2>
               <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                Four AI models. One question. A verdict you can trust. This is exactly what you'll see when you run your first trial.
+                As many litigants as you want. One question. A verdict you can trust. This is exactly what you'll see when you run your first trial.
               </p>
             </motion.div>
 

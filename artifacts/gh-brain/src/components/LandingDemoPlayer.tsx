@@ -18,7 +18,7 @@ const DEMO_QUESTION = "Is the Earth flat?";
 
 const DEMO_CONFIG = [
   { label: "Court Mode",    value: "Adversarial" },
-  { label: "AI Models",     value: "4 Litigants"  },
+  { label: "Litigants",     value: "4 (+ / −)"  },
   { label: "Reasoning",     value: "Chain of Thought" },
   { label: "Confidence Target", value: "80%" },
 ];
@@ -62,7 +62,7 @@ const TURNS: Turn[] = [
   },
 ];
 
-const VERDICT = `After adversarial cross-examination across four independent AI models with distinct reasoning architectures, the court finds unanimously:
+const VERDICT = `After adversarial cross-examination across four independent AI litigants with distinct reasoning architectures, the court finds unanimously:
 
 The Earth is an oblate spheroid — slightly flattened at the poles, bulging at the equator. This is established to a certainty that no credible evidence contests.
 
