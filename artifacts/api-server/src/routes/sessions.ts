@@ -104,14 +104,40 @@ router.get("/sessions/:id", async (req, res) => {
       }
     }
 
-    res.json({
-      id: doc.id,
-      ...data,
-      transcript,
-      debateNotes,
-      createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
-      updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
-    });
+    const isOwner = uid !== null && data["userId"] === uid;
+
+    if (isOwner) {
+      // Session owner: return full document (includes userId, config, credit detail, etc.)
+      res.json({
+        id: doc.id,
+        ...data,
+        transcript,
+        debateNotes,
+        createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
+        updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
+      });
+    } else {
+      // Anonymous shared viewer: apply the same public-field allowlist as
+      // GET /report/:shareId so that adding a new internal field to the session
+      // document never silently exposes it here without an explicit decision.
+      // userId is the primary field this guards today; any future internal
+      // fields (billing details, IP, etc.) are blocked by default.
+      const PUBLIC_SESSION_FIELDS = [
+        "sessionId", "title", "question", "templateId",
+        "confidence", "creditsUsed", "status",
+        "finalAnswer", "debateNotes", "transcript", "caveats", "artifacts",
+        "shared", "shareId",
+      ] as const;
+      const pub: Record<string, unknown> = { id: doc.id };
+      for (const f of PUBLIC_SESSION_FIELDS) {
+        if (data[f] !== undefined) pub[f] = data[f];
+      }
+      pub["transcript"]  = transcript;
+      pub["debateNotes"] = debateNotes;
+      pub["createdAt"]   = data["createdAt"]?.toDate?.()?.toISOString() ?? null;
+      pub["updatedAt"]   = data["updatedAt"]?.toDate?.()?.toISOString() ?? null;
+      res.json(pub);
+    }
   } catch (e: any) {
     res.status(500).json({ message: e?.message });
   }

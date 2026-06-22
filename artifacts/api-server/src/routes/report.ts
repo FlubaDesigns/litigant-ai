@@ -68,13 +68,24 @@ router.get("/report/:shareId", async (req, res) => {
             .map((t) => `### ${t["role"]} — Round ${t["round"]}\n${t["content"]}`)
             .join("\n\n---\n\n");
         }
-        // Always derive metrics from turns — do not rely on inline session fields
-        const rounds = turns.reduce((max: number, t: any) => Math.max(max, t["round"] ?? 0), 0);
-        const litigants = new Set(
-          turns
-            .filter((t: any) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict" && t["role"] !== "Moderator")
-            .map((t: any) => t["role"])
-        ).size;
+        // Always derive metrics from turns — do not rely on inline session fields.
+        //
+        // NON_LITIGANT_ROLES: every role brainEngine.ts writes that is NOT a
+        // real debate participant. Must be kept in sync with turns.push() calls
+        // in brainEngine.ts. Current pipeline roles and their round sentinels:
+        //   Orchestrator  round: 0   (opening frame)
+        //   Moderator     round: 99  (post-debate summary)
+        //   Architect     round: 99  (artifact blueprint)
+        //   Builder       round: 99  (artifact construction)
+        //   Auditor       round: 99  (artifact audit)
+        //   Verdict       round: 99  (final verdict)
+        // All others are actual litigants carrying real round numbers (1, 2, 3…).
+        const NON_LITIGANT_ROLES = new Set([
+          "Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict",
+        ]);
+        const debateTurns = turns.filter((t: any) => !NON_LITIGANT_ROLES.has(t["role"]));
+        const rounds   = debateTurns.reduce((max: number, t: any) => Math.max(max, t["round"] ?? 0), 0);
+        const litigants = new Set(debateTurns.map((t: any) => t["role"])).size;
         result["roundsCompleted"] = rounds;
         result["litigantCount"] = litigants;
       }

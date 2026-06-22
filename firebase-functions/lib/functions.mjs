@@ -55307,15 +55307,6 @@ async function getConfiguredProvidersAsync() {
   const all = await getAllConfiguredProviders();
   return all.map((p) => p.id);
 }
-function getConfiguredProviders() {
-  const configured = [];
-  const hasOpenAI = !!process.env["OPENAI_API_KEY"] || !!process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] && !!process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
-  if (hasOpenAI) configured.push("openai");
-  if (process.env["ANTHROPIC_API_KEY"]) configured.push("anthropic");
-  if (process.env["XAI_API_KEY"]) configured.push("grok");
-  if (process.env["GEMINI_API_KEY"]) configured.push("gemini");
-  return configured;
-}
 
 // artifacts/api-server/src/lib/creditEngine.ts
 var CREDIT_VALUE_USD = 0.01;
@@ -56639,14 +56630,43 @@ ${t["content"]}`).join("\n\n---\n\n");
       } catch {
       }
     }
-    res.json({
-      id: doc.id,
-      ...data,
-      transcript,
-      debateNotes,
-      createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
-      updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null
-    });
+    const isOwner = uid !== null && data["userId"] === uid;
+    if (isOwner) {
+      res.json({
+        id: doc.id,
+        ...data,
+        transcript,
+        debateNotes,
+        createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
+        updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null
+      });
+    } else {
+      const PUBLIC_SESSION_FIELDS = [
+        "sessionId",
+        "title",
+        "question",
+        "templateId",
+        "confidence",
+        "creditsUsed",
+        "status",
+        "finalAnswer",
+        "debateNotes",
+        "transcript",
+        "caveats",
+        "artifacts",
+        "shared",
+        "shareId"
+      ];
+      const pub = { id: doc.id };
+      for (const f of PUBLIC_SESSION_FIELDS) {
+        if (data[f] !== void 0) pub[f] = data[f];
+      }
+      pub["transcript"] = transcript;
+      pub["debateNotes"] = debateNotes;
+      pub["createdAt"] = data["createdAt"]?.toDate?.()?.toISOString() ?? null;
+      pub["updatedAt"] = data["updatedAt"]?.toDate?.()?.toISOString() ?? null;
+      res.json(pub);
+    }
   } catch (e) {
     res.status(500).json({ message: e?.message });
   }
@@ -57563,10 +57583,17 @@ ${t["content"]}`).join("\n\n---\n\n");
           result["debateNotes"] = turns.filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict").map((t) => `### ${t["role"]} \u2014 Round ${t["round"]}
 ${t["content"]}`).join("\n\n---\n\n");
         }
-        const rounds = turns.reduce((max, t) => Math.max(max, t["round"] ?? 0), 0);
-        const litigants = new Set(
-          turns.filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict" && t["role"] !== "Moderator").map((t) => t["role"])
-        ).size;
+        const NON_LITIGANT_ROLES = /* @__PURE__ */ new Set([
+          "Orchestrator",
+          "Moderator",
+          "Architect",
+          "Builder",
+          "Auditor",
+          "Verdict"
+        ]);
+        const debateTurns = turns.filter((t) => !NON_LITIGANT_ROLES.has(t["role"]));
+        const rounds = debateTurns.reduce((max, t) => Math.max(max, t["round"] ?? 0), 0);
+        const litigants = new Set(debateTurns.map((t) => t["role"])).size;
         result["roundsCompleted"] = rounds;
         result["litigantCount"] = litigants;
       }
@@ -57582,8 +57609,8 @@ var report_default = router8;
 // artifacts/api-server/src/routes/providers.ts
 var import_express9 = __toESM(require_express2(), 1);
 var router9 = (0, import_express9.Router)();
-router9.get("/providers", (_req, res) => {
-  const configured = getConfiguredProviders();
+router9.get("/providers", async (_req, res) => {
+  const configured = await getConfiguredProvidersAsync();
   res.json({
     configured,
     creditValueUsd: 0.01,
@@ -57591,7 +57618,7 @@ router9.get("/providers", (_req, res) => {
       name,
       displayName: PROVIDER_DISPLAY_NAMES[name],
       defaultModel: DEFAULT_MODELS[name],
-      models: PROVIDER_MODELS[name].map((m) => ({
+      models: (PROVIDER_MODELS[name] ?? []).map((m) => ({
         ...m,
         creditInfo: getModelCreditInfo(m.id)
       }))
