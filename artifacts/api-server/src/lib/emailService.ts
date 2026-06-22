@@ -16,8 +16,23 @@ function getResend(): Resend {
 const FROM = "Litigant AI <noreply@send.litigant-ai.com>";
 const APP_URL = `https://${process.env["APP_DOMAIN"] ?? "litigant-ai.com"}`;
 
+/**
+ * Escapes the five HTML-significant characters before interpolating
+ * user-controlled text into a raw HTML email template.
+ *
+ * displayName has no content restriction beyond a 2-character minimum
+ * (see Register.tsx) and is never sanitized before reaching here — without
+ * this, a display name like "<img src=x onerror=...>" would be inserted
+ * verbatim into the email HTML this function builds.
+ */
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
+  );
+}
+
 function verificationTemplate(link: string, displayName?: string): string {
-  const name = displayName ?? "Operator";
+  const name = escapeHtml(displayName ?? "Operator");
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -58,7 +73,7 @@ function verificationTemplate(link: string, displayName?: string): string {
 }
 
 function passwordResetTemplate(link: string, displayName?: string): string {
-  const name = displayName ?? "Operator";
+  const name = escapeHtml(displayName ?? "Operator");
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
