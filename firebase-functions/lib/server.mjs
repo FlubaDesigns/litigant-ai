@@ -4,7 +4,7 @@ import __bannerUrl from 'node:url';
 globalThis.require = __bannerCrReq(import.meta.url);
 globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
 globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
-    
+
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -44,9 +44,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js
+// node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js
 var require_ms = __commonJS({
-  "../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js"(exports, module) {
+  "node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js"(exports, module) {
     var s = 1e3;
     var m = s * 60;
     var h = m * 60;
@@ -160,9 +160,9 @@ var require_ms = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/common.js
+// node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/common.js
 var require_common = __commonJS({
-  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/common.js"(exports, module) {
+  "node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/common.js"(exports, module) {
     function setup(env) {
       createDebug.debug = createDebug;
       createDebug.default = createDebug;
@@ -337,9 +337,9 @@ var require_common = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/browser.js
+// node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/browser.js
 var require_browser = __commonJS({
-  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/browser.js"(exports, module) {
+  "node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/browser.js"(exports, module) {
     exports.formatArgs = formatArgs;
     exports.save = save;
     exports.load = load;
@@ -507,9 +507,9 @@ var require_browser = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js
+// node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js
 var require_has_flag = __commonJS({
-  "../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js"(exports, module) {
+  "node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js"(exports, module) {
     "use strict";
     module.exports = (flag, argv = process.argv) => {
       const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
@@ -520,9 +520,9 @@ var require_has_flag = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js
+// node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js
 var require_supports_color = __commonJS({
-  "../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js"(exports, module) {
+  "node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js"(exports, module) {
     "use strict";
     var os = __require("os");
     var tty = __require("tty");
@@ -622,9 +622,9 @@ var require_supports_color = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js
+// node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js
 var require_node = __commonJS({
-  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js"(exports, module) {
+  "node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js"(exports, module) {
     var tty = __require("tty");
     var util2 = __require("util");
     exports.init = init;
@@ -796,9 +796,9 @@ var require_node = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/index.js
+// node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/index.js
 var require_src = __commonJS({
-  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/index.js"(exports, module) {
+  "node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/index.js"(exports, module) {
     if (typeof process === "undefined" || process.type === "renderer" || process.browser === true || process.__nwjs) {
       module.exports = require_browser();
     } else {
@@ -807,9 +807,9 @@ var require_src = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js
+// node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js
 var require_depd = __commonJS({
-  "../../node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js"(exports, module) {
+  "node_modules/.pnpm/depd@2.0.0/node_modules/depd/index.js"(exports, module) {
     var relative2 = __require("path").relative;
     module.exports = depd;
     var basePath = process.cwd();
@@ -1113,9 +1113,9 @@ var require_depd = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/setprototypeof@1.2.0/node_modules/setprototypeof/index.js
+// node_modules/.pnpm/setprototypeof@1.2.0/node_modules/setprototypeof/index.js
 var require_setprototypeof = __commonJS({
-  "../../node_modules/.pnpm/setprototypeof@1.2.0/node_modules/setprototypeof/index.js"(exports, module) {
+  "node_modules/.pnpm/setprototypeof@1.2.0/node_modules/setprototypeof/index.js"(exports, module) {
     "use strict";
     module.exports = Object.setPrototypeOf || ({ __proto__: [] } instanceof Array ? setProtoOf : mixinProperties);
     function setProtoOf(obj, proto) {
@@ -1133,9 +1133,9 @@ var require_setprototypeof = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/codes.json
+// node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/codes.json
 var require_codes = __commonJS({
-  "../../node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/codes.json"(exports, module) {
+  "node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/codes.json"(exports, module) {
     module.exports = {
       "100": "Continue",
       "101": "Switching Protocols",
@@ -1204,9 +1204,9 @@ var require_codes = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/index.js
+// node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/index.js
 var require_statuses = __commonJS({
-  "../../node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/index.js"(exports, module) {
+  "node_modules/.pnpm/statuses@2.0.2/node_modules/statuses/index.js"(exports, module) {
     "use strict";
     var codes = require_codes();
     module.exports = status;
@@ -1275,9 +1275,9 @@ var require_statuses = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits_browser.js
+// node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits_browser.js
 var require_inherits_browser = __commonJS({
-  "../../node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits_browser.js"(exports, module) {
+  "node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits_browser.js"(exports, module) {
     if (typeof Object.create === "function") {
       module.exports = function inherits(ctor, superCtor) {
         if (superCtor) {
@@ -1307,9 +1307,9 @@ var require_inherits_browser = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits.js
+// node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits.js
 var require_inherits = __commonJS({
-  "../../node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits.js"(exports, module) {
+  "node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits.js"(exports, module) {
     try {
       util2 = __require("util");
       if (typeof util2.inherits !== "function") throw "";
@@ -1321,9 +1321,9 @@ var require_inherits = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier/index.js
+// node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier/index.js
 var require_toidentifier = __commonJS({
-  "../../node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier/index.js"(exports, module) {
+  "node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier/index.js"(exports, module) {
     "use strict";
     module.exports = toIdentifier;
     function toIdentifier(str2) {
@@ -1334,9 +1334,9 @@ var require_toidentifier = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/http-errors@2.0.1/node_modules/http-errors/index.js
+// node_modules/.pnpm/http-errors@2.0.1/node_modules/http-errors/index.js
 var require_http_errors = __commonJS({
-  "../../node_modules/.pnpm/http-errors@2.0.1/node_modules/http-errors/index.js"(exports, module) {
+  "node_modules/.pnpm/http-errors@2.0.1/node_modules/http-errors/index.js"(exports, module) {
     "use strict";
     var deprecate = require_depd()("http-errors");
     var setPrototypeOf = require_setprototypeof();
@@ -1498,9 +1498,9 @@ var require_http_errors = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/bytes@3.1.2/node_modules/bytes/index.js
+// node_modules/.pnpm/bytes@3.1.2/node_modules/bytes/index.js
 var require_bytes = __commonJS({
-  "../../node_modules/.pnpm/bytes@3.1.2/node_modules/bytes/index.js"(exports, module) {
+  "node_modules/.pnpm/bytes@3.1.2/node_modules/bytes/index.js"(exports, module) {
     "use strict";
     module.exports = bytes;
     module.exports.format = format;
@@ -1587,9 +1587,9 @@ var require_bytes = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer/safer.js
+// node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer/safer.js
 var require_safer = __commonJS({
-  "../../node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer/safer.js"(exports, module) {
+  "node_modules/.pnpm/safer-buffer@2.1.2/node_modules/safer-buffer/safer.js"(exports, module) {
     "use strict";
     var buffer = __require("buffer");
     var Buffer2 = buffer.Buffer;
@@ -1655,9 +1655,9 @@ var require_safer = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/bom-handling.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/bom-handling.js
 var require_bom_handling = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/bom-handling.js"(exports) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/bom-handling.js"(exports) {
     "use strict";
     var BOMChar = "\uFEFF";
     exports.PrependBOM = PrependBOMWrapper;
@@ -1701,9 +1701,9 @@ var require_bom_handling = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/helpers/merge-exports.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/helpers/merge-exports.js
 var require_merge_exports = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/helpers/merge-exports.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/helpers/merge-exports.js"(exports, module) {
     "use strict";
     var hasOwn3 = typeof Object.hasOwn === "undefined" ? Function.call.bind(Object.prototype.hasOwnProperty) : Object.hasOwn;
     function mergeModules(target, module2) {
@@ -1717,9 +1717,9 @@ var require_merge_exports = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/internal.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/internal.js
 var require_internal = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/internal.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/internal.js"(exports, module) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     module.exports = {
@@ -1898,9 +1898,9 @@ var require_internal = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf32.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf32.js
 var require_utf32 = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf32.js"(exports) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf32.js"(exports) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports._utf32 = Utf32Codec;
@@ -2129,9 +2129,9 @@ var require_utf32 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf16.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf16.js
 var require_utf16 = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf16.js"(exports) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf16.js"(exports) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports.utf16be = Utf16BECodec;
@@ -2272,9 +2272,9 @@ var require_utf16 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf7.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf7.js
 var require_utf7 = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf7.js"(exports) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/utf7.js"(exports) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports.utf7 = Utf7Codec;
@@ -2490,9 +2490,9 @@ var require_utf7 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-codec.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-codec.js
 var require_sbcs_codec = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-codec.js"(exports) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-codec.js"(exports) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports._sbcs = SBCSCodec;
@@ -2552,9 +2552,9 @@ var require_sbcs_codec = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data.js
 var require_sbcs_data = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data.js"(exports, module) {
     "use strict";
     module.exports = {
       // Not supported by iconv, not sure why.
@@ -2705,9 +2705,9 @@ var require_sbcs_data = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data-generated.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data-generated.js
 var require_sbcs_data_generated = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data-generated.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/sbcs-data-generated.js"(exports, module) {
     "use strict";
     module.exports = {
       "437": "cp437",
@@ -3160,9 +3160,9 @@ var require_sbcs_data_generated = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-codec.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-codec.js
 var require_dbcs_codec = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-codec.js"(exports) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-codec.js"(exports) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     exports._dbcs = DBCSCodec;
@@ -3620,9 +3620,9 @@ var require_dbcs_codec = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/shiftjis.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/shiftjis.json
 var require_shiftjis = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/shiftjis.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/shiftjis.json"(exports, module) {
     module.exports = [
       ["0", "\0", 128],
       ["a1", "\uFF61", 62],
@@ -3751,9 +3751,9 @@ var require_shiftjis = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/eucjp.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/eucjp.json
 var require_eucjp = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/eucjp.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/eucjp.json"(exports, module) {
     module.exports = [
       ["0", "\0", 127],
       ["8ea1", "\uFF61", 62],
@@ -3939,9 +3939,9 @@ var require_eucjp = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp936.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp936.json
 var require_cp936 = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp936.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp936.json"(exports, module) {
     module.exports = [
       ["0", "\0", 127, "\u20AC"],
       ["8140", "\u4E02\u4E04\u4E05\u4E06\u4E0F\u4E12\u4E17\u4E1F\u4E20\u4E21\u4E23\u4E26\u4E29\u4E2E\u4E2F\u4E31\u4E33\u4E35\u4E37\u4E3C\u4E40\u4E41\u4E42\u4E44\u4E46\u4E4A\u4E51\u4E55\u4E57\u4E5A\u4E5B\u4E62\u4E63\u4E64\u4E65\u4E67\u4E68\u4E6A", 5, "\u4E72\u4E74", 9, "\u4E7F", 6, "\u4E87\u4E8A"],
@@ -4209,9 +4209,9 @@ var require_cp936 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gbk-added.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gbk-added.json
 var require_gbk_added = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gbk-added.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gbk-added.json"(exports, module) {
     module.exports = [
       ["a140", "\uE4C6", 62],
       ["a180", "\uE505", 32],
@@ -4271,16 +4271,16 @@ var require_gbk_added = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gb18030-ranges.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gb18030-ranges.json
 var require_gb18030_ranges = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gb18030-ranges.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/gb18030-ranges.json"(exports, module) {
     module.exports = { uChars: [128, 165, 169, 178, 184, 216, 226, 235, 238, 244, 248, 251, 253, 258, 276, 284, 300, 325, 329, 334, 364, 463, 465, 467, 469, 471, 473, 475, 477, 506, 594, 610, 712, 716, 730, 930, 938, 962, 970, 1026, 1104, 1106, 8209, 8215, 8218, 8222, 8231, 8241, 8244, 8246, 8252, 8365, 8452, 8454, 8458, 8471, 8482, 8556, 8570, 8596, 8602, 8713, 8720, 8722, 8726, 8731, 8737, 8740, 8742, 8748, 8751, 8760, 8766, 8777, 8781, 8787, 8802, 8808, 8816, 8854, 8858, 8870, 8896, 8979, 9322, 9372, 9548, 9588, 9616, 9622, 9634, 9652, 9662, 9672, 9676, 9680, 9702, 9735, 9738, 9793, 9795, 11906, 11909, 11913, 11917, 11928, 11944, 11947, 11951, 11956, 11960, 11964, 11979, 12284, 12292, 12312, 12319, 12330, 12351, 12436, 12447, 12535, 12543, 12586, 12842, 12850, 12964, 13200, 13215, 13218, 13253, 13263, 13267, 13270, 13384, 13428, 13727, 13839, 13851, 14617, 14703, 14801, 14816, 14964, 15183, 15471, 15585, 16471, 16736, 17208, 17325, 17330, 17374, 17623, 17997, 18018, 18212, 18218, 18301, 18318, 18760, 18811, 18814, 18820, 18823, 18844, 18848, 18872, 19576, 19620, 19738, 19887, 40870, 59244, 59336, 59367, 59413, 59417, 59423, 59431, 59437, 59443, 59452, 59460, 59478, 59493, 63789, 63866, 63894, 63976, 63986, 64016, 64018, 64021, 64025, 64034, 64037, 64042, 65074, 65093, 65107, 65112, 65127, 65132, 65375, 65510, 65536], gbChars: [0, 36, 38, 45, 50, 81, 89, 95, 96, 100, 103, 104, 105, 109, 126, 133, 148, 172, 175, 179, 208, 306, 307, 308, 309, 310, 311, 312, 313, 341, 428, 443, 544, 545, 558, 741, 742, 749, 750, 805, 819, 820, 7922, 7924, 7925, 7927, 7934, 7943, 7944, 7945, 7950, 8062, 8148, 8149, 8152, 8164, 8174, 8236, 8240, 8262, 8264, 8374, 8380, 8381, 8384, 8388, 8390, 8392, 8393, 8394, 8396, 8401, 8406, 8416, 8419, 8424, 8437, 8439, 8445, 8482, 8485, 8496, 8521, 8603, 8936, 8946, 9046, 9050, 9063, 9066, 9076, 9092, 9100, 9108, 9111, 9113, 9131, 9162, 9164, 9218, 9219, 11329, 11331, 11334, 11336, 11346, 11361, 11363, 11366, 11370, 11372, 11375, 11389, 11682, 11686, 11687, 11692, 11694, 11714, 11716, 11723, 11725, 11730, 11736, 11982, 11989, 12102, 12336, 12348, 12350, 12384, 12393, 12395, 12397, 12510, 12553, 12851, 12962, 12973, 13738, 13823, 13919, 13933, 14080, 14298, 14585, 14698, 15583, 15847, 16318, 16434, 16438, 16481, 16729, 17102, 17122, 17315, 17320, 17402, 17418, 17859, 17909, 17911, 17915, 17916, 17936, 17939, 17961, 18664, 18703, 18814, 18962, 19043, 33469, 33470, 33471, 33484, 33485, 33490, 33497, 33501, 33505, 33513, 33520, 33536, 33550, 37845, 37921, 37948, 38029, 38038, 38064, 38065, 38066, 38069, 38075, 38076, 38078, 39108, 39109, 39113, 39114, 39115, 39116, 39265, 39394, 189e3] };
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp949.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp949.json
 var require_cp949 = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp949.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp949.json"(exports, module) {
     module.exports = [
       ["0", "\0", 127],
       ["8141", "\uAC02\uAC03\uAC05\uAC06\uAC0B", 4, "\uAC18\uAC1E\uAC1F\uAC21\uAC22\uAC23\uAC25", 6, "\uAC2E\uAC32\uAC33\uAC34"],
@@ -4557,9 +4557,9 @@ var require_cp949 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp950.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp950.json
 var require_cp950 = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp950.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/cp950.json"(exports, module) {
     module.exports = [
       ["0", "\0", 127],
       ["a140", "\u3000\uFF0C\u3001\u3002\uFF0E\u2027\uFF1B\uFF1A\uFF1F\uFF01\uFE30\u2026\u2025\uFE50\uFE51\uFE52\xB7\uFE54\uFE55\uFE56\uFE57\uFF5C\u2013\uFE31\u2014\uFE33\u2574\uFE34\uFE4F\uFF08\uFF09\uFE35\uFE36\uFF5B\uFF5D\uFE37\uFE38\u3014\u3015\uFE39\uFE3A\u3010\u3011\uFE3B\uFE3C\u300A\u300B\uFE3D\uFE3E\u3008\u3009\uFE3F\uFE40\u300C\u300D\uFE41\uFE42\u300E\u300F\uFE43\uFE44\uFE59\uFE5A"],
@@ -4740,9 +4740,9 @@ var require_cp950 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/big5-added.json
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/big5-added.json
 var require_big5_added = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/big5-added.json"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/tables/big5-added.json"(exports, module) {
     module.exports = [
       ["8740", "\u43F0\u4C32\u4603\u45A6\u4578\u{27267}\u4D77\u45B3\u{27CB1}\u4CE2\u{27CC5}\u3B95\u4736\u4744\u4C47\u4C40\u{242BF}\u{23617}\u{27352}\u{26E8B}\u{270D2}\u4C57\u{2A351}\u474F\u45DA\u4C85\u{27C6C}\u4D07\u4AA4\u46A1\u{26B23}\u7225\u{25A54}\u{21A63}\u{23E06}\u{23F61}\u664D\u56FB"],
       ["8767", "\u7D95\u591D\u{28BB9}\u3DF4\u9734\u{27BEF}\u5BDB\u{21D5E}\u5AA4\u3625\u{29EB0}\u5AD1\u5BB7\u5CFC\u676E\u8593\u{29945}\u7461\u749D\u3875\u{21D53}\u{2369E}\u{26021}\u3EEC"],
@@ -4868,9 +4868,9 @@ var require_big5_added = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-data.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-data.js
 var require_dbcs_data = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-data.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/dbcs-data.js"(exports, module) {
     "use strict";
     module.exports = {
       // == Japanese/ShiftJIS ====================================================
@@ -5115,9 +5115,9 @@ var require_dbcs_data = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/index.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/index.js
 var require_encodings = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/index.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/encodings/index.js"(exports, module) {
     "use strict";
     var mergeModules = require_merge_exports();
     var modules = [
@@ -5140,9 +5140,9 @@ var require_encodings = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/streams.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/streams.js
 var require_streams = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/streams.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/streams.js"(exports, module) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     module.exports = function(streamModule) {
@@ -5237,9 +5237,9 @@ var require_streams = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/index.js
+// node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/index.js
 var require_lib = __commonJS({
-  "../../node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/index.js"(exports, module) {
+  "node_modules/.pnpm/iconv-lite@0.7.2/node_modules/iconv-lite/lib/index.js"(exports, module) {
     "use strict";
     var Buffer2 = require_safer().Buffer;
     var bomHandling = require_bom_handling();
@@ -5369,9 +5369,9 @@ var require_lib = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/unpipe@1.0.0/node_modules/unpipe/index.js
+// node_modules/.pnpm/unpipe@1.0.0/node_modules/unpipe/index.js
 var require_unpipe = __commonJS({
-  "../../node_modules/.pnpm/unpipe@1.0.0/node_modules/unpipe/index.js"(exports, module) {
+  "node_modules/.pnpm/unpipe@1.0.0/node_modules/unpipe/index.js"(exports, module) {
     "use strict";
     module.exports = unpipe;
     function hasPipeDataListeners(stream) {
@@ -5407,9 +5407,9 @@ var require_unpipe = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/raw-body@3.0.2/node_modules/raw-body/index.js
+// node_modules/.pnpm/raw-body@3.0.2/node_modules/raw-body/index.js
 var require_raw_body = __commonJS({
-  "../../node_modules/.pnpm/raw-body@3.0.2/node_modules/raw-body/index.js"(exports, module) {
+  "node_modules/.pnpm/raw-body@3.0.2/node_modules/raw-body/index.js"(exports, module) {
     "use strict";
     var asyncHooks = tryRequireAsyncHooks();
     var bytes = require_bytes();
@@ -5596,9 +5596,9 @@ var require_raw_body = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/ee-first@1.1.1/node_modules/ee-first/index.js
+// node_modules/.pnpm/ee-first@1.1.1/node_modules/ee-first/index.js
 var require_ee_first = __commonJS({
-  "../../node_modules/.pnpm/ee-first@1.1.1/node_modules/ee-first/index.js"(exports, module) {
+  "node_modules/.pnpm/ee-first@1.1.1/node_modules/ee-first/index.js"(exports, module) {
     "use strict";
     module.exports = first;
     function first(stuff, done) {
@@ -5652,9 +5652,9 @@ var require_ee_first = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/on-finished@2.4.1/node_modules/on-finished/index.js
+// node_modules/.pnpm/on-finished@2.4.1/node_modules/on-finished/index.js
 var require_on_finished = __commonJS({
-  "../../node_modules/.pnpm/on-finished@2.4.1/node_modules/on-finished/index.js"(exports, module) {
+  "node_modules/.pnpm/on-finished@2.4.1/node_modules/on-finished/index.js"(exports, module) {
     "use strict";
     module.exports = onFinished;
     module.exports.isFinished = isFinished;
@@ -5756,9 +5756,9 @@ var require_on_finished = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/content-type@1.0.5/node_modules/content-type/index.js
+// node_modules/.pnpm/content-type@1.0.5/node_modules/content-type/index.js
 var require_content_type = __commonJS({
-  "../../node_modules/.pnpm/content-type@1.0.5/node_modules/content-type/index.js"(exports) {
+  "node_modules/.pnpm/content-type@1.0.5/node_modules/content-type/index.js"(exports) {
     "use strict";
     var PARAM_REGEXP = /; *([!#$%&'*+.^_`|~0-9A-Za-z-]+) *= *("(?:[\u000b\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\u000b\u0020-\u00ff])*"|[!#$%&'*+.^_`|~0-9A-Za-z-]+) */g;
     var TEXT_REGEXP = /^[\u000b\u0020-\u007e\u0080-\u00ff]+$/;
@@ -5860,9 +5860,9 @@ var require_content_type = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/db.json
+// node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/db.json
 var require_db = __commonJS({
-  "../../node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/db.json"(exports, module) {
+  "node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/db.json"(exports, module) {
     module.exports = {
       "application/1d-interleaved-parityfec": {
         source: "iana"
@@ -15208,16 +15208,16 @@ var require_db = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/index.js
+// node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/index.js
 var require_mime_db = __commonJS({
-  "../../node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/index.js"(exports, module) {
+  "node_modules/.pnpm/mime-db@1.54.0/node_modules/mime-db/index.js"(exports, module) {
     module.exports = require_db();
   }
 });
 
-// ../../node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/mimeScore.js
+// node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/mimeScore.js
 var require_mimeScore = __commonJS({
-  "../../node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/mimeScore.js"(exports, module) {
+  "node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/mimeScore.js"(exports, module) {
     var FACET_SCORES = {
       "prs.": 100,
       "x-": 200,
@@ -15259,9 +15259,9 @@ var require_mimeScore = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/index.js
+// node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/index.js
 var require_mime_types = __commonJS({
-  "../../node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/index.js"(exports) {
+  "node_modules/.pnpm/mime-types@3.0.2/node_modules/mime-types/index.js"(exports) {
     "use strict";
     var db = require_mime_db();
     var extname = __require("path").extname;
@@ -15365,9 +15365,9 @@ var require_mime_types = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/media-typer@1.1.0/node_modules/media-typer/index.js
+// node_modules/.pnpm/media-typer@1.1.0/node_modules/media-typer/index.js
 var require_media_typer = __commonJS({
-  "../../node_modules/.pnpm/media-typer@1.1.0/node_modules/media-typer/index.js"(exports) {
+  "node_modules/.pnpm/media-typer@1.1.0/node_modules/media-typer/index.js"(exports) {
     "use strict";
     var SUBTYPE_NAME_REGEXP = /^[A-Za-z0-9][A-Za-z0-9!#$&^_.-]{0,126}$/;
     var TYPE_NAME_REGEXP = /^[A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126}$/;
@@ -15435,9 +15435,9 @@ var require_media_typer = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/type-is@2.0.1/node_modules/type-is/index.js
+// node_modules/.pnpm/type-is@2.0.1/node_modules/type-is/index.js
 var require_type_is = __commonJS({
-  "../../node_modules/.pnpm/type-is@2.0.1/node_modules/type-is/index.js"(exports, module) {
+  "node_modules/.pnpm/type-is@2.0.1/node_modules/type-is/index.js"(exports, module) {
     "use strict";
     var contentType = require_content_type();
     var mime = require_mime_types();
@@ -15529,9 +15529,9 @@ var require_type_is = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/utils.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/utils.js
 var require_utils = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/utils.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/utils.js"(exports, module) {
     "use strict";
     var bytes = require_bytes();
     var contentType = require_content_type();
@@ -15580,9 +15580,9 @@ var require_utils = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/read.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/read.js
 var require_read = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/read.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/read.js"(exports, module) {
     "use strict";
     var createError = require_http_errors();
     var getBody = require_raw_body();
@@ -15738,9 +15738,9 @@ var require_read = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/json.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/json.js
 var require_json = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/json.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/json.js"(exports, module) {
     "use strict";
     var debug = require_src()("body-parser:json");
     var read = require_read();
@@ -15820,9 +15820,9 @@ var require_json = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/raw.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/raw.js
 var require_raw = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/raw.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/raw.js"(exports, module) {
     "use strict";
     var debug = require_src()("body-parser:raw");
     var read = require_read();
@@ -15842,9 +15842,9 @@ var require_raw = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/text.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/text.js
 var require_text = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/text.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/text.js"(exports, module) {
     "use strict";
     var debug = require_src()("body-parser:text");
     var read = require_read();
@@ -15859,24 +15859,24 @@ var require_text = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/type.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/type.js
 var require_type = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/type.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/type.js"(exports, module) {
     "use strict";
     module.exports = TypeError;
   }
 });
 
-// ../../node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/util.inspect.js
+// node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/util.inspect.js
 var require_util_inspect = __commonJS({
-  "../../node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/util.inspect.js"(exports, module) {
+  "node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/util.inspect.js"(exports, module) {
     module.exports = __require("util").inspect;
   }
 });
 
-// ../../node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/index.js
+// node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/index.js
 var require_object_inspect = __commonJS({
-  "../../node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/index.js"(exports, module) {
+  "node_modules/.pnpm/object-inspect@1.13.4/node_modules/object-inspect/index.js"(exports, module) {
     var hasMap = typeof Map === "function" && Map.prototype;
     var mapSizeDescriptor = Object.getOwnPropertyDescriptor && hasMap ? Object.getOwnPropertyDescriptor(Map.prototype, "size") : null;
     var mapSize = hasMap && mapSizeDescriptor && typeof mapSizeDescriptor.get === "function" ? mapSizeDescriptor.get : null;
@@ -16405,9 +16405,9 @@ var require_object_inspect = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/side-channel-list@1.0.1/node_modules/side-channel-list/index.js
+// node_modules/.pnpm/side-channel-list@1.0.1/node_modules/side-channel-list/index.js
 var require_side_channel_list = __commonJS({
-  "../../node_modules/.pnpm/side-channel-list@1.0.1/node_modules/side-channel-list/index.js"(exports, module) {
+  "node_modules/.pnpm/side-channel-list@1.0.1/node_modules/side-channel-list/index.js"(exports, module) {
     "use strict";
     var inspect = require_object_inspect();
     var $TypeError = require_type();
@@ -16498,113 +16498,113 @@ var require_side_channel_list = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/es-object-atoms@1.1.1/node_modules/es-object-atoms/index.js
+// node_modules/.pnpm/es-object-atoms@1.1.1/node_modules/es-object-atoms/index.js
 var require_es_object_atoms = __commonJS({
-  "../../node_modules/.pnpm/es-object-atoms@1.1.1/node_modules/es-object-atoms/index.js"(exports, module) {
+  "node_modules/.pnpm/es-object-atoms@1.1.1/node_modules/es-object-atoms/index.js"(exports, module) {
     "use strict";
     module.exports = Object;
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/index.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/index.js
 var require_es_errors = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/index.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/index.js"(exports, module) {
     "use strict";
     module.exports = Error;
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/eval.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/eval.js
 var require_eval = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/eval.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/eval.js"(exports, module) {
     "use strict";
     module.exports = EvalError;
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/range.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/range.js
 var require_range = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/range.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/range.js"(exports, module) {
     "use strict";
     module.exports = RangeError;
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/ref.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/ref.js
 var require_ref = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/ref.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/ref.js"(exports, module) {
     "use strict";
     module.exports = ReferenceError;
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/syntax.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/syntax.js
 var require_syntax = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/syntax.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/syntax.js"(exports, module) {
     "use strict";
     module.exports = SyntaxError;
   }
 });
 
-// ../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/uri.js
+// node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/uri.js
 var require_uri = __commonJS({
-  "../../node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/uri.js"(exports, module) {
+  "node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/uri.js"(exports, module) {
     "use strict";
     module.exports = URIError;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/abs.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/abs.js
 var require_abs = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/abs.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/abs.js"(exports, module) {
     "use strict";
     module.exports = Math.abs;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/floor.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/floor.js
 var require_floor = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/floor.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/floor.js"(exports, module) {
     "use strict";
     module.exports = Math.floor;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/max.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/max.js
 var require_max = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/max.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/max.js"(exports, module) {
     "use strict";
     module.exports = Math.max;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/min.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/min.js
 var require_min = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/min.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/min.js"(exports, module) {
     "use strict";
     module.exports = Math.min;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/pow.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/pow.js
 var require_pow = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/pow.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/pow.js"(exports, module) {
     "use strict";
     module.exports = Math.pow;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/round.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/round.js
 var require_round = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/round.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/round.js"(exports, module) {
     "use strict";
     module.exports = Math.round;
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/isNaN.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/isNaN.js
 var require_isNaN = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/isNaN.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/isNaN.js"(exports, module) {
     "use strict";
     module.exports = Number.isNaN || function isNaN2(a) {
       return a !== a;
@@ -16612,9 +16612,9 @@ var require_isNaN = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/sign.js
+// node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/sign.js
 var require_sign = __commonJS({
-  "../../node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/sign.js"(exports, module) {
+  "node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/sign.js"(exports, module) {
     "use strict";
     var $isNaN = require_isNaN();
     module.exports = function sign(number) {
@@ -16626,17 +16626,17 @@ var require_sign = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/gOPD.js
+// node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/gOPD.js
 var require_gOPD = __commonJS({
-  "../../node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/gOPD.js"(exports, module) {
+  "node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/gOPD.js"(exports, module) {
     "use strict";
     module.exports = Object.getOwnPropertyDescriptor;
   }
 });
 
-// ../../node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/index.js
+// node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/index.js
 var require_gopd = __commonJS({
-  "../../node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/index.js"(exports, module) {
+  "node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/index.js"(exports, module) {
     "use strict";
     var $gOPD = require_gOPD();
     if ($gOPD) {
@@ -16650,9 +16650,9 @@ var require_gopd = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property/index.js
+// node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property/index.js
 var require_es_define_property = __commonJS({
-  "../../node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property/index.js"(exports, module) {
+  "node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property/index.js"(exports, module) {
     "use strict";
     var $defineProperty = Object.defineProperty || false;
     if ($defineProperty) {
@@ -16666,9 +16666,9 @@ var require_es_define_property = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/shams.js
+// node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/shams.js
 var require_shams = __commonJS({
-  "../../node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/shams.js"(exports, module) {
+  "node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/shams.js"(exports, module) {
     "use strict";
     module.exports = function hasSymbols() {
       if (typeof Symbol !== "function" || typeof Object.getOwnPropertySymbols !== "function") {
@@ -16721,9 +16721,9 @@ var require_shams = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/index.js
+// node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/index.js
 var require_has_symbols = __commonJS({
-  "../../node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/index.js"(exports, module) {
+  "node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/index.js"(exports, module) {
     "use strict";
     var origSymbol = typeof Symbol !== "undefined" && Symbol;
     var hasSymbolSham = require_shams();
@@ -16745,26 +16745,26 @@ var require_has_symbols = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Reflect.getPrototypeOf.js
+// node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Reflect.getPrototypeOf.js
 var require_Reflect_getPrototypeOf = __commonJS({
-  "../../node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Reflect.getPrototypeOf.js"(exports, module) {
+  "node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Reflect.getPrototypeOf.js"(exports, module) {
     "use strict";
     module.exports = typeof Reflect !== "undefined" && Reflect.getPrototypeOf || null;
   }
 });
 
-// ../../node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Object.getPrototypeOf.js
+// node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Object.getPrototypeOf.js
 var require_Object_getPrototypeOf = __commonJS({
-  "../../node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Object.getPrototypeOf.js"(exports, module) {
+  "node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/Object.getPrototypeOf.js"(exports, module) {
     "use strict";
     var $Object = require_es_object_atoms();
     module.exports = $Object.getPrototypeOf || null;
   }
 });
 
-// ../../node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/implementation.js
+// node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/implementation.js
 var require_implementation = __commonJS({
-  "../../node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/implementation.js"(exports, module) {
+  "node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/implementation.js"(exports, module) {
     "use strict";
     var ERROR_MESSAGE = "Function.prototype.bind called on incompatible ";
     var toStr = Object.prototype.toString;
@@ -16838,42 +16838,42 @@ var require_implementation = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/index.js
+// node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/index.js
 var require_function_bind = __commonJS({
-  "../../node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/index.js"(exports, module) {
+  "node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/index.js"(exports, module) {
     "use strict";
     var implementation = require_implementation();
     module.exports = Function.prototype.bind || implementation;
   }
 });
 
-// ../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionCall.js
+// node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionCall.js
 var require_functionCall = __commonJS({
-  "../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionCall.js"(exports, module) {
+  "node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionCall.js"(exports, module) {
     "use strict";
     module.exports = Function.prototype.call;
   }
 });
 
-// ../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionApply.js
+// node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionApply.js
 var require_functionApply = __commonJS({
-  "../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionApply.js"(exports, module) {
+  "node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/functionApply.js"(exports, module) {
     "use strict";
     module.exports = Function.prototype.apply;
   }
 });
 
-// ../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/reflectApply.js
+// node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/reflectApply.js
 var require_reflectApply = __commonJS({
-  "../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/reflectApply.js"(exports, module) {
+  "node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/reflectApply.js"(exports, module) {
     "use strict";
     module.exports = typeof Reflect !== "undefined" && Reflect && Reflect.apply;
   }
 });
 
-// ../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/actualApply.js
+// node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/actualApply.js
 var require_actualApply = __commonJS({
-  "../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/actualApply.js"(exports, module) {
+  "node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/actualApply.js"(exports, module) {
     "use strict";
     var bind = require_function_bind();
     var $apply = require_functionApply();
@@ -16883,9 +16883,9 @@ var require_actualApply = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/index.js
+// node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/index.js
 var require_call_bind_apply_helpers = __commonJS({
-  "../../node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/index.js"(exports, module) {
+  "node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/index.js"(exports, module) {
     "use strict";
     var bind = require_function_bind();
     var $TypeError = require_type();
@@ -16900,9 +16900,9 @@ var require_call_bind_apply_helpers = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto/get.js
+// node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto/get.js
 var require_get = __commonJS({
-  "../../node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto/get.js"(exports, module) {
+  "node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto/get.js"(exports, module) {
     "use strict";
     var callBind = require_call_bind_apply_helpers();
     var gOPD = require_gopd();
@@ -16931,9 +16931,9 @@ var require_get = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/index.js
+// node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/index.js
 var require_get_proto = __commonJS({
-  "../../node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/index.js"(exports, module) {
+  "node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/index.js"(exports, module) {
     "use strict";
     var reflectGetProto = require_Reflect_getPrototypeOf();
     var originalGetProto = require_Object_getPrototypeOf();
@@ -16951,9 +16951,9 @@ var require_get_proto = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/hasown@2.0.4/node_modules/hasown/index.js
+// node_modules/.pnpm/hasown@2.0.4/node_modules/hasown/index.js
 var require_hasown = __commonJS({
-  "../../node_modules/.pnpm/hasown@2.0.4/node_modules/hasown/index.js"(exports, module) {
+  "node_modules/.pnpm/hasown@2.0.4/node_modules/hasown/index.js"(exports, module) {
     "use strict";
     var call = Function.prototype.call;
     var $hasOwn = Object.prototype.hasOwnProperty;
@@ -16962,9 +16962,9 @@ var require_hasown = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic/index.js
+// node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic/index.js
 var require_get_intrinsic = __commonJS({
-  "../../node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic/index.js"(exports, module) {
+  "node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic/index.js"(exports, module) {
     "use strict";
     var undefined2;
     var $Object = require_es_object_atoms();
@@ -17293,9 +17293,9 @@ var require_get_intrinsic = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound/index.js
+// node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound/index.js
 var require_call_bound = __commonJS({
-  "../../node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound/index.js"(exports, module) {
+  "node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound/index.js"(exports, module) {
     "use strict";
     var GetIntrinsic = require_get_intrinsic();
     var callBindBasic = require_call_bind_apply_helpers();
@@ -17316,9 +17316,9 @@ var require_call_bound = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/side-channel-map@1.0.1/node_modules/side-channel-map/index.js
+// node_modules/.pnpm/side-channel-map@1.0.1/node_modules/side-channel-map/index.js
 var require_side_channel_map = __commonJS({
-  "../../node_modules/.pnpm/side-channel-map@1.0.1/node_modules/side-channel-map/index.js"(exports, module) {
+  "node_modules/.pnpm/side-channel-map@1.0.1/node_modules/side-channel-map/index.js"(exports, module) {
     "use strict";
     var GetIntrinsic = require_get_intrinsic();
     var callBound = require_call_bound();
@@ -17372,9 +17372,9 @@ var require_side_channel_map = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/side-channel-weakmap@1.0.2/node_modules/side-channel-weakmap/index.js
+// node_modules/.pnpm/side-channel-weakmap@1.0.2/node_modules/side-channel-weakmap/index.js
 var require_side_channel_weakmap = __commonJS({
-  "../../node_modules/.pnpm/side-channel-weakmap@1.0.2/node_modules/side-channel-weakmap/index.js"(exports, module) {
+  "node_modules/.pnpm/side-channel-weakmap@1.0.2/node_modules/side-channel-weakmap/index.js"(exports, module) {
     "use strict";
     var GetIntrinsic = require_get_intrinsic();
     var callBound = require_call_bound();
@@ -17445,9 +17445,9 @@ var require_side_channel_weakmap = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/side-channel@1.1.0/node_modules/side-channel/index.js
+// node_modules/.pnpm/side-channel@1.1.0/node_modules/side-channel/index.js
 var require_side_channel = __commonJS({
-  "../../node_modules/.pnpm/side-channel@1.1.0/node_modules/side-channel/index.js"(exports, module) {
+  "node_modules/.pnpm/side-channel@1.1.0/node_modules/side-channel/index.js"(exports, module) {
     "use strict";
     var $TypeError = require_type();
     var inspect = require_object_inspect();
@@ -17484,9 +17484,9 @@ var require_side_channel = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/formats.js
+// node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/formats.js
 var require_formats = __commonJS({
-  "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/formats.js"(exports, module) {
+  "node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/formats.js"(exports, module) {
     "use strict";
     var replace = String.prototype.replace;
     var percentTwenties = /%20/g;
@@ -17510,9 +17510,9 @@ var require_formats = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/utils.js
+// node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/utils.js
 var require_utils2 = __commonJS({
-  "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/utils.js"(exports, module) {
+  "node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/utils.js"(exports, module) {
     "use strict";
     var formats = require_formats();
     var getSideChannel = require_side_channel();
@@ -17774,9 +17774,9 @@ var require_utils2 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/stringify.js
+// node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/stringify.js
 var require_stringify = __commonJS({
-  "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/stringify.js"(exports, module) {
+  "node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/stringify.js"(exports, module) {
     "use strict";
     var getSideChannel = require_side_channel();
     var utils = require_utils2();
@@ -18057,9 +18057,9 @@ var require_stringify = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/parse.js
+// node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/parse.js
 var require_parse = __commonJS({
-  "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/parse.js"(exports, module) {
+  "node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/parse.js"(exports, module) {
     "use strict";
     var utils = require_utils2();
     var has3 = Object.prototype.hasOwnProperty;
@@ -18356,9 +18356,9 @@ var require_parse = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/index.js
+// node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/index.js
 var require_lib2 = __commonJS({
-  "../../node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/index.js"(exports, module) {
+  "node_modules/.pnpm/qs@6.15.1/node_modules/qs/lib/index.js"(exports, module) {
     "use strict";
     var stringify3 = require_stringify();
     var parse2 = require_parse();
@@ -18371,9 +18371,9 @@ var require_lib2 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/urlencoded.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/urlencoded.js
 var require_urlencoded = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/urlencoded.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/lib/types/urlencoded.js"(exports, module) {
     "use strict";
     var createError = require_http_errors();
     var debug = require_src()("body-parser:urlencoded");
@@ -18459,9 +18459,9 @@ var require_urlencoded = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/index.js
+// node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/index.js
 var require_body_parser = __commonJS({
-  "../../node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/index.js"(exports, module) {
+  "node_modules/.pnpm/body-parser@2.2.2/node_modules/body-parser/index.js"(exports, module) {
     "use strict";
     exports = module.exports = bodyParser;
     Object.defineProperty(exports, "json", {
@@ -18490,9 +18490,9 @@ var require_body_parser = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/merge-descriptors@2.0.0/node_modules/merge-descriptors/index.js
+// node_modules/.pnpm/merge-descriptors@2.0.0/node_modules/merge-descriptors/index.js
 var require_merge_descriptors = __commonJS({
-  "../../node_modules/.pnpm/merge-descriptors@2.0.0/node_modules/merge-descriptors/index.js"(exports, module) {
+  "node_modules/.pnpm/merge-descriptors@2.0.0/node_modules/merge-descriptors/index.js"(exports, module) {
     "use strict";
     function mergeDescriptors(destination, source, overwrite = true) {
       if (!destination) {
@@ -18514,9 +18514,9 @@ var require_merge_descriptors = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/encodeurl@2.0.0/node_modules/encodeurl/index.js
+// node_modules/.pnpm/encodeurl@2.0.0/node_modules/encodeurl/index.js
 var require_encodeurl = __commonJS({
-  "../../node_modules/.pnpm/encodeurl@2.0.0/node_modules/encodeurl/index.js"(exports, module) {
+  "node_modules/.pnpm/encodeurl@2.0.0/node_modules/encodeurl/index.js"(exports, module) {
     "use strict";
     module.exports = encodeUrl;
     var ENCODE_CHARS_REGEXP = /(?:[^\x21\x23-\x3B\x3D\x3F-\x5F\x61-\x7A\x7C\x7E]|%(?:[^0-9A-Fa-f]|[0-9A-Fa-f][^0-9A-Fa-f]|$))+/g;
@@ -18528,13 +18528,13 @@ var require_encodeurl = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html/index.js
+// node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html/index.js
 var require_escape_html = __commonJS({
-  "../../node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html/index.js"(exports, module) {
+  "node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html/index.js"(exports, module) {
     "use strict";
     var matchHtmlRegExp = /["'&<>]/;
-    module.exports = escapeHtml2;
-    function escapeHtml2(string) {
+    module.exports = escapeHtml3;
+    function escapeHtml3(string) {
       var str2 = "" + string;
       var match = matchHtmlRegExp.exec(str2);
       if (!match) {
@@ -18575,9 +18575,9 @@ var require_escape_html = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl/index.js
+// node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl/index.js
 var require_parseurl = __commonJS({
-  "../../node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl/index.js"(exports, module) {
+  "node_modules/.pnpm/parseurl@1.3.3/node_modules/parseurl/index.js"(exports, module) {
     "use strict";
     var url = __require("url");
     var parse2 = url.parse;
@@ -18659,19 +18659,19 @@ var require_parseurl = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/finalhandler@2.1.1/node_modules/finalhandler/index.js
+// node_modules/.pnpm/finalhandler@2.1.1/node_modules/finalhandler/index.js
 var require_finalhandler = __commonJS({
-  "../../node_modules/.pnpm/finalhandler@2.1.1/node_modules/finalhandler/index.js"(exports, module) {
+  "node_modules/.pnpm/finalhandler@2.1.1/node_modules/finalhandler/index.js"(exports, module) {
     "use strict";
     var debug = require_src()("finalhandler");
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var onFinished = require_on_finished();
     var parseUrl = require_parseurl();
     var statuses = require_statuses();
     var isFinished = onFinished.isFinished;
     function createHtmlDocument(message) {
-      var body = escapeHtml2(message).replaceAll("\n", "<br>").replaceAll("  ", " &nbsp;");
+      var body = escapeHtml3(message).replaceAll("\n", "<br>").replaceAll("  ", " &nbsp;");
       return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Error</title>\n</head>\n<body>\n<pre>' + body + "</pre>\n</body>\n</html>\n";
     }
     module.exports = finalhandler;
@@ -18786,17 +18786,17 @@ var require_finalhandler = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/view.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/lib/view.js
 var require_view = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/view.js"(exports, module) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/lib/view.js"(exports, module) {
     "use strict";
     var debug = require_src()("express:view");
     var path6 = __require("node:path");
     var fs4 = __require("node:fs");
-    var dirname4 = path6.dirname;
+    var dirname5 = path6.dirname;
     var basename3 = path6.basename;
     var extname = path6.extname;
-    var join4 = path6.join;
+    var join5 = path6.join;
     var resolve4 = path6.resolve;
     module.exports = View;
     function View(name, options) {
@@ -18832,7 +18832,7 @@ var require_view = __commonJS({
       for (var i = 0; i < roots.length && !path7; i++) {
         var root = roots[i];
         var loc = resolve4(root, name);
-        var dir = dirname4(loc);
+        var dir = dirname5(loc);
         var file = basename3(loc);
         path7 = this.resolve(dir, file);
       }
@@ -18858,12 +18858,12 @@ var require_view = __commonJS({
     };
     View.prototype.resolve = function resolve5(dir, file) {
       var ext = this.ext;
-      var path7 = join4(dir, file);
+      var path7 = join5(dir, file);
       var stat2 = tryStat(path7);
       if (stat2 && stat2.isFile()) {
         return path7;
       }
-      path7 = join4(dir, basename3(file, ext), "index" + ext);
+      path7 = join5(dir, basename3(file, ext), "index" + ext);
       stat2 = tryStat(path7);
       if (stat2 && stat2.isFile()) {
         return path7;
@@ -18880,9 +18880,9 @@ var require_view = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js
+// node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js
 var require_etag = __commonJS({
-  "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
+  "node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports, module) {
     "use strict";
     module.exports = etag;
     var crypto6 = __require("crypto");
@@ -18922,9 +18922,9 @@ var require_etag = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded/index.js
+// node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded/index.js
 var require_forwarded = __commonJS({
-  "../../node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded/index.js"(exports, module) {
+  "node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded/index.js"(exports, module) {
     "use strict";
     module.exports = forwarded;
     function forwarded(req) {
@@ -18969,9 +18969,9 @@ var require_forwarded = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js/lib/ipaddr.js
+// node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js/lib/ipaddr.js
 var require_ipaddr = __commonJS({
-  "../../node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js/lib/ipaddr.js"(exports, module) {
+  "node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js/lib/ipaddr.js"(exports, module) {
     (function() {
       var expandIPv6, ipaddr, ipv4Part, ipv4Regexes, ipv6Part, ipv6Regexes, matchCIDR, root, zoneIndex;
       ipaddr = {};
@@ -19591,9 +19591,9 @@ var require_ipaddr = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/proxy-addr@2.0.7/node_modules/proxy-addr/index.js
+// node_modules/.pnpm/proxy-addr@2.0.7/node_modules/proxy-addr/index.js
 var require_proxy_addr = __commonJS({
-  "../../node_modules/.pnpm/proxy-addr@2.0.7/node_modules/proxy-addr/index.js"(exports, module) {
+  "node_modules/.pnpm/proxy-addr@2.0.7/node_modules/proxy-addr/index.js"(exports, module) {
     "use strict";
     module.exports = proxyaddr;
     module.exports.all = alladdrs;
@@ -19750,9 +19750,9 @@ var require_proxy_addr = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/utils.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/lib/utils.js
 var require_utils3 = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/utils.js"(exports) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/lib/utils.js"(exports) {
     "use strict";
     var { METHODS } = __require("node:http");
     var contentType = require_content_type();
@@ -19877,9 +19877,9 @@ var require_utils3 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy/wrappy.js
+// node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy/wrappy.js
 var require_wrappy = __commonJS({
-  "../../node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy/wrappy.js"(exports, module) {
+  "node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy/wrappy.js"(exports, module) {
     module.exports = wrappy;
     function wrappy(fn, cb) {
       if (fn && cb) return wrappy(fn)(cb);
@@ -19907,9 +19907,9 @@ var require_wrappy = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/once@1.4.0/node_modules/once/once.js
+// node_modules/.pnpm/once@1.4.0/node_modules/once/once.js
 var require_once = __commonJS({
-  "../../node_modules/.pnpm/once@1.4.0/node_modules/once/once.js"(exports, module) {
+  "node_modules/.pnpm/once@1.4.0/node_modules/once/once.js"(exports, module) {
     var wrappy = require_wrappy();
     module.exports = wrappy(once);
     module.exports.strict = wrappy(onceStrict);
@@ -19951,9 +19951,9 @@ var require_once = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/is-promise@4.0.0/node_modules/is-promise/index.js
+// node_modules/.pnpm/is-promise@4.0.0/node_modules/is-promise/index.js
 var require_is_promise = __commonJS({
-  "../../node_modules/.pnpm/is-promise@4.0.0/node_modules/is-promise/index.js"(exports, module) {
+  "node_modules/.pnpm/is-promise@4.0.0/node_modules/is-promise/index.js"(exports, module) {
     module.exports = isPromise;
     module.exports.default = isPromise;
     function isPromise(obj) {
@@ -19962,9 +19962,9 @@ var require_is_promise = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/dist/index.js
+// node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/dist/index.js
 var require_dist = __commonJS({
-  "../../node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/dist/index.js"(exports) {
+  "node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/dist/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PathError = exports.TokenData = void 0;
@@ -20331,9 +20331,9 @@ var require_dist = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js
+// node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js
 var require_layer = __commonJS({
-  "../../node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js"(exports, module) {
+  "node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js"(exports, module) {
     "use strict";
     var isPromise = require_is_promise();
     var pathRegexp = require_dist();
@@ -20481,9 +20481,9 @@ var require_layer = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js
+// node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js
 var require_route = __commonJS({
-  "../../node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js"(exports, module) {
+  "node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js"(exports, module) {
     "use strict";
     var debug = require_src()("router:route");
     var Layer = require_layer();
@@ -20601,9 +20601,9 @@ var require_route = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/router@2.2.0/node_modules/router/index.js
+// node_modules/.pnpm/router@2.2.0/node_modules/router/index.js
 var require_router = __commonJS({
-  "../../node_modules/.pnpm/router@2.2.0/node_modules/router/index.js"(exports, module) {
+  "node_modules/.pnpm/router@2.2.0/node_modules/router/index.js"(exports, module) {
     "use strict";
     var isPromise = require_is_promise();
     var Layer = require_layer();
@@ -20999,9 +20999,9 @@ var require_router = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js
 var require_application = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js"(exports, module) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js"(exports, module) {
     "use strict";
     var finalhandler = require_finalhandler();
     var debug = require_src()("express:application");
@@ -21260,9 +21260,9 @@ var require_application = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/charset.js
+// node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/charset.js
 var require_charset = __commonJS({
-  "../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/charset.js"(exports, module) {
+  "node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/charset.js"(exports, module) {
     "use strict";
     module.exports = preferredCharsets;
     module.exports.preferredCharsets = preferredCharsets;
@@ -21347,9 +21347,9 @@ var require_charset = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/encoding.js
+// node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/encoding.js
 var require_encoding = __commonJS({
-  "../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/encoding.js"(exports, module) {
+  "node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/encoding.js"(exports, module) {
     "use strict";
     module.exports = preferredEncodings;
     module.exports.preferredEncodings = preferredEncodings;
@@ -21460,9 +21460,9 @@ var require_encoding = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/language.js
+// node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/language.js
 var require_language = __commonJS({
-  "../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/language.js"(exports, module) {
+  "node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/language.js"(exports, module) {
     "use strict";
     module.exports = preferredLanguages;
     module.exports.preferredLanguages = preferredLanguages;
@@ -21555,9 +21555,9 @@ var require_language = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/mediaType.js
+// node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/mediaType.js
 var require_mediaType = __commonJS({
-  "../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/mediaType.js"(exports, module) {
+  "node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/lib/mediaType.js"(exports, module) {
     "use strict";
     module.exports = preferredMediaTypes;
     module.exports.preferredMediaTypes = preferredMediaTypes;
@@ -21717,9 +21717,9 @@ var require_mediaType = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/index.js
+// node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/index.js
 var require_negotiator = __commonJS({
-  "../../node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/index.js"(exports, module) {
+  "node_modules/.pnpm/negotiator@1.0.0/node_modules/negotiator/index.js"(exports, module) {
     "use strict";
     var preferredCharsets = require_charset();
     var preferredEncodings = require_encoding();
@@ -21773,9 +21773,9 @@ var require_negotiator = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/accepts@2.0.0/node_modules/accepts/index.js
+// node_modules/.pnpm/accepts@2.0.0/node_modules/accepts/index.js
 var require_accepts = __commonJS({
-  "../../node_modules/.pnpm/accepts@2.0.0/node_modules/accepts/index.js"(exports, module) {
+  "node_modules/.pnpm/accepts@2.0.0/node_modules/accepts/index.js"(exports, module) {
     "use strict";
     var Negotiator = require_negotiator();
     var mime = require_mime_types();
@@ -21854,9 +21854,9 @@ var require_accepts = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/fresh@2.0.0/node_modules/fresh/index.js
+// node_modules/.pnpm/fresh@2.0.0/node_modules/fresh/index.js
 var require_fresh = __commonJS({
-  "../../node_modules/.pnpm/fresh@2.0.0/node_modules/fresh/index.js"(exports, module) {
+  "node_modules/.pnpm/fresh@2.0.0/node_modules/fresh/index.js"(exports, module) {
     "use strict";
     var CACHE_CONTROL_NO_CACHE_REGEXP = /(?:^|,)\s*?no-cache\s*?(?:,|$)/;
     module.exports = fresh;
@@ -21926,9 +21926,9 @@ var require_fresh = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/range-parser@1.2.1/node_modules/range-parser/index.js
+// node_modules/.pnpm/range-parser@1.2.1/node_modules/range-parser/index.js
 var require_range_parser = __commonJS({
-  "../../node_modules/.pnpm/range-parser@1.2.1/node_modules/range-parser/index.js"(exports, module) {
+  "node_modules/.pnpm/range-parser@1.2.1/node_modules/range-parser/index.js"(exports, module) {
     "use strict";
     module.exports = rangeParser;
     function rangeParser(size, str2, options) {
@@ -22007,9 +22007,9 @@ var require_range_parser = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/request.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/lib/request.js
 var require_request = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/request.js"(exports, module) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/lib/request.js"(exports, module) {
     "use strict";
     var accepts = require_accepts();
     var isIP = __require("node:net").isIP;
@@ -22155,9 +22155,9 @@ var require_request = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition/index.js
+// node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition/index.js
 var require_content_disposition = __commonJS({
-  "../../node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition/index.js"(exports, module) {
+  "node_modules/.pnpm/content-disposition@1.1.0/node_modules/content-disposition/index.js"(exports, module) {
     "use strict";
     module.exports = contentDisposition;
     module.exports.parse = parse2;
@@ -22364,9 +22364,9 @@ var require_content_disposition = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
+// node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
-  "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
+  "node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports) {
     var crypto6 = __require("crypto");
     exports.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
@@ -22382,9 +22382,9 @@ var require_cookie_signature = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js
+// node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js
 var require_cookie = __commonJS({
-  "../../node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js"(exports) {
+  "node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js"(exports) {
     "use strict";
     exports.parse = parse2;
     exports.serialize = serialize;
@@ -22548,14 +22548,14 @@ var require_cookie = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/send@1.2.1/node_modules/send/index.js
+// node_modules/.pnpm/send@1.2.1/node_modules/send/index.js
 var require_send = __commonJS({
-  "../../node_modules/.pnpm/send@1.2.1/node_modules/send/index.js"(exports, module) {
+  "node_modules/.pnpm/send@1.2.1/node_modules/send/index.js"(exports, module) {
     "use strict";
     var createError = require_http_errors();
     var debug = require_src()("send");
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
     var fs4 = __require("fs");
@@ -22568,7 +22568,7 @@ var require_send = __commonJS({
     var Stream3 = __require("stream");
     var util2 = __require("util");
     var extname = path6.extname;
-    var join4 = path6.join;
+    var join5 = path6.join;
     var normalize = path6.normalize;
     var resolve4 = path6.resolve;
     var sep4 = path6.sep;
@@ -22608,7 +22608,7 @@ var require_send = __commonJS({
       }
       var res = this.res;
       var msg = statuses.message[status] || String(status);
-      var doc = createHtmlDocument("Error", escapeHtml2(msg));
+      var doc = createHtmlDocument("Error", escapeHtml3(msg));
       clearHeaders(res);
       if (err && err.headers) {
         setHeaders(res, err.headers);
@@ -22708,7 +22708,7 @@ var require_send = __commonJS({
         return;
       }
       var loc = encodeUrl(collapseLeadingSlashes(this.path + "/"));
-      var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml2(loc));
+      var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml3(loc));
       res.statusCode = 301;
       res.setHeader("Content-Type", "text/html; charset=UTF-8");
       res.setHeader("Content-Length", Buffer.byteLength(doc));
@@ -22740,7 +22740,7 @@ var require_send = __commonJS({
           return res;
         }
         parts = path7.split(sep4);
-        path7 = normalize(join4(root, path7));
+        path7 = normalize(join5(root, path7));
       } else {
         if (UP_PATH_REGEXP.test(path7)) {
           debug('malicious path "%s"', path7);
@@ -22873,7 +22873,7 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join4(path7, self._index[i]);
+        var p = join5(path7, self._index[i]);
         debug('stat "%s"', p);
         fs4.stat(p, function(err2, stat2) {
           if (err2) return next(err2);
@@ -23031,9 +23031,9 @@ var require_send = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/vary@1.1.2/node_modules/vary/index.js
+// node_modules/.pnpm/vary@1.1.2/node_modules/vary/index.js
 var require_vary = __commonJS({
-  "../../node_modules/.pnpm/vary@1.1.2/node_modules/vary/index.js"(exports, module) {
+  "node_modules/.pnpm/vary@1.1.2/node_modules/vary/index.js"(exports, module) {
     "use strict";
     module.exports = vary;
     module.exports.append = append;
@@ -23104,15 +23104,15 @@ var require_vary = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/response.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/lib/response.js
 var require_response = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/response.js"(exports, module) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/lib/response.js"(exports, module) {
     "use strict";
     var contentDisposition = require_content_disposition();
     var createError = require_http_errors();
     var deprecate = require_depd()("express");
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var http = __require("node:http");
     var onFinished = require_on_finished();
     var mime = require_mime_types();
@@ -23451,7 +23451,7 @@ var require_response = __commonJS({
           body = statuses.message[status] + ". Redirecting to " + address;
         },
         html: function() {
-          var u = escapeHtml2(address);
+          var u = escapeHtml3(address);
           body = "<p>" + statuses.message[status] + ". Redirecting to " + u + "</p>";
         },
         default: function() {
@@ -23574,12 +23574,12 @@ var require_response = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static/index.js
+// node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static/index.js
 var require_serve_static = __commonJS({
-  "../../node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static/index.js"(exports, module) {
+  "node_modules/.pnpm/serve-static@2.2.1/node_modules/serve-static/index.js"(exports, module) {
     "use strict";
     var encodeUrl = require_encodeurl();
-    var escapeHtml2 = require_escape_html();
+    var escapeHtml3 = require_escape_html();
     var parseUrl = require_parseurl();
     var resolve4 = __require("path").resolve;
     var send = require_send();
@@ -23665,7 +23665,7 @@ var require_serve_static = __commonJS({
         originalUrl.path = null;
         originalUrl.pathname = collapseLeadingSlashes(originalUrl.pathname + "/");
         var loc = encodeUrl(url.format(originalUrl));
-        var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml2(loc));
+        var doc = createHtmlDocument("Redirecting", "Redirecting to " + escapeHtml3(loc));
         res.statusCode = 301;
         res.setHeader("Content-Type", "text/html; charset=UTF-8");
         res.setHeader("Content-Length", Buffer.byteLength(doc));
@@ -23678,9 +23678,9 @@ var require_serve_static = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/express.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/lib/express.js
 var require_express = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/lib/express.js"(exports, module) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/lib/express.js"(exports, module) {
     "use strict";
     var bodyParser = require_body_parser();
     var EventEmitter = __require("node:events").EventEmitter;
@@ -23718,17 +23718,17 @@ var require_express = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/express@5.2.1/node_modules/express/index.js
+// node_modules/.pnpm/express@5.2.1/node_modules/express/index.js
 var require_express2 = __commonJS({
-  "../../node_modules/.pnpm/express@5.2.1/node_modules/express/index.js"(exports, module) {
+  "node_modules/.pnpm/express@5.2.1/node_modules/express/index.js"(exports, module) {
     "use strict";
     module.exports = require_express();
   }
 });
 
-// ../../node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign/index.js
+// node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign/index.js
 var require_object_assign = __commonJS({
-  "../../node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign/index.js"(exports, module) {
+  "node_modules/.pnpm/object-assign@4.1.1/node_modules/object-assign/index.js"(exports, module) {
     "use strict";
     var getOwnPropertySymbols = Object.getOwnPropertySymbols;
     var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -23796,9 +23796,9 @@ var require_object_assign = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/cors@2.8.6/node_modules/cors/lib/index.js
+// node_modules/.pnpm/cors@2.8.6/node_modules/cors/lib/index.js
 var require_lib3 = __commonJS({
-  "../../node_modules/.pnpm/cors@2.8.6/node_modules/cors/lib/index.js"(exports, module) {
+  "node_modules/.pnpm/cors@2.8.6/node_modules/cors/lib/index.js"(exports, module) {
     (function() {
       "use strict";
       var assign = require_object_assign();
@@ -24004,9 +24004,70 @@ var require_lib3 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/timing_safe_equal.js
+// artifacts/api-server/src/lib/firebaseAdmin.ts
+var firebaseAdmin_exports = {};
+__export(firebaseAdmin_exports, {
+  getFirestoreDb: () => getFirestoreDb,
+  initFirebaseAdmin: () => initFirebaseAdmin,
+  isFirebaseConfigured: () => isFirebaseConfigured,
+  verifyIdToken: () => verifyIdToken
+});
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+function initFirebaseAdmin() {
+  if (getApps().length > 0) return;
+  const serviceAccount = process.env["FIREBASE_SERVICE_ACCOUNT"];
+  const projectId = process.env["FIREBASE_PROJECT_ID"];
+  if (serviceAccount) {
+    try {
+      const parsed = JSON.parse(serviceAccount);
+      app = initializeApp({ credential: cert(parsed) });
+      console.log("[FirebaseAdmin] Initialized with service account");
+    } catch (e) {
+      console.warn("[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT:", e);
+    }
+  } else if (projectId) {
+    app = initializeApp({ projectId });
+    console.log("[FirebaseAdmin] Initialized with project ID (application default credentials)");
+  } else {
+    console.warn(
+      "[FirebaseAdmin] Not configured \u2014 set FIREBASE_SERVICE_ACCOUNT or FIREBASE_PROJECT_ID. Auth validation and Firestore writes will be skipped (guest mode)."
+    );
+  }
+}
+function isFirebaseConfigured() {
+  return getApps().length > 0;
+}
+async function verifyIdToken(idToken) {
+  if (!isFirebaseConfigured()) return null;
+  try {
+    const decoded = await getAuth().verifyIdToken(idToken);
+    return {
+      uid: decoded.uid,
+      email: decoded.email,
+      name: decoded.name,
+      admin: decoded["admin"] === true
+    };
+  } catch {
+    return null;
+  }
+}
+function getFirestoreDb() {
+  if (!isFirebaseConfigured()) return null;
+  return getFirestore();
+}
+var app;
+var init_firebaseAdmin = __esm({
+  "artifacts/api-server/src/lib/firebaseAdmin.ts"() {
+    "use strict";
+    app = null;
+  }
+});
+
+// node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/timing_safe_equal.js
 var require_timing_safe_equal = __commonJS({
-  "../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/timing_safe_equal.js"(exports) {
+  "node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/timing_safe_equal.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.timingSafeEqual = void 0;
@@ -24039,9 +24100,9 @@ var require_timing_safe_equal = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64/lib/base64.js
+// node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64/lib/base64.js
 var require_base64 = __commonJS({
-  "../../node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64/lib/base64.js"(exports) {
+  "node_modules/.pnpm/@stablelib+base64@1.0.1/node_modules/@stablelib/base64/lib/base64.js"(exports) {
     "use strict";
     var __extends = exports && exports.__extends || /* @__PURE__ */ (function() {
       var extendStatics = function(d, b) {
@@ -24252,9 +24313,9 @@ var require_base64 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256/sha256.js
+// node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256/sha256.js
 var require_sha256 = __commonJS({
-  "../../node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256/sha256.js"(exports, module) {
+  "node_modules/.pnpm/fast-sha256@1.3.0/node_modules/fast-sha256/sha256.js"(exports, module) {
     (function(root, factory) {
       var exports2 = {};
       factory(exports2);
@@ -24676,9 +24737,9 @@ var require_sha256 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js
+// node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js
 var require_dist2 = __commonJS({
-  "../../node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js"(exports) {
+  "node_modules/.pnpm/standardwebhooks@1.0.0/node_modules/standardwebhooks/dist/index.js"(exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Webhook = exports.WebhookVerificationError = void 0;
@@ -24783,7 +24844,7 @@ var require_dist2 = __commonJS({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
 function __classPrivateFieldSet2(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -24801,14 +24862,14 @@ function __classPrivateFieldGet2(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 var init_tslib = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/tslib.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/tslib.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
 var uuid42;
 var init_uuid = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
     uuid42 = function() {
       const { crypto: crypto6 } = globalThis;
       if (crypto6?.randomUUID) {
@@ -24822,7 +24883,7 @@ var init_uuid = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/errors.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/errors.mjs
 function isAbortError2(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -24830,7 +24891,7 @@ function isAbortError2(err) {
 }
 var castToError2;
 var init_errors = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/errors.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/errors.mjs"() {
     castToError2 = (err) => {
       if (err instanceof Error)
         return err;
@@ -24858,10 +24919,10 @@ var init_errors = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/error.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/error.mjs
 var AnthropicError, APIError2, APIUserAbortError2, APIConnectionError2, APIConnectionTimeoutError2, RetryableError, BadRequestError2, AuthenticationError2, PermissionDeniedError2, NotFoundError2, ConflictError2, UnprocessableEntityError2, RateLimitError2, InternalServerError2;
 var init_error = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/error.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/error.mjs"() {
     init_errors();
     AnthropicError = class extends Error {
     };
@@ -24963,7 +25024,7 @@ var init_error = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
 function maybeObj2(x) {
   if (typeof x !== "object") {
     return {};
@@ -24982,7 +25043,7 @@ function hasOwn2(obj, key) {
 }
 var startsWithSchemeRegexp2, isAbsoluteURL2, isArray2, isReadonlyArray2, validatePositiveInteger2, safeJSON2;
 var init_values = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs"() {
     init_error();
     startsWithSchemeRegexp2 = /^[a-z][a-z0-9+.-]*:/i;
     isAbsoluteURL2 = (url) => {
@@ -25009,10 +25070,10 @@ var init_values = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
 var sleep2;
 var init_sleep = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs"() {
     sleep2 = (ms, signal) => new Promise((resolve4) => {
       if (signal?.aborted)
         return resolve4();
@@ -25029,15 +25090,15 @@ var init_sleep = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/version.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/version.mjs
 var VERSION2;
 var init_version = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/version.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/version.mjs"() {
     VERSION2 = "0.104.2";
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
 function getDetectedPlatform2() {
   if (typeof Deno !== "undefined" && Deno.build != null) {
     return "deno";
@@ -25075,7 +25136,7 @@ function getBrowserInfo2() {
 }
 var isRunningInBrowser2, getPlatformProperties2, normalizeArch2, normalizePlatform2, _platformHeaders2, getPlatformHeaders2;
 var init_detect_platform = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs"() {
     init_version();
     isRunningInBrowser2 = () => {
       return (
@@ -25176,7 +25237,7 @@ var init_detect_platform = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/shims.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/shims.mjs
 function getDefaultFetch2() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -25248,14 +25309,14 @@ async function CancelReadableStream2(stream) {
   await cancelPromise;
 }
 var init_shims = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/shims.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/shims.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
 var FallbackEncoder2;
 var init_request_options = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/request-options.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/request-options.mjs"() {
     FallbackEncoder2 = ({ headers, body }) => {
       return {
         bodyHeaders: {
@@ -25267,10 +25328,10 @@ var init_request_options = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs
 var default_format2, default_formatter2, formatters2, RFC17382;
 var init_formats = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs"() {
     default_format2 = "RFC3986";
     default_formatter2 = (v) => String(v);
     formatters2 = {
@@ -25281,7 +25342,7 @@ var init_formats = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs
 function is_buffer2(obj) {
   if (!obj || typeof obj !== "object") {
     return false;
@@ -25300,7 +25361,7 @@ function maybe_map2(val, fn) {
 }
 var has2, hex_table2, limit2, encode2;
 var init_utils = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs"() {
     init_formats();
     init_values();
     has2 = (obj, key) => (has2 = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has2(obj, key));
@@ -25367,7 +25428,7 @@ var init_utils = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs
 function is_non_nullish_primitive2(v) {
   return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
 }
@@ -25607,7 +25668,7 @@ function stringify2(object, opts = {}) {
 }
 var array_prefix_generators2, push_to_array2, toISOString2, defaults2, sentinel2;
 var init_stringify = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs"() {
     init_utils();
     init_formats();
     init_values();
@@ -25652,17 +25713,17 @@ var init_stringify = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs
 function stringifyQuery2(query) {
   return stringify2(query, { arrayFormat: "brackets" });
 }
 var init_query = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs"() {
     init_stringify();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs
 function requireSecureTokenEndpoint(baseURL) {
   if (!baseURL)
     return;
@@ -25809,7 +25870,7 @@ async function readLimitedText(resp) {
 }
 var GRANT_TYPE_JWT_BEARER, GRANT_TYPE_REFRESH_TOKEN, TOKEN_ENDPOINT, OAUTH_API_BETA_HEADER, FEDERATION_BETA_HEADER, ADVISORY_REFRESH_THRESHOLD_IN_SECONDS, MANDATORY_REFRESH_THRESHOLD_IN_SECONDS, ADVISORY_REFRESH_BACKOFF_IN_SECONDS, MAX_TOKEN_RESPONSE_BYTES, MAX_ERROR_BODY_CHARS, SAFE_ERROR_KEYS, WorkloadIdentityError;
 var init_types = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs"() {
     init_error();
     GRANT_TYPE_JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
@@ -25833,19 +25894,19 @@ var init_types = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs
 function nowAsSeconds() {
   return Math.floor(Date.now() / 1e3);
 }
 var init_time = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs
 var TokenCache;
 var init_token_cache = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs"() {
     init_types();
     init_time();
     TokenCache = class {
@@ -25938,10 +25999,10 @@ var init_token_cache = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
 var readEnv2;
 var init_env = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs"() {
     readEnv2 = (env) => {
       if (typeof globalThis.process !== "undefined") {
         return globalThis.process.env?.[env]?.trim() || void 0;
@@ -25954,7 +26015,7 @@ var init_env = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
 function concatBytes2(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -25978,19 +26039,19 @@ function decodeUTF82(bytes) {
 }
 var encodeUTF8_2, decodeUTF8_2;
 var init_bytes = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs
 var init_base64 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs"() {
     init_error();
     init_bytes();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
 function noop2() {
 }
 function makeLogFn2(fnLevel, logger2, logLevel) {
@@ -26032,7 +26093,7 @@ function defaultLogger() {
 }
 var defaultLogLevel, levelNumbers2, parseLogLevel2, noopLogger2, cachedLoggers2, lastEnvLevel, cachedDefaultLogger, formatRequestDetails2;
 var init_log = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs"() {
     init_values();
     init_env();
     defaultLogLevel = "warn";
@@ -26082,9 +26143,9 @@ var init_log = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils.mjs
 var init_utils2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils.mjs"() {
     init_values();
     init_base64();
     init_env();
@@ -26095,7 +26156,7 @@ var init_utils2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/credentials.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/credentials.mjs
 function validateProfileName(name) {
   if (!name) {
     throw new Error("profile name is empty");
@@ -26112,7 +26173,7 @@ function validateProfileName(name) {
 }
 var CREDENTIALS_FILE_VERSION, PROFILE_NAME_PATTERN, loadConfigWithSource, getCredentialsPath, getRootConfigPath, supportsLocalConfigFiles, getActiveProfileName;
 var init_credentials = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/credentials.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/credentials.mjs"() {
     init_detect_platform();
     init_utils2();
     CREDENTIALS_FILE_VERSION = "1.0";
@@ -26276,7 +26337,7 @@ var init_credentials = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs
 function identityTokenFromFile(path6) {
   if (!path6) {
     throw new AnthropicError("Identity token file path is empty");
@@ -26303,12 +26364,12 @@ function identityTokenFromValue(token) {
   return () => token;
 }
 var init_identity_token = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs"() {
     init_error();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs
 function oidcFederationProvider(config) {
   return async () => {
     requireSecureTokenEndpoint(config.baseURL);
@@ -26366,14 +26427,14 @@ function oidcFederationProvider(config) {
   };
 }
 var init_oidc_federation = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs"() {
     init_types();
     init_time();
     init_version();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs
 function userOAuthProvider(config) {
   return async (opts) => {
     const fs4 = await import("node:fs");
@@ -26447,7 +26508,7 @@ function userOAuthProvider(config) {
   };
 }
 var init_user_oauth = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs"() {
     init_credentials();
     init_types();
     init_time();
@@ -26455,7 +26516,7 @@ var init_user_oauth = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs
 function resolveCredentialsFromConfig(config, options) {
   const credentialsPath = config.authentication.credentials_path ?? null;
   const effectiveBaseURL = (config.base_url || options.baseURL).replace(/\/+$/, "");
@@ -26587,7 +26648,7 @@ function cachedExchangeProvider(exchange, credentialsPath, onCacheWriteError, on
   };
 }
 var init_credential_chain = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs"() {
     init_env();
     init_credentials();
     init_types();
@@ -26598,7 +26659,7 @@ var init_credential_chain = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
 function findNewlineIndex2(buffer, startIndex) {
   const newline = 10;
   const carriage = 13;
@@ -26630,7 +26691,7 @@ function findDoubleNewlineIndex2(buffer) {
 }
 var _LineDecoder_buffer2, _LineDecoder_carriageReturnIndex2, LineDecoder2;
 var init_line = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs"() {
     init_tslib();
     init_bytes();
     LineDecoder2 = class {
@@ -26680,7 +26741,7 @@ var init_line = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/streaming.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/streaming.mjs
 async function* _iterSSEMessages2(response, controller) {
   if (!response.body) {
     controller.abort();
@@ -26735,7 +26796,7 @@ function partition2(str2, delimiter2) {
 }
 var _Stream_client2, Stream2, SSEDecoder2;
 var init_streaming = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/streaming.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/streaming.mjs"() {
     init_tslib();
     init_error();
     init_shims();
@@ -26956,7 +27017,7 @@ var init_streaming = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/parse.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/parse.mjs
 async function defaultParseResponse2(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -27003,13 +27064,13 @@ function addRequestID2(value, response) {
   });
 }
 var init_parse = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/parse.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/parse.mjs"() {
     init_streaming();
     init_log();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/middleware.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/middleware.mjs
 function isFetchOriginError(err) {
   return typeof err === "object" && err !== null && fetchOriginErrors.has(err);
 }
@@ -27105,7 +27166,7 @@ function applyMiddleware(fetchFn, middleware, options, client) {
 }
 var fetchOriginErrors;
 var init_middleware = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/middleware.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/middleware.mjs"() {
     init_errors();
     init_parse();
     init_log();
@@ -27115,10 +27176,10 @@ var init_middleware = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
 var _APIPromise_client2, APIPromise2;
 var init_api_promise = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/api-promise.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/api-promise.mjs"() {
     init_tslib();
     init_parse();
     APIPromise2 = class _APIPromise extends Promise {
@@ -27184,10 +27245,10 @@ var init_api_promise = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/pagination.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/pagination.mjs
 var _AbstractPage_client2, AbstractPage2, PagePromise2, Page2, PageCursor;
 var init_pagination = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/pagination.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/pagination.mjs"() {
     init_tslib();
     init_error();
     init_parse();
@@ -27318,7 +27379,7 @@ var init_pagination = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
 function makeFile2(fileBits, fileName, options) {
   checkFileSupport2();
   return new File(fileBits, fileName ?? "unknown_file", options);
@@ -27349,7 +27410,7 @@ function supportsFormData2(fetchObject) {
 }
 var checkFileSupport2, isAsyncIterable2, multipartFormRequestOptions2, supportsFormDataMap2, createForm2, isNamedBlob2, addFormValue2;
 var init_uploads = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/uploads.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/uploads.mjs"() {
     init_shims();
     checkFileSupport2 = () => {
       if (typeof File === "undefined") {
@@ -27402,7 +27463,7 @@ var init_uploads = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
 async function toFile2(value, name, options) {
   checkFileSupport2();
   value = await value;
@@ -27456,7 +27517,7 @@ function propsForError2(value) {
 }
 var isBlobLike2, isFileLike2, isResponseLike2;
 var init_to_file = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/to-file.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/to-file.mjs"() {
     init_uploads();
     init_uploads();
     isBlobLike2 = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
@@ -27465,23 +27526,23 @@ var init_to_file = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/uploads.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/uploads.mjs
 var init_uploads2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/uploads.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/uploads.mjs"() {
     init_to_file();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/shared.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/shared.mjs
 var init_shared = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/shared.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/shared.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/resource.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/resource.mjs
 var APIResource2;
 var init_resource = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/resource.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/resource.mjs"() {
     APIResource2 = class {
       constructor(client) {
         this._client = client;
@@ -27490,7 +27551,7 @@ var init_resource = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/headers.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/headers.mjs
 function* iterateHeaders2(headers) {
   if (!headers)
     return;
@@ -27531,7 +27592,7 @@ function* iterateHeaders2(headers) {
 }
 var brand_privateNullableHeaders2, buildHeaders2;
 var init_headers = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/headers.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/headers.mjs"() {
     init_values();
     brand_privateNullableHeaders2 = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
     buildHeaders2 = (newHeaders) => {
@@ -27559,13 +27620,13 @@ var init_headers = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
 function encodeURIPath2(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
 var EMPTY2, createPathTagFunction2, path2;
 var init_path = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs"() {
     init_error();
     EMPTY2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
     createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path6(statics, ...params) {
@@ -27620,10 +27681,10 @@ ${underline}`);
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs
 var DeploymentRuns;
 var init_deployment_runs = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -27676,10 +27737,10 @@ var init_deployment_runs = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs
 var Deployments;
 var init_deployments = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -27861,7 +27922,7 @@ var init_deployments = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs
 function wasCreatedByStainlessHelper(value) {
   return typeof value === "object" && value !== null && SDK_HELPER_SYMBOL in value;
 }
@@ -27904,15 +27965,15 @@ function stainlessHelperHeaderFromFile(file) {
 }
 var SDK_HELPER_SYMBOL;
 var init_stainless_helper_header = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs"() {
     SDK_HELPER_SYMBOL = /* @__PURE__ */ Symbol("anthropic.sdk.stainlessHelper");
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs
 var Files4;
 var init_files = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28034,10 +28095,10 @@ var init_files = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs
 var Models2;
 var init_models = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28095,10 +28156,10 @@ var init_models = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs
 var UserProfiles;
 var init_user_profiles = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28214,10 +28275,10 @@ var init_user_profiles = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs
 var import_standardwebhooks2, Webhooks3;
 var init_webhooks = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs"() {
     init_resource();
     import_standardwebhooks2 = __toESM(require_dist2(), 1);
     Webhooks3 = class extends APIResource2 {
@@ -28235,10 +28296,10 @@ var init_webhooks = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs
 var Versions2;
 var init_versions = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28272,10 +28333,10 @@ var init_versions = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs
 var Agents;
 var init_agents = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs"() {
     init_resource();
     init_versions();
     init_versions();
@@ -28403,7 +28464,7 @@ var init_agents = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs
 function linkAbort(external, controller) {
   if (!external)
     return () => {
@@ -28418,11 +28479,11 @@ function linkAbort(external, controller) {
   return () => external.removeEventListener("abort", onAbort);
 }
 var init_abort = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs
 function isStatus(e, code) {
   return e instanceof APIError2 && e.status === code;
 }
@@ -28442,12 +28503,12 @@ function applyJitter(ms) {
   return ms * (1 - Math.random() * 0.25);
 }
 var init_backoff = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs"() {
     init_error();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs
 function copyClientForHelper(client, { authToken, helper }) {
   if (!authToken) {
     throw new AnthropicError(`copyClientForHelper: expected a non-empty authToken but received ${JSON.stringify(authToken)}`);
@@ -28473,13 +28534,13 @@ function copyClientForHelper(client, { authToken, helper }) {
   });
 }
 var init_helper_client = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs"() {
     init_error();
     init_headers();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs
 function backoff2(attempt) {
   return backoff(attempt, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS);
 }
@@ -28490,7 +28551,7 @@ function defaultWorkerId() {
 }
 var _WorkPoller_runnerClient, _WorkPoller_consumed, _WorkPoller_controller, _WorkPoller_detachExternal, _WorkPoller_autoStop, _WorkPoller_drain, _WorkPoller_blockMs, _WorkPoller_reclaimOlderThanMs, _WorkPoller_requestOpts, POLL_BLOCK_MS, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS, WorkPoller;
 var init_poller = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs"() {
     init_tslib();
     init_error();
     init_log();
@@ -28612,10 +28673,10 @@ var init_poller = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs
 var _AsyncQueue_items, _AsyncQueue_waiters, _AsyncQueue_closed, AsyncQueue;
 var init_async_queue = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs"() {
     init_tslib();
     AsyncQueue = class {
       constructor() {
@@ -28681,10 +28742,10 @@ var init_async_queue = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs
 var ToolError;
 var init_ToolError = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs"() {
     ToolError = class extends Error {
       constructor(content) {
         const message = typeof content === "string" ? content : content.map((block) => {
@@ -28700,7 +28761,7 @@ var init_ToolError = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs
 function toolName(tool) {
   return "name" in tool ? tool.name : tool.mcp_server_name;
 }
@@ -28717,12 +28778,12 @@ async function runRunnableTool(tool, rawInput, context) {
   }
 }
 var init_BetaRunnableTool = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs"() {
     init_ToolError();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs
 function isEndTurnIdle(ev) {
   return ev.type === "session.status_idle" && ev.stop_reason?.type === "end_turn";
 }
@@ -28755,7 +28816,7 @@ function toSessionContent(content) {
 }
 var _SessionToolRunner_instances, _SessionToolRunner_consumed, _SessionToolRunner_controller, _SessionToolRunner_detachExternal, _SessionToolRunner_requestOpts, _SessionToolRunner_toolByName, _SessionToolRunner_logger, _SessionToolRunner_seen, _SessionToolRunner_answered, _SessionToolRunner_results, _SessionToolRunner_inFlightCount, _SessionToolRunner_onIdle, _SessionToolRunner_idleTimer, _SessionToolRunner_requestOptions, _SessionToolRunner_streamLoop, _SessionToolRunner_reconcile, _SessionToolRunner_ingestHistory, _SessionToolRunner_handleStreamEvent, _SessionToolRunner_armIdleTimer, _SessionToolRunner_disarmIdleTimer, _SessionToolRunner_execute, _SessionToolRunner_sendResult, _SessionToolRunner_drain, HELPER_NAME, STREAM_BACKOFF_START_MS, STREAM_BACKOFF_CAP_MS, TOOL_TIMEOUT_MS, DRAIN_TIMEOUT_MS, SEND_RETRIES, DEFAULT_MAX_IDLE_MS, SessionToolRunner;
 var init_SessionToolRunner = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs"() {
     init_tslib();
     init_error();
     init_log();
@@ -29065,14 +29126,14 @@ var init_SessionToolRunner = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs
 var init_transform_json_schema = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs"() {
     init_utils2();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs
 function betaTool(options) {
   if (options.inputSchema.type !== "object") {
     throw new Error(`JSON schema for tool "${options.name}" must be an object, but got ${options.inputSchema.type}`);
@@ -29088,13 +29149,13 @@ function betaTool(options) {
   };
 }
 var init_json_schema = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs"() {
     init_sdk();
     init_transform_json_schema();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs
 function promiseWithResolvers() {
   let resolve4;
   let reject;
@@ -29105,11 +29166,11 @@ function promiseWithResolvers() {
   return { promise, resolve: resolve4, reject };
 }
 var init_promise = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs"() {
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs
 import * as fs from "node:fs/promises";
 import * as path3 from "node:path";
 import { randomUUID } from "node:crypto";
@@ -29213,14 +29274,14 @@ function fsErrorMessage(err, file) {
 }
 var DIR_CREATE_MODE, FILE_CREATE_MODE;
 var init_fs_util = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs"() {
     init_ToolError();
     DIR_CREATE_MODE = 493;
     FILE_CREATE_MODE = 420;
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs
 import * as fs2 from "node:fs/promises";
 import * as fssync from "node:fs";
 import * as path4 from "node:path";
@@ -29241,10 +29302,10 @@ async function setupSkills(ctx) {
     try {
       const versionId = await resolveSkillVersion(client, skill.skill_id, skill.version);
       const version2 = await client.beta.skills.versions.retrieve(versionId, { skill_id: skill.skill_id });
-      let dirname4 = path4.basename(version2.name.trim());
-      if (dirname4 === "" || dirname4 === "." || dirname4 === "..")
-        dirname4 = skill.skill_id;
-      const dest = path4.resolve(skillsRoot, dirname4);
+      let dirname5 = path4.basename(version2.name.trim());
+      if (dirname5 === "" || dirname5 === "." || dirname5 === "..")
+        dirname5 = skill.skill_id;
+      const dest = path4.resolve(skillsRoot, dirname5);
       if (dest !== skillsRoot && !dest.startsWith(skillsRoot + path4.sep)) {
         log.warn("skill name escapes the skills dir; skipping", {
           component: "agent-tool-context",
@@ -29377,7 +29438,7 @@ async function readHead(file, n) {
 }
 var execFileAsync;
 var init_skills = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs"() {
     init_error();
     init_log();
     init_fs_util();
@@ -29385,7 +29446,7 @@ var init_skills = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs
 var node_exports = {};
 __export(node_exports, {
   BashSession: () => BashSession,
@@ -29831,7 +29892,7 @@ async function findRg() {
 }
 var _BashSession_instances, _BashSession_proc, _BashSession_buf, _BashSession_truncated, _BashSession_closed, _BashSession_waiting, _BashSession_append, BASH_OUTPUT_LIMIT, BASH_DEFAULT_TIMEOUT_MS, DEFAULT_MAX_FILE_BYTES, GREP_OUTPUT_LIMIT, GREP_MAX_LINE_LENGTH, GLOB_RESULT_LIMIT, ANSI_RE, fsGlob, BashSession, WALK_MAX_DEPTH, WALK_MAX_ENTRIES;
 var init_node = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs"() {
     init_tslib();
     init_error();
     init_ToolError();
@@ -29973,7 +30034,7 @@ ${out}`;
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs
 async function forceStop(client, work, log, requestOptions) {
   try {
     await client.beta.environments.work.stop(
@@ -30027,7 +30088,7 @@ async function heartbeatLoop(client, work, ctrl, logger2, requestOptions) {
 }
 var _EnvironmentWorker_instances, _EnvironmentWorker_signal, _EnvironmentWorker_handleItem, HEARTBEAT_DEFAULT_MS, NO_HEARTBEAT_SENTINEL, EnvironmentWorker;
 var init_worker = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs"() {
     init_tslib();
     init_error();
     init_log();
@@ -30185,10 +30246,10 @@ var init_worker = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs
 var Work;
 var init_work = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -30458,10 +30519,10 @@ var init_work = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs
 var Environments;
 var init_environments = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs"() {
     init_resource();
     init_work();
     init_work();
@@ -30608,10 +30669,10 @@ var init_environments = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs
 var Memories;
 var init_memories = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -30739,10 +30800,10 @@ var init_memories = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs
 var MemoryVersions;
 var init_memory_versions = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -30821,10 +30882,10 @@ var init_memory_versions = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs
 var MemoryStores;
 var init_memory_stores = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs"() {
     init_resource();
     init_memories();
     init_memories();
@@ -30966,17 +31027,17 @@ var init_memory_stores = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/error.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/error.mjs
 var init_error2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/error.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/error.mjs"() {
     init_error();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
 var JSONLDecoder;
 var init_jsonl = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs"() {
     init_error();
     init_shims();
     init_line();
@@ -31013,10 +31074,10 @@ var init_jsonl = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs
 var Batches2;
 var init_batches = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -31216,10 +31277,10 @@ var init_batches = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/constants.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/constants.mjs
 var MODEL_NONSTREAMING_TOKENS;
 var init_constants = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/constants.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/constants.mjs"() {
     MODEL_NONSTREAMING_TOKENS = {
       "claude-opus-4-20250514": 8192,
       "claude-opus-4-0": 8192,
@@ -31233,7 +31294,7 @@ var init_constants = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs
 function getOutputFormat(params) {
   return params?.output_format ?? params?.output_config?.format;
 }
@@ -31306,15 +31367,15 @@ function parseBetaOutputFormat(params, content) {
   }
 }
 var init_beta_parser = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs"() {
     init_error();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
 var tokenize, strip, unstrip, generate, partialParse2;
 var init_parser = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs"() {
     tokenize = (input) => {
       let current = 0;
       let tokens = [];
@@ -31538,14 +31599,14 @@ var init_parser = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/streaming.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/streaming.mjs
 var init_streaming2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/streaming.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/streaming.mjs"() {
     init_streaming();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs
 function tracksToolInput(content) {
   return content.type === "tool_use" || content.type === "server_tool_use" || content.type === "mcp_tool_use";
 }
@@ -31553,7 +31614,7 @@ function checkNever(x) {
 }
 var _BetaMessageStream_instances, _BetaMessageStream_currentMessageSnapshot, _BetaMessageStream_params, _BetaMessageStream_connectedPromise, _BetaMessageStream_resolveConnectedPromise, _BetaMessageStream_rejectConnectedPromise, _BetaMessageStream_endPromise, _BetaMessageStream_resolveEndPromise, _BetaMessageStream_rejectEndPromise, _BetaMessageStream_listeners, _BetaMessageStream_ended, _BetaMessageStream_errored, _BetaMessageStream_aborted, _BetaMessageStream_catchingPromiseCreated, _BetaMessageStream_response, _BetaMessageStream_request_id, _BetaMessageStream_logger, _BetaMessageStream_getFinalMessage, _BetaMessageStream_getFinalText, _BetaMessageStream_handleError, _BetaMessageStream_beginRequest, _BetaMessageStream_addStreamEvent, _BetaMessageStream_endRequest, _BetaMessageStream_accumulateMessage, JSON_BUF_PROPERTY, BetaMessageStream;
 var init_BetaMessageStream = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs"() {
     init_tslib();
     init_parser();
     init_error2();
@@ -32154,10 +32215,10 @@ var init_BetaMessageStream = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs
 var DEFAULT_TOKEN_THRESHOLD, DEFAULT_SUMMARY_PROMPT;
 var init_CompactionControl = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs"() {
     DEFAULT_TOKEN_THRESHOLD = 1e5;
     DEFAULT_SUMMARY_PROMPT = `You have been working on the task described above but have not yet completed it. Write a continuation summary that will allow you (or another instance of yourself) to resume work efficiently in a future context window where the conversation history will be replaced with this summary. Your summary should be structured, concise, and actionable. Include:
 1. Task Overview
@@ -32185,7 +32246,7 @@ Wrap your summary in <summary></summary> tags.`;
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs
 async function generateToolResponse(params, lastMessage = params.messages.at(-1), requestOptions) {
   if (!lastMessage || lastMessage.role !== "assistant" || !lastMessage.content || typeof lastMessage.content === "string") {
     return null;
@@ -32235,7 +32296,7 @@ async function generateToolResponse(params, lastMessage = params.messages.at(-1)
 }
 var _BetaToolRunner_instances, _BetaToolRunner_consumed, _BetaToolRunner_mutated, _BetaToolRunner_state, _BetaToolRunner_options, _BetaToolRunner_message, _BetaToolRunner_toolResponse, _BetaToolRunner_completion, _BetaToolRunner_iterationCount, _BetaToolRunner_checkAndCompact, _BetaToolRunner_generateToolResponse, BetaToolRunner;
 var init_BetaToolRunner = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs"() {
     init_tslib();
     init_ToolError();
     init_error();
@@ -32533,7 +32594,7 @@ var init_BetaToolRunner = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs
 function transformOutputFormat(params) {
   if (!params.output_format) {
     return params;
@@ -32552,7 +32613,7 @@ function transformOutputFormat(params) {
 }
 var DEPRECATED_MODELS, MODELS_TO_WARN_WITH_THINKING_ENABLED, Messages3;
 var init_messages = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs"() {
     init_error2();
     init_batches();
     init_resource();
@@ -32694,10 +32755,10 @@ Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resour
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs
 var Events2;
 var init_events = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -32813,10 +32874,10 @@ var init_events = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs
 var Resources;
 var init_resources = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -32946,10 +33007,10 @@ var init_resources = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs
 var Events3;
 var init_events2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33007,10 +33068,10 @@ var init_events2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs
 var Threads3;
 var init_threads = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs"() {
     init_resource();
     init_events2();
     init_events2();
@@ -33095,10 +33156,10 @@ var init_threads = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs
 var Sessions3;
 var init_sessions = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs"() {
     init_resource();
     init_events();
     init_events();
@@ -33253,10 +33314,10 @@ var init_sessions = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs
 var Versions3;
 var init_versions2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33382,10 +33443,10 @@ var init_versions2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs
 var Skills2;
 var init_skills2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs"() {
     init_resource();
     init_versions2();
     init_versions2();
@@ -33480,10 +33541,10 @@ var init_skills2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs
 var Credentials;
 var init_credentials2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33658,10 +33719,10 @@ var init_credentials2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs
 var Vaults;
 var init_vaults = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs"() {
     init_resource();
     init_credentials2();
     init_credentials2();
@@ -33807,10 +33868,10 @@ var init_vaults = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
 var Beta2;
 var init_beta = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs"() {
     init_resource();
     init_deployment_runs();
     init_deployment_runs();
@@ -33872,10 +33933,10 @@ var init_beta = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/completions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/completions.mjs
 var Completions3;
 var init_completions = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/completions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/completions.mjs"() {
     init_resource();
     init_headers();
     Completions3 = class extends APIResource2 {
@@ -33896,7 +33957,7 @@ var init_completions = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/parser.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/parser.mjs
 function getOutputFormat2(params) {
   return params?.output_config?.format;
 }
@@ -33957,12 +34018,12 @@ function parseOutputFormat(params, content) {
   }
 }
 var init_parser2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/parser.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/parser.mjs"() {
     init_error();
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
 function tracksToolInput2(content) {
   return content.type === "tool_use" || content.type === "server_tool_use";
 }
@@ -33970,7 +34031,7 @@ function checkNever2(x) {
 }
 var _MessageStream_instances, _MessageStream_currentMessageSnapshot, _MessageStream_params, _MessageStream_connectedPromise, _MessageStream_resolveConnectedPromise, _MessageStream_rejectConnectedPromise, _MessageStream_endPromise, _MessageStream_resolveEndPromise, _MessageStream_rejectEndPromise, _MessageStream_listeners, _MessageStream_ended, _MessageStream_errored, _MessageStream_aborted, _MessageStream_catchingPromiseCreated, _MessageStream_response, _MessageStream_request_id, _MessageStream_logger, _MessageStream_getFinalMessage, _MessageStream_getFinalText, _MessageStream_handleError, _MessageStream_beginRequest, _MessageStream_addStreamEvent, _MessageStream_endRequest, _MessageStream_accumulateMessage, JSON_BUF_PROPERTY2, MessageStream;
 var init_MessageStream = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs"() {
     init_tslib();
     init_errors();
     init_error2();
@@ -34542,10 +34603,10 @@ var init_MessageStream = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
 var Batches3;
 var init_batches2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -34694,10 +34755,10 @@ var init_batches2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
 var Messages4, DEPRECATED_MODELS2, MODELS_TO_WARN_WITH_THINKING_ENABLED2;
 var init_messages2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs"() {
     init_resource();
     init_headers();
     init_stainless_helper_header();
@@ -34827,10 +34888,10 @@ Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resour
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/models.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/models.mjs
 var Models3;
 var init_models2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/models.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/models.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -34873,9 +34934,9 @@ var init_models2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/index.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/index.mjs
 var init_resources2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/index.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/index.mjs"() {
     init_shared();
     init_beta();
     init_completions();
@@ -34884,10 +34945,10 @@ var init_resources2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/client.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/client.mjs
 var _BaseAnthropic_instances, _a3, _BaseAnthropic_encoder, _BaseAnthropic_baseURLOverridden, HUMAN_PROMPT, AI_PROMPT, BaseAnthropic, Anthropic;
 var init_client = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/client.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/client.mjs"() {
     init_tslib();
     init_uuid();
     init_values();
@@ -35659,10 +35720,10 @@ var init_client = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/middleware.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/middleware.mjs
 var encoder;
 var init_middleware2 = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/middleware.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/middleware.mjs"() {
     init_error();
     init_streaming();
     init_errors();
@@ -35672,9 +35733,9 @@ var init_middleware2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/index.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/index.mjs
 var init_sdk = __esm({
-  "../../node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/index.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/index.mjs"() {
     init_client();
     init_uploads2();
     init_api_promise();
@@ -35685,4335 +35746,20 @@ var init_sdk = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-helpers.js
-var require_err_helpers = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-helpers.js"(exports, module) {
-    "use strict";
-    var isErrorLike = (err) => {
-      return err && typeof err.message === "string";
-    };
-    var getErrorCause = (err) => {
-      if (!err) return;
-      const cause = err.cause;
-      if (typeof cause === "function") {
-        const causeResult = err.cause();
-        return isErrorLike(causeResult) ? causeResult : void 0;
-      } else {
-        return isErrorLike(cause) ? cause : void 0;
-      }
-    };
-    var _stackWithCauses = (err, seen) => {
-      if (!isErrorLike(err)) return "";
-      const stack = err.stack || "";
-      if (seen.has(err)) {
-        return stack + "\ncauses have become circular...";
-      }
-      const cause = getErrorCause(err);
-      if (cause) {
-        seen.add(err);
-        return stack + "\ncaused by: " + _stackWithCauses(cause, seen);
-      } else {
-        return stack;
-      }
-    };
-    var stackWithCauses = (err) => _stackWithCauses(err, /* @__PURE__ */ new Set());
-    var _messageWithCauses = (err, seen, skip) => {
-      if (!isErrorLike(err)) return "";
-      const message = skip ? "" : err.message || "";
-      if (seen.has(err)) {
-        return message + ": ...";
-      }
-      const cause = getErrorCause(err);
-      if (cause) {
-        seen.add(err);
-        const skipIfVErrorStyleCause = typeof err.cause === "function";
-        return message + (skipIfVErrorStyleCause ? "" : ": ") + _messageWithCauses(cause, seen, skipIfVErrorStyleCause);
-      } else {
-        return message;
-      }
-    };
-    var messageWithCauses = (err) => _messageWithCauses(err, /* @__PURE__ */ new Set());
-    module.exports = {
-      isErrorLike,
-      getErrorCause,
-      stackWithCauses,
-      messageWithCauses
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-proto.js
-var require_err_proto = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-proto.js"(exports, module) {
-    "use strict";
-    var seen = /* @__PURE__ */ Symbol("circular-ref-tag");
-    var rawSymbol = /* @__PURE__ */ Symbol("pino-raw-err-ref");
-    var pinoErrProto = Object.create({}, {
-      type: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      message: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      stack: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      aggregateErrors: {
-        enumerable: true,
-        writable: true,
-        value: void 0
-      },
-      raw: {
-        enumerable: false,
-        get: function() {
-          return this[rawSymbol];
-        },
-        set: function(val) {
-          this[rawSymbol] = val;
-        }
-      }
-    });
-    Object.defineProperty(pinoErrProto, rawSymbol, {
-      writable: true,
-      value: {}
-    });
-    module.exports = {
-      pinoErrProto,
-      pinoErrorSymbols: {
-        seen,
-        rawSymbol
-      }
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err.js
-var require_err = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err.js"(exports, module) {
-    "use strict";
-    module.exports = errSerializer;
-    var { messageWithCauses, stackWithCauses, isErrorLike } = require_err_helpers();
-    var { pinoErrProto, pinoErrorSymbols } = require_err_proto();
-    var { seen } = pinoErrorSymbols;
-    var { toString } = Object.prototype;
-    function errSerializer(err) {
-      if (!isErrorLike(err)) {
-        return err;
-      }
-      err[seen] = void 0;
-      const _err = Object.create(pinoErrProto);
-      _err.type = toString.call(err.constructor) === "[object Function]" ? err.constructor.name : err.name;
-      _err.message = messageWithCauses(err);
-      _err.stack = stackWithCauses(err);
-      if (Array.isArray(err.errors)) {
-        _err.aggregateErrors = err.errors.map((err2) => errSerializer(err2));
-      }
-      for (const key in err) {
-        if (_err[key] === void 0) {
-          const val = err[key];
-          if (isErrorLike(val)) {
-            if (key !== "cause" && !Object.prototype.hasOwnProperty.call(val, seen)) {
-              _err[key] = errSerializer(val);
-            }
-          } else {
-            _err[key] = val;
-          }
-        }
-      }
-      delete err[seen];
-      _err.raw = err;
-      return _err;
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-with-cause.js
-var require_err_with_cause = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/err-with-cause.js"(exports, module) {
-    "use strict";
-    module.exports = errWithCauseSerializer;
-    var { isErrorLike } = require_err_helpers();
-    var { pinoErrProto, pinoErrorSymbols } = require_err_proto();
-    var { seen } = pinoErrorSymbols;
-    var { toString } = Object.prototype;
-    function errWithCauseSerializer(err) {
-      if (!isErrorLike(err)) {
-        return err;
-      }
-      err[seen] = void 0;
-      const _err = Object.create(pinoErrProto);
-      _err.type = toString.call(err.constructor) === "[object Function]" ? err.constructor.name : err.name;
-      _err.message = err.message;
-      _err.stack = err.stack;
-      if (Array.isArray(err.errors)) {
-        _err.aggregateErrors = err.errors.map((err2) => errWithCauseSerializer(err2));
-      }
-      if (isErrorLike(err.cause) && !Object.prototype.hasOwnProperty.call(err.cause, seen)) {
-        _err.cause = errWithCauseSerializer(err.cause);
-      }
-      for (const key in err) {
-        if (_err[key] === void 0) {
-          const val = err[key];
-          if (isErrorLike(val)) {
-            if (!Object.prototype.hasOwnProperty.call(val, seen)) {
-              _err[key] = errWithCauseSerializer(val);
-            }
-          } else {
-            _err[key] = val;
-          }
-        }
-      }
-      delete err[seen];
-      _err.raw = err;
-      return _err;
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/req.js
-var require_req = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/req.js"(exports, module) {
-    "use strict";
-    module.exports = {
-      mapHttpRequest,
-      reqSerializer
-    };
-    var rawSymbol = /* @__PURE__ */ Symbol("pino-raw-req-ref");
-    var pinoReqProto = Object.create({}, {
-      id: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      method: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      url: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      query: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      params: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      headers: {
-        enumerable: true,
-        writable: true,
-        value: {}
-      },
-      remoteAddress: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      remotePort: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      raw: {
-        enumerable: false,
-        get: function() {
-          return this[rawSymbol];
-        },
-        set: function(val) {
-          this[rawSymbol] = val;
-        }
-      }
-    });
-    Object.defineProperty(pinoReqProto, rawSymbol, {
-      writable: true,
-      value: {}
-    });
-    function reqSerializer(req) {
-      const connection = req.info || req.socket;
-      const _req = Object.create(pinoReqProto);
-      _req.id = typeof req.id === "function" ? req.id() : req.id || (req.info ? req.info.id : void 0);
-      _req.method = req.method;
-      if (req.originalUrl) {
-        _req.url = req.originalUrl;
-      } else {
-        const path6 = req.path;
-        _req.url = typeof path6 === "string" ? path6 : req.url ? req.url.path || req.url : void 0;
-      }
-      if (req.query) {
-        _req.query = req.query;
-      }
-      if (req.params) {
-        _req.params = req.params;
-      }
-      _req.headers = req.headers;
-      _req.remoteAddress = connection && connection.remoteAddress;
-      _req.remotePort = connection && connection.remotePort;
-      _req.raw = req.raw || req;
-      return _req;
-    }
-    function mapHttpRequest(req) {
-      return {
-        req: reqSerializer(req)
-      };
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/res.js
-var require_res = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/lib/res.js"(exports, module) {
-    "use strict";
-    module.exports = {
-      mapHttpResponse,
-      resSerializer
-    };
-    var rawSymbol = /* @__PURE__ */ Symbol("pino-raw-res-ref");
-    var pinoResProto = Object.create({}, {
-      statusCode: {
-        enumerable: true,
-        writable: true,
-        value: 0
-      },
-      headers: {
-        enumerable: true,
-        writable: true,
-        value: ""
-      },
-      raw: {
-        enumerable: false,
-        get: function() {
-          return this[rawSymbol];
-        },
-        set: function(val) {
-          this[rawSymbol] = val;
-        }
-      }
-    });
-    Object.defineProperty(pinoResProto, rawSymbol, {
-      writable: true,
-      value: {}
-    });
-    function resSerializer(res) {
-      const _res = Object.create(pinoResProto);
-      _res.statusCode = res.headersSent ? res.statusCode : null;
-      _res.headers = res.getHeaders ? res.getHeaders() : res._headers;
-      _res.raw = res;
-      return _res;
-    }
-    function mapHttpResponse(res) {
-      return {
-        res: resSerializer(res)
-      };
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/index.js
-var require_pino_std_serializers = __commonJS({
-  "../../node_modules/.pnpm/pino-std-serializers@7.1.0/node_modules/pino-std-serializers/index.js"(exports, module) {
-    "use strict";
-    var errSerializer = require_err();
-    var errWithCauseSerializer = require_err_with_cause();
-    var reqSerializers = require_req();
-    var resSerializers = require_res();
-    module.exports = {
-      err: errSerializer,
-      errWithCause: errWithCauseSerializer,
-      mapHttpRequest: reqSerializers.mapHttpRequest,
-      mapHttpResponse: resSerializers.mapHttpResponse,
-      req: reqSerializers.reqSerializer,
-      res: resSerializers.resSerializer,
-      wrapErrorSerializer: function wrapErrorSerializer(customSerializer) {
-        if (customSerializer === errSerializer) return customSerializer;
-        return function wrapErrSerializer(err) {
-          return customSerializer(errSerializer(err));
-        };
-      },
-      wrapRequestSerializer: function wrapRequestSerializer(customSerializer) {
-        if (customSerializer === reqSerializers.reqSerializer) return customSerializer;
-        return function wrappedReqSerializer(req) {
-          return customSerializer(reqSerializers.reqSerializer(req));
-        };
-      },
-      wrapResponseSerializer: function wrapResponseSerializer(customSerializer) {
-        if (customSerializer === resSerializers.resSerializer) return customSerializer;
-        return function wrappedResSerializer(res) {
-          return customSerializer(resSerializers.resSerializer(res));
-        };
-      }
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/caller.js
-var require_caller = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/caller.js"(exports, module) {
-    "use strict";
-    function noOpPrepareStackTrace(_, stack) {
-      return stack;
-    }
-    module.exports = function getCallers() {
-      const originalPrepare = Error.prepareStackTrace;
-      Error.prepareStackTrace = noOpPrepareStackTrace;
-      const stack = new Error().stack;
-      Error.prepareStackTrace = originalPrepare;
-      if (!Array.isArray(stack)) {
-        return void 0;
-      }
-      const entries = stack.slice(2);
-      const fileNames = [];
-      for (const entry of entries) {
-        if (!entry) {
-          continue;
-        }
-        fileNames.push(entry.getFileName());
-      }
-      return fileNames;
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/@pinojs+redact@0.4.0/node_modules/@pinojs/redact/index.js
-var require_redact = __commonJS({
-  "../../node_modules/.pnpm/@pinojs+redact@0.4.0/node_modules/@pinojs/redact/index.js"(exports, module) {
-    "use strict";
-    function deepClone(obj) {
-      if (obj === null || typeof obj !== "object") {
-        return obj;
-      }
-      if (obj instanceof Date) {
-        return new Date(obj.getTime());
-      }
-      if (obj instanceof Array) {
-        const cloned = [];
-        for (let i = 0; i < obj.length; i++) {
-          cloned[i] = deepClone(obj[i]);
-        }
-        return cloned;
-      }
-      if (typeof obj === "object") {
-        const cloned = Object.create(Object.getPrototypeOf(obj));
-        for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            cloned[key] = deepClone(obj[key]);
-          }
-        }
-        return cloned;
-      }
-      return obj;
-    }
-    function parsePath(path6) {
-      const parts = [];
-      let current = "";
-      let inBrackets = false;
-      let inQuotes = false;
-      let quoteChar = "";
-      for (let i = 0; i < path6.length; i++) {
-        const char = path6[i];
-        if (!inBrackets && char === ".") {
-          if (current) {
-            parts.push(current);
-            current = "";
-          }
-        } else if (char === "[") {
-          if (current) {
-            parts.push(current);
-            current = "";
-          }
-          inBrackets = true;
-        } else if (char === "]" && inBrackets) {
-          parts.push(current);
-          current = "";
-          inBrackets = false;
-          inQuotes = false;
-        } else if ((char === '"' || char === "'") && inBrackets) {
-          if (!inQuotes) {
-            inQuotes = true;
-            quoteChar = char;
-          } else if (char === quoteChar) {
-            inQuotes = false;
-            quoteChar = "";
-          } else {
-            current += char;
-          }
-        } else {
-          current += char;
-        }
-      }
-      if (current) {
-        parts.push(current);
-      }
-      return parts;
-    }
-    function setValue(obj, parts, value) {
-      let current = obj;
-      for (let i = 0; i < parts.length - 1; i++) {
-        const key = parts[i];
-        if (typeof current !== "object" || current === null || !(key in current)) {
-          return false;
-        }
-        if (typeof current[key] !== "object" || current[key] === null) {
-          return false;
-        }
-        current = current[key];
-      }
-      const lastKey = parts[parts.length - 1];
-      if (lastKey === "*") {
-        if (Array.isArray(current)) {
-          for (let i = 0; i < current.length; i++) {
-            current[i] = value;
-          }
-        } else if (typeof current === "object" && current !== null) {
-          for (const key in current) {
-            if (Object.prototype.hasOwnProperty.call(current, key)) {
-              current[key] = value;
-            }
-          }
-        }
-      } else {
-        if (typeof current === "object" && current !== null && lastKey in current && Object.prototype.hasOwnProperty.call(current, lastKey)) {
-          current[lastKey] = value;
-        }
-      }
-      return true;
-    }
-    function removeKey(obj, parts) {
-      let current = obj;
-      for (let i = 0; i < parts.length - 1; i++) {
-        const key = parts[i];
-        if (typeof current !== "object" || current === null || !(key in current)) {
-          return false;
-        }
-        if (typeof current[key] !== "object" || current[key] === null) {
-          return false;
-        }
-        current = current[key];
-      }
-      const lastKey = parts[parts.length - 1];
-      if (lastKey === "*") {
-        if (Array.isArray(current)) {
-          for (let i = 0; i < current.length; i++) {
-            current[i] = void 0;
-          }
-        } else if (typeof current === "object" && current !== null) {
-          for (const key in current) {
-            if (Object.prototype.hasOwnProperty.call(current, key)) {
-              delete current[key];
-            }
-          }
-        }
-      } else {
-        if (typeof current === "object" && current !== null && lastKey in current && Object.prototype.hasOwnProperty.call(current, lastKey)) {
-          delete current[lastKey];
-        }
-      }
-      return true;
-    }
-    var PATH_NOT_FOUND = /* @__PURE__ */ Symbol("PATH_NOT_FOUND");
-    function getValueIfExists(obj, parts) {
-      let current = obj;
-      for (const part of parts) {
-        if (current === null || current === void 0) {
-          return PATH_NOT_FOUND;
-        }
-        if (typeof current !== "object" || current === null) {
-          return PATH_NOT_FOUND;
-        }
-        if (!(part in current)) {
-          return PATH_NOT_FOUND;
-        }
-        current = current[part];
-      }
-      return current;
-    }
-    function getValue(obj, parts) {
-      let current = obj;
-      for (const part of parts) {
-        if (current === null || current === void 0) {
-          return void 0;
-        }
-        if (typeof current !== "object" || current === null) {
-          return void 0;
-        }
-        current = current[part];
-      }
-      return current;
-    }
-    function redactPaths(obj, paths, censor, remove = false) {
-      for (const path6 of paths) {
-        const parts = parsePath(path6);
-        if (parts.includes("*")) {
-          redactWildcardPath(obj, parts, censor, path6, remove);
-        } else {
-          if (remove) {
-            removeKey(obj, parts);
-          } else {
-            const value = getValueIfExists(obj, parts);
-            if (value === PATH_NOT_FOUND) {
-              continue;
-            }
-            const actualCensor = typeof censor === "function" ? censor(value, parts) : censor;
-            setValue(obj, parts, actualCensor);
-          }
-        }
-      }
-    }
-    function redactWildcardPath(obj, parts, censor, originalPath, remove = false) {
-      const wildcardIndex = parts.indexOf("*");
-      if (wildcardIndex === parts.length - 1) {
-        const parentParts = parts.slice(0, -1);
-        let current = obj;
-        for (const part of parentParts) {
-          if (current === null || current === void 0) return;
-          if (typeof current !== "object" || current === null) return;
-          current = current[part];
-        }
-        if (Array.isArray(current)) {
-          if (remove) {
-            for (let i = 0; i < current.length; i++) {
-              current[i] = void 0;
-            }
-          } else {
-            for (let i = 0; i < current.length; i++) {
-              const indexPath = [...parentParts, i.toString()];
-              const actualCensor = typeof censor === "function" ? censor(current[i], indexPath) : censor;
-              current[i] = actualCensor;
-            }
-          }
-        } else if (typeof current === "object" && current !== null) {
-          if (remove) {
-            const keysToDelete = [];
-            for (const key in current) {
-              if (Object.prototype.hasOwnProperty.call(current, key)) {
-                keysToDelete.push(key);
-              }
-            }
-            for (const key of keysToDelete) {
-              delete current[key];
-            }
-          } else {
-            for (const key in current) {
-              const keyPath = [...parentParts, key];
-              const actualCensor = typeof censor === "function" ? censor(current[key], keyPath) : censor;
-              current[key] = actualCensor;
-            }
-          }
-        }
-      } else {
-        redactIntermediateWildcard(obj, parts, censor, wildcardIndex, originalPath, remove);
-      }
-    }
-    function redactIntermediateWildcard(obj, parts, censor, wildcardIndex, originalPath, remove = false) {
-      const beforeWildcard = parts.slice(0, wildcardIndex);
-      const afterWildcard = parts.slice(wildcardIndex + 1);
-      const pathArray = [];
-      function traverse(current, pathLength) {
-        if (pathLength === beforeWildcard.length) {
-          if (Array.isArray(current)) {
-            for (let i = 0; i < current.length; i++) {
-              pathArray[pathLength] = i.toString();
-              traverse(current[i], pathLength + 1);
-            }
-          } else if (typeof current === "object" && current !== null) {
-            for (const key in current) {
-              pathArray[pathLength] = key;
-              traverse(current[key], pathLength + 1);
-            }
-          }
-        } else if (pathLength < beforeWildcard.length) {
-          const nextKey = beforeWildcard[pathLength];
-          if (current && typeof current === "object" && current !== null && nextKey in current) {
-            pathArray[pathLength] = nextKey;
-            traverse(current[nextKey], pathLength + 1);
-          }
-        } else {
-          if (afterWildcard.includes("*")) {
-            const wrappedCensor = typeof censor === "function" ? (value, path6) => {
-              const fullPath = [...pathArray.slice(0, pathLength), ...path6];
-              return censor(value, fullPath);
-            } : censor;
-            redactWildcardPath(current, afterWildcard, wrappedCensor, originalPath, remove);
-          } else {
-            if (remove) {
-              removeKey(current, afterWildcard);
-            } else {
-              const actualCensor = typeof censor === "function" ? censor(getValue(current, afterWildcard), [...pathArray.slice(0, pathLength), ...afterWildcard]) : censor;
-              setValue(current, afterWildcard, actualCensor);
-            }
-          }
-        }
-      }
-      if (beforeWildcard.length === 0) {
-        traverse(obj, 0);
-      } else {
-        let current = obj;
-        for (let i = 0; i < beforeWildcard.length; i++) {
-          const part = beforeWildcard[i];
-          if (current === null || current === void 0) return;
-          if (typeof current !== "object" || current === null) return;
-          current = current[part];
-          pathArray[i] = part;
-        }
-        if (current !== null && current !== void 0) {
-          traverse(current, beforeWildcard.length);
-        }
-      }
-    }
-    function buildPathStructure(pathsToClone) {
-      if (pathsToClone.length === 0) {
-        return null;
-      }
-      const pathStructure = /* @__PURE__ */ new Map();
-      for (const path6 of pathsToClone) {
-        const parts = parsePath(path6);
-        let current = pathStructure;
-        for (let i = 0; i < parts.length; i++) {
-          const part = parts[i];
-          if (!current.has(part)) {
-            current.set(part, /* @__PURE__ */ new Map());
-          }
-          current = current.get(part);
-        }
-      }
-      return pathStructure;
-    }
-    function selectiveClone(obj, pathStructure) {
-      if (!pathStructure) {
-        return obj;
-      }
-      function cloneSelectively(source, pathMap, depth = 0) {
-        if (!pathMap || pathMap.size === 0) {
-          return source;
-        }
-        if (source === null || typeof source !== "object") {
-          return source;
-        }
-        if (source instanceof Date) {
-          return new Date(source.getTime());
-        }
-        if (Array.isArray(source)) {
-          const cloned2 = [];
-          for (let i = 0; i < source.length; i++) {
-            const indexStr = i.toString();
-            if (pathMap.has(indexStr) || pathMap.has("*")) {
-              cloned2[i] = cloneSelectively(source[i], pathMap.get(indexStr) || pathMap.get("*"));
-            } else {
-              cloned2[i] = source[i];
-            }
-          }
-          return cloned2;
-        }
-        const cloned = Object.create(Object.getPrototypeOf(source));
-        for (const key in source) {
-          if (Object.prototype.hasOwnProperty.call(source, key)) {
-            if (pathMap.has(key) || pathMap.has("*")) {
-              cloned[key] = cloneSelectively(source[key], pathMap.get(key) || pathMap.get("*"));
-            } else {
-              cloned[key] = source[key];
-            }
-          }
-        }
-        return cloned;
-      }
-      return cloneSelectively(obj, pathStructure);
-    }
-    function validatePath(path6) {
-      if (typeof path6 !== "string") {
-        throw new Error("Paths must be (non-empty) strings");
-      }
-      if (path6 === "") {
-        throw new Error("Invalid redaction path ()");
-      }
-      if (path6.includes("..")) {
-        throw new Error(`Invalid redaction path (${path6})`);
-      }
-      if (path6.includes(",")) {
-        throw new Error(`Invalid redaction path (${path6})`);
-      }
-      let bracketCount = 0;
-      let inQuotes = false;
-      let quoteChar = "";
-      for (let i = 0; i < path6.length; i++) {
-        const char = path6[i];
-        if ((char === '"' || char === "'") && bracketCount > 0) {
-          if (!inQuotes) {
-            inQuotes = true;
-            quoteChar = char;
-          } else if (char === quoteChar) {
-            inQuotes = false;
-            quoteChar = "";
-          }
-        } else if (char === "[" && !inQuotes) {
-          bracketCount++;
-        } else if (char === "]" && !inQuotes) {
-          bracketCount--;
-          if (bracketCount < 0) {
-            throw new Error(`Invalid redaction path (${path6})`);
-          }
-        }
-      }
-      if (bracketCount !== 0) {
-        throw new Error(`Invalid redaction path (${path6})`);
-      }
-    }
-    function validatePaths(paths) {
-      if (!Array.isArray(paths)) {
-        throw new TypeError("paths must be an array");
-      }
-      for (const path6 of paths) {
-        validatePath(path6);
-      }
-    }
-    function slowRedact(options = {}) {
-      const {
-        paths = [],
-        censor = "[REDACTED]",
-        serialize = JSON.stringify,
-        strict = true,
-        remove = false
-      } = options;
-      validatePaths(paths);
-      const pathStructure = buildPathStructure(paths);
-      return function redact(obj) {
-        if (strict && (obj === null || typeof obj !== "object")) {
-          if (obj === null || obj === void 0) {
-            return serialize ? serialize(obj) : obj;
-          }
-          if (typeof obj !== "object") {
-            return serialize ? serialize(obj) : obj;
-          }
-        }
-        const cloned = selectiveClone(obj, pathStructure);
-        const original = obj;
-        let actualCensor = censor;
-        if (typeof censor === "function") {
-          actualCensor = censor;
-        }
-        redactPaths(cloned, paths, actualCensor, remove);
-        if (serialize === false) {
-          cloned.restore = function() {
-            return deepClone(original);
-          };
-          return cloned;
-        }
-        if (typeof serialize === "function") {
-          return serialize(cloned);
-        }
-        return JSON.stringify(cloned);
-      };
-    }
-    module.exports = slowRedact;
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/symbols.js
-var require_symbols = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/symbols.js"(exports, module) {
-    "use strict";
-    var setLevelSym = /* @__PURE__ */ Symbol("pino.setLevel");
-    var getLevelSym = /* @__PURE__ */ Symbol("pino.getLevel");
-    var levelValSym = /* @__PURE__ */ Symbol("pino.levelVal");
-    var levelCompSym = /* @__PURE__ */ Symbol("pino.levelComp");
-    var useLevelLabelsSym = /* @__PURE__ */ Symbol("pino.useLevelLabels");
-    var useOnlyCustomLevelsSym = /* @__PURE__ */ Symbol("pino.useOnlyCustomLevels");
-    var mixinSym = /* @__PURE__ */ Symbol("pino.mixin");
-    var lsCacheSym = /* @__PURE__ */ Symbol("pino.lsCache");
-    var chindingsSym = /* @__PURE__ */ Symbol("pino.chindings");
-    var asJsonSym = /* @__PURE__ */ Symbol("pino.asJson");
-    var writeSym = /* @__PURE__ */ Symbol("pino.write");
-    var redactFmtSym = /* @__PURE__ */ Symbol("pino.redactFmt");
-    var timeSym = /* @__PURE__ */ Symbol("pino.time");
-    var timeSliceIndexSym = /* @__PURE__ */ Symbol("pino.timeSliceIndex");
-    var streamSym = /* @__PURE__ */ Symbol("pino.stream");
-    var stringifySym = /* @__PURE__ */ Symbol("pino.stringify");
-    var stringifySafeSym = /* @__PURE__ */ Symbol("pino.stringifySafe");
-    var stringifiersSym = /* @__PURE__ */ Symbol("pino.stringifiers");
-    var endSym = /* @__PURE__ */ Symbol("pino.end");
-    var formatOptsSym = /* @__PURE__ */ Symbol("pino.formatOpts");
-    var messageKeySym = /* @__PURE__ */ Symbol("pino.messageKey");
-    var errorKeySym = /* @__PURE__ */ Symbol("pino.errorKey");
-    var nestedKeySym = /* @__PURE__ */ Symbol("pino.nestedKey");
-    var nestedKeyStrSym = /* @__PURE__ */ Symbol("pino.nestedKeyStr");
-    var mixinMergeStrategySym = /* @__PURE__ */ Symbol("pino.mixinMergeStrategy");
-    var msgPrefixSym = /* @__PURE__ */ Symbol("pino.msgPrefix");
-    var wildcardFirstSym = /* @__PURE__ */ Symbol("pino.wildcardFirst");
-    var serializersSym = /* @__PURE__ */ Symbol.for("pino.serializers");
-    var formattersSym = /* @__PURE__ */ Symbol.for("pino.formatters");
-    var hooksSym = /* @__PURE__ */ Symbol.for("pino.hooks");
-    var needsMetadataGsym = /* @__PURE__ */ Symbol.for("pino.metadata");
-    module.exports = {
-      setLevelSym,
-      getLevelSym,
-      levelValSym,
-      levelCompSym,
-      useLevelLabelsSym,
-      mixinSym,
-      lsCacheSym,
-      chindingsSym,
-      asJsonSym,
-      writeSym,
-      serializersSym,
-      redactFmtSym,
-      timeSym,
-      timeSliceIndexSym,
-      streamSym,
-      stringifySym,
-      stringifySafeSym,
-      stringifiersSym,
-      endSym,
-      formatOptsSym,
-      messageKeySym,
-      errorKeySym,
-      nestedKeySym,
-      wildcardFirstSym,
-      needsMetadataGsym,
-      useOnlyCustomLevelsSym,
-      formattersSym,
-      hooksSym,
-      nestedKeyStrSym,
-      mixinMergeStrategySym,
-      msgPrefixSym
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/redaction.js
-var require_redaction = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/redaction.js"(exports, module) {
-    "use strict";
-    var Redact = require_redact();
-    var { redactFmtSym, wildcardFirstSym } = require_symbols();
-    var rx = /[^.[\]]+|\[([^[\]]*?)\]/g;
-    var CENSOR = "[Redacted]";
-    var strict = false;
-    function redaction(opts, serialize) {
-      const { paths, censor, remove } = handle(opts);
-      const shape = paths.reduce((o, str2) => {
-        rx.lastIndex = 0;
-        const first = rx.exec(str2);
-        const next = rx.exec(str2);
-        let ns = first[1] !== void 0 ? first[1].replace(/^(?:"|'|`)(.*)(?:"|'|`)$/, "$1") : first[0];
-        if (ns === "*") {
-          ns = wildcardFirstSym;
-        }
-        if (next === null) {
-          o[ns] = null;
-          return o;
-        }
-        if (o[ns] === null) {
-          return o;
-        }
-        const { index } = next;
-        const nextPath = `${str2.substr(index, str2.length - 1)}`;
-        o[ns] = o[ns] || [];
-        if (ns !== wildcardFirstSym && o[ns].length === 0) {
-          o[ns].push(...o[wildcardFirstSym] || []);
-        }
-        if (ns === wildcardFirstSym) {
-          Object.keys(o).forEach(function(k) {
-            if (o[k]) {
-              o[k].push(nextPath);
-            }
-          });
-        }
-        o[ns].push(nextPath);
-        return o;
-      }, {});
-      const result = {
-        [redactFmtSym]: Redact({ paths, censor, serialize, strict, remove })
-      };
-      const topCensor = (...args) => {
-        return typeof censor === "function" ? serialize(censor(...args)) : serialize(censor);
-      };
-      return [...Object.keys(shape), ...Object.getOwnPropertySymbols(shape)].reduce((o, k) => {
-        if (shape[k] === null) {
-          o[k] = (value) => topCensor(value, [k]);
-        } else {
-          const wrappedCensor = typeof censor === "function" ? (value, path6) => {
-            return censor(value, [k, ...path6]);
-          } : censor;
-          o[k] = Redact({
-            paths: shape[k],
-            censor: wrappedCensor,
-            serialize,
-            strict,
-            remove
-          });
-        }
-        return o;
-      }, result);
-    }
-    function handle(opts) {
-      if (Array.isArray(opts)) {
-        opts = { paths: opts, censor: CENSOR };
-        return opts;
-      }
-      let { paths, censor = CENSOR, remove } = opts;
-      if (Array.isArray(paths) === false) {
-        throw Error("pino \u2013 redact must contain an array of strings");
-      }
-      if (remove === true) censor = void 0;
-      return { paths, censor, remove };
-    }
-    module.exports = redaction;
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/time.js
-var require_time = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/time.js"(exports, module) {
-    "use strict";
-    var nullTime = () => "";
-    var epochTime = () => `,"time":${Date.now()}`;
-    var unixTime = () => `,"time":${Math.round(Date.now() / 1e3)}`;
-    var isoTime = () => `,"time":"${new Date(Date.now()).toISOString()}"`;
-    var NS_PER_MS = 1000000n;
-    var NS_PER_SEC = 1000000000n;
-    var startWallTimeNs = BigInt(Date.now()) * NS_PER_MS;
-    var startHrTime = process.hrtime.bigint();
-    var isoTimeNano = () => {
-      const elapsedNs = process.hrtime.bigint() - startHrTime;
-      const currentTimeNs = startWallTimeNs + elapsedNs;
-      const secondsSinceEpoch = currentTimeNs / NS_PER_SEC;
-      const nanosWithinSecond = currentTimeNs % NS_PER_SEC;
-      const msSinceEpoch = Number(secondsSinceEpoch * 1000n + nanosWithinSecond / 1000000n);
-      const date = new Date(msSinceEpoch);
-      const year = date.getUTCFullYear();
-      const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-      const day = date.getUTCDate().toString().padStart(2, "0");
-      const hours = date.getUTCHours().toString().padStart(2, "0");
-      const minutes = date.getUTCMinutes().toString().padStart(2, "0");
-      const seconds = date.getUTCSeconds().toString().padStart(2, "0");
-      return `,"time":"${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${nanosWithinSecond.toString().padStart(9, "0")}Z"`;
-    };
-    module.exports = { nullTime, epochTime, unixTime, isoTime, isoTimeNano };
-  }
-});
-
-// ../../node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/index.js
-var require_quick_format_unescaped = __commonJS({
-  "../../node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/index.js"(exports, module) {
-    "use strict";
-    function tryStringify(o) {
-      try {
-        return JSON.stringify(o);
-      } catch (e) {
-        return '"[Circular]"';
-      }
-    }
-    module.exports = format;
-    function format(f, args, opts) {
-      var ss = opts && opts.stringify || tryStringify;
-      var offset = 1;
-      if (typeof f === "object" && f !== null) {
-        var len = args.length + offset;
-        if (len === 1) return f;
-        var objects = new Array(len);
-        objects[0] = ss(f);
-        for (var index = 1; index < len; index++) {
-          objects[index] = ss(args[index]);
-        }
-        return objects.join(" ");
-      }
-      if (typeof f !== "string") {
-        return f;
-      }
-      var argLen = args.length;
-      if (argLen === 0) return f;
-      var str2 = "";
-      var a = 1 - offset;
-      var lastPos = -1;
-      var flen = f && f.length || 0;
-      for (var i = 0; i < flen; ) {
-        if (f.charCodeAt(i) === 37 && i + 1 < flen) {
-          lastPos = lastPos > -1 ? lastPos : 0;
-          switch (f.charCodeAt(i + 1)) {
-            case 100:
-            // 'd'
-            case 102:
-              if (a >= argLen)
-                break;
-              if (args[a] == null) break;
-              if (lastPos < i)
-                str2 += f.slice(lastPos, i);
-              str2 += Number(args[a]);
-              lastPos = i + 2;
-              i++;
-              break;
-            case 105:
-              if (a >= argLen)
-                break;
-              if (args[a] == null) break;
-              if (lastPos < i)
-                str2 += f.slice(lastPos, i);
-              str2 += Math.floor(Number(args[a]));
-              lastPos = i + 2;
-              i++;
-              break;
-            case 79:
-            // 'O'
-            case 111:
-            // 'o'
-            case 106:
-              if (a >= argLen)
-                break;
-              if (args[a] === void 0) break;
-              if (lastPos < i)
-                str2 += f.slice(lastPos, i);
-              var type = typeof args[a];
-              if (type === "string") {
-                str2 += "'" + args[a] + "'";
-                lastPos = i + 2;
-                i++;
-                break;
-              }
-              if (type === "function") {
-                str2 += args[a].name || "<anonymous>";
-                lastPos = i + 2;
-                i++;
-                break;
-              }
-              str2 += ss(args[a]);
-              lastPos = i + 2;
-              i++;
-              break;
-            case 115:
-              if (a >= argLen)
-                break;
-              if (lastPos < i)
-                str2 += f.slice(lastPos, i);
-              str2 += String(args[a]);
-              lastPos = i + 2;
-              i++;
-              break;
-            case 37:
-              if (lastPos < i)
-                str2 += f.slice(lastPos, i);
-              str2 += "%";
-              lastPos = i + 2;
-              i++;
-              a--;
-              break;
-          }
-          ++a;
-        }
-        ++i;
-      }
-      if (lastPos === -1)
-        return f;
-      else if (lastPos < flen) {
-        str2 += f.slice(lastPos);
-      }
-      return str2;
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/index.js
-var require_atomic_sleep = __commonJS({
-  "../../node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/index.js"(exports, module) {
-    "use strict";
-    if (typeof SharedArrayBuffer !== "undefined" && typeof Atomics !== "undefined") {
-      let sleep3 = function(ms) {
-        const valid = ms > 0 && ms < Infinity;
-        if (valid === false) {
-          if (typeof ms !== "number" && typeof ms !== "bigint") {
-            throw TypeError("sleep: ms must be a number");
-          }
-          throw RangeError("sleep: ms must be a number that is greater than 0 but less than Infinity");
-        }
-        Atomics.wait(nil, 0, 0, Number(ms));
-      };
-      const nil = new Int32Array(new SharedArrayBuffer(4));
-      module.exports = sleep3;
-    } else {
-      let sleep3 = function(ms) {
-        const valid = ms > 0 && ms < Infinity;
-        if (valid === false) {
-          if (typeof ms !== "number" && typeof ms !== "bigint") {
-            throw TypeError("sleep: ms must be a number");
-          }
-          throw RangeError("sleep: ms must be a number that is greater than 0 but less than Infinity");
-        }
-        const target = Date.now() + Number(ms);
-        while (target > Date.now()) {
-        }
-      };
-      module.exports = sleep3;
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/sonic-boom@4.2.1/node_modules/sonic-boom/index.js
-var require_sonic_boom = __commonJS({
-  "../../node_modules/.pnpm/sonic-boom@4.2.1/node_modules/sonic-boom/index.js"(exports, module) {
-    "use strict";
-    var fs4 = __require("fs");
-    var EventEmitter = __require("events");
-    var inherits = __require("util").inherits;
-    var path6 = __require("path");
-    var sleep3 = require_atomic_sleep();
-    var assert = __require("assert");
-    var BUSY_WRITE_TIMEOUT = 100;
-    var kEmptyBuffer = Buffer.allocUnsafe(0);
-    var MAX_WRITE = 16 * 1024;
-    var kContentModeBuffer = "buffer";
-    var kContentModeUtf8 = "utf8";
-    var [major, minor] = (process.versions.node || "0.0").split(".").map(Number);
-    var kCopyBuffer = major >= 22 && minor >= 7;
-    function openFile(file, sonic) {
-      sonic._opening = true;
-      sonic._writing = true;
-      sonic._asyncDrainScheduled = false;
-      function fileOpened(err, fd) {
-        if (err) {
-          sonic._reopening = false;
-          sonic._writing = false;
-          sonic._opening = false;
-          if (sonic.sync) {
-            process.nextTick(() => {
-              if (sonic.listenerCount("error") > 0) {
-                sonic.emit("error", err);
-              }
-            });
-          } else {
-            sonic.emit("error", err);
-          }
-          return;
-        }
-        const reopening = sonic._reopening;
-        sonic.fd = fd;
-        sonic.file = file;
-        sonic._reopening = false;
-        sonic._opening = false;
-        sonic._writing = false;
-        if (sonic.sync) {
-          process.nextTick(() => sonic.emit("ready"));
-        } else {
-          sonic.emit("ready");
-        }
-        if (sonic.destroyed) {
-          return;
-        }
-        if (!sonic._writing && sonic._len > sonic.minLength || sonic._flushPending) {
-          sonic._actualWrite();
-        } else if (reopening) {
-          process.nextTick(() => sonic.emit("drain"));
-        }
-      }
-      const flags = sonic.append ? "a" : "w";
-      const mode = sonic.mode;
-      if (sonic.sync) {
-        try {
-          if (sonic.mkdir) fs4.mkdirSync(path6.dirname(file), { recursive: true });
-          const fd = fs4.openSync(file, flags, mode);
-          fileOpened(null, fd);
-        } catch (err) {
-          fileOpened(err);
-          throw err;
-        }
-      } else if (sonic.mkdir) {
-        fs4.mkdir(path6.dirname(file), { recursive: true }, (err) => {
-          if (err) return fileOpened(err);
-          fs4.open(file, flags, mode, fileOpened);
-        });
-      } else {
-        fs4.open(file, flags, mode, fileOpened);
-      }
-    }
-    function SonicBoom(opts) {
-      if (!(this instanceof SonicBoom)) {
-        return new SonicBoom(opts);
-      }
-      let { fd, dest, minLength, maxLength, maxWrite, periodicFlush, sync, append = true, mkdir: mkdir3, retryEAGAIN, fsync, contentMode, mode } = opts || {};
-      fd = fd || dest;
-      this._len = 0;
-      this.fd = -1;
-      this._bufs = [];
-      this._lens = [];
-      this._writing = false;
-      this._ending = false;
-      this._reopening = false;
-      this._asyncDrainScheduled = false;
-      this._flushPending = false;
-      this._hwm = Math.max(minLength || 0, 16387);
-      this.file = null;
-      this.destroyed = false;
-      this.minLength = minLength || 0;
-      this.maxLength = maxLength || 0;
-      this.maxWrite = maxWrite || MAX_WRITE;
-      this._periodicFlush = periodicFlush || 0;
-      this._periodicFlushTimer = void 0;
-      this.sync = sync || false;
-      this.writable = true;
-      this._fsync = fsync || false;
-      this.append = append || false;
-      this.mode = mode;
-      this.retryEAGAIN = retryEAGAIN || (() => true);
-      this.mkdir = mkdir3 || false;
-      let fsWriteSync;
-      let fsWrite;
-      if (contentMode === kContentModeBuffer) {
-        this._writingBuf = kEmptyBuffer;
-        this.write = writeBuffer;
-        this.flush = flushBuffer;
-        this.flushSync = flushBufferSync;
-        this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs4.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs4.write(this.fd, this._writingBuf, this.release);
-      } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
-        this._writingBuf = "";
-        this.write = write;
-        this.flush = flush;
-        this.flushSync = flushSync;
-        this._actualWrite = actualWrite;
-        fsWriteSync = () => {
-          if (Buffer.isBuffer(this._writingBuf)) {
-            return fs4.writeSync(this.fd, this._writingBuf);
-          }
-          return fs4.writeSync(this.fd, this._writingBuf, "utf8");
-        };
-        fsWrite = () => {
-          if (Buffer.isBuffer(this._writingBuf)) {
-            return fs4.write(this.fd, this._writingBuf, this.release);
-          }
-          return fs4.write(this.fd, this._writingBuf, "utf8", this.release);
-        };
-      } else {
-        throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
-      }
-      if (typeof fd === "number") {
-        this.fd = fd;
-        process.nextTick(() => this.emit("ready"));
-      } else if (typeof fd === "string") {
-        openFile(fd, this);
-      } else {
-        throw new Error("SonicBoom supports only file descriptors and files");
-      }
-      if (this.minLength >= this.maxWrite) {
-        throw new Error(`minLength should be smaller than maxWrite (${this.maxWrite})`);
-      }
-      this.release = (err, n) => {
-        if (err) {
-          if ((err.code === "EAGAIN" || err.code === "EBUSY") && this.retryEAGAIN(err, this._writingBuf.length, this._len - this._writingBuf.length)) {
-            if (this.sync) {
-              try {
-                sleep3(BUSY_WRITE_TIMEOUT);
-                this.release(void 0, 0);
-              } catch (err2) {
-                this.release(err2);
-              }
-            } else {
-              setTimeout(fsWrite, BUSY_WRITE_TIMEOUT);
-            }
-          } else {
-            this._writing = false;
-            this.emit("error", err);
-          }
-          return;
-        }
-        this.emit("write", n);
-        const releasedBufObj = releaseWritingBuf(this._writingBuf, this._len, n);
-        this._len = releasedBufObj.len;
-        this._writingBuf = releasedBufObj.writingBuf;
-        if (this._writingBuf.length) {
-          if (!this.sync) {
-            fsWrite();
-            return;
-          }
-          try {
-            do {
-              const n2 = fsWriteSync();
-              const releasedBufObj2 = releaseWritingBuf(this._writingBuf, this._len, n2);
-              this._len = releasedBufObj2.len;
-              this._writingBuf = releasedBufObj2.writingBuf;
-            } while (this._writingBuf.length);
-          } catch (err2) {
-            this.release(err2);
-            return;
-          }
-        }
-        if (this._fsync) {
-          fs4.fsyncSync(this.fd);
-        }
-        const len = this._len;
-        if (this._reopening) {
-          this._writing = false;
-          this._reopening = false;
-          this.reopen();
-        } else if (len > this.minLength) {
-          this._actualWrite();
-        } else if (this._ending) {
-          if (len > 0) {
-            this._actualWrite();
-          } else {
-            this._writing = false;
-            actualClose(this);
-          }
-        } else {
-          this._writing = false;
-          if (this.sync) {
-            if (!this._asyncDrainScheduled) {
-              this._asyncDrainScheduled = true;
-              process.nextTick(emitDrain, this);
-            }
-          } else {
-            this.emit("drain");
-          }
-        }
-      };
-      this.on("newListener", function(name) {
-        if (name === "drain") {
-          this._asyncDrainScheduled = false;
-        }
-      });
-      if (this._periodicFlush !== 0) {
-        this._periodicFlushTimer = setInterval(() => this.flush(null), this._periodicFlush);
-        this._periodicFlushTimer.unref();
-      }
-    }
-    function releaseWritingBuf(writingBuf, len, n) {
-      if (typeof writingBuf === "string") {
-        writingBuf = Buffer.from(writingBuf);
-      }
-      len = Math.max(len - n, 0);
-      writingBuf = writingBuf.subarray(n);
-      return { writingBuf, len };
-    }
-    function emitDrain(sonic) {
-      const hasListeners = sonic.listenerCount("drain") > 0;
-      if (!hasListeners) return;
-      sonic._asyncDrainScheduled = false;
-      sonic.emit("drain");
-    }
-    inherits(SonicBoom, EventEmitter);
-    function mergeBuf(bufs, len) {
-      if (bufs.length === 0) {
-        return kEmptyBuffer;
-      }
-      if (bufs.length === 1) {
-        return bufs[0];
-      }
-      return Buffer.concat(bufs, len);
-    }
-    function write(data) {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      data = "" + data;
-      const dataLen = Buffer.byteLength(data);
-      const len = this._len + dataLen;
-      const bufs = this._bufs;
-      if (this.maxLength && len > this.maxLength) {
-        this.emit("drop", data);
-        return this._len < this._hwm;
-      }
-      if (bufs.length === 0 || Buffer.byteLength(bufs[bufs.length - 1]) + dataLen > this.maxWrite) {
-        bufs.push(data);
-      } else {
-        bufs[bufs.length - 1] += data;
-      }
-      this._len = len;
-      if (!this._writing && this._len >= this.minLength) {
-        this._actualWrite();
-      }
-      return this._len < this._hwm;
-    }
-    function writeBuffer(data) {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      const len = this._len + data.length;
-      const bufs = this._bufs;
-      const lens = this._lens;
-      if (this.maxLength && len > this.maxLength) {
-        this.emit("drop", data);
-        return this._len < this._hwm;
-      }
-      if (bufs.length === 0 || lens[lens.length - 1] + data.length > this.maxWrite) {
-        bufs.push([data]);
-        lens.push(data.length);
-      } else {
-        bufs[bufs.length - 1].push(data);
-        lens[lens.length - 1] += data.length;
-      }
-      this._len = len;
-      if (!this._writing && this._len >= this.minLength) {
-        this._actualWrite();
-      }
-      return this._len < this._hwm;
-    }
-    function callFlushCallbackOnDrain(cb) {
-      this._flushPending = true;
-      const onDrain = () => {
-        if (!this._fsync) {
-          try {
-            fs4.fsync(this.fd, (err) => {
-              this._flushPending = false;
-              cb(err);
-            });
-          } catch (err) {
-            cb(err);
-          }
-        } else {
-          this._flushPending = false;
-          cb();
-        }
-        this.off("error", onError);
-      };
-      const onError = (err) => {
-        this._flushPending = false;
-        cb(err);
-        this.off("drain", onDrain);
-      };
-      this.once("drain", onDrain);
-      this.once("error", onError);
-    }
-    function flush(cb) {
-      if (cb != null && typeof cb !== "function") {
-        throw new Error("flush cb must be a function");
-      }
-      if (this.destroyed) {
-        const error = new Error("SonicBoom destroyed");
-        if (cb) {
-          cb(error);
-          return;
-        }
-        throw error;
-      }
-      if (this.minLength <= 0) {
-        cb?.();
-        return;
-      }
-      if (cb) {
-        callFlushCallbackOnDrain.call(this, cb);
-      }
-      if (this._writing) {
-        return;
-      }
-      if (this._bufs.length === 0) {
-        this._bufs.push("");
-      }
-      this._actualWrite();
-    }
-    function flushBuffer(cb) {
-      if (cb != null && typeof cb !== "function") {
-        throw new Error("flush cb must be a function");
-      }
-      if (this.destroyed) {
-        const error = new Error("SonicBoom destroyed");
-        if (cb) {
-          cb(error);
-          return;
-        }
-        throw error;
-      }
-      if (this.minLength <= 0) {
-        cb?.();
-        return;
-      }
-      if (cb) {
-        callFlushCallbackOnDrain.call(this, cb);
-      }
-      if (this._writing) {
-        return;
-      }
-      if (this._bufs.length === 0) {
-        this._bufs.push([]);
-        this._lens.push(0);
-      }
-      this._actualWrite();
-    }
-    SonicBoom.prototype.reopen = function(file) {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this._opening) {
-        this.once("ready", () => {
-          this.reopen(file);
-        });
-        return;
-      }
-      if (this._ending) {
-        return;
-      }
-      if (!this.file) {
-        throw new Error("Unable to reopen a file descriptor, you must pass a file to SonicBoom");
-      }
-      if (file) {
-        this.file = file;
-      }
-      this._reopening = true;
-      if (this._writing) {
-        return;
-      }
-      const fd = this.fd;
-      this.once("ready", () => {
-        if (fd !== this.fd) {
-          fs4.close(fd, (err) => {
-            if (err) {
-              return this.emit("error", err);
-            }
-          });
-        }
-      });
-      openFile(this.file, this);
-    };
-    SonicBoom.prototype.end = function() {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this._opening) {
-        this.once("ready", () => {
-          this.end();
-        });
-        return;
-      }
-      if (this._ending) {
-        return;
-      }
-      this._ending = true;
-      if (this._writing) {
-        return;
-      }
-      if (this._len > 0 && this.fd >= 0) {
-        this._actualWrite();
-      } else {
-        actualClose(this);
-      }
-    };
-    function flushSync() {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this.fd < 0) {
-        throw new Error("sonic boom is not ready yet");
-      }
-      if (!this._writing && this._writingBuf.length > 0) {
-        this._bufs.unshift(this._writingBuf);
-        this._writingBuf = "";
-      }
-      let buf = "";
-      while (this._bufs.length || buf.length) {
-        if (buf.length <= 0) {
-          buf = this._bufs[0];
-        }
-        try {
-          const n = Buffer.isBuffer(buf) ? fs4.writeSync(this.fd, buf) : fs4.writeSync(this.fd, buf, "utf8");
-          const releasedBufObj = releaseWritingBuf(buf, this._len, n);
-          buf = releasedBufObj.writingBuf;
-          this._len = releasedBufObj.len;
-          if (buf.length <= 0) {
-            this._bufs.shift();
-          }
-        } catch (err) {
-          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
-            throw err;
-          }
-          sleep3(BUSY_WRITE_TIMEOUT);
-        }
-      }
-      try {
-        fs4.fsyncSync(this.fd);
-      } catch {
-      }
-    }
-    function flushBufferSync() {
-      if (this.destroyed) {
-        throw new Error("SonicBoom destroyed");
-      }
-      if (this.fd < 0) {
-        throw new Error("sonic boom is not ready yet");
-      }
-      if (!this._writing && this._writingBuf.length > 0) {
-        this._bufs.unshift([this._writingBuf]);
-        this._writingBuf = kEmptyBuffer;
-      }
-      let buf = kEmptyBuffer;
-      while (this._bufs.length || buf.length) {
-        if (buf.length <= 0) {
-          buf = mergeBuf(this._bufs[0], this._lens[0]);
-        }
-        try {
-          const n = fs4.writeSync(this.fd, buf);
-          buf = buf.subarray(n);
-          this._len = Math.max(this._len - n, 0);
-          if (buf.length <= 0) {
-            this._bufs.shift();
-            this._lens.shift();
-          }
-        } catch (err) {
-          const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
-            throw err;
-          }
-          sleep3(BUSY_WRITE_TIMEOUT);
-        }
-      }
-    }
-    SonicBoom.prototype.destroy = function() {
-      if (this.destroyed) {
-        return;
-      }
-      actualClose(this);
-    };
-    function actualWrite() {
-      const release = this.release;
-      this._writing = true;
-      this._writingBuf = this._writingBuf.length ? this._writingBuf : this._bufs.shift() || "";
-      if (this.sync) {
-        try {
-          const written = Buffer.isBuffer(this._writingBuf) ? fs4.writeSync(this.fd, this._writingBuf) : fs4.writeSync(this.fd, this._writingBuf, "utf8");
-          release(null, written);
-        } catch (err) {
-          release(err);
-        }
-      } else {
-        fs4.write(this.fd, this._writingBuf, release);
-      }
-    }
-    function actualWriteBuffer() {
-      const release = this.release;
-      this._writing = true;
-      this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
-      if (this.sync) {
-        try {
-          const written = fs4.writeSync(this.fd, this._writingBuf);
-          release(null, written);
-        } catch (err) {
-          release(err);
-        }
-      } else {
-        if (kCopyBuffer) {
-          this._writingBuf = Buffer.from(this._writingBuf);
-        }
-        fs4.write(this.fd, this._writingBuf, release);
-      }
-    }
-    function actualClose(sonic) {
-      if (sonic.fd === -1) {
-        sonic.once("ready", actualClose.bind(null, sonic));
-        return;
-      }
-      if (sonic._periodicFlushTimer !== void 0) {
-        clearInterval(sonic._periodicFlushTimer);
-      }
-      sonic.destroyed = true;
-      sonic._bufs = [];
-      sonic._lens = [];
-      assert(typeof sonic.fd === "number", `sonic.fd must be a number, got ${typeof sonic.fd}`);
-      try {
-        fs4.fsync(sonic.fd, closeWrapped);
-      } catch {
-      }
-      function closeWrapped() {
-        if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs4.close(sonic.fd, done);
-        } else {
-          done();
-        }
-      }
-      function done(err) {
-        if (err) {
-          sonic.emit("error", err);
-          return;
-        }
-        if (sonic._ending && !sonic._writing) {
-          sonic.emit("finish");
-        }
-        sonic.emit("close");
-      }
-    }
-    SonicBoom.SonicBoom = SonicBoom;
-    SonicBoom.default = SonicBoom;
-    module.exports = SonicBoom;
-  }
-});
-
-// ../../node_modules/.pnpm/on-exit-leak-free@2.1.2/node_modules/on-exit-leak-free/index.js
-var require_on_exit_leak_free = __commonJS({
-  "../../node_modules/.pnpm/on-exit-leak-free@2.1.2/node_modules/on-exit-leak-free/index.js"(exports, module) {
-    "use strict";
-    var refs = {
-      exit: [],
-      beforeExit: []
-    };
-    var functions = {
-      exit: onExit,
-      beforeExit: onBeforeExit
-    };
-    var registry;
-    function ensureRegistry() {
-      if (registry === void 0) {
-        registry = new FinalizationRegistry(clear);
-      }
-    }
-    function install(event) {
-      if (refs[event].length > 0) {
-        return;
-      }
-      process.on(event, functions[event]);
-    }
-    function uninstall(event) {
-      if (refs[event].length > 0) {
-        return;
-      }
-      process.removeListener(event, functions[event]);
-      if (refs.exit.length === 0 && refs.beforeExit.length === 0) {
-        registry = void 0;
-      }
-    }
-    function onExit() {
-      callRefs("exit");
-    }
-    function onBeforeExit() {
-      callRefs("beforeExit");
-    }
-    function callRefs(event) {
-      for (const ref of refs[event]) {
-        const obj = ref.deref();
-        const fn = ref.fn;
-        if (obj !== void 0) {
-          fn(obj, event);
-        }
-      }
-      refs[event] = [];
-    }
-    function clear(ref) {
-      for (const event of ["exit", "beforeExit"]) {
-        const index = refs[event].indexOf(ref);
-        refs[event].splice(index, index + 1);
-        uninstall(event);
-      }
-    }
-    function _register(event, obj, fn) {
-      if (obj === void 0) {
-        throw new Error("the object can't be undefined");
-      }
-      install(event);
-      const ref = new WeakRef(obj);
-      ref.fn = fn;
-      ensureRegistry();
-      registry.register(obj, ref);
-      refs[event].push(ref);
-    }
-    function register(obj, fn) {
-      _register("exit", obj, fn);
-    }
-    function registerBeforeExit(obj, fn) {
-      _register("beforeExit", obj, fn);
-    }
-    function unregister(obj) {
-      if (registry === void 0) {
-        return;
-      }
-      registry.unregister(obj);
-      for (const event of ["exit", "beforeExit"]) {
-        refs[event] = refs[event].filter((ref) => {
-          const _obj = ref.deref();
-          return _obj && _obj !== obj;
-        });
-        uninstall(event);
-      }
-    }
-    module.exports = {
-      register,
-      registerBeforeExit,
-      unregister
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/package.json
-var require_package = __commonJS({
-  "../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/package.json"(exports, module) {
-    module.exports = {
-      name: "thread-stream",
-      version: "3.1.0",
-      description: "A streaming way to send data to a Node.js Worker Thread",
-      main: "index.js",
-      types: "index.d.ts",
-      dependencies: {
-        "real-require": "^0.2.0"
-      },
-      devDependencies: {
-        "@types/node": "^20.1.0",
-        "@types/tap": "^15.0.0",
-        "@yao-pkg/pkg": "^5.11.5",
-        desm: "^1.3.0",
-        fastbench: "^1.0.1",
-        husky: "^9.0.6",
-        "pino-elasticsearch": "^8.0.0",
-        "sonic-boom": "^4.0.1",
-        standard: "^17.0.0",
-        tap: "^16.2.0",
-        "ts-node": "^10.8.0",
-        typescript: "^5.3.2",
-        "why-is-node-running": "^2.2.2"
-      },
-      scripts: {
-        build: "tsc --noEmit",
-        test: 'standard && npm run build && npm run transpile && tap "test/**/*.test.*js" && tap --ts test/*.test.*ts',
-        "test:ci": "standard && npm run transpile && npm run test:ci:js && npm run test:ci:ts",
-        "test:ci:js": 'tap --no-check-coverage --timeout=120 --coverage-report=lcovonly "test/**/*.test.*js"',
-        "test:ci:ts": 'tap --ts --no-check-coverage --coverage-report=lcovonly "test/**/*.test.*ts"',
-        "test:yarn": 'npm run transpile && tap "test/**/*.test.js" --no-check-coverage',
-        transpile: "sh ./test/ts/transpile.sh",
-        prepare: "husky install"
-      },
-      standard: {
-        ignore: [
-          "test/ts/**/*",
-          "test/syntax-error.mjs"
-        ]
-      },
-      repository: {
-        type: "git",
-        url: "git+https://github.com/mcollina/thread-stream.git"
-      },
-      keywords: [
-        "worker",
-        "thread",
-        "threads",
-        "stream"
-      ],
-      author: "Matteo Collina <hello@matteocollina.com>",
-      license: "MIT",
-      bugs: {
-        url: "https://github.com/mcollina/thread-stream/issues"
-      },
-      homepage: "https://github.com/mcollina/thread-stream#readme"
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/lib/wait.js
-var require_wait = __commonJS({
-  "../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/lib/wait.js"(exports, module) {
-    "use strict";
-    var MAX_TIMEOUT = 1e3;
-    function wait(state, index, expected, timeout, done) {
-      const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
-      if (current === expected) {
-        done(null, "ok");
-        return;
-      }
-      let prior = current;
-      const check = (backoff3) => {
-        if (Date.now() > max) {
-          done(null, "timed-out");
-        } else {
-          setTimeout(() => {
-            prior = current;
-            current = Atomics.load(state, index);
-            if (current === prior) {
-              check(backoff3 >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff3 * 2);
-            } else {
-              if (current === expected) done(null, "ok");
-              else done(null, "not-equal");
-            }
-          }, backoff3);
-        }
-      };
-      check(1);
-    }
-    function waitDiff(state, index, expected, timeout, done) {
-      const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
-      if (current !== expected) {
-        done(null, "ok");
-        return;
-      }
-      const check = (backoff3) => {
-        if (Date.now() > max) {
-          done(null, "timed-out");
-        } else {
-          setTimeout(() => {
-            current = Atomics.load(state, index);
-            if (current !== expected) {
-              done(null, "ok");
-            } else {
-              check(backoff3 >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff3 * 2);
-            }
-          }, backoff3);
-        }
-      };
-      check(1);
-    }
-    module.exports = { wait, waitDiff };
-  }
-});
-
-// ../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/lib/indexes.js
-var require_indexes = __commonJS({
-  "../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/lib/indexes.js"(exports, module) {
-    "use strict";
-    var WRITE_INDEX = 4;
-    var READ_INDEX = 8;
-    module.exports = {
-      WRITE_INDEX,
-      READ_INDEX
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/index.js
-var require_thread_stream = __commonJS({
-  "../../node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/index.js"(exports, module) {
-    "use strict";
-    var { version: version2 } = require_package();
-    var { EventEmitter } = __require("events");
-    var { Worker } = __require("worker_threads");
-    var { join: join4 } = __require("path");
-    var { pathToFileURL } = __require("url");
-    var { wait } = require_wait();
-    var {
-      WRITE_INDEX,
-      READ_INDEX
-    } = require_indexes();
-    var buffer = __require("buffer");
-    var assert = __require("assert");
-    var kImpl = /* @__PURE__ */ Symbol("kImpl");
-    var MAX_STRING = buffer.constants.MAX_STRING_LENGTH;
-    var FakeWeakRef = class {
-      constructor(value) {
-        this._value = value;
-      }
-      deref() {
-        return this._value;
-      }
-    };
-    var FakeFinalizationRegistry = class {
-      register() {
-      }
-      unregister() {
-      }
-    };
-    var FinalizationRegistry2 = process.env.NODE_V8_COVERAGE ? FakeFinalizationRegistry : global.FinalizationRegistry || FakeFinalizationRegistry;
-    var WeakRef2 = process.env.NODE_V8_COVERAGE ? FakeWeakRef : global.WeakRef || FakeWeakRef;
-    var registry = new FinalizationRegistry2((worker) => {
-      if (worker.exited) {
-        return;
-      }
-      worker.terminate();
-    });
-    function createWorker(stream, opts) {
-      const { filename, workerData } = opts;
-      const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join4(__dirname, "lib", "worker.js");
-      const worker = new Worker(toExecute, {
-        ...opts.workerOpts,
-        trackUnmanagedFds: false,
-        workerData: {
-          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL(filename).href,
-          dataBuf: stream[kImpl].dataBuf,
-          stateBuf: stream[kImpl].stateBuf,
-          workerData: {
-            $context: {
-              threadStreamVersion: version2
-            },
-            ...workerData
-          }
-        }
-      });
-      worker.stream = new FakeWeakRef(stream);
-      worker.on("message", onWorkerMessage);
-      worker.on("exit", onWorkerExit);
-      registry.register(stream, worker);
-      return worker;
-    }
-    function drain(stream) {
-      assert(!stream[kImpl].sync);
-      if (stream[kImpl].needDrain) {
-        stream[kImpl].needDrain = false;
-        stream.emit("drain");
-      }
-    }
-    function nextFlush(stream) {
-      const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-      let leftover = stream[kImpl].data.length - writeIndex;
-      if (leftover > 0) {
-        if (stream[kImpl].buf.length === 0) {
-          stream[kImpl].flushing = false;
-          if (stream[kImpl].ending) {
-            end(stream);
-          } else if (stream[kImpl].needDrain) {
-            process.nextTick(drain, stream);
-          }
-          return;
-        }
-        let toWrite = stream[kImpl].buf.slice(0, leftover);
-        let toWriteBytes = Buffer.byteLength(toWrite);
-        if (toWriteBytes <= leftover) {
-          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-          write(stream, toWrite, nextFlush.bind(null, stream));
-        } else {
-          stream.flush(() => {
-            if (stream.destroyed) {
-              return;
-            }
-            Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-            Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-            while (toWriteBytes > stream[kImpl].data.length) {
-              leftover = leftover / 2;
-              toWrite = stream[kImpl].buf.slice(0, leftover);
-              toWriteBytes = Buffer.byteLength(toWrite);
-            }
-            stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-            write(stream, toWrite, nextFlush.bind(null, stream));
-          });
-        }
-      } else if (leftover === 0) {
-        if (writeIndex === 0 && stream[kImpl].buf.length === 0) {
-          return;
-        }
-        stream.flush(() => {
-          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-          nextFlush(stream);
-        });
-      } else {
-        destroy(stream, new Error("overwritten"));
-      }
-    }
-    function onWorkerMessage(msg) {
-      const stream = this.stream.deref();
-      if (stream === void 0) {
-        this.exited = true;
-        this.terminate();
-        return;
-      }
-      switch (msg.code) {
-        case "READY":
-          this.stream = new WeakRef2(stream);
-          stream.flush(() => {
-            stream[kImpl].ready = true;
-            stream.emit("ready");
-          });
-          break;
-        case "ERROR":
-          destroy(stream, msg.err);
-          break;
-        case "EVENT":
-          if (Array.isArray(msg.args)) {
-            stream.emit(msg.name, ...msg.args);
-          } else {
-            stream.emit(msg.name, msg.args);
-          }
-          break;
-        case "WARNING":
-          process.emitWarning(msg.err);
-          break;
-        default:
-          destroy(stream, new Error("this should not happen: " + msg.code));
-      }
-    }
-    function onWorkerExit(code) {
-      const stream = this.stream.deref();
-      if (stream === void 0) {
-        return;
-      }
-      registry.unregister(stream);
-      stream.worker.exited = true;
-      stream.worker.off("exit", onWorkerExit);
-      destroy(stream, code !== 0 ? new Error("the worker thread exited") : null);
-    }
-    var ThreadStream = class extends EventEmitter {
-      constructor(opts = {}) {
-        super();
-        if (opts.bufferSize < 4) {
-          throw new Error("bufferSize must at least fit a 4-byte utf-8 char");
-        }
-        this[kImpl] = {};
-        this[kImpl].stateBuf = new SharedArrayBuffer(128);
-        this[kImpl].state = new Int32Array(this[kImpl].stateBuf);
-        this[kImpl].dataBuf = new SharedArrayBuffer(opts.bufferSize || 4 * 1024 * 1024);
-        this[kImpl].data = Buffer.from(this[kImpl].dataBuf);
-        this[kImpl].sync = opts.sync || false;
-        this[kImpl].ending = false;
-        this[kImpl].ended = false;
-        this[kImpl].needDrain = false;
-        this[kImpl].destroyed = false;
-        this[kImpl].flushing = false;
-        this[kImpl].ready = false;
-        this[kImpl].finished = false;
-        this[kImpl].errored = null;
-        this[kImpl].closed = false;
-        this[kImpl].buf = "";
-        this.worker = createWorker(this, opts);
-        this.on("message", (message, transferList) => {
-          this.worker.postMessage(message, transferList);
-        });
-      }
-      write(data) {
-        if (this[kImpl].destroyed) {
-          error(this, new Error("the worker has exited"));
-          return false;
-        }
-        if (this[kImpl].ending) {
-          error(this, new Error("the worker is ending"));
-          return false;
-        }
-        if (this[kImpl].flushing && this[kImpl].buf.length + data.length >= MAX_STRING) {
-          try {
-            writeSync(this);
-            this[kImpl].flushing = true;
-          } catch (err) {
-            destroy(this, err);
-            return false;
-          }
-        }
-        this[kImpl].buf += data;
-        if (this[kImpl].sync) {
-          try {
-            writeSync(this);
-            return true;
-          } catch (err) {
-            destroy(this, err);
-            return false;
-          }
-        }
-        if (!this[kImpl].flushing) {
-          this[kImpl].flushing = true;
-          setImmediate(nextFlush, this);
-        }
-        this[kImpl].needDrain = this[kImpl].data.length - this[kImpl].buf.length - Atomics.load(this[kImpl].state, WRITE_INDEX) <= 0;
-        return !this[kImpl].needDrain;
-      }
-      end() {
-        if (this[kImpl].destroyed) {
-          return;
-        }
-        this[kImpl].ending = true;
-        end(this);
-      }
-      flush(cb) {
-        if (this[kImpl].destroyed) {
-          if (typeof cb === "function") {
-            process.nextTick(cb, new Error("the worker has exited"));
-          }
-          return;
-        }
-        const writeIndex = Atomics.load(this[kImpl].state, WRITE_INDEX);
-        wait(this[kImpl].state, READ_INDEX, writeIndex, Infinity, (err, res) => {
-          if (err) {
-            destroy(this, err);
-            process.nextTick(cb, err);
-            return;
-          }
-          if (res === "not-equal") {
-            this.flush(cb);
-            return;
-          }
-          process.nextTick(cb);
-        });
-      }
-      flushSync() {
-        if (this[kImpl].destroyed) {
-          return;
-        }
-        writeSync(this);
-        flushSync(this);
-      }
-      unref() {
-        this.worker.unref();
-      }
-      ref() {
-        this.worker.ref();
-      }
-      get ready() {
-        return this[kImpl].ready;
-      }
-      get destroyed() {
-        return this[kImpl].destroyed;
-      }
-      get closed() {
-        return this[kImpl].closed;
-      }
-      get writable() {
-        return !this[kImpl].destroyed && !this[kImpl].ending;
-      }
-      get writableEnded() {
-        return this[kImpl].ending;
-      }
-      get writableFinished() {
-        return this[kImpl].finished;
-      }
-      get writableNeedDrain() {
-        return this[kImpl].needDrain;
-      }
-      get writableObjectMode() {
-        return false;
-      }
-      get writableErrored() {
-        return this[kImpl].errored;
-      }
-    };
-    function error(stream, err) {
-      setImmediate(() => {
-        stream.emit("error", err);
-      });
-    }
-    function destroy(stream, err) {
-      if (stream[kImpl].destroyed) {
-        return;
-      }
-      stream[kImpl].destroyed = true;
-      if (err) {
-        stream[kImpl].errored = err;
-        error(stream, err);
-      }
-      if (!stream.worker.exited) {
-        stream.worker.terminate().catch(() => {
-        }).then(() => {
-          stream[kImpl].closed = true;
-          stream.emit("close");
-        });
-      } else {
-        setImmediate(() => {
-          stream[kImpl].closed = true;
-          stream.emit("close");
-        });
-      }
-    }
-    function write(stream, data, cb) {
-      const current = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-      const length = Buffer.byteLength(data);
-      stream[kImpl].data.write(data, current);
-      Atomics.store(stream[kImpl].state, WRITE_INDEX, current + length);
-      Atomics.notify(stream[kImpl].state, WRITE_INDEX);
-      cb();
-      return true;
-    }
-    function end(stream) {
-      if (stream[kImpl].ended || !stream[kImpl].ending || stream[kImpl].flushing) {
-        return;
-      }
-      stream[kImpl].ended = true;
-      try {
-        stream.flushSync();
-        let readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-        Atomics.store(stream[kImpl].state, WRITE_INDEX, -1);
-        Atomics.notify(stream[kImpl].state, WRITE_INDEX);
-        let spins = 0;
-        while (readIndex !== -1) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
-          readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-          if (readIndex === -2) {
-            destroy(stream, new Error("end() failed"));
-            return;
-          }
-          if (++spins === 10) {
-            destroy(stream, new Error("end() took too long (10s)"));
-            return;
-          }
-        }
-        process.nextTick(() => {
-          stream[kImpl].finished = true;
-          stream.emit("finish");
-        });
-      } catch (err) {
-        destroy(stream, err);
-      }
-    }
-    function writeSync(stream) {
-      const cb = () => {
-        if (stream[kImpl].ending) {
-          end(stream);
-        } else if (stream[kImpl].needDrain) {
-          process.nextTick(drain, stream);
-        }
-      };
-      stream[kImpl].flushing = false;
-      while (stream[kImpl].buf.length !== 0) {
-        const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-        let leftover = stream[kImpl].data.length - writeIndex;
-        if (leftover === 0) {
-          flushSync(stream);
-          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-          continue;
-        } else if (leftover < 0) {
-          throw new Error("overwritten");
-        }
-        let toWrite = stream[kImpl].buf.slice(0, leftover);
-        let toWriteBytes = Buffer.byteLength(toWrite);
-        if (toWriteBytes <= leftover) {
-          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-          write(stream, toWrite, cb);
-        } else {
-          flushSync(stream);
-          Atomics.store(stream[kImpl].state, READ_INDEX, 0);
-          Atomics.store(stream[kImpl].state, WRITE_INDEX, 0);
-          while (toWriteBytes > stream[kImpl].buf.length) {
-            leftover = leftover / 2;
-            toWrite = stream[kImpl].buf.slice(0, leftover);
-            toWriteBytes = Buffer.byteLength(toWrite);
-          }
-          stream[kImpl].buf = stream[kImpl].buf.slice(leftover);
-          write(stream, toWrite, cb);
-        }
-      }
-    }
-    function flushSync(stream) {
-      if (stream[kImpl].flushing) {
-        throw new Error("unable to flush while flushing");
-      }
-      const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
-      let spins = 0;
-      while (true) {
-        const readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-        if (readIndex === -2) {
-          throw Error("_flushSync failed");
-        }
-        if (readIndex !== writeIndex) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
-        } else {
-          break;
-        }
-        if (++spins === 10) {
-          throw new Error("_flushSync took too long (10s)");
-        }
-      }
-    }
-    module.exports = ThreadStream;
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/transport.js
-var require_transport = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/transport.js"(exports, module) {
-    "use strict";
-    var { createRequire } = __require("module");
-    var getCallers = require_caller();
-    var { join: join4, isAbsolute: isAbsolute4, sep: sep4 } = __require("node:path");
-    var sleep3 = require_atomic_sleep();
-    var onExit = require_on_exit_leak_free();
-    var ThreadStream = require_thread_stream();
-    function setupOnExit(stream) {
-      onExit.register(stream, autoEnd);
-      onExit.registerBeforeExit(stream, flush);
-      stream.on("close", function() {
-        onExit.unregister(stream);
-      });
-    }
-    function buildStream(filename, workerData, workerOpts, sync) {
-      const stream = new ThreadStream({
-        filename,
-        workerData,
-        workerOpts,
-        sync
-      });
-      stream.on("ready", onReady);
-      stream.on("close", function() {
-        process.removeListener("exit", onExit2);
-      });
-      process.on("exit", onExit2);
-      function onReady() {
-        process.removeListener("exit", onExit2);
-        stream.unref();
-        if (workerOpts.autoEnd !== false) {
-          setupOnExit(stream);
-        }
-      }
-      function onExit2() {
-        if (stream.closed) {
-          return;
-        }
-        stream.flushSync();
-        sleep3(100);
-        stream.end();
-      }
-      return stream;
-    }
-    function autoEnd(stream) {
-      stream.ref();
-      stream.flushSync();
-      stream.end();
-      stream.once("close", function() {
-        stream.unref();
-      });
-    }
-    function flush(stream) {
-      stream.flushSync();
-    }
-    function transport(fullOptions) {
-      const { pipeline: pipeline2, targets, levels, dedupe, worker = {}, caller = getCallers(), sync = false } = fullOptions;
-      const options = {
-        ...fullOptions.options
-      };
-      const callers = typeof caller === "string" ? [caller] : caller;
-      const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      let target = fullOptions.target;
-      if (target && targets) {
-        throw new Error("only one of target or targets can be specified");
-      }
-      if (targets) {
-        target = bundlerOverrides["pino-worker"] || join4(__dirname, "worker.js");
-        options.targets = targets.filter((dest) => dest.target).map((dest) => {
-          return {
-            ...dest,
-            target: fixTarget(dest.target)
-          };
-        });
-        options.pipelines = targets.filter((dest) => dest.pipeline).map((dest) => {
-          return dest.pipeline.map((t) => {
-            return {
-              ...t,
-              level: dest.level,
-              // duplicate the pipeline `level` property defined in the upper level
-              target: fixTarget(t.target)
-            };
-          });
-        });
-      } else if (pipeline2) {
-        target = bundlerOverrides["pino-worker"] || join4(__dirname, "worker.js");
-        options.pipelines = [pipeline2.map((dest) => {
-          return {
-            ...dest,
-            target: fixTarget(dest.target)
-          };
-        })];
-      }
-      if (levels) {
-        options.levels = levels;
-      }
-      if (dedupe) {
-        options.dedupe = dedupe;
-      }
-      options.pinoWillSendConfig = true;
-      return buildStream(fixTarget(target), options, worker, sync);
-      function fixTarget(origin) {
-        origin = bundlerOverrides[origin] || origin;
-        if (isAbsolute4(origin) || origin.indexOf("file://") === 0) {
-          return origin;
-        }
-        if (origin === "pino/file") {
-          return join4(__dirname, "..", "file.js");
-        }
-        let fixTarget2;
-        for (const filePath of callers) {
-          try {
-            const context = filePath === "node:repl" ? process.cwd() + sep4 : filePath;
-            fixTarget2 = createRequire(context).resolve(origin);
-            break;
-          } catch (err) {
-            continue;
-          }
-        }
-        if (!fixTarget2) {
-          throw new Error(`unable to determine transport target for "${origin}"`);
-        }
-        return fixTarget2;
-      }
-    }
-    module.exports = transport;
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/tools.js
-var require_tools = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/tools.js"(exports, module) {
-    "use strict";
-    var diagChan = __require("node:diagnostics_channel");
-    var format = require_quick_format_unescaped();
-    var { mapHttpRequest, mapHttpResponse } = require_pino_std_serializers();
-    var SonicBoom = require_sonic_boom();
-    var onExit = require_on_exit_leak_free();
-    var {
-      lsCacheSym,
-      chindingsSym,
-      writeSym,
-      serializersSym,
-      formatOptsSym,
-      endSym,
-      stringifiersSym,
-      stringifySym,
-      stringifySafeSym,
-      wildcardFirstSym,
-      nestedKeySym,
-      formattersSym,
-      messageKeySym,
-      errorKeySym,
-      nestedKeyStrSym,
-      msgPrefixSym
-    } = require_symbols();
-    var { isMainThread } = __require("worker_threads");
-    var transport = require_transport();
-    var asJsonChan;
-    if (typeof diagChan.tracingChannel === "function") {
-      asJsonChan = diagChan.tracingChannel("pino_asJson");
-    } else {
-      asJsonChan = {
-        hasSubscribers: false,
-        traceSync(fn, store, thisArg, ...args) {
-          return fn.call(thisArg, ...args);
-        }
-      };
-    }
-    function noop3() {
-    }
-    function genLog(level, hook) {
-      if (!hook) return LOG;
-      return function hookWrappedLog(...args) {
-        hook.call(this, args, LOG, level);
-      };
-      function LOG(o, ...n) {
-        if (typeof o === "object") {
-          let msg = o;
-          if (o !== null) {
-            if (o.method && o.headers && o.socket) {
-              o = mapHttpRequest(o);
-            } else if (typeof o.setHeader === "function") {
-              o = mapHttpResponse(o);
-            }
-          }
-          let formatParams;
-          if (msg === null && n.length === 0) {
-            formatParams = [null];
-          } else {
-            msg = n.shift();
-            formatParams = n;
-          }
-          if (typeof this[msgPrefixSym] === "string" && msg !== void 0 && msg !== null) {
-            msg = this[msgPrefixSym] + msg;
-          }
-          this[writeSym](o, format(msg, formatParams, this[formatOptsSym]), level);
-        } else {
-          let msg = o === void 0 ? n.shift() : o;
-          if (typeof this[msgPrefixSym] === "string" && msg !== void 0 && msg !== null) {
-            msg = this[msgPrefixSym] + msg;
-          }
-          this[writeSym](null, format(msg, n, this[formatOptsSym]), level);
-        }
-      }
-    }
-    function asString(str2) {
-      let result = "";
-      let last = 0;
-      let found = false;
-      let point = 255;
-      const l = str2.length;
-      if (l > 100) {
-        return JSON.stringify(str2);
-      }
-      for (var i = 0; i < l && point >= 32; i++) {
-        point = str2.charCodeAt(i);
-        if (point === 34 || point === 92) {
-          result += str2.slice(last, i) + "\\";
-          last = i;
-          found = true;
-        }
-      }
-      if (!found) {
-        result = str2;
-      } else {
-        result += str2.slice(last);
-      }
-      return point < 32 ? JSON.stringify(str2) : '"' + result + '"';
-    }
-    function asJson(obj, msg, num, time) {
-      if (asJsonChan.hasSubscribers === false) {
-        return _asJson.call(this, obj, msg, num, time);
-      }
-      const store = { instance: this, arguments };
-      return asJsonChan.traceSync(_asJson, store, this, obj, msg, num, time);
-    }
-    function _asJson(obj, msg, num, time) {
-      const stringify4 = this[stringifySym];
-      const stringifySafe = this[stringifySafeSym];
-      const stringifiers = this[stringifiersSym];
-      const end = this[endSym];
-      const chindings = this[chindingsSym];
-      const serializers = this[serializersSym];
-      const formatters3 = this[formattersSym];
-      const messageKey = this[messageKeySym];
-      const errorKey = this[errorKeySym];
-      let data = this[lsCacheSym][num] + time;
-      data = data + chindings;
-      let value;
-      if (formatters3.log) {
-        obj = formatters3.log(obj);
-      }
-      const wildcardStringifier = stringifiers[wildcardFirstSym];
-      let propStr = "";
-      for (const key in obj) {
-        value = obj[key];
-        if (Object.prototype.hasOwnProperty.call(obj, key) && value !== void 0) {
-          if (serializers[key]) {
-            value = serializers[key](value);
-          } else if (key === errorKey && serializers.err) {
-            value = serializers.err(value);
-          }
-          const stringifier = stringifiers[key] || wildcardStringifier;
-          switch (typeof value) {
-            case "undefined":
-            case "function":
-              continue;
-            case "number":
-              if (Number.isFinite(value) === false) {
-                value = null;
-              }
-            // this case explicitly falls through to the next one
-            case "boolean":
-              if (stringifier) value = stringifier(value);
-              break;
-            case "string":
-              value = (stringifier || asString)(value);
-              break;
-            default:
-              value = (stringifier || stringify4)(value, stringifySafe);
-          }
-          if (value === void 0) continue;
-          const strKey = asString(key);
-          propStr += "," + strKey + ":" + value;
-        }
-      }
-      let msgStr = "";
-      if (msg !== void 0) {
-        value = serializers[messageKey] ? serializers[messageKey](msg) : msg;
-        const stringifier = stringifiers[messageKey] || wildcardStringifier;
-        switch (typeof value) {
-          case "function":
-            break;
-          case "number":
-            if (Number.isFinite(value) === false) {
-              value = null;
-            }
-          // this case explicitly falls through to the next one
-          case "boolean":
-            if (stringifier) value = stringifier(value);
-            msgStr = ',"' + messageKey + '":' + value;
-            break;
-          case "string":
-            value = (stringifier || asString)(value);
-            msgStr = ',"' + messageKey + '":' + value;
-            break;
-          default:
-            value = (stringifier || stringify4)(value, stringifySafe);
-            msgStr = ',"' + messageKey + '":' + value;
-        }
-      }
-      if (this[nestedKeySym] && propStr) {
-        return data + this[nestedKeyStrSym] + propStr.slice(1) + "}" + msgStr + end;
-      } else {
-        return data + propStr + msgStr + end;
-      }
-    }
-    function asChindings(instance, bindings) {
-      let value;
-      let data = instance[chindingsSym];
-      const stringify4 = instance[stringifySym];
-      const stringifySafe = instance[stringifySafeSym];
-      const stringifiers = instance[stringifiersSym];
-      const wildcardStringifier = stringifiers[wildcardFirstSym];
-      const serializers = instance[serializersSym];
-      const formatter = instance[formattersSym].bindings;
-      bindings = formatter(bindings);
-      for (const key in bindings) {
-        value = bindings[key];
-        const valid = (key.length < 5 || key !== "level" && key !== "serializers" && key !== "formatters" && key !== "customLevels") && bindings.hasOwnProperty(key) && value !== void 0;
-        if (valid === true) {
-          value = serializers[key] ? serializers[key](value) : value;
-          value = (stringifiers[key] || wildcardStringifier || stringify4)(value, stringifySafe);
-          if (value === void 0) continue;
-          data += ',"' + key + '":' + value;
-        }
-      }
-      return data;
-    }
-    function hasBeenTampered(stream) {
-      return stream.write !== stream.constructor.prototype.write;
-    }
-    function buildSafeSonicBoom(opts) {
-      const stream = new SonicBoom(opts);
-      stream.on("error", filterBrokenPipe);
-      if (!opts.sync && isMainThread) {
-        onExit.register(stream, autoEnd);
-        stream.on("close", function() {
-          onExit.unregister(stream);
-        });
-      }
-      return stream;
-      function filterBrokenPipe(err) {
-        if (err.code === "EPIPE") {
-          stream.write = noop3;
-          stream.end = noop3;
-          stream.flushSync = noop3;
-          stream.destroy = noop3;
-          return;
-        }
-        stream.removeListener("error", filterBrokenPipe);
-        stream.emit("error", err);
-      }
-    }
-    function autoEnd(stream, eventName) {
-      if (stream.destroyed) {
-        return;
-      }
-      if (eventName === "beforeExit") {
-        stream.flush();
-        stream.on("drain", function() {
-          stream.end();
-        });
-      } else {
-        stream.flushSync();
-      }
-    }
-    function createArgsNormalizer(defaultOptions) {
-      return function normalizeArgs(instance, caller, opts = {}, stream) {
-        if (typeof opts === "string") {
-          stream = buildSafeSonicBoom({ dest: opts });
-          opts = {};
-        } else if (typeof stream === "string") {
-          if (opts && opts.transport) {
-            throw Error("only one of option.transport or stream can be specified");
-          }
-          stream = buildSafeSonicBoom({ dest: stream });
-        } else if (opts instanceof SonicBoom || opts.writable || opts._writableState) {
-          stream = opts;
-          opts = {};
-        } else if (opts.transport) {
-          if (opts.transport instanceof SonicBoom || opts.transport.writable || opts.transport._writableState) {
-            throw Error("option.transport do not allow stream, please pass to option directly. e.g. pino(transport)");
-          }
-          if (opts.transport.targets && opts.transport.targets.length && opts.formatters && typeof opts.formatters.level === "function") {
-            throw Error("option.transport.targets do not allow custom level formatters");
-          }
-          let customLevels;
-          if (opts.customLevels) {
-            customLevels = opts.useOnlyCustomLevels ? opts.customLevels : Object.assign({}, opts.levels, opts.customLevels);
-          }
-          stream = transport({ caller, ...opts.transport, levels: customLevels });
-        }
-        opts = Object.assign({}, defaultOptions, opts);
-        opts.serializers = Object.assign({}, defaultOptions.serializers, opts.serializers);
-        opts.formatters = Object.assign({}, defaultOptions.formatters, opts.formatters);
-        if (opts.prettyPrint) {
-          throw new Error("prettyPrint option is no longer supported, see the pino-pretty package (https://github.com/pinojs/pino-pretty)");
-        }
-        const { enabled, onChild } = opts;
-        if (enabled === false) opts.level = "silent";
-        if (!onChild) opts.onChild = noop3;
-        if (!stream) {
-          if (!hasBeenTampered(process.stdout)) {
-            stream = buildSafeSonicBoom({ fd: process.stdout.fd || 1 });
-          } else {
-            stream = process.stdout;
-          }
-        }
-        return { opts, stream };
-      };
-    }
-    function stringify3(obj, stringifySafeFn) {
-      try {
-        return JSON.stringify(obj);
-      } catch (_) {
-        try {
-          const stringify4 = stringifySafeFn || this[stringifySafeSym];
-          return stringify4(obj);
-        } catch (_2) {
-          return '"[unable to serialize, circular reference is too complex to analyze]"';
-        }
-      }
-    }
-    function buildFormatters(level, bindings, log) {
-      return {
-        level,
-        bindings,
-        log
-      };
-    }
-    function normalizeDestFileDescriptor(destination) {
-      const fd = Number(destination);
-      if (typeof destination === "string" && Number.isFinite(fd)) {
-        return fd;
-      }
-      if (destination === void 0) {
-        return 1;
-      }
-      return destination;
-    }
-    module.exports = {
-      noop: noop3,
-      buildSafeSonicBoom,
-      asChindings,
-      asJson,
-      genLog,
-      createArgsNormalizer,
-      stringify: stringify3,
-      buildFormatters,
-      normalizeDestFileDescriptor
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/constants.js
-var require_constants = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/constants.js"(exports, module) {
-    var DEFAULT_LEVELS = {
-      trace: 10,
-      debug: 20,
-      info: 30,
-      warn: 40,
-      error: 50,
-      fatal: 60
-    };
-    var SORTING_ORDER = {
-      ASC: "ASC",
-      DESC: "DESC"
-    };
-    module.exports = {
-      DEFAULT_LEVELS,
-      SORTING_ORDER
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/levels.js
-var require_levels = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/levels.js"(exports, module) {
-    "use strict";
-    var {
-      lsCacheSym,
-      levelValSym,
-      useOnlyCustomLevelsSym,
-      streamSym,
-      formattersSym,
-      hooksSym,
-      levelCompSym
-    } = require_symbols();
-    var { noop: noop3, genLog } = require_tools();
-    var { DEFAULT_LEVELS, SORTING_ORDER } = require_constants();
-    var levelMethods = {
-      fatal: (hook) => {
-        const logFatal = genLog(DEFAULT_LEVELS.fatal, hook);
-        return function(...args) {
-          const stream = this[streamSym];
-          logFatal.call(this, ...args);
-          if (typeof stream.flushSync === "function") {
-            try {
-              stream.flushSync();
-            } catch (e) {
-            }
-          }
-        };
-      },
-      error: (hook) => genLog(DEFAULT_LEVELS.error, hook),
-      warn: (hook) => genLog(DEFAULT_LEVELS.warn, hook),
-      info: (hook) => genLog(DEFAULT_LEVELS.info, hook),
-      debug: (hook) => genLog(DEFAULT_LEVELS.debug, hook),
-      trace: (hook) => genLog(DEFAULT_LEVELS.trace, hook)
-    };
-    var nums = Object.keys(DEFAULT_LEVELS).reduce((o, k) => {
-      o[DEFAULT_LEVELS[k]] = k;
-      return o;
-    }, {});
-    var initialLsCache = Object.keys(nums).reduce((o, k) => {
-      o[k] = '{"level":' + Number(k);
-      return o;
-    }, {});
-    function genLsCache(instance) {
-      const formatter = instance[formattersSym].level;
-      const { labels } = instance.levels;
-      const cache = {};
-      for (const label in labels) {
-        const level = formatter(labels[label], Number(label));
-        cache[label] = JSON.stringify(level).slice(0, -1);
-      }
-      instance[lsCacheSym] = cache;
-      return instance;
-    }
-    function isStandardLevel(level, useOnlyCustomLevels) {
-      if (useOnlyCustomLevels) {
-        return false;
-      }
-      switch (level) {
-        case "fatal":
-        case "error":
-        case "warn":
-        case "info":
-        case "debug":
-        case "trace":
-          return true;
-        default:
-          return false;
-      }
-    }
-    function setLevel(level) {
-      const { labels, values } = this.levels;
-      if (typeof level === "number") {
-        if (labels[level] === void 0) throw Error("unknown level value" + level);
-        level = labels[level];
-      }
-      if (values[level] === void 0) throw Error("unknown level " + level);
-      const preLevelVal = this[levelValSym];
-      const levelVal = this[levelValSym] = values[level];
-      const useOnlyCustomLevelsVal = this[useOnlyCustomLevelsSym];
-      const levelComparison = this[levelCompSym];
-      const hook = this[hooksSym].logMethod;
-      for (const key in values) {
-        if (levelComparison(values[key], levelVal) === false) {
-          this[key] = noop3;
-          continue;
-        }
-        this[key] = isStandardLevel(key, useOnlyCustomLevelsVal) ? levelMethods[key](hook) : genLog(values[key], hook);
-      }
-      this.emit(
-        "level-change",
-        level,
-        levelVal,
-        labels[preLevelVal],
-        preLevelVal,
-        this
-      );
-    }
-    function getLevel(level) {
-      const { levels, levelVal } = this;
-      return levels && levels.labels ? levels.labels[levelVal] : "";
-    }
-    function isLevelEnabled(logLevel) {
-      const { values } = this.levels;
-      const logLevelVal = values[logLevel];
-      return logLevelVal !== void 0 && this[levelCompSym](logLevelVal, this[levelValSym]);
-    }
-    function compareLevel(direction, current, expected) {
-      if (direction === SORTING_ORDER.DESC) {
-        return current <= expected;
-      }
-      return current >= expected;
-    }
-    function genLevelComparison(levelComparison) {
-      if (typeof levelComparison === "string") {
-        return compareLevel.bind(null, levelComparison);
-      }
-      return levelComparison;
-    }
-    function mappings(customLevels = null, useOnlyCustomLevels = false) {
-      const customNums = customLevels ? Object.keys(customLevels).reduce((o, k) => {
-        o[customLevels[k]] = k;
-        return o;
-      }, {}) : null;
-      const labels = Object.assign(
-        Object.create(Object.prototype, { Infinity: { value: "silent" } }),
-        useOnlyCustomLevels ? null : nums,
-        customNums
-      );
-      const values = Object.assign(
-        Object.create(Object.prototype, { silent: { value: Infinity } }),
-        useOnlyCustomLevels ? null : DEFAULT_LEVELS,
-        customLevels
-      );
-      return { labels, values };
-    }
-    function assertDefaultLevelFound(defaultLevel, customLevels, useOnlyCustomLevels) {
-      if (typeof defaultLevel === "number") {
-        const values = [].concat(
-          Object.keys(customLevels || {}).map((key) => customLevels[key]),
-          useOnlyCustomLevels ? [] : Object.keys(nums).map((level) => +level),
-          Infinity
-        );
-        if (!values.includes(defaultLevel)) {
-          throw Error(`default level:${defaultLevel} must be included in custom levels`);
-        }
-        return;
-      }
-      const labels = Object.assign(
-        Object.create(Object.prototype, { silent: { value: Infinity } }),
-        useOnlyCustomLevels ? null : DEFAULT_LEVELS,
-        customLevels
-      );
-      if (!(defaultLevel in labels)) {
-        throw Error(`default level:${defaultLevel} must be included in custom levels`);
-      }
-    }
-    function assertNoLevelCollisions(levels, customLevels) {
-      const { labels, values } = levels;
-      for (const k in customLevels) {
-        if (k in values) {
-          throw Error("levels cannot be overridden");
-        }
-        if (customLevels[k] in labels) {
-          throw Error("pre-existing level values cannot be used for new levels");
-        }
-      }
-    }
-    function assertLevelComparison(levelComparison) {
-      if (typeof levelComparison === "function") {
-        return;
-      }
-      if (typeof levelComparison === "string" && Object.values(SORTING_ORDER).includes(levelComparison)) {
-        return;
-      }
-      throw new Error('Levels comparison should be one of "ASC", "DESC" or "function" type');
-    }
-    module.exports = {
-      initialLsCache,
-      genLsCache,
-      levelMethods,
-      getLevel,
-      setLevel,
-      isLevelEnabled,
-      mappings,
-      assertNoLevelCollisions,
-      assertDefaultLevelFound,
-      genLevelComparison,
-      assertLevelComparison
-    };
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/meta.js
-var require_meta = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/meta.js"(exports, module) {
-    "use strict";
-    module.exports = { version: "9.14.0" };
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/proto.js
-var require_proto = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/proto.js"(exports, module) {
-    "use strict";
-    var { EventEmitter } = __require("node:events");
-    var {
-      lsCacheSym,
-      levelValSym,
-      setLevelSym,
-      getLevelSym,
-      chindingsSym,
-      parsedChindingsSym,
-      mixinSym,
-      asJsonSym,
-      writeSym,
-      mixinMergeStrategySym,
-      timeSym,
-      timeSliceIndexSym,
-      streamSym,
-      serializersSym,
-      formattersSym,
-      errorKeySym,
-      messageKeySym,
-      useOnlyCustomLevelsSym,
-      needsMetadataGsym,
-      redactFmtSym,
-      stringifySym,
-      formatOptsSym,
-      stringifiersSym,
-      msgPrefixSym,
-      hooksSym
-    } = require_symbols();
-    var {
-      getLevel,
-      setLevel,
-      isLevelEnabled,
-      mappings,
-      initialLsCache,
-      genLsCache,
-      assertNoLevelCollisions
-    } = require_levels();
-    var {
-      asChindings,
-      asJson,
-      buildFormatters,
-      stringify: stringify3,
-      noop: noop3
-    } = require_tools();
-    var {
-      version: version2
-    } = require_meta();
-    var redaction = require_redaction();
-    var constructor = class Pino {
-    };
-    var prototype = {
-      constructor,
-      child,
-      bindings,
-      setBindings,
-      flush,
-      isLevelEnabled,
-      version: version2,
-      get level() {
-        return this[getLevelSym]();
-      },
-      set level(lvl) {
-        this[setLevelSym](lvl);
-      },
-      get levelVal() {
-        return this[levelValSym];
-      },
-      set levelVal(n) {
-        throw Error("levelVal is read-only");
-      },
-      get msgPrefix() {
-        return this[msgPrefixSym];
-      },
-      get [Symbol.toStringTag]() {
-        return "Pino";
-      },
-      [lsCacheSym]: initialLsCache,
-      [writeSym]: write,
-      [asJsonSym]: asJson,
-      [getLevelSym]: getLevel,
-      [setLevelSym]: setLevel
-    };
-    Object.setPrototypeOf(prototype, EventEmitter.prototype);
-    module.exports = function() {
-      return Object.create(prototype);
-    };
-    var resetChildingsFormatter = (bindings2) => bindings2;
-    function child(bindings2, options) {
-      if (!bindings2) {
-        throw Error("missing bindings for child Pino");
-      }
-      const serializers = this[serializersSym];
-      const formatters3 = this[formattersSym];
-      const instance = Object.create(this);
-      if (options == null) {
-        if (instance[formattersSym].bindings !== resetChildingsFormatter) {
-          instance[formattersSym] = buildFormatters(
-            formatters3.level,
-            resetChildingsFormatter,
-            formatters3.log
-          );
-        }
-        instance[chindingsSym] = asChindings(instance, bindings2);
-        instance[setLevelSym](this.level);
-        if (this.onChild !== noop3) {
-          this.onChild(instance);
-        }
-        return instance;
-      }
-      if (options.hasOwnProperty("serializers") === true) {
-        instance[serializersSym] = /* @__PURE__ */ Object.create(null);
-        for (const k in serializers) {
-          instance[serializersSym][k] = serializers[k];
-        }
-        const parentSymbols = Object.getOwnPropertySymbols(serializers);
-        for (var i = 0; i < parentSymbols.length; i++) {
-          const ks = parentSymbols[i];
-          instance[serializersSym][ks] = serializers[ks];
-        }
-        for (const bk in options.serializers) {
-          instance[serializersSym][bk] = options.serializers[bk];
-        }
-        const bindingsSymbols = Object.getOwnPropertySymbols(options.serializers);
-        for (var bi = 0; bi < bindingsSymbols.length; bi++) {
-          const bks = bindingsSymbols[bi];
-          instance[serializersSym][bks] = options.serializers[bks];
-        }
-      } else instance[serializersSym] = serializers;
-      if (options.hasOwnProperty("formatters")) {
-        const { level, bindings: chindings, log } = options.formatters;
-        instance[formattersSym] = buildFormatters(
-          level || formatters3.level,
-          chindings || resetChildingsFormatter,
-          log || formatters3.log
-        );
-      } else {
-        instance[formattersSym] = buildFormatters(
-          formatters3.level,
-          resetChildingsFormatter,
-          formatters3.log
-        );
-      }
-      if (options.hasOwnProperty("customLevels") === true) {
-        assertNoLevelCollisions(this.levels, options.customLevels);
-        instance.levels = mappings(options.customLevels, instance[useOnlyCustomLevelsSym]);
-        genLsCache(instance);
-      }
-      if (typeof options.redact === "object" && options.redact !== null || Array.isArray(options.redact)) {
-        instance.redact = options.redact;
-        const stringifiers = redaction(instance.redact, stringify3);
-        const formatOpts = { stringify: stringifiers[redactFmtSym] };
-        instance[stringifySym] = stringify3;
-        instance[stringifiersSym] = stringifiers;
-        instance[formatOptsSym] = formatOpts;
-      }
-      if (typeof options.msgPrefix === "string") {
-        instance[msgPrefixSym] = (this[msgPrefixSym] || "") + options.msgPrefix;
-      }
-      instance[chindingsSym] = asChindings(instance, bindings2);
-      const childLevel = options.level || this.level;
-      instance[setLevelSym](childLevel);
-      this.onChild(instance);
-      return instance;
-    }
-    function bindings() {
-      const chindings = this[chindingsSym];
-      const chindingsJson = `{${chindings.substr(1)}}`;
-      const bindingsFromJson = JSON.parse(chindingsJson);
-      delete bindingsFromJson.pid;
-      delete bindingsFromJson.hostname;
-      return bindingsFromJson;
-    }
-    function setBindings(newBindings) {
-      const chindings = asChindings(this, newBindings);
-      this[chindingsSym] = chindings;
-      delete this[parsedChindingsSym];
-    }
-    function defaultMixinMergeStrategy(mergeObject, mixinObject) {
-      return Object.assign(mixinObject, mergeObject);
-    }
-    function write(_obj, msg, num) {
-      const t = this[timeSym]();
-      const mixin = this[mixinSym];
-      const errorKey = this[errorKeySym];
-      const messageKey = this[messageKeySym];
-      const mixinMergeStrategy = this[mixinMergeStrategySym] || defaultMixinMergeStrategy;
-      let obj;
-      const streamWriteHook = this[hooksSym].streamWrite;
-      if (_obj === void 0 || _obj === null) {
-        obj = {};
-      } else if (_obj instanceof Error) {
-        obj = { [errorKey]: _obj };
-        if (msg === void 0) {
-          msg = _obj.message;
-        }
-      } else {
-        obj = _obj;
-        if (msg === void 0 && _obj[messageKey] === void 0 && _obj[errorKey]) {
-          msg = _obj[errorKey].message;
-        }
-      }
-      if (mixin) {
-        obj = mixinMergeStrategy(obj, mixin(obj, num, this));
-      }
-      const s = this[asJsonSym](obj, msg, num, t);
-      const stream = this[streamSym];
-      if (stream[needsMetadataGsym] === true) {
-        stream.lastLevel = num;
-        stream.lastObj = obj;
-        stream.lastMsg = msg;
-        stream.lastTime = t.slice(this[timeSliceIndexSym]);
-        stream.lastLogger = this;
-      }
-      stream.write(streamWriteHook ? streamWriteHook(s) : s);
-    }
-    function flush(cb) {
-      if (cb != null && typeof cb !== "function") {
-        throw Error("callback must be a function");
-      }
-      const stream = this[streamSym];
-      if (typeof stream.flush === "function") {
-        stream.flush(cb || noop3);
-      } else if (cb) cb();
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/safe-stable-stringify@2.5.0/node_modules/safe-stable-stringify/index.js
-var require_safe_stable_stringify = __commonJS({
-  "../../node_modules/.pnpm/safe-stable-stringify@2.5.0/node_modules/safe-stable-stringify/index.js"(exports, module) {
-    "use strict";
-    var { hasOwnProperty } = Object.prototype;
-    var stringify3 = configure();
-    stringify3.configure = configure;
-    stringify3.stringify = stringify3;
-    stringify3.default = stringify3;
-    exports.stringify = stringify3;
-    exports.configure = configure;
-    module.exports = stringify3;
-    var strEscapeSequencesRegExp = /[\u0000-\u001f\u0022\u005c\ud800-\udfff]/;
-    function strEscape(str2) {
-      if (str2.length < 5e3 && !strEscapeSequencesRegExp.test(str2)) {
-        return `"${str2}"`;
-      }
-      return JSON.stringify(str2);
-    }
-    function sort(array, comparator) {
-      if (array.length > 200 || comparator) {
-        return array.sort(comparator);
-      }
-      for (let i = 1; i < array.length; i++) {
-        const currentValue = array[i];
-        let position = i;
-        while (position !== 0 && array[position - 1] > currentValue) {
-          array[position] = array[position - 1];
-          position--;
-        }
-        array[position] = currentValue;
-      }
-      return array;
-    }
-    var typedArrayPrototypeGetSymbolToStringTag = Object.getOwnPropertyDescriptor(
-      Object.getPrototypeOf(
-        Object.getPrototypeOf(
-          new Int8Array()
-        )
-      ),
-      Symbol.toStringTag
-    ).get;
-    function isTypedArrayWithEntries(value) {
-      return typedArrayPrototypeGetSymbolToStringTag.call(value) !== void 0 && value.length !== 0;
-    }
-    function stringifyTypedArray(array, separator, maximumBreadth) {
-      if (array.length < maximumBreadth) {
-        maximumBreadth = array.length;
-      }
-      const whitespace = separator === "," ? "" : " ";
-      let res = `"0":${whitespace}${array[0]}`;
-      for (let i = 1; i < maximumBreadth; i++) {
-        res += `${separator}"${i}":${whitespace}${array[i]}`;
-      }
-      return res;
-    }
-    function getCircularValueOption(options) {
-      if (hasOwnProperty.call(options, "circularValue")) {
-        const circularValue = options.circularValue;
-        if (typeof circularValue === "string") {
-          return `"${circularValue}"`;
-        }
-        if (circularValue == null) {
-          return circularValue;
-        }
-        if (circularValue === Error || circularValue === TypeError) {
-          return {
-            toString() {
-              throw new TypeError("Converting circular structure to JSON");
-            }
-          };
-        }
-        throw new TypeError('The "circularValue" argument must be of type string or the value null or undefined');
-      }
-      return '"[Circular]"';
-    }
-    function getDeterministicOption(options) {
-      let value;
-      if (hasOwnProperty.call(options, "deterministic")) {
-        value = options.deterministic;
-        if (typeof value !== "boolean" && typeof value !== "function") {
-          throw new TypeError('The "deterministic" argument must be of type boolean or comparator function');
-        }
-      }
-      return value === void 0 ? true : value;
-    }
-    function getBooleanOption(options, key) {
-      let value;
-      if (hasOwnProperty.call(options, key)) {
-        value = options[key];
-        if (typeof value !== "boolean") {
-          throw new TypeError(`The "${key}" argument must be of type boolean`);
-        }
-      }
-      return value === void 0 ? true : value;
-    }
-    function getPositiveIntegerOption(options, key) {
-      let value;
-      if (hasOwnProperty.call(options, key)) {
-        value = options[key];
-        if (typeof value !== "number") {
-          throw new TypeError(`The "${key}" argument must be of type number`);
-        }
-        if (!Number.isInteger(value)) {
-          throw new TypeError(`The "${key}" argument must be an integer`);
-        }
-        if (value < 1) {
-          throw new RangeError(`The "${key}" argument must be >= 1`);
-        }
-      }
-      return value === void 0 ? Infinity : value;
-    }
-    function getItemCount(number) {
-      if (number === 1) {
-        return "1 item";
-      }
-      return `${number} items`;
-    }
-    function getUniqueReplacerSet(replacerArray) {
-      const replacerSet = /* @__PURE__ */ new Set();
-      for (const value of replacerArray) {
-        if (typeof value === "string" || typeof value === "number") {
-          replacerSet.add(String(value));
-        }
-      }
-      return replacerSet;
-    }
-    function getStrictOption(options) {
-      if (hasOwnProperty.call(options, "strict")) {
-        const value = options.strict;
-        if (typeof value !== "boolean") {
-          throw new TypeError('The "strict" argument must be of type boolean');
-        }
-        if (value) {
-          return (value2) => {
-            let message = `Object can not safely be stringified. Received type ${typeof value2}`;
-            if (typeof value2 !== "function") message += ` (${value2.toString()})`;
-            throw new Error(message);
-          };
-        }
-      }
-    }
-    function configure(options) {
-      options = { ...options };
-      const fail = getStrictOption(options);
-      if (fail) {
-        if (options.bigint === void 0) {
-          options.bigint = false;
-        }
-        if (!("circularValue" in options)) {
-          options.circularValue = Error;
-        }
-      }
-      const circularValue = getCircularValueOption(options);
-      const bigint = getBooleanOption(options, "bigint");
-      const deterministic = getDeterministicOption(options);
-      const comparator = typeof deterministic === "function" ? deterministic : void 0;
-      const maximumDepth = getPositiveIntegerOption(options, "maximumDepth");
-      const maximumBreadth = getPositiveIntegerOption(options, "maximumBreadth");
-      function stringifyFnReplacer(key, parent, stack, replacer, spacer, indentation) {
-        let value = parent[key];
-        if (typeof value === "object" && value !== null && typeof value.toJSON === "function") {
-          value = value.toJSON(key);
-        }
-        value = replacer.call(parent, key, value);
-        switch (typeof value) {
-          case "string":
-            return strEscape(value);
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            let res = "";
-            let join4 = ",";
-            const originalIndentation = indentation;
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              if (spacer !== "") {
-                indentation += spacer;
-                res += `
-${indentation}`;
-                join4 = `,
-${indentation}`;
-              }
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
-                res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join4;
-              }
-              const tmp = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
-              res += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join4}"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              if (spacer !== "") {
-                res += `
-${originalIndentation}`;
-              }
-              stack.pop();
-              return `[${res}]`;
-            }
-            let keys = Object.keys(value);
-            const keyLength = keys.length;
-            if (keyLength === 0) {
-              return "{}";
-            }
-            if (maximumDepth < stack.length + 1) {
-              return '"[Object]"';
-            }
-            let whitespace = "";
-            let separator = "";
-            if (spacer !== "") {
-              indentation += spacer;
-              join4 = `,
-${indentation}`;
-              whitespace = " ";
-            }
-            const maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
-            if (deterministic && !isTypedArrayWithEntries(value)) {
-              keys = sort(keys, comparator);
-            }
-            stack.push(value);
-            for (let i = 0; i < maximumPropertiesToStringify; i++) {
-              const key2 = keys[i];
-              const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
-              if (tmp !== void 0) {
-                res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join4;
-              }
-            }
-            if (keyLength > maximumBreadth) {
-              const removedKeys = keyLength - maximumBreadth;
-              res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join4;
-            }
-            if (spacer !== "" && separator.length > 1) {
-              res = `
-${indentation}${res}
-${originalIndentation}`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          // fallthrough
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringifyArrayReplacer(key, value, stack, replacer, spacer, indentation) {
-        if (typeof value === "object" && value !== null && typeof value.toJSON === "function") {
-          value = value.toJSON(key);
-        }
-        switch (typeof value) {
-          case "string":
-            return strEscape(value);
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            const originalIndentation = indentation;
-            let res = "";
-            let join4 = ",";
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              if (spacer !== "") {
-                indentation += spacer;
-                res += `
-${indentation}`;
-                join4 = `,
-${indentation}`;
-              }
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
-                res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join4;
-              }
-              const tmp = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
-              res += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join4}"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              if (spacer !== "") {
-                res += `
-${originalIndentation}`;
-              }
-              stack.pop();
-              return `[${res}]`;
-            }
-            stack.push(value);
-            let whitespace = "";
-            if (spacer !== "") {
-              indentation += spacer;
-              join4 = `,
-${indentation}`;
-              whitespace = " ";
-            }
-            let separator = "";
-            for (const key2 of replacer) {
-              const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
-              if (tmp !== void 0) {
-                res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join4;
-              }
-            }
-            if (spacer !== "" && separator.length > 1) {
-              res = `
-${indentation}${res}
-${originalIndentation}`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          // fallthrough
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringifyIndent(key, value, stack, spacer, indentation) {
-        switch (typeof value) {
-          case "string":
-            return strEscape(value);
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (typeof value.toJSON === "function") {
-              value = value.toJSON(key);
-              if (typeof value !== "object") {
-                return stringifyIndent(key, value, stack, spacer, indentation);
-              }
-              if (value === null) {
-                return "null";
-              }
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            const originalIndentation = indentation;
-            if (Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              indentation += spacer;
-              let res2 = `
-${indentation}`;
-              const join5 = `,
-${indentation}`;
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifyIndent(String(i), value[i], stack, spacer, indentation);
-                res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join5;
-              }
-              const tmp = stringifyIndent(String(i), value[i], stack, spacer, indentation);
-              res2 += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join5}"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              res2 += `
-${originalIndentation}`;
-              stack.pop();
-              return `[${res2}]`;
-            }
-            let keys = Object.keys(value);
-            const keyLength = keys.length;
-            if (keyLength === 0) {
-              return "{}";
-            }
-            if (maximumDepth < stack.length + 1) {
-              return '"[Object]"';
-            }
-            indentation += spacer;
-            const join4 = `,
-${indentation}`;
-            let res = "";
-            let separator = "";
-            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
-            if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join4, maximumBreadth);
-              keys = keys.slice(value.length);
-              maximumPropertiesToStringify -= value.length;
-              separator = join4;
-            }
-            if (deterministic) {
-              keys = sort(keys, comparator);
-            }
-            stack.push(value);
-            for (let i = 0; i < maximumPropertiesToStringify; i++) {
-              const key2 = keys[i];
-              const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
-              if (tmp !== void 0) {
-                res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join4;
-              }
-            }
-            if (keyLength > maximumBreadth) {
-              const removedKeys = keyLength - maximumBreadth;
-              res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join4;
-            }
-            if (separator !== "") {
-              res = `
-${indentation}${res}
-${originalIndentation}`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          // fallthrough
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringifySimple(key, value, stack) {
-        switch (typeof value) {
-          case "string":
-            return strEscape(value);
-          case "object": {
-            if (value === null) {
-              return "null";
-            }
-            if (typeof value.toJSON === "function") {
-              value = value.toJSON(key);
-              if (typeof value !== "object") {
-                return stringifySimple(key, value, stack);
-              }
-              if (value === null) {
-                return "null";
-              }
-            }
-            if (stack.indexOf(value) !== -1) {
-              return circularValue;
-            }
-            let res = "";
-            const hasLength = value.length !== void 0;
-            if (hasLength && Array.isArray(value)) {
-              if (value.length === 0) {
-                return "[]";
-              }
-              if (maximumDepth < stack.length + 1) {
-                return '"[Array]"';
-              }
-              stack.push(value);
-              const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
-              let i = 0;
-              for (; i < maximumValuesToStringify - 1; i++) {
-                const tmp2 = stringifySimple(String(i), value[i], stack);
-                res += tmp2 !== void 0 ? tmp2 : "null";
-                res += ",";
-              }
-              const tmp = stringifySimple(String(i), value[i], stack);
-              res += tmp !== void 0 ? tmp : "null";
-              if (value.length - 1 > maximumBreadth) {
-                const removedKeys = value.length - maximumBreadth - 1;
-                res += `,"... ${getItemCount(removedKeys)} not stringified"`;
-              }
-              stack.pop();
-              return `[${res}]`;
-            }
-            let keys = Object.keys(value);
-            const keyLength = keys.length;
-            if (keyLength === 0) {
-              return "{}";
-            }
-            if (maximumDepth < stack.length + 1) {
-              return '"[Object]"';
-            }
-            let separator = "";
-            let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
-            if (hasLength && isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, ",", maximumBreadth);
-              keys = keys.slice(value.length);
-              maximumPropertiesToStringify -= value.length;
-              separator = ",";
-            }
-            if (deterministic) {
-              keys = sort(keys, comparator);
-            }
-            stack.push(value);
-            for (let i = 0; i < maximumPropertiesToStringify; i++) {
-              const key2 = keys[i];
-              const tmp = stringifySimple(key2, value[key2], stack);
-              if (tmp !== void 0) {
-                res += `${separator}${strEscape(key2)}:${tmp}`;
-                separator = ",";
-              }
-            }
-            if (keyLength > maximumBreadth) {
-              const removedKeys = keyLength - maximumBreadth;
-              res += `${separator}"...":"${getItemCount(removedKeys)} not stringified"`;
-            }
-            stack.pop();
-            return `{${res}}`;
-          }
-          case "number":
-            return isFinite(value) ? String(value) : fail ? fail(value) : "null";
-          case "boolean":
-            return value === true ? "true" : "false";
-          case "undefined":
-            return void 0;
-          case "bigint":
-            if (bigint) {
-              return String(value);
-            }
-          // fallthrough
-          default:
-            return fail ? fail(value) : void 0;
-        }
-      }
-      function stringify4(value, replacer, space) {
-        if (arguments.length > 1) {
-          let spacer = "";
-          if (typeof space === "number") {
-            spacer = " ".repeat(Math.min(space, 10));
-          } else if (typeof space === "string") {
-            spacer = space.slice(0, 10);
-          }
-          if (replacer != null) {
-            if (typeof replacer === "function") {
-              return stringifyFnReplacer("", { "": value }, [], replacer, spacer, "");
-            }
-            if (Array.isArray(replacer)) {
-              return stringifyArrayReplacer("", value, [], getUniqueReplacerSet(replacer), spacer, "");
-            }
-          }
-          if (spacer.length !== 0) {
-            return stringifyIndent("", value, [], spacer, "");
-          }
-        }
-        return stringifySimple("", value, []);
-      }
-      return stringify4;
-    }
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/multistream.js
-var require_multistream = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/lib/multistream.js"(exports, module) {
-    "use strict";
-    var metadata = /* @__PURE__ */ Symbol.for("pino.metadata");
-    var { DEFAULT_LEVELS } = require_constants();
-    var DEFAULT_INFO_LEVEL = DEFAULT_LEVELS.info;
-    function multistream(streamsArray, opts) {
-      streamsArray = streamsArray || [];
-      opts = opts || { dedupe: false };
-      const streamLevels = Object.create(DEFAULT_LEVELS);
-      streamLevels.silent = Infinity;
-      if (opts.levels && typeof opts.levels === "object") {
-        Object.keys(opts.levels).forEach((i) => {
-          streamLevels[i] = opts.levels[i];
-        });
-      }
-      const res = {
-        write,
-        add,
-        remove,
-        emit,
-        flushSync,
-        end,
-        minLevel: 0,
-        lastId: 0,
-        streams: [],
-        clone,
-        [metadata]: true,
-        streamLevels
-      };
-      if (Array.isArray(streamsArray)) {
-        streamsArray.forEach(add, res);
-      } else {
-        add.call(res, streamsArray);
-      }
-      streamsArray = null;
-      return res;
-      function write(data) {
-        let dest;
-        const level = this.lastLevel;
-        const { streams } = this;
-        let recordedLevel = 0;
-        let stream;
-        for (let i = initLoopVar(streams.length, opts.dedupe); checkLoopVar(i, streams.length, opts.dedupe); i = adjustLoopVar(i, opts.dedupe)) {
-          dest = streams[i];
-          if (dest.level <= level) {
-            if (recordedLevel !== 0 && recordedLevel !== dest.level) {
-              break;
-            }
-            stream = dest.stream;
-            if (stream[metadata]) {
-              const { lastTime, lastMsg, lastObj, lastLogger } = this;
-              stream.lastLevel = level;
-              stream.lastTime = lastTime;
-              stream.lastMsg = lastMsg;
-              stream.lastObj = lastObj;
-              stream.lastLogger = lastLogger;
-            }
-            stream.write(data);
-            if (opts.dedupe) {
-              recordedLevel = dest.level;
-            }
-          } else if (!opts.dedupe) {
-            break;
-          }
-        }
-      }
-      function emit(...args) {
-        for (const { stream } of this.streams) {
-          if (typeof stream.emit === "function") {
-            stream.emit(...args);
-          }
-        }
-      }
-      function flushSync() {
-        for (const { stream } of this.streams) {
-          if (typeof stream.flushSync === "function") {
-            stream.flushSync();
-          }
-        }
-      }
-      function add(dest) {
-        if (!dest) {
-          return res;
-        }
-        const isStream = typeof dest.write === "function" || dest.stream;
-        const stream_ = dest.write ? dest : dest.stream;
-        if (!isStream) {
-          throw Error("stream object needs to implement either StreamEntry or DestinationStream interface");
-        }
-        const { streams, streamLevels: streamLevels2 } = this;
-        let level;
-        if (typeof dest.levelVal === "number") {
-          level = dest.levelVal;
-        } else if (typeof dest.level === "string") {
-          level = streamLevels2[dest.level];
-        } else if (typeof dest.level === "number") {
-          level = dest.level;
-        } else {
-          level = DEFAULT_INFO_LEVEL;
-        }
-        const dest_ = {
-          stream: stream_,
-          level,
-          levelVal: void 0,
-          id: ++res.lastId
-        };
-        streams.unshift(dest_);
-        streams.sort(compareByLevel);
-        this.minLevel = streams[0].level;
-        return res;
-      }
-      function remove(id) {
-        const { streams } = this;
-        const index = streams.findIndex((s) => s.id === id);
-        if (index >= 0) {
-          streams.splice(index, 1);
-          streams.sort(compareByLevel);
-          this.minLevel = streams.length > 0 ? streams[0].level : -1;
-        }
-        return res;
-      }
-      function end() {
-        for (const { stream } of this.streams) {
-          if (typeof stream.flushSync === "function") {
-            stream.flushSync();
-          }
-          stream.end();
-        }
-      }
-      function clone(level) {
-        const streams = new Array(this.streams.length);
-        for (let i = 0; i < streams.length; i++) {
-          streams[i] = {
-            level,
-            stream: this.streams[i].stream
-          };
-        }
-        return {
-          write,
-          add,
-          remove,
-          minLevel: level,
-          streams,
-          clone,
-          emit,
-          flushSync,
-          [metadata]: true
-        };
-      }
-    }
-    function compareByLevel(a, b) {
-      return a.level - b.level;
-    }
-    function initLoopVar(length, dedupe) {
-      return dedupe ? length - 1 : 0;
-    }
-    function adjustLoopVar(i, dedupe) {
-      return dedupe ? i - 1 : i + 1;
-    }
-    function checkLoopVar(i, length, dedupe) {
-      return dedupe ? i >= 0 : i < length;
-    }
-    module.exports = multistream;
-  }
-});
-
-// ../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/pino.js
-var require_pino = __commonJS({
-  "../../node_modules/.pnpm/pino@9.14.0/node_modules/pino/pino.js"(exports, module) {
-    function pinoBundlerAbsolutePath(p) {
-      try {
-        const path6 = __require("path");
-        const outputDir = "/home/runner/workspace/firebase-functions/lib";
-        return path6.resolve(outputDir, p.replace(/^\.\//, ""));
-      } catch (e) {
-        const f = new Function("p", "return new URL(p, import.meta.url).pathname");
-        return f(p);
-      }
-    }
-    globalThis.__bundlerPathsOverrides = { ...globalThis.__bundlerPathsOverrides || {}, "thread-stream-worker": pinoBundlerAbsolutePath("./thread-stream-worker.mjs"), "pino-worker": pinoBundlerAbsolutePath("./pino-worker.mjs"), "pino/file": pinoBundlerAbsolutePath("./pino-file.mjs"), "pino-pretty": pinoBundlerAbsolutePath("./pino-pretty.mjs") };
-    var os = __require("node:os");
-    var stdSerializers = require_pino_std_serializers();
-    var caller = require_caller();
-    var redaction = require_redaction();
-    var time = require_time();
-    var proto = require_proto();
-    var symbols = require_symbols();
-    var { configure } = require_safe_stable_stringify();
-    var { assertDefaultLevelFound, mappings, genLsCache, genLevelComparison, assertLevelComparison } = require_levels();
-    var { DEFAULT_LEVELS, SORTING_ORDER } = require_constants();
-    var {
-      createArgsNormalizer,
-      asChindings,
-      buildSafeSonicBoom,
-      buildFormatters,
-      stringify: stringify3,
-      normalizeDestFileDescriptor,
-      noop: noop3
-    } = require_tools();
-    var { version: version2 } = require_meta();
-    var {
-      chindingsSym,
-      redactFmtSym,
-      serializersSym,
-      timeSym,
-      timeSliceIndexSym,
-      streamSym,
-      stringifySym,
-      stringifySafeSym,
-      stringifiersSym,
-      setLevelSym,
-      endSym,
-      formatOptsSym,
-      messageKeySym,
-      errorKeySym,
-      nestedKeySym,
-      mixinSym,
-      levelCompSym,
-      useOnlyCustomLevelsSym,
-      formattersSym,
-      hooksSym,
-      nestedKeyStrSym,
-      mixinMergeStrategySym,
-      msgPrefixSym
-    } = symbols;
-    var { epochTime, nullTime } = time;
-    var { pid } = process;
-    var hostname = os.hostname();
-    var defaultErrorSerializer = stdSerializers.err;
-    var defaultOptions = {
-      level: "info",
-      levelComparison: SORTING_ORDER.ASC,
-      levels: DEFAULT_LEVELS,
-      messageKey: "msg",
-      errorKey: "err",
-      nestedKey: null,
-      enabled: true,
-      base: { pid, hostname },
-      serializers: Object.assign(/* @__PURE__ */ Object.create(null), {
-        err: defaultErrorSerializer
-      }),
-      formatters: Object.assign(/* @__PURE__ */ Object.create(null), {
-        bindings(bindings) {
-          return bindings;
-        },
-        level(label, number) {
-          return { level: number };
-        }
-      }),
-      hooks: {
-        logMethod: void 0,
-        streamWrite: void 0
-      },
-      timestamp: epochTime,
-      name: void 0,
-      redact: null,
-      customLevels: null,
-      useOnlyCustomLevels: false,
-      depthLimit: 5,
-      edgeLimit: 100
-    };
-    var normalize = createArgsNormalizer(defaultOptions);
-    var serializers = Object.assign(/* @__PURE__ */ Object.create(null), stdSerializers);
-    function pino2(...args) {
-      const instance = {};
-      const { opts, stream } = normalize(instance, caller(), ...args);
-      if (opts.level && typeof opts.level === "string" && DEFAULT_LEVELS[opts.level.toLowerCase()] !== void 0) opts.level = opts.level.toLowerCase();
-      const {
-        redact,
-        crlf,
-        serializers: serializers2,
-        timestamp,
-        messageKey,
-        errorKey,
-        nestedKey,
-        base,
-        name,
-        level,
-        customLevels,
-        levelComparison,
-        mixin,
-        mixinMergeStrategy,
-        useOnlyCustomLevels,
-        formatters: formatters3,
-        hooks,
-        depthLimit,
-        edgeLimit,
-        onChild,
-        msgPrefix
-      } = opts;
-      const stringifySafe = configure({
-        maximumDepth: depthLimit,
-        maximumBreadth: edgeLimit
-      });
-      const allFormatters = buildFormatters(
-        formatters3.level,
-        formatters3.bindings,
-        formatters3.log
-      );
-      const stringifyFn = stringify3.bind({
-        [stringifySafeSym]: stringifySafe
-      });
-      const stringifiers = redact ? redaction(redact, stringifyFn) : {};
-      const formatOpts = redact ? { stringify: stringifiers[redactFmtSym] } : { stringify: stringifyFn };
-      const end = "}" + (crlf ? "\r\n" : "\n");
-      const coreChindings = asChindings.bind(null, {
-        [chindingsSym]: "",
-        [serializersSym]: serializers2,
-        [stringifiersSym]: stringifiers,
-        [stringifySym]: stringify3,
-        [stringifySafeSym]: stringifySafe,
-        [formattersSym]: allFormatters
-      });
-      let chindings = "";
-      if (base !== null) {
-        if (name === void 0) {
-          chindings = coreChindings(base);
-        } else {
-          chindings = coreChindings(Object.assign({}, base, { name }));
-        }
-      }
-      const time2 = timestamp instanceof Function ? timestamp : timestamp ? epochTime : nullTime;
-      const timeSliceIndex = time2().indexOf(":") + 1;
-      if (useOnlyCustomLevels && !customLevels) throw Error("customLevels is required if useOnlyCustomLevels is set true");
-      if (mixin && typeof mixin !== "function") throw Error(`Unknown mixin type "${typeof mixin}" - expected "function"`);
-      if (msgPrefix && typeof msgPrefix !== "string") throw Error(`Unknown msgPrefix type "${typeof msgPrefix}" - expected "string"`);
-      assertDefaultLevelFound(level, customLevels, useOnlyCustomLevels);
-      const levels = mappings(customLevels, useOnlyCustomLevels);
-      if (typeof stream.emit === "function") {
-        stream.emit("message", { code: "PINO_CONFIG", config: { levels, messageKey, errorKey } });
-      }
-      assertLevelComparison(levelComparison);
-      const levelCompFunc = genLevelComparison(levelComparison);
-      Object.assign(instance, {
-        levels,
-        [levelCompSym]: levelCompFunc,
-        [useOnlyCustomLevelsSym]: useOnlyCustomLevels,
-        [streamSym]: stream,
-        [timeSym]: time2,
-        [timeSliceIndexSym]: timeSliceIndex,
-        [stringifySym]: stringify3,
-        [stringifySafeSym]: stringifySafe,
-        [stringifiersSym]: stringifiers,
-        [endSym]: end,
-        [formatOptsSym]: formatOpts,
-        [messageKeySym]: messageKey,
-        [errorKeySym]: errorKey,
-        [nestedKeySym]: nestedKey,
-        // protect against injection
-        [nestedKeyStrSym]: nestedKey ? `,${JSON.stringify(nestedKey)}:{` : "",
-        [serializersSym]: serializers2,
-        [mixinSym]: mixin,
-        [mixinMergeStrategySym]: mixinMergeStrategy,
-        [chindingsSym]: chindings,
-        [formattersSym]: allFormatters,
-        [hooksSym]: hooks,
-        silent: noop3,
-        onChild,
-        [msgPrefixSym]: msgPrefix
-      });
-      Object.setPrototypeOf(instance, proto());
-      genLsCache(instance);
-      instance[setLevelSym](level);
-      return instance;
-    }
-    module.exports = pino2;
-    module.exports.destination = (dest = process.stdout.fd) => {
-      if (typeof dest === "object") {
-        dest.dest = normalizeDestFileDescriptor(dest.dest || process.stdout.fd);
-        return buildSafeSonicBoom(dest);
-      } else {
-        return buildSafeSonicBoom({ dest: normalizeDestFileDescriptor(dest), minLength: 0 });
-      }
-    };
-    module.exports.transport = require_transport();
-    module.exports.multistream = require_multistream();
-    module.exports.levels = mappings();
-    module.exports.stdSerializers = serializers;
-    module.exports.stdTimeFunctions = Object.assign({}, time);
-    module.exports.symbols = symbols;
-    module.exports.version = version2;
-    module.exports.default = pino2;
-    module.exports.pino = pino2;
-  }
-});
-
-// src/server-cloudrun.ts
+// artifacts/api-server/src/server-cloudrun.ts
 var import_express14 = __toESM(require_express2(), 1);
 
-// src/app-firebase.ts
+// artifacts/api-server/src/app-firebase.ts
 var import_express13 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
-// src/routes/index-firebase.ts
+// artifacts/api-server/src/routes/index-firebase.ts
 var import_express12 = __toESM(require_express2(), 1);
 
-// src/routes/health.ts
+// artifacts/api-server/src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/util.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/util.js
 var util;
 (function(util2) {
   util2.assertEqual = (_) => {
@@ -40147,7 +35893,7 @@ var getParsedType = (data) => {
   }
 };
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/ZodError.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/ZodError.js
 var ZodIssueCode = util.arrayToEnum([
   "invalid_type",
   "invalid_literal",
@@ -40261,7 +36007,7 @@ ZodError.create = (issues) => {
   return error;
 };
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/locales/en.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/locales/en.js
 var errorMap = (issue, _ctx) => {
   let message;
   switch (issue.code) {
@@ -40364,13 +36110,13 @@ var errorMap = (issue, _ctx) => {
 };
 var en_default = errorMap;
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/errors.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/errors.js
 var overrideErrorMap = en_default;
 function getErrorMap() {
   return overrideErrorMap;
 }
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/parseUtil.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
   const { data, path: path6, errorMaps, issueData } = params;
   const fullPath = [...path6, ...issueData.path || []];
@@ -40479,14 +36225,14 @@ var isDirty = (x) => x.status === "dirty";
 var isValid = (x) => x.status === "valid";
 var isAsync = (x) => typeof Promise !== "undefined" && x instanceof Promise;
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/errorUtil.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/errorUtil.js
 var errorUtil;
 (function(errorUtil2) {
   errorUtil2.errToObj = (message) => typeof message === "string" ? { message } : message || {};
   errorUtil2.toString = (message) => typeof message === "string" ? message : message?.message;
 })(errorUtil || (errorUtil = {}));
 
-// ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js
+// node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
   constructor(parent, value, path6, key) {
     this._cachedPath = [];
@@ -43889,72 +39635,97 @@ var nullableType = ZodNullable.create;
 var preprocessType = ZodEffects.createWithPreprocess;
 var pipelineType = ZodPipeline.create;
 
-// ../../lib/api-zod/src/generated/api.ts
+// lib/api-zod/src/generated/api.ts
 var HealthCheckResponse = objectType({
   status: stringType()
 });
 
-// src/routes/health.ts
+// artifacts/api-server/src/routes/health.ts
 var router = (0, import_express.Router)();
-router.get("/healthz", (_req, res) => {
+router.get("/health", (_req, res) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
   res.json(data);
 });
 var health_default = router;
 
-// src/routes/auth.ts
+// artifacts/api-server/src/routes/auth.ts
 var import_express2 = __toESM(require_express2(), 1);
 
-// src/lib/firebaseAdmin.ts
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
-var app = null;
-function initFirebaseAdmin() {
-  if (getApps().length > 0) return;
-  const serviceAccount = process.env["FIREBASE_SERVICE_ACCOUNT"];
-  const projectId = process.env["FIREBASE_PROJECT_ID"];
-  if (serviceAccount) {
-    try {
-      const parsed = JSON.parse(serviceAccount);
-      app = initializeApp({ credential: cert(parsed) });
-      console.log("[FirebaseAdmin] Initialized with service account");
-    } catch (e) {
-      console.warn("[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT:", e);
+// artifacts/api-server/src/lib/rateLimiter.ts
+init_firebaseAdmin();
+import { FieldValue } from "firebase-admin/firestore";
+var memoryStore = /* @__PURE__ */ new Map();
+async function checkFirestore(key, limit3, windowMs) {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firestore unavailable");
+  const now = Date.now();
+  const ref = db.collection("rate_limits").doc(key);
+  return db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    const data = doc.data();
+    if (!data || now >= data.windowEnd) {
+      const windowEnd = now + windowMs;
+      tx.set(ref, { count: 1, windowEnd });
+      return { allowed: true, remaining: limit3 - 1, reset: windowEnd };
     }
-  } else if (projectId) {
-    app = initializeApp({ projectId });
-    console.log("[FirebaseAdmin] Initialized with project ID (application default credentials)");
-  } else {
-    console.warn(
-      "[FirebaseAdmin] Not configured \u2014 set FIREBASE_SERVICE_ACCOUNT or FIREBASE_PROJECT_ID. Auth validation and Firestore writes will be skipped (guest mode)."
-    );
-  }
-}
-function isFirebaseConfigured() {
-  return getApps().length > 0;
-}
-async function verifyIdToken(idToken) {
-  if (!isFirebaseConfigured()) return null;
-  try {
-    const decoded = await getAuth().verifyIdToken(idToken);
+    if (data.count >= limit3) {
+      return { allowed: false, remaining: 0, reset: data.windowEnd };
+    }
+    tx.update(ref, { count: FieldValue.increment(1) });
     return {
-      uid: decoded.uid,
-      email: decoded.email,
-      name: decoded.name,
-      admin: decoded["admin"] === true
+      allowed: true,
+      remaining: limit3 - data.count - 1,
+      reset: data.windowEnd
     };
-  } catch {
-    return null;
-  }
+  });
 }
-function getFirestoreDb() {
-  if (!isFirebaseConfigured()) return null;
-  return getFirestore();
+function checkMemory(key, limit3, windowMs) {
+  const now = Date.now();
+  const entry = memoryStore.get(key);
+  if (!entry || now >= entry.windowEnd) {
+    const windowEnd = now + windowMs;
+    memoryStore.set(key, { count: 1, windowEnd });
+    return { allowed: true, remaining: limit3 - 1, reset: windowEnd };
+  }
+  if (entry.count >= limit3) {
+    return { allowed: false, remaining: 0, reset: entry.windowEnd };
+  }
+  entry.count += 1;
+  return {
+    allowed: true,
+    remaining: limit3 - entry.count,
+    reset: entry.windowEnd
+  };
+}
+function makeRateLimiter(options) {
+  return async (req, res, next) => {
+    const key = `rl:${options.keyFn(req)}`;
+    let result;
+    try {
+      result = await checkFirestore(key, options.limit, options.windowMs);
+    } catch {
+      console.warn(
+        `[RateLimiter] Firestore unavailable for key "${key}" \u2014 using in-memory fallback`
+      );
+      result = checkMemory(key, options.limit, options.windowMs);
+    }
+    res.setHeader("RateLimit-Limit", options.limit);
+    res.setHeader("RateLimit-Remaining", result.remaining);
+    res.setHeader("RateLimit-Reset", Math.ceil(result.reset / 1e3));
+    if (!result.allowed) {
+      res.status(429).json({ error: options.message });
+      return;
+    }
+    next();
+  };
 }
 
-// src/lib/creditLedger.ts
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+// artifacts/api-server/src/routes/auth.ts
+init_firebaseAdmin();
+
+// artifacts/api-server/src/lib/creditLedger.ts
+init_firebaseAdmin();
+import { FieldValue as FieldValue2, Timestamp } from "firebase-admin/firestore";
 function toIsoString(v) {
   if (v instanceof Timestamp) return v.toDate().toISOString();
   if (v instanceof Date) return v.toISOString();
@@ -43980,7 +39751,7 @@ async function addCredits(uid, amount, type, opts = {}) {
         eventType: type,
         uid,
         amount,
-        processedAt: FieldValue.serverTimestamp()
+        processedAt: FieldValue2.serverTimestamp()
       });
     }
     const snap = await tx.get(userRef);
@@ -43988,7 +39759,7 @@ async function addCredits(uid, amount, type, opts = {}) {
     const newBalance = current + amount;
     tx.set(
       userRef,
-      { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() },
+      { creditBalance: newBalance, updatedAt: FieldValue2.serverTimestamp() },
       { merge: true }
     );
     const txRef = db.collection("credit_transactions").doc();
@@ -44000,7 +39771,7 @@ async function addCredits(uid, amount, type, opts = {}) {
       source: opts.source ?? type,
       sessionId: opts.sessionId ?? null,
       paymentId: opts.paymentId ?? null,
-      createdAt: FieldValue.serverTimestamp()
+      createdAt: FieldValue2.serverTimestamp()
     });
     return { newBalance };
   });
@@ -44039,7 +39810,7 @@ async function getTransactions(uid, limit3 = 50, cursor) {
   }
 }
 async function grantSignupBonus(uid) {
-  const result = await addCredits(uid, 50, "signup_bonus", {
+  const result = await addCredits(uid, 100, "signup_bonus", {
     source: "signup_trial",
     idempotencyKey: `signup_bonus_${uid}`
   });
@@ -44050,7 +39821,7 @@ async function setAutoRefillPreference(uid, opts) {
   const db = getFirestoreDb();
   if (!db) return;
   await db.collection("users").doc(uid).set(
-    { autoRefill: opts, updatedAt: FieldValue.serverTimestamp() },
+    { autoRefill: opts, updatedAt: FieldValue2.serverTimestamp() },
     { merge: true }
   );
 }
@@ -44070,7 +39841,7 @@ async function checkAndTriggerAutoRefill(uid, newBalance, createCheckoutUrl) {
     await db.collection("users").doc(uid).set(
       {
         autoRefillCheckoutUrl: url,
-        autoRefillTriggeredAt: FieldValue.serverTimestamp()
+        autoRefillTriggeredAt: FieldValue2.serverTimestamp()
       },
       { merge: true }
     );
@@ -44079,10 +39850,10 @@ async function checkAndTriggerAutoRefill(uid, newBalance, createCheckoutUrl) {
   }
 }
 
-// src/routes/auth.ts
-import { FieldValue as FieldValue2 } from "firebase-admin/firestore";
+// artifacts/api-server/src/routes/auth.ts
+import { FieldValue as FieldValue3 } from "firebase-admin/firestore";
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/decode-strings.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/decode-strings.js
 var textEncoder = new TextEncoder();
 var base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 var base64Lookup = new Uint8Array(256);
@@ -44281,7 +40052,7 @@ function decodeParameterValueContinuations(header) {
   });
 }
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/pass-through-decoder.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/pass-through-decoder.js
 var PassThroughDecoder = class {
   constructor() {
     this.chunks = [];
@@ -44295,7 +40066,7 @@ var PassThroughDecoder = class {
   }
 };
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/base64-decoder.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/base64-decoder.js
 var Base64Decoder = class {
   constructor(opts) {
     opts = opts || {};
@@ -44331,7 +40102,7 @@ var Base64Decoder = class {
   }
 };
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/qp-decoder.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/qp-decoder.js
 var VALID_QP_REGEX = /^=[a-f0-9]{2}$/i;
 var QP_SPLIT_REGEX = /(?==[a-f0-9]{2})/i;
 var SOFT_LINE_BREAK_REGEX = /=\r?\n/g;
@@ -44426,7 +40197,7 @@ var QPDecoder = class {
   }
 };
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/mime-node.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/mime-node.js
 var defaultDecoder = getDecoder();
 var MimeNode = class {
   constructor(options) {
@@ -44701,7 +40472,7 @@ var MimeNode = class {
   }
 };
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/html-entities.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/html-entities.js
 var htmlEntities = {
   "&AElig": "\xC6",
   "&AElig;": "\xC6",
@@ -46937,7 +42708,7 @@ var htmlEntities = {
 };
 var html_entities_default = htmlEntities;
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/text-format.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/text-format.js
 function decodeHTMLEntities(str2) {
   return str2.replace(/&(#\d+|#x[a-f0-9]+|[a-z]+\d*);?/gi, (match, entity) => {
     if (typeof html_entities_default[match] === "string") {
@@ -47158,7 +42929,7 @@ function formatHtmlHeader(message) {
   return template;
 }
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/address-parser.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/address-parser.js
 function _handleAddress(tokens, depth) {
   let isGroup = false;
   let state = "text";
@@ -47444,7 +43215,7 @@ function addressParser(str2, options) {
 }
 var address_parser_default = addressParser;
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/base64-encoder.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/base64-encoder.js
 function base64ArrayBuffer(arrayBuffer) {
   var base64 = "";
   var encodings = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -47477,7 +43248,7 @@ function base64ArrayBuffer(arrayBuffer) {
   return base64;
 }
 
-// ../../node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/postal-mime.js
+// node_modules/.pnpm/postal-mime@2.7.4/node_modules/postal-mime/src/postal-mime.js
 var MAX_NESTING_DEPTH = 256;
 var MAX_HEADERS_SIZE = 2 * 1024 * 1024;
 function toCamelCase(key) {
@@ -47909,7 +43680,7 @@ var PostalMime = class _PostalMime {
   }
 };
 
-// ../../node_modules/.pnpm/resend@6.13.0/node_modules/resend/dist/index.mjs
+// node_modules/.pnpm/resend@6.13.0/node_modules/resend/dist/index.mjs
 var import_standardwebhooks = __toESM(require_dist2(), 1);
 var version = "6.13.0";
 function buildPaginationQuery(options) {
@@ -49083,7 +44854,8 @@ var Resend = class {
   }
 };
 
-// src/lib/emailService.ts
+// artifacts/api-server/src/lib/emailService.ts
+init_firebaseAdmin();
 import { getAuth as getAuth2 } from "firebase-admin/auth";
 var resend = null;
 function getResend() {
@@ -49096,8 +44868,14 @@ function getResend() {
 }
 var FROM = "Litigant AI <noreply@send.litigant-ai.com>";
 var APP_URL = `https://${process.env["APP_DOMAIN"] ?? "litigant-ai.com"}`;
+function escapeHtml2(value) {
+  return value.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+  );
+}
 function verificationTemplate(link, displayName) {
-  const name = displayName ?? "Operator";
+  const name = escapeHtml2(displayName ?? "Operator");
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -49137,7 +44915,7 @@ function verificationTemplate(link, displayName) {
 </html>`;
 }
 function passwordResetTemplate(link, displayName) {
-  const name = displayName ?? "Operator";
+  const name = escapeHtml2(displayName ?? "Operator");
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -49214,8 +44992,29 @@ function isResendConfigured() {
   return !!process.env["RESEND_API_KEY"];
 }
 
-// src/routes/auth.ts
+// artifacts/api-server/src/routes/auth.ts
 var router2 = (0, import_express2.Router)();
+var resetByEmailLimiter = makeRateLimiter({
+  keyFn: (req) => {
+    const email = req.body?.email?.trim().toLowerCase();
+    return `reset_email:${email ?? "unknown"}`;
+  },
+  limit: 3,
+  windowMs: 60 * 60 * 1e3,
+  message: "Too many password reset requests for this address. Please try again in an hour."
+});
+var resetByIpLimiter = makeRateLimiter({
+  keyFn: (req) => `reset_ip:${req.ip ?? "unknown"}`,
+  limit: 10,
+  windowMs: 15 * 60 * 1e3,
+  message: "Too many password reset requests from this IP. Please try again later."
+});
+var verifyByIpLimiter = makeRateLimiter({
+  keyFn: (req) => `verify_ip:${req.ip ?? "unknown"}`,
+  limit: 10,
+  windowMs: 60 * 60 * 1e3,
+  message: "Too many verification email requests. Please try again later."
+});
 router2.post("/auth/provision", async (req, res) => {
   const authHeader = req.headers["authorization"];
   if (!authHeader?.startsWith("Bearer ")) {
@@ -49257,8 +45056,8 @@ router2.post("/auth/provision", async (req, res) => {
         plan: "free",
         creditBalance: 0,
         subscriptionStatus: "none",
-        createdAt: FieldValue2.serverTimestamp(),
-        updatedAt: FieldValue2.serverTimestamp(),
+        createdAt: FieldValue3.serverTimestamp(),
+        updatedAt: FieldValue3.serverTimestamp(),
         defaultSettings: {
           courtMode: "adversarial",
           litigantCount: 3,
@@ -49293,13 +45092,13 @@ router2.patch("/auth/preferences", async (req, res) => {
   const VALID_PROVIDERS = /* @__PURE__ */ new Set(["openai", "anthropic", "grok", "gemini"]);
   const body = req.body ?? {};
   const ds = body.defaultSettings ?? {};
-  const patch = { updatedAt: FieldValue2.serverTimestamp() };
+  const patch = { updatedAt: FieldValue3.serverTimestamp() };
   if (body.onboardingComplete === true) patch["onboardingComplete"] = true;
   if (ds.courtMode && VALID_COURT_MODES.has(ds.courtMode))
     patch["defaultSettings.courtMode"] = ds.courtMode;
-  if (typeof ds.litigantCount === "number" && ds.litigantCount >= 2 && ds.litigantCount <= 10)
+  if (typeof ds.litigantCount === "number" && Number.isInteger(ds.litigantCount) && ds.litigantCount >= 2 && ds.litigantCount <= 10)
     patch["defaultSettings.litigantCount"] = ds.litigantCount;
-  if (typeof ds.confidenceTarget === "number" && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
+  if (typeof ds.confidenceTarget === "number" && Number.isInteger(ds.confidenceTarget) && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
     patch["defaultSettings.confidenceTarget"] = ds.confidenceTarget;
   if (ds.responseMode && VALID_RESP_MODES.has(ds.responseMode))
     patch["defaultSettings.responseMode"] = ds.responseMode;
@@ -49315,7 +45114,7 @@ router2.patch("/auth/preferences", async (req, res) => {
     return res.status(500).json({ error: "Failed to save preferences" });
   }
 });
-router2.post("/auth/send-verification", async (req, res) => {
+router2.post("/auth/send-verification", verifyByIpLimiter, async (req, res) => {
   const authHeader = req.headers["authorization"];
   if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
   const decoded = await verifyIdToken(authHeader.slice(7));
@@ -49331,7 +45130,7 @@ router2.post("/auth/send-verification", async (req, res) => {
     return res.status(500).json({ error: "Failed to send verification email" });
   }
 });
-router2.post("/auth/send-password-reset", async (req, res) => {
+router2.post("/auth/send-password-reset", resetByEmailLimiter, resetByIpLimiter, async (req, res) => {
   const { email } = req.body ?? {};
   if (!email || typeof email !== "string") {
     return res.status(400).json({ error: "email is required" });
@@ -49341,19 +45140,20 @@ router2.post("/auth/send-password-reset", async (req, res) => {
   }
   try {
     await sendPasswordResetEmail(email.trim().toLowerCase());
-    return res.json({ sent: true });
   } catch (err) {
-    console.error("[Auth] send-password-reset error:", err.message);
-    return res.status(500).json({ error: "Failed to send password reset email" });
+    if (err?.code !== "auth/user-not-found") {
+      console.error("[Auth] send-password-reset error:", err.message);
+    }
   }
+  return res.json({ sent: true });
 });
 var auth_default = router2;
 
-// src/routes/brain.ts
+// artifacts/api-server/src/routes/brain.ts
 var import_express3 = __toESM(require_express2(), 1);
 import crypto3 from "crypto";
 
-// src/lib/providers/types.ts
+// artifacts/api-server/src/lib/providers/types.ts
 var DEFAULT_MODELS = {
   openai: "gpt-4o",
   anthropic: "claude-opus-4-5",
@@ -49390,7 +45190,7 @@ var PROVIDER_MODELS = {
   ]
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/tslib.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -49408,7 +45208,7 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/uuid.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
   const { crypto: crypto6 } = globalThis;
   if (crypto6?.randomUUID) {
@@ -49420,7 +45220,7 @@ var uuid4 = function() {
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/errors.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/errors.mjs
 function isAbortError(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -49451,7 +45251,7 @@ var castToError = (err) => {
   return new Error(err);
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/core/error.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/error.mjs
 var OpenAIError = class extends Error {
 };
 var APIError = class _APIError extends OpenAIError {
@@ -49585,7 +45385,7 @@ var SubjectTokenProviderError = class extends OpenAIError {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/values.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/values.mjs
 var startsWithSchemeRegexp = /^[a-z][a-z0-9+.-]*:/i;
 var isAbsoluteURL = (url) => {
   return startsWithSchemeRegexp.test(url);
@@ -49628,13 +45428,13 @@ var safeJSON = (text) => {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/sleep.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/sleep.mjs
 var sleep = (ms) => new Promise((resolve4) => setTimeout(resolve4, ms));
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/version.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/version.mjs
 var VERSION = "6.42.0";
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/detect-platform.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/detect-platform.mjs
 var isRunningInBrowser = () => {
   return (
     // @ts-ignore
@@ -49768,7 +45568,7 @@ var getPlatformHeaders = () => {
   return _platformHeaders ?? (_platformHeaders = getPlatformProperties());
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/shims.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/shims.mjs
 function getDefaultFetch() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -49840,7 +45640,7 @@ async function CancelReadableStream(stream) {
   await cancelPromise;
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/request-options.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/request-options.mjs
 var FallbackEncoder = ({ headers, body }) => {
   return {
     bodyHeaders: {
@@ -49850,7 +45650,7 @@ var FallbackEncoder = ({ headers, body }) => {
   };
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/qs/formats.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/qs/formats.mjs
 var default_format = "RFC3986";
 var default_formatter = (v) => String(v);
 var formatters = {
@@ -49859,7 +45659,7 @@ var formatters = {
 };
 var RFC1738 = "RFC1738";
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/qs/utils.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/qs/utils.mjs
 var has = (obj, key) => (has = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has(obj, key));
 var hex_table = /* @__PURE__ */ (() => {
   const array = [];
@@ -49938,7 +45738,7 @@ function maybe_map(val, fn) {
   return fn(val);
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/qs/stringify.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/qs/stringify.mjs
 var array_prefix_generators = {
   brackets(prefix) {
     return String(prefix) + "[]";
@@ -50216,12 +46016,12 @@ function stringify(object, opts = {}) {
   return joined.length > 0 ? prefix + joined : "";
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/query.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/query.mjs
 function stringifyQuery(query) {
   return stringify(query, { arrayFormat: "brackets" });
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/bytes.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/bytes.mjs
 function concatBytes(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -50246,7 +46046,7 @@ function decodeUTF8(bytes) {
   return (decodeUTF8_ ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_ = decoder.decode.bind(decoder)))(bytes);
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/decoders/line.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/decoders/line.mjs
 var _LineDecoder_buffer;
 var _LineDecoder_carriageReturnIndex;
 var LineDecoder = class {
@@ -50323,7 +46123,7 @@ function findDoubleNewlineIndex(buffer) {
   return -1;
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/log.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/log.mjs
 var levelNumbers = {
   off: 0,
   error: 200,
@@ -50396,7 +46196,7 @@ var formatRequestDetails = (details) => {
   return details;
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/core/streaming.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/streaming.mjs
 var _Stream_client;
 var Stream = class _Stream {
   constructor(iterator, controller, client) {
@@ -50654,7 +46454,7 @@ function partition(str2, delimiter2) {
   return [str2, "", ""];
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/parse.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/parse.mjs
 async function defaultParseResponse(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -50704,7 +46504,7 @@ function addRequestID(value, response) {
   });
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/core/api-promise.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/api-promise.mjs
 var _APIPromise_client;
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
@@ -50767,7 +46567,7 @@ var APIPromise = class _APIPromise extends Promise {
 };
 _APIPromise_client = /* @__PURE__ */ new WeakMap();
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/core/pagination.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/pagination.mjs
 var _AbstractPage_client;
 var AbstractPage = class {
   constructor(client, response, body, options) {
@@ -50928,7 +46728,7 @@ var NextCursorPage = class extends AbstractPage {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/auth/workload-identity-auth.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/auth/workload-identity-auth.mjs
 var SUBJECT_TOKEN_TYPES = {
   jwt: "urn:ietf:params:oauth:token-type:jwt",
   id: "urn:ietf:params:oauth:token-type:id_token"
@@ -51016,7 +46816,7 @@ var WorkloadIdentityAuth = class {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/uploads.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/uploads.mjs
 var checkFileSupport = () => {
   if (typeof File === "undefined") {
     const { process: process2 } = globalThis;
@@ -51107,7 +46907,7 @@ var addFormValue = async (form, key, value) => {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/to-file.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/to-file.mjs
 var isBlobLike = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
 var isFileLike = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike(value);
 var isResponseLike = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
@@ -51159,14 +46959,14 @@ function propsForError(value) {
   return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/core/resource.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/resource.mjs
 var APIResource = class {
   constructor(client) {
     this._client = client;
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/path.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/path.mjs
 function encodeURIPath(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
@@ -51221,7 +47021,7 @@ ${underline}`);
 };
 var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/chat/completions/messages.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/chat/completions/messages.mjs
 var Messages = class extends APIResource {
   /**
    * Get the messages in a stored chat completion. Only Chat Completions that have
@@ -51242,7 +47042,7 @@ var Messages = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/parser.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/parser.mjs
 function isChatCompletionFunctionTool(tool) {
   return tool !== void 0 && "function" in tool && tool.function !== void 0;
 }
@@ -51349,7 +47149,7 @@ function validateInputTools(tools) {
   }
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/chatCompletionUtils.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/chatCompletionUtils.mjs
 var isAssistantMessage = (message) => {
   return message?.role === "assistant";
 };
@@ -51357,7 +47157,7 @@ var isToolMessage = (message) => {
   return message?.role === "tool";
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/EventStream.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/EventStream.mjs
 var _EventStream_instances;
 var _EventStream_connectedPromise;
 var _EventStream_resolveConnectedPromise;
@@ -51546,12 +47346,12 @@ _EventStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_reso
   return this._emit("error", new OpenAIError(String(error)));
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/RunnableFunction.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/RunnableFunction.mjs
 function isRunnableFunctionWithParse(fn) {
   return typeof fn.parse === "function";
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
 var _AbstractChatCompletionRunner_instances;
 var _AbstractChatCompletionRunner_getFinalContent;
 var _AbstractChatCompletionRunner_getFinalMessage;
@@ -51821,7 +47621,7 @@ _AbstractChatCompletionRunner_instances = /* @__PURE__ */ new WeakSet(), _Abstra
   return typeof rawContent === "string" ? rawContent : rawContent === void 0 ? "undefined" : JSON.stringify(rawContent);
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/ChatCompletionRunner.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ChatCompletionRunner.mjs
 var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompletionRunner {
   static runTools(client, params, options) {
     const runner = new _ChatCompletionRunner();
@@ -51840,7 +47640,7 @@ var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompl
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/_vendor/partial-json-parser/parser.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/_vendor/partial-json-parser/parser.mjs
 var STR = 1;
 var NUM = 2;
 var ARR = 4;
@@ -52052,7 +47852,7 @@ var _parseJSON = (jsonString, allow) => {
 };
 var partialParse = (input) => parseJSON(input, Allow.ALL ^ Allow.NUM);
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/ChatCompletionStream.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ChatCompletionStream.mjs
 var _ChatCompletionStream_instances;
 var _ChatCompletionStream_params;
 var _ChatCompletionStream_choiceEventStates;
@@ -52532,7 +48332,7 @@ function assertIsEmpty(obj) {
 function assertNever(_x) {
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
 var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends ChatCompletionStream {
   static fromReadableStream(stream) {
     const runner = new _ChatCompletionStreamingRunner(null);
@@ -52553,7 +48353,7 @@ var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/chat/completions/completions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/chat/completions/completions.mjs
 var Completions = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52663,7 +48463,7 @@ var Completions = class extends APIResource {
 };
 Completions.Messages = Messages;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/chat/chat.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/chat/chat.mjs
 var Chat = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52672,7 +48472,7 @@ var Chat = class extends APIResource {
 };
 Chat.Completions = Completions;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
 var AdminAPIKeys = class extends APIResource {
   /**
    * Create an organization admin API key
@@ -52746,7 +48546,7 @@ var AdminAPIKeys = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/audit-logs.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/audit-logs.mjs
 var AuditLogs = class extends APIResource {
   /**
    * List user actions and configuration changes within this organization.
@@ -52768,7 +48568,7 @@ var AuditLogs = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/certificates.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/certificates.mjs
 var Certificates = class extends APIResource {
   /**
    * Upload a certificate to the organization. This does **not** automatically
@@ -52905,7 +48705,7 @@ var Certificates = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/data-retention.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/data-retention.mjs
 var DataRetention = class extends APIResource {
   /**
    * Retrieves organization data retention controls.
@@ -52942,7 +48742,7 @@ var DataRetention = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/invites.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/invites.mjs
 var Invites = class extends APIResource {
   /**
    * Create an invite for a user to the organization. The invite must be accepted by
@@ -53018,7 +48818,7 @@ var Invites = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/roles.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/roles.mjs
 var Roles = class extends APIResource {
   /**
    * Creates a custom role for the organization.
@@ -53107,7 +48907,7 @@ var Roles = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/spend-alerts.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/spend-alerts.mjs
 var SpendAlerts = class extends APIResource {
   /**
    * Creates an organization spend alert.
@@ -53193,7 +48993,7 @@ var SpendAlerts = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/usage.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/usage.mjs
 var Usage = class extends APIResource {
   /**
    * Get audio speeches usage details for the organization.
@@ -53395,7 +49195,7 @@ var Usage = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/groups/roles.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/groups/roles.mjs
 var Roles2 = class extends APIResource {
   /**
    * Assigns an organization role to a group within the organization.
@@ -53472,7 +49272,7 @@ var Roles2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/groups/users.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/groups/users.mjs
 var Users = class extends APIResource {
   /**
    * Adds a user to a group.
@@ -53549,7 +49349,7 @@ var Users = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/groups/groups.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/groups/groups.mjs
 var Groups = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -53646,7 +49446,7 @@ var Groups = class extends APIResource {
 Groups.Users = Users;
 Groups.Roles = Roles2;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
 var APIKeys = class extends APIResource {
   /**
    * Retrieves an API key in the project.
@@ -53707,7 +49507,7 @@ var APIKeys = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/certificates.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/certificates.mjs
 var Certificates2 = class extends APIResource {
   /**
    * List certificates for this project.
@@ -53764,7 +49564,7 @@ var Certificates2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/data-retention.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/data-retention.mjs
 var DataRetention2 = class extends APIResource {
   /**
    * Retrieves project data retention controls.
@@ -53804,7 +49604,7 @@ var DataRetention2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/hosted-tool-permissions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/hosted-tool-permissions.mjs
 var HostedToolPermissions = class extends APIResource {
   /**
    * Returns hosted tool permissions for a project.
@@ -53843,7 +49643,7 @@ var HostedToolPermissions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/model-permissions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/model-permissions.mjs
 var ModelPermissions = class extends APIResource {
   /**
    * Returns model permissions for a project.
@@ -53900,7 +49700,7 @@ var ModelPermissions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
 var RateLimits = class extends APIResource {
   /**
    * Returns the rate limits per model for a project.
@@ -53940,7 +49740,7 @@ var RateLimits = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/roles.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/roles.mjs
 var Roles3 = class extends APIResource {
   /**
    * Creates a custom role for a project.
@@ -54041,7 +49841,7 @@ var Roles3 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
 var ServiceAccounts = class extends APIResource {
   /**
    * Creates a new service account in the project. This also returns an unredacted
@@ -54135,7 +49935,7 @@ var ServiceAccounts = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/spend-alerts.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/spend-alerts.mjs
 var SpendAlerts2 = class extends APIResource {
   /**
    * Creates a project spend alert.
@@ -54230,7 +50030,7 @@ var SpendAlerts2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
 var Roles4 = class extends APIResource {
   /**
    * Assigns a project role to a group within a project.
@@ -54310,7 +50110,7 @@ var Roles4 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
 var Groups2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54393,7 +50193,7 @@ var Groups2 = class extends APIResource {
 };
 Groups2.Roles = Roles4;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
 var Roles5 = class extends APIResource {
   /**
    * Assigns a project role to a user within a project.
@@ -54473,7 +50273,7 @@ var Roles5 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/users/users.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/users/users.mjs
 var Users2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54579,7 +50379,7 @@ var Users2 = class extends APIResource {
 };
 Users2.Roles = Roles5;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/projects.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/projects.mjs
 var Projects = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54698,7 +50498,7 @@ Projects.DataRetention = DataRetention2;
 Projects.SpendAlerts = SpendAlerts2;
 Projects.Certificates = Certificates2;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/users/roles.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/users/roles.mjs
 var Roles6 = class extends APIResource {
   /**
    * Assigns an organization role to a user within the organization.
@@ -54775,7 +50575,7 @@ var Roles6 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/users/users.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/users/users.mjs
 var Users3 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54849,7 +50649,7 @@ var Users3 = class extends APIResource {
 };
 Users3.Roles = Roles6;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/organization/organization.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/organization.mjs
 var Organization = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54878,7 +50678,7 @@ Organization.SpendAlerts = SpendAlerts;
 Organization.Certificates = Certificates;
 Organization.Projects = Projects;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/admin/admin.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/admin.mjs
 var Admin = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54887,7 +50687,7 @@ var Admin = class extends APIResource {
 };
 Admin.Organization = Organization;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/headers.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/headers.mjs
 var brand_privateNullableHeaders = /* @__PURE__ */ Symbol("brand.privateNullableHeaders");
 function* iterateHeaders(headers) {
   if (!headers)
@@ -54950,7 +50750,7 @@ var buildHeaders = (newHeaders) => {
   return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/audio/speech.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/speech.mjs
 var Speech = class extends APIResource {
   /**
    * Generates audio from the input text.
@@ -54980,7 +50780,7 @@ var Speech = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/audio/transcriptions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/transcriptions.mjs
 var Transcriptions = class extends APIResource {
   create(body, options) {
     return this._client.post("/audio/transcriptions", multipartFormRequestOptions({
@@ -54993,14 +50793,14 @@ var Transcriptions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/audio/translations.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/translations.mjs
 var Translations = class extends APIResource {
   create(body, options) {
     return this._client.post("/audio/translations", multipartFormRequestOptions({ body, ...options, __metadata: { model: body.model }, __security: { bearerAuth: true } }, this._client));
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/audio/audio.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/audio.mjs
 var Audio = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -55013,7 +50813,7 @@ Audio.Transcriptions = Transcriptions;
 Audio.Translations = Translations;
 Audio.Speech = Speech;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/batches.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/batches.mjs
 var Batches = class extends APIResource {
   /**
    * Creates and executes a batch from an uploaded file of requests
@@ -55050,7 +50850,7 @@ var Batches = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/assistants.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/assistants.mjs
 var Assistants = class extends APIResource {
   /**
    * Create an assistant with a model and instructions.
@@ -55117,7 +50917,7 @@ var Assistants = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/realtime/sessions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/realtime/sessions.mjs
 var Sessions = class extends APIResource {
   /**
    * Create an ephemeral API token for use in client-side applications with the
@@ -55144,7 +50944,7 @@ var Sessions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
 var TranscriptionSessions = class extends APIResource {
   /**
    * Create an ephemeral API token for use in client-side applications with the
@@ -55171,7 +50971,7 @@ var TranscriptionSessions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/realtime/realtime.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/realtime/realtime.mjs
 var Realtime = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -55182,7 +50982,7 @@ var Realtime = class extends APIResource {
 Realtime.Sessions = Sessions;
 Realtime.TranscriptionSessions = TranscriptionSessions;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/chatkit/sessions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/chatkit/sessions.mjs
 var Sessions2 = class extends APIResource {
   /**
    * Create a ChatKit session.
@@ -55224,7 +51024,7 @@ var Sessions2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/chatkit/threads.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/chatkit/threads.mjs
 var Threads = class extends APIResource {
   /**
    * Retrieve a ChatKit thread by its identifier.
@@ -55301,7 +51101,7 @@ var Threads = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/chatkit/chatkit.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/chatkit/chatkit.mjs
 var ChatKit = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -55312,7 +51112,7 @@ var ChatKit = class extends APIResource {
 ChatKit.Sessions = Sessions2;
 ChatKit.Threads = Threads;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/threads/messages.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/messages.mjs
 var Messages2 = class extends APIResource {
   /**
    * Create a message.
@@ -55382,7 +51182,7 @@ var Messages2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/threads/runs/steps.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/runs/steps.mjs
 var Steps = class extends APIResource {
   /**
    * Retrieves a run step.
@@ -55414,7 +51214,7 @@ var Steps = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/base64.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/base64.mjs
 var toFloat32Array = (base64Str) => {
   if (typeof Buffer !== "undefined") {
     const buf = Buffer.from(base64Str, "base64");
@@ -55430,7 +51230,7 @@ var toFloat32Array = (base64Str) => {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/internal/utils/env.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/env.mjs
 var readEnv = (env) => {
   if (typeof globalThis.process !== "undefined") {
     return globalThis.process.env?.[env]?.trim() || void 0;
@@ -55441,7 +51241,7 @@ var readEnv = (env) => {
   return void 0;
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/AssistantStream.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/AssistantStream.mjs
 var _AssistantStream_instances;
 var _a;
 var _AssistantStream_events;
@@ -55980,7 +51780,7 @@ _a = AssistantStream, _AssistantStream_addEvent = function _AssistantStream_addE
 function assertNever2(_x) {
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/threads/runs/runs.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/runs/runs.mjs
 var Runs = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56153,7 +51953,7 @@ var Runs = class extends APIResource {
 };
 Runs.Steps = Steps;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/threads/threads.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/threads.mjs
 var Threads2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56239,7 +52039,7 @@ var Threads2 = class extends APIResource {
 Threads2.Runs = Runs;
 Threads2.Messages = Messages2;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/beta/beta.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/beta.mjs
 var Beta = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56254,7 +52054,7 @@ Beta.ChatKit = ChatKit;
 Beta.Assistants = Assistants;
 Beta.Threads = Threads2;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/completions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/completions.mjs
 var Completions2 = class extends APIResource {
   create(body, options) {
     return this._client.post("/completions", {
@@ -56266,7 +52066,7 @@ var Completions2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/containers/files/content.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/containers/files/content.mjs
 var Content = class extends APIResource {
   /**
    * Retrieve Container File Content
@@ -56282,7 +52082,7 @@ var Content = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/containers/files/files.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/containers/files/files.mjs
 var Files = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56331,7 +52131,7 @@ var Files = class extends APIResource {
 };
 Files.Content = Content;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/containers/containers.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/containers/containers.mjs
 var Containers = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56375,7 +52175,7 @@ var Containers = class extends APIResource {
 };
 Containers.Files = Files;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/conversations/items.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/conversations/items.mjs
 var Items = class extends APIResource {
   /**
    * Create items in a conversation with the given ID.
@@ -56418,7 +52218,7 @@ var Items = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/conversations/conversations.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/conversations/conversations.mjs
 var Conversations = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56461,7 +52261,7 @@ var Conversations = class extends APIResource {
 };
 Conversations.Items = Items;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/embeddings.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/embeddings.mjs
 var Embeddings = class extends APIResource {
   /**
    * Creates an embedding vector representing the input text.
@@ -56505,7 +52305,7 @@ var Embeddings = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/evals/runs/output-items.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/evals/runs/output-items.mjs
 var OutputItems = class extends APIResource {
   /**
    * Get an evaluation run output item by ID.
@@ -56526,7 +52326,7 @@ var OutputItems = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/evals/runs/runs.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/evals/runs/runs.mjs
 var Runs2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56587,7 +52387,7 @@ var Runs2 = class extends APIResource {
 };
 Runs2.OutputItems = OutputItems;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/evals/evals.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/evals/evals.mjs
 var Evals = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56635,7 +52435,7 @@ var Evals = class extends APIResource {
 };
 Evals.Runs = Runs2;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/files.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/files.mjs
 var Files2 = class extends APIResource {
   /**
    * Upload a file that can be used across various endpoints. Individual files can be
@@ -56722,11 +52522,11 @@ var Files2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/methods.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/methods.mjs
 var Methods = class extends APIResource {
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
 var Graders = class extends APIResource {
   /**
    * Run a grader.
@@ -56778,7 +52578,7 @@ var Graders = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
 var Alpha = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56787,7 +52587,7 @@ var Alpha = class extends APIResource {
 };
 Alpha.Graders = Graders;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
 var Permissions = class extends APIResource {
   /**
    * **NOTE:** Calling this endpoint requires an [admin API key](../admin-api-keys).
@@ -56867,7 +52667,7 @@ var Permissions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
 var Checkpoints = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -56876,7 +52676,7 @@ var Checkpoints = class extends APIResource {
 };
 Checkpoints.Permissions = Permissions;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
 var Checkpoints2 = class extends APIResource {
   /**
    * List checkpoints for a fine-tuning job.
@@ -56896,7 +52696,7 @@ var Checkpoints2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
 var Jobs = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57025,7 +52825,7 @@ var Jobs = class extends APIResource {
 };
 Jobs.Checkpoints = Checkpoints2;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
 var FineTuning = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57040,11 +52840,11 @@ FineTuning.Jobs = Jobs;
 FineTuning.Checkpoints = Checkpoints;
 FineTuning.Alpha = Alpha;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/graders/grader-models.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/graders/grader-models.mjs
 var GraderModels = class extends APIResource {
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/graders/graders.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/graders/graders.mjs
 var Graders2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57053,7 +52853,7 @@ var Graders2 = class extends APIResource {
 };
 Graders2.GraderModels = GraderModels;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/images.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/images.mjs
 var Images = class extends APIResource {
   /**
    * Creates a variation of a given image. This endpoint only supports `dall-e-2`.
@@ -57081,7 +52881,7 @@ var Images = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/models.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/models.mjs
 var Models = class extends APIResource {
   /**
    * Retrieves a model instance, providing basic information about the model such as
@@ -57106,7 +52906,7 @@ var Models = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/moderations.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/moderations.mjs
 var Moderations = class extends APIResource {
   /**
    * Classifies if text and/or image inputs are potentially harmful. Learn more in
@@ -57117,7 +52917,7 @@ var Moderations = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/realtime/calls.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/realtime/calls.mjs
 var Calls = class extends APIResource {
   /**
    * Accept an incoming SIP call and configure the realtime session that will handle
@@ -57189,7 +52989,7 @@ var Calls = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/realtime/client-secrets.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/realtime/client-secrets.mjs
 var ClientSecrets = class extends APIResource {
   /**
    * Create a Realtime client secret with an associated session configuration.
@@ -57223,7 +53023,7 @@ var ClientSecrets = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/realtime/realtime.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/realtime/realtime.mjs
 var Realtime2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57234,7 +53034,7 @@ var Realtime2 = class extends APIResource {
 Realtime2.ClientSecrets = ClientSecrets;
 Realtime2.Calls = Calls;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/ResponsesParser.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ResponsesParser.mjs
 function maybeParseResponse(response, params) {
   if (!params || !hasAutoParseableInput2(params)) {
     return {
@@ -57355,7 +53155,7 @@ function addOutputText(rsp) {
   rsp.output_text = texts.join("");
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/responses/ResponseStream.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/responses/ResponseStream.mjs
 var _ResponseStream_instances;
 var _ResponseStream_params;
 var _ResponseStream_currentResponseSnapshot;
@@ -57617,7 +53417,7 @@ function finalizeResponse(snapshot, params) {
   return maybeParseResponse(snapshot, params);
 }
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/responses/input-items.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/responses/input-items.mjs
 var InputItems = class extends APIResource {
   /**
    * Returns a list of input items for a given response.
@@ -57637,7 +53437,7 @@ var InputItems = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/responses/input-tokens.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/responses/input-tokens.mjs
 var InputTokens = class extends APIResource {
   /**
    * Returns input token counts of the request.
@@ -57659,7 +53459,7 @@ var InputTokens = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/responses/responses.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/responses/responses.mjs
 var Responses = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57758,7 +53558,7 @@ var Responses = class extends APIResource {
 Responses.InputItems = InputItems;
 Responses.InputTokens = InputTokens;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/skills/content.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/content.mjs
 var Content2 = class extends APIResource {
   /**
    * Download a skill zip bundle by its ID.
@@ -57773,7 +53573,7 @@ var Content2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/skills/versions/content.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/versions/content.mjs
 var Content3 = class extends APIResource {
   /**
    * Download a skill version zip bundle.
@@ -57789,7 +53589,7 @@ var Content3 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/skills/versions/versions.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/versions/versions.mjs
 var Versions = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57834,7 +53634,7 @@ var Versions = class extends APIResource {
 };
 Versions.Content = Content3;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/skills/skills.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/skills.mjs
 var Skills = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57883,7 +53683,7 @@ var Skills = class extends APIResource {
 Skills.Content = Content2;
 Skills.Versions = Versions;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/uploads/parts.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/uploads/parts.mjs
 var Parts = class extends APIResource {
   /**
    * Adds a
@@ -57903,7 +53703,7 @@ var Parts = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/uploads/uploads.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/uploads/uploads.mjs
 var Uploads = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -57973,7 +53773,7 @@ var Uploads = class extends APIResource {
 };
 Uploads.Parts = Parts;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/lib/Util.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/Util.mjs
 var allSettledWithThrow = async (promises) => {
   const results = await Promise.allSettled(promises);
   const rejected = results.filter((result) => result.status === "rejected");
@@ -57992,7 +53792,7 @@ var allSettledWithThrow = async (promises) => {
   return values;
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/vector-stores/file-batches.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/vector-stores/file-batches.mjs
 var FileBatches = class extends APIResource {
   /**
    * Create a vector store file batch.
@@ -58117,7 +53917,7 @@ var FileBatches = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/vector-stores/files.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/vector-stores/files.mjs
 var Files3 = class extends APIResource {
   /**
    * Create a vector store file by attaching a
@@ -58258,7 +54058,7 @@ var Files3 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/vector-stores/vector-stores.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/vector-stores/vector-stores.mjs
 var VectorStores = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -58335,7 +54135,7 @@ var VectorStores = class extends APIResource {
 VectorStores.Files = Files3;
 VectorStores.FileBatches = FileBatches;
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/videos.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/videos.mjs
 var Videos = class extends APIResource {
   /**
    * Create a new video generation job from a prompt and optional reference assets.
@@ -58415,7 +54215,7 @@ var Videos = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/resources/webhooks/webhooks.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/webhooks/webhooks.mjs
 var _Webhooks_instances;
 var _Webhooks_validateSecret;
 var _Webhooks_getRequiredHeader;
@@ -58494,7 +54294,7 @@ _Webhooks_instances = /* @__PURE__ */ new WeakSet(), _Webhooks_validateSecret = 
   return value;
 };
 
-// ../../node_modules/.pnpm/openai@6.42.0_ws@8.21.0_zod@3.25.76/node_modules/openai/client.mjs
+// node_modules/.pnpm/openai@6.42.0/node_modules/openai/client.mjs
 var _OpenAI_instances;
 var _a2;
 var _OpenAI_encoder;
@@ -59105,12 +54905,13 @@ function isUndiciDispatcherVersionMismatchError(error) {
   return false;
 }
 
-// src/lib/providers/openai.ts
+// artifacts/api-server/src/lib/providers/openai.ts
 var OpenAIProvider = class {
   name = "openai";
   displayName = "OpenAI";
   model;
   client;
+  _lastUsage = null;
   constructor(model = "gpt-4o", credentials) {
     this.model = model;
     if (credentials) {
@@ -59131,30 +54932,50 @@ var OpenAIProvider = class {
       }
     }
   }
+  getLastUsage() {
+    return this._lastUsage;
+  }
   async *streamChat(messages, maxTokens, signal) {
+    this._lastUsage = null;
     const stream = await this.client.chat.completions.create(
-      { model: this.model, max_completion_tokens: maxTokens, stream: true, messages },
+      {
+        model: this.model,
+        max_completion_tokens: maxTokens,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages
+      },
       { signal }
     );
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) yield content;
+      if (chunk.usage) {
+        this._lastUsage = {
+          inputTokens: chunk.usage.prompt_tokens ?? 0,
+          outputTokens: chunk.usage.completion_tokens ?? 0
+        };
+      }
     }
   }
 };
 
-// src/lib/providers/anthropic.ts
+// artifacts/api-server/src/lib/providers/anthropic.ts
 init_sdk();
 var AnthropicProvider = class {
   name = "anthropic";
   displayName = "Anthropic";
   model;
   client;
+  _lastUsage = null;
   constructor(model = "claude-opus-4-5", credentials) {
     this.model = model;
     const apiKey = credentials?.key ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("Anthropic not configured \u2014 set ANTHROPIC_API_KEY or add key in Admin \u2192 API Keys");
     this.client = new Anthropic({ apiKey });
+  }
+  getLastUsage() {
+    return this._lastUsage;
   }
   async *streamChat(messages, maxTokens, signal) {
     const systemMsg = messages.find((m) => m.role === "system")?.content ?? "";
@@ -59162,27 +54983,42 @@ var AnthropicProvider = class {
     if (conversation.length === 0 || conversation[0].role !== "user") {
       conversation.unshift({ role: "user", content: "Begin." });
     }
-    const stream = await this.client.messages.stream({
-      model: this.model,
-      max_tokens: maxTokens,
-      system: systemMsg,
-      messages: conversation
-    });
+    this._lastUsage = null;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    const stream = this.client.messages.stream(
+      {
+        model: this.model,
+        max_tokens: maxTokens,
+        system: systemMsg,
+        messages: conversation
+      },
+      { signal }
+      // forwards AbortSignal into the SDK — cancels the HTTP request, not just the local loop
+    );
     for await (const event of stream) {
       if (signal?.aborted) break;
+      if (event.type === "message_start" && event.message?.usage) {
+        inputTokens = event.message.usage.input_tokens ?? 0;
+      }
+      if (event.type === "message_delta" && event.usage) {
+        outputTokens = event.usage.output_tokens ?? 0;
+      }
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
         yield event.delta.text;
       }
     }
+    this._lastUsage = { inputTokens, outputTokens };
   }
 };
 
-// src/lib/providers/grok.ts
+// artifacts/api-server/src/lib/providers/grok.ts
 var GrokProvider = class {
   name = "grok";
   displayName = "xAI Grok";
   model;
   client;
+  _lastUsage = null;
   constructor(model = "grok-3", credentials) {
     this.model = model;
     const apiKey = credentials?.key ?? process.env["XAI_API_KEY"];
@@ -59192,24 +55028,35 @@ var GrokProvider = class {
       apiKey
     });
   }
+  getLastUsage() {
+    return this._lastUsage;
+  }
   async *streamChat(messages, maxTokens, signal) {
+    this._lastUsage = null;
     const stream = await this.client.chat.completions.create(
-      { model: this.model, max_tokens: maxTokens, stream: true, messages },
+      { model: this.model, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, messages },
       { signal }
     );
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) yield content;
+      if (chunk.usage) {
+        this._lastUsage = {
+          inputTokens: chunk.usage.prompt_tokens ?? 0,
+          outputTokens: chunk.usage.completion_tokens ?? 0
+        };
+      }
     }
   }
 };
 
-// src/lib/providers/gemini.ts
+// artifacts/api-server/src/lib/providers/gemini.ts
 var GeminiProvider = class {
   name = "gemini";
   displayName = "Google Gemini";
   model;
   client;
+  _lastUsage = null;
   constructor(model = "gemini-2.5-pro", credentials) {
     this.model = model;
     const apiKey = credentials?.key ?? process.env["GEMINI_API_KEY"];
@@ -59219,45 +55066,75 @@ var GeminiProvider = class {
       apiKey
     });
   }
+  getLastUsage() {
+    return this._lastUsage;
+  }
   async *streamChat(messages, maxTokens, signal) {
+    this._lastUsage = null;
     const stream = await this.client.chat.completions.create(
-      { model: this.model, max_tokens: maxTokens, stream: true, messages },
+      { model: this.model, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, messages },
       { signal }
     );
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) yield content;
+      if (chunk.usage) {
+        this._lastUsage = {
+          inputTokens: chunk.usage.prompt_tokens ?? 0,
+          outputTokens: chunk.usage.completion_tokens ?? 0
+        };
+      }
     }
   }
 };
 
-// src/lib/providers/custom.ts
+// artifacts/api-server/src/lib/providers/custom.ts
 var CustomProvider = class {
   name = "openai";
   // uses openai-compat wire format
   displayName;
   model;
   client;
+  _lastUsage = null;
   constructor(id, label, model, credentials) {
     this.name = id;
     this.displayName = label;
     this.model = model;
     this.client = new OpenAI({ apiKey: credentials.key, baseURL: credentials.baseUrl });
   }
+  getLastUsage() {
+    return this._lastUsage;
+  }
   async *streamChat(messages, maxTokens, signal) {
-    const stream = await this.client.chat.completions.create(
-      { model: this.model, max_tokens: maxTokens, stream: true, messages },
-      { signal }
-    );
+    this._lastUsage = null;
+    let stream;
+    try {
+      stream = await this.client.chat.completions.create(
+        { model: this.model, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, messages },
+        { signal }
+      );
+    } catch {
+      stream = await this.client.chat.completions.create(
+        { model: this.model, max_tokens: maxTokens, stream: true, messages },
+        { signal }
+      );
+    }
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) yield content;
+      if (chunk.usage) {
+        this._lastUsage = {
+          inputTokens: chunk.usage.prompt_tokens ?? 0,
+          outputTokens: chunk.usage.completion_tokens ?? 0
+        };
+      }
     }
   }
 };
 
-// src/lib/apiKeyStore.ts
-import { FieldValue as FieldValue3 } from "firebase-admin/firestore";
+// artifacts/api-server/src/lib/apiKeyStore.ts
+init_firebaseAdmin();
+import { FieldValue as FieldValue4 } from "firebase-admin/firestore";
 var ENV_KEY_MAP = {
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
@@ -59376,7 +55253,7 @@ async function saveApiKey(providerId, key, label, baseUrl) {
           label,
           baseUrl: baseUrl ?? null,
           maskedKey: maskKey(key),
-          updatedAt: FieldValue3.serverTimestamp()
+          updatedAt: FieldValue4.serverTimestamp()
         }
       }
     },
@@ -59392,11 +55269,11 @@ async function deleteApiKey(providerId) {
   const data = doc.data();
   const providers = { ...data.providers ?? {} };
   delete providers[providerId];
-  await db.collection("config").doc("apiKeys").set({ providers, updatedAt: FieldValue3.serverTimestamp() });
+  await db.collection("config").doc("apiKeys").set({ providers, updatedAt: FieldValue4.serverTimestamp() });
   invalidateApiKeyCache();
 }
 
-// src/lib/providers/index.ts
+// artifacts/api-server/src/lib/providers/index.ts
 async function createProviderAsync(id, model, labelHint) {
   const creds = await getApiKey(id);
   if (!creds) {
@@ -59404,13 +55281,7 @@ async function createProviderAsync(id, model, labelHint) {
       `Provider "${id}" is not configured. Add its API key in Admin \u2192 API Keys.`
     );
   }
-  const knownDefaults = {
-    openai: "gpt-4o",
-    anthropic: "claude-opus-4-5",
-    grok: "grok-3",
-    gemini: "gemini-2.5-pro"
-  };
-  const resolvedModel = model ?? knownDefaults[id] ?? "gpt-4o";
+  const resolvedModel = model ?? DEFAULT_MODELS[id] ?? "gpt-4o";
   switch (id) {
     case "openai":
       return new OpenAIProvider(resolvedModel, creds);
@@ -59446,7 +55317,7 @@ function getConfiguredProviders() {
   return configured;
 }
 
-// src/lib/creditEngine.ts
+// artifacts/api-server/src/lib/creditEngine.ts
 var CREDIT_VALUE_USD = 0.01;
 var MODEL_RATES = {
   // ── OpenAI ──────────────────────────────────────────────────────────────────
@@ -59515,7 +55386,33 @@ function calculateActualCredits(model, inputTokens, outputTokens) {
 function charsToTokens(chars) {
   return Math.ceil(chars / 4);
 }
-function estimateSessionCredits(config) {
+var FIXED_STAGE_PRIOR = { input: 12500, output: 3780 };
+var CALIBRATION_MIN_SESSIONS = 5;
+var CALIBRATION_CACHE_TTL_MS = 5 * 60 * 1e3;
+var _calCache = null;
+var _calExpiry = 0;
+async function getCalibratedFixedStageTokens() {
+  const now = Date.now();
+  if (_calCache !== null && now < _calExpiry) return _calCache;
+  const { getFirestoreDb: getFirestoreDb2 } = await Promise.resolve().then(() => (init_firebaseAdmin(), firebaseAdmin_exports));
+  const db = getFirestoreDb2();
+  if (!db) return FIXED_STAGE_PRIOR;
+  try {
+    const snap = await db.collection("sessions").orderBy("createdAt", "desc").limit(50).get();
+    const records = snap.docs.map((d) => d.data().fixedStageTokens).filter((r) => !!r && r.input > 0 && r.output > 0);
+    if (records.length < CALIBRATION_MIN_SESSIONS) return FIXED_STAGE_PRIOR;
+    const avg = {
+      input: Math.round(records.reduce((s, r) => s + r.input, 0) / records.length),
+      output: Math.round(records.reduce((s, r) => s + r.output, 0) / records.length)
+    };
+    _calCache = avg;
+    _calExpiry = now + CALIBRATION_CACHE_TTL_MS;
+    return avg;
+  } catch {
+    return FIXED_STAGE_PRIOR;
+  }
+}
+function variableTokens(config) {
   const outputTokensPerTurn = {
     concise: 300,
     balanced: 600,
@@ -59524,11 +55421,25 @@ function estimateSessionCredits(config) {
   const tokensPerTurn = outputTokensPerTurn[config.responseMode];
   const rounds = config.maxIterations;
   const litigants = Math.min(config.litigantCount, 4);
-  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 1600;
-  const baseInput = 600;
   const historyPerRound = tokensPerTurn * litigants * 0.8;
-  const avgInputPerTurn = baseInput + historyPerRound * (rounds / 2);
-  const inputTokens = litigants * rounds * avgInputPerTurn + 8e3;
+  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
+  return {
+    output: 400 + litigants * rounds * tokensPerTurn,
+    input: litigants * rounds * avgInputPerTurn
+  };
+}
+function estimateSessionCredits(config) {
+  const v = variableTokens(config);
+  const outputTokens = v.output + FIXED_STAGE_PRIOR.output;
+  const inputTokens = v.input + FIXED_STAGE_PRIOR.input;
+  const model = config.model ?? "gpt-4o";
+  return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
+}
+async function estimateSessionCreditsCalibrated(config) {
+  const fixed = await getCalibratedFixedStageTokens();
+  const v = variableTokens(config);
+  const outputTokens = v.output + fixed.output;
+  const inputTokens = v.input + fixed.input;
   const model = config.model ?? "gpt-4o";
   return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
 }
@@ -59549,7 +55460,111 @@ function getModelCreditInfo(model) {
   };
 }
 
-// src/lib/brainEngine.ts
+// artifacts/api-server/src/lib/conscienceConfig.ts
+init_firebaseAdmin();
+var CANON_V2_FALLBACK_TEXT = `
+
+CONSCIENCE MANDATE \u2014 EXECUTION-HONEST (Canon v2):
+Apply these checks before outputting. Violations must be corrected, not softened.
+(1) TRUTH FIRST: State what the evidence actually shows. If the honest conclusion is uncomfortable or unwelcome, say it plainly. Do not soften, hedge, or bury it.
+(2) VERIFY BEFORE ASSERTING: Only claim what you can actually substantiate. If you are uncertain, say so explicitly \u2014 "I don't know" is a valid and required answer when true.
+(3) NO DIPLOMATIC EVASION: Do not give a balanced non-answer to avoid conflict. If one side is stronger, say so. If something is wrong, say it is wrong.
+(4) EXPOSE GAPS: State what information is missing that would materially change the conclusion. Do not imply completeness you don't have.
+(5) EXECUTION-HONEST: If your reasoning led you somewhere you didn't expect, report it. Do not reverse-engineer your argument to fit a predetermined conclusion.`;
+var CANON_V2_FALLBACK_VERSION = "v2.0-canon";
+var TTL_MS = 5 * 60 * 1e3;
+var _cache2 = null;
+async function getConscienceClause() {
+  if (_cache2 && Date.now() - _cache2.fetchedAt < TTL_MS) {
+    return { text: _cache2.text, version: _cache2.version };
+  }
+  const db = getFirestoreDb();
+  if (!db) {
+    return { text: CANON_V2_FALLBACK_TEXT, version: CANON_V2_FALLBACK_VERSION };
+  }
+  try {
+    const doc = await db.collection("system_config").doc("conscience").get();
+    if (!doc.exists) {
+      _cache2 = { text: CANON_V2_FALLBACK_TEXT, version: CANON_V2_FALLBACK_VERSION, fetchedAt: Date.now() };
+      return { text: CANON_V2_FALLBACK_TEXT, version: CANON_V2_FALLBACK_VERSION };
+    }
+    const data = doc.data();
+    const text = data["text"]?.trim() || CANON_V2_FALLBACK_TEXT;
+    const version2 = data["version"]?.trim() || CANON_V2_FALLBACK_VERSION;
+    _cache2 = { text, version: version2, fetchedAt: Date.now() };
+    return { text, version: version2 };
+  } catch (err) {
+    console.warn("[conscienceConfig] Firestore read failed, using Canon v2 fallback:", err);
+    return { text: CANON_V2_FALLBACK_TEXT, version: CANON_V2_FALLBACK_VERSION };
+  }
+}
+function invalidateConscienceCache() {
+  _cache2 = null;
+}
+
+// artifacts/api-server/src/lib/seatBriefs.ts
+init_firebaseAdmin();
+import { readFileSync } from "fs";
+import { join as join4, dirname as dirname4 } from "path";
+import { fileURLToPath } from "url";
+var __dirname = dirname4(fileURLToPath(import.meta.url));
+var SEATS_DIR = join4(__dirname, "../seats");
+var SEAT_IDS = [
+  "orchestrator",
+  "moderator",
+  "architect",
+  "builder",
+  "auditor",
+  "litigant"
+];
+function loadFileFallback(seatId) {
+  try {
+    return readFileSync(join4(SEATS_DIR, `${seatId}.md`), "utf8").trim();
+  } catch {
+    return `You are the ${seatId}. Perform your role faithfully.`;
+  }
+}
+var FILE_FALLBACKS = {
+  orchestrator: loadFileFallback("orchestrator"),
+  moderator: loadFileFallback("moderator"),
+  architect: loadFileFallback("architect"),
+  builder: loadFileFallback("builder"),
+  auditor: loadFileFallback("auditor"),
+  litigant: loadFileFallback("litigant")
+};
+var TTL_MS2 = 5 * 60 * 1e3;
+var _cache3 = null;
+async function getAllSeatBriefs() {
+  if (_cache3 && Date.now() - _cache3.fetchedAt < TTL_MS2) {
+    return _cache3.briefs;
+  }
+  const db = getFirestoreDb();
+  if (!db) {
+    return { ...FILE_FALLBACKS };
+  }
+  try {
+    const doc = await db.collection("system_config").doc("seat_briefs").get();
+    const data = doc.exists ? doc.data() ?? {} : {};
+    const briefs = { ...FILE_FALLBACKS };
+    for (const id of SEAT_IDS) {
+      const override = data[id]?.trim();
+      if (override) briefs[id] = override;
+    }
+    _cache3 = { briefs, fetchedAt: Date.now() };
+    return briefs;
+  } catch (err) {
+    console.warn("[seatBriefs] Firestore read failed, using file fallbacks:", err);
+    return { ...FILE_FALLBACKS };
+  }
+}
+function invalidateSeatBriefsCache() {
+  _cache3 = null;
+}
+function getSeatBriefFileDefault(seatId) {
+  return FILE_FALLBACKS[seatId];
+}
+
+// artifacts/api-server/src/lib/brainEngine.ts
 function getRoles(config) {
   const modePersonas = {
     adversarial: [
@@ -59619,9 +55634,27 @@ async function resolveProvider(config) {
     "No AI provider configured. Add an API key in Admin \u2192 API Keys, or set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY."
   );
 }
+async function resolveSeatProvider(seatId, config, globalProvider, configured, litIndex) {
+  const seatMap = config.seatMap;
+  if (!seatMap) return globalProvider;
+  let assignment;
+  if (seatId === "litigant" && litIndex !== void 0) {
+    assignment = seatMap.litigants?.[litIndex];
+  } else {
+    assignment = seatMap[seatId];
+  }
+  if (!assignment?.provider) return globalProvider;
+  const pid = assignment.provider;
+  if (!configured.includes(pid)) return globalProvider;
+  try {
+    return await createProviderAsync(pid, assignment.model);
+  } catch {
+    return globalProvider;
+  }
+}
 async function streamRole(provider, messages, maxTokens, onChunk, usage, signal) {
   const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
-  usage.inputTokens += charsToTokens(inputChars);
+  const estimatedInput = charsToTokens(inputChars);
   let output = "";
   try {
     for await (const chunk of provider.streamChat(messages, maxTokens, signal)) {
@@ -59635,54 +55668,86 @@ async function streamRole(provider, messages, maxTokens, onChunk, usage, signal)
     output = fallback;
     onChunk(fallback);
   }
-  usage.outputTokens += charsToTokens(output.length);
+  const realUsage = provider.getLastUsage?.();
+  if (realUsage && (realUsage.inputTokens > 0 || realUsage.outputTokens > 0)) {
+    usage.inputTokens += realUsage.inputTokens;
+    usage.outputTokens += realUsage.outputTokens;
+  } else {
+    usage.inputTokens += estimatedInput;
+    usage.outputTokens += charsToTokens(output.length);
+  }
   return output;
 }
 async function runBrainSession(opts) {
-  const { question, config, templateSystemPrompt, res, abortSignal } = opts;
+  const { question, config, templateSystemPrompt, res, abortSignal, continueFromTranscript, rebuttalContext } = opts;
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
   const maxTokens = getMaxOutputTokens(config.responseMode);
   const estimatedCredits = estimateCreditCost(config);
+  const configured = await getConfiguredProvidersAsync();
   const provider = await resolveProvider(config);
   const providerName = provider.name;
   const modelName = config.model ?? "";
+  const orchProvider = await resolveSeatProvider("orchestrator", config, provider, configured);
+  const modProvider = await resolveSeatProvider("moderator", config, provider, configured);
+  const archProvider = await resolveSeatProvider("architect", config, provider, configured);
+  const buildProvider2 = await resolveSeatProvider("builder", config, provider, configured);
+  const auditProvider = await resolveSeatProvider("auditor", config, provider, configured);
   const usage = { inputTokens: 0, outputTokens: 0 };
   sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });
-  const transcript = [];
+  const transcript = continueFromTranscript ? [...continueFromTranscript] : [];
   const turns = [];
   let confidence = 20;
-  const baseContext = templateSystemPrompt ? `${templateSystemPrompt}
+  const baseContext = rebuttalContext ? `You are participating in a structured multi-AI reasoning session.
+
+Original question: "${question}"
+
+The court previously delivered this verdict:
+
+${rebuttalContext.originalVerdict}
+
+The user has challenged the verdict (Rebuttal Round ${rebuttalContext.rebuttalRound}):
+
+"${rebuttalContext.challenge}"
+
+The court must reconvene and re-examine the question in light of this challenge. Every litigant must directly address the objection raised. Determine whether the original verdict should be upheld, amended, or reversed.` : templateSystemPrompt ? `${templateSystemPrompt}
 
 The question or task under examination: "${question}"` : `You are participating in a structured multi-AI reasoning session.
 
 The question under examination: "${question}"`;
-  throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
-  const orchMessages = [
-    {
-      role: "system",
-      content: "You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max)."
-    },
-    {
-      role: "user",
-      content: `${baseContext}
+  const { text: conscienceText, version: conscienceVersion } = config.conscience !== false ? await getConscienceClause() : { text: "", version: "disabled" };
+  const conscienceClause = conscienceText;
+  const seatBriefs = await getAllSeatBriefs();
+  if (!continueFromTranscript?.length) {
+    throwIfAborted(abortSignal);
+    sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
+    const orchMessages = [
+      {
+        role: "system",
+        content: `${seatBriefs.orchestrator}
 
-Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`
-    }
-  ];
-  const orchestratorFrame = await streamRole(
-    provider,
-    orchMessages,
-    400,
-    (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
-    usage,
-    abortSignal
-  );
-  transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
-  turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
-  sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
+Context: ${baseContext}${conscienceClause}`
+      },
+      {
+        role: "user",
+        content: rebuttalContext ? `This is Rebuttal Round ${rebuttalContext.rebuttalRound}. The user has challenged the court's verdict with: "${rebuttalContext.challenge}". Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Acknowledge the challenge, state precisely what the court will re-examine, and route the litigants to address the specific objection.` : `Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`
+      }
+    ];
+    const orchestratorFrame = await streamRole(
+      orchProvider,
+      orchMessages,
+      400,
+      (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
+      usage,
+      abortSignal
+    );
+    transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
+    turns.push({ role: "Orchestrator", round: 0, content: orchestratorFrame });
+    sendSSE(res, { type: "role_end", role: "Orchestrator", fullContent: orchestratorFrame });
+  }
   const debateNotesList = [];
+  const creditCap = config.maxCredits ?? Infinity;
+  let creditCapHit = false;
   for (let round = 1; round <= config.maxIterations; round++) {
     throwIfAborted(abortSignal);
     sendSSE(res, { type: "round_start", round });
@@ -59690,27 +55755,41 @@ Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", "
     for (let i = 0; i < roles.length; i++) {
       throwIfAborted(abortSignal);
       const role = roles[i];
-      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: providerName });
+      const litProvider = await resolveSeatProvider("litigant", config, provider, configured, i);
+      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
+      const myPriorTurns = turns.filter((t) => t.role === role.name).map((t) => `Round ${t.round}: ${t.content}`).join("\n\n");
       const messages = [
         {
           role: "system",
-          content: `${baseContext}
+          content: `${seatBriefs.litigant}
 
-Your role: ${role.persona}. ${role.instruction}
+${baseContext}
 
-Be sharp, specific, and argumentative. Do not be vague.`
+Your assigned role this session: ${role.persona}. ${role.instruction}${conscienceClause}`
         },
         {
           role: "user",
-          content: round === 1 && i === 0 ? `Begin your examination of the question.` : `Previous discussion:
+          content: (() => {
+            const isIndependent = config.aiReasoning === "independent";
+            if (round === 1 && i === 0) return `Begin your examination of the question.`;
+            if (isIndependent) {
+              const ownHistory = myPriorTurns ? `Your previous arguments:
+
+${myPriorTurns}
+
+Now give your round ${round} argument as ${role.persona}. Build on your own reasoning \u2014 you have not heard the other seats.` : `Give your opening argument as ${role.persona}. Reason independently.`;
+              return ownHistory;
+            }
+            return `Previous discussion:
 
 ${previousTranscript}
 
-Now give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`
+Now give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`;
+          })()
         }
       ];
       const roleOutput = await streamRole(
-        provider,
+        litProvider,
         messages,
         maxTokens,
         (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
@@ -59729,59 +55808,184 @@ ${roleOutput}`);
       );
       const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-4o", usage.inputTokens, usage.outputTokens);
       sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
+      if (creditsUsedSoFar >= creditCap) {
+        creditCapHit = true;
+        break;
+      }
     }
     sendSSE(res, { type: "round_end", round, confidence });
+    if (creditCapHit) break;
     if (confidence >= config.confidenceTarget && round >= 2) break;
   }
+  const usageAfterDebate = { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
+  const pauseReason = creditCapHit ? "credit_cap" : confidence < config.confidenceTarget ? "iteration_limit" : void 0;
+  const debateTranscript = transcript.join("\n\n");
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: providerName });
-  const verdictPrompt = `${baseContext}
-
-You have observed the following structured debate:
-
-${transcript.join("\n\n")}
-
-Now deliver the complete final output. Structure it with these EXACT section headers:
-
-## Final Answer
-A clear, direct response (2-4 paragraphs). Lead with a definitive position where warranted.
-
-## Key Findings
-3-5 bullet points summarising the most important conclusions.
-
-## Artifacts
-Provide concrete, immediately usable output based on the debate. This could be:
-- A prioritised action checklist if the question is a decision
-- A structured analysis table if the question is evaluative
-- A decision memo if the question is strategic
-- A risk matrix if the question involves risk assessment
-Format this as a practical work product the user can use directly.
-
-## Sources & Caveats
-What assumptions underlie this analysis? What would change the verdict? What professional expertise should be consulted? List key limitations.
-
-Output format: ${config.outputFormat}`;
-  const verdictMessages = [
+  sendSSE(res, { type: "role_start", role: "Moderator", roleIndex: -2, round: 99, provider: modProvider.name });
+  const moderatorMessages = [
     {
       role: "system",
-      content: "You are the Synthesizer \u2014 the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections."
+      content: `${seatBriefs.moderator}
+
+${baseContext}${conscienceClause}`
     },
-    { role: "user", content: verdictPrompt }
+    {
+      role: "user",
+      content: `The courtroom deliberation is complete. Here is the full debate transcript:
+
+${debateTranscript}
+
+Produce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps. Then brief the Architect on what deliverable this question requires.`
+    }
+  ];
+  const moderatorSummary = await streamRole(
+    modProvider,
+    moderatorMessages,
+    800,
+    (chunk) => sendSSE(res, { type: "content", role: "Moderator", content: chunk }),
+    usage,
+    abortSignal
+  );
+  transcript.push(`**Moderator (Summary):** ${moderatorSummary}`);
+  turns.push({ role: "Moderator", round: 99, content: moderatorSummary });
+  sendSSE(res, { type: "role_end", role: "Moderator", fullContent: moderatorSummary });
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Architect", roleIndex: -3, round: 99, provider: archProvider.name });
+  const architectMessages = [
+    {
+      role: "system",
+      content: `${seatBriefs.architect}
+
+${baseContext}${conscienceClause}`
+    },
+    {
+      role: "user",
+      content: `The Moderator has produced this deliberation summary:
+
+${moderatorSummary}
+
+Original question: "${question}"
+
+${config.artifactType && config.artifactType !== "auto" ? `REQUIRED ARTIFACT TYPE: The user has explicitly requested a **${config.artifactType}**. You MUST design the blueprint for this specific document type \u2014 do not choose a different format. Design the section structure, tone, and audience for a ${config.artifactType} specifically.
+
+` : ""}Design the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`
+    }
+  ];
+  const architectBlueprint = await streamRole(
+    archProvider,
+    architectMessages,
+    600,
+    (chunk) => sendSSE(res, { type: "content", role: "Architect", content: chunk }),
+    usage,
+    abortSignal
+  );
+  transcript.push(`**Architect (Blueprint):** ${architectBlueprint}`);
+  turns.push({ role: "Architect", round: 99, content: architectBlueprint });
+  sendSSE(res, { type: "role_end", role: "Architect", fullContent: architectBlueprint });
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider2.name });
+  const builderMessages = [
+    {
+      role: "system",
+      content: `${seatBriefs.builder}
+
+${baseContext}${conscienceClause}`
+    },
+    {
+      role: "user",
+      content: `Architect's blueprint:
+
+${architectBlueprint}
+
+Moderator's deliberation summary:
+
+${moderatorSummary}
+
+Build the artifact exactly to spec. Deliver the complete, production-ready document.`
+    }
+  ];
+  const builtArtifact = await streamRole(
+    buildProvider2,
+    builderMessages,
+    1800,
+    (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
+    usage,
+    abortSignal
+  );
+  transcript.push(`**Builder (Artifact):** ${builtArtifact}`);
+  turns.push({ role: "Builder", round: 99, content: builtArtifact });
+  sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact });
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Auditor", roleIndex: -5, round: 99, provider: auditProvider.name });
+  const auditorMessages = [
+    {
+      role: "system",
+      content: `${seatBriefs.auditor}
+
+${baseContext}${conscienceClause}`
+    },
+    {
+      role: "user",
+      content: `Architect's blueprint:
+
+${architectBlueprint}
+
+Builder's artifact:
+
+${builtArtifact}
+
+Moderator's deliberation summary (for fact-checking):
+
+${moderatorSummary}
+
+Review the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed. Output: your release decision (APPROVED or RETURNED) followed by the final artifact text (approved as-is, or corrected version if you found issues).`
+    }
+  ];
+  const auditorOutput = await streamRole(
+    auditProvider,
+    auditorMessages,
+    1200,
+    (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
+    usage,
+    abortSignal
+  );
+  transcript.push(`**Auditor (Release):** ${auditorOutput}`);
+  turns.push({ role: "Auditor", round: 99, content: auditorOutput });
+  sendSSE(res, { type: "role_end", role: "Auditor", fullContent: auditorOutput });
+  const approvedArtifactMatch = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+([\s\S]+)/i);
+  const finalArtifact = approvedArtifactMatch ? approvedArtifactMatch[1].trim() : builtArtifact;
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: orchProvider.name });
+  const orchestratorCloseMessages = [
+    {
+      role: "system",
+      content: `${seatBriefs.orchestrator}
+
+${baseContext}${conscienceClause}`
+    },
+    {
+      role: "user",
+      content: `The court has completed its work. Here is the Moderator's summary:
+
+${moderatorSummary}
+
+Here is the Auditor-approved artifact:
+
+${finalArtifact}
+
+Deliver the verdict to the user: lead with a direct answer, summarise the key reasons in 2-3 sentences, present the artifact, and close with your standard save prompt asking if they would like to keep a copy in their files.`
+    }
   ];
   const finalAnswer = await streamRole(
-    provider,
-    verdictMessages,
-    1600,
+    orchProvider,
+    orchestratorCloseMessages,
+    1e3,
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
     usage,
     abortSignal
   );
-  const artifactsMatch = finalAnswer.match(/##\s+Artifacts\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  const artifacts = artifactsMatch ? artifactsMatch[1].trim() : "";
-  const caveatMatch = finalAnswer.match(/##\s+(?:Sources &|Sources &amp;|Caveats?|Sources)\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  const caveatMatch = auditorOutput.match(/##\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i) ?? finalAnswer.match(/##\s+(?:Sources &|Caveats?)\s*(?:Caveats?)?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const caveats = caveatMatch ? caveatMatch[1].trim() : "This analysis represents AI-generated reasoning and should not substitute for professional advice.";
-  const answerMatch = finalAnswer.match(/##\s+Final Answer\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  const cleanFinalAnswer = answerMatch ? answerMatch[1].trim() : finalAnswer;
   confidence = Math.min(95, confidence + 5);
   turns.push({ role: "Verdict", round: 99, content: finalAnswer });
   const creditsUsed = calculateActualCredits(
@@ -59795,55 +55999,66 @@ Output format: ${config.outputFormat}`;
     sessionId,
     confidence,
     creditsUsed,
-    finalAnswer: cleanFinalAnswer,
+    finalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript: transcript.join("\n\n---\n\n"),
+    transcriptLines: transcript,
     caveats,
-    artifacts,
+    artifacts: finalArtifact,
     provider: providerName,
     model: modelName,
-    tokenUsage: usage
+    tokenUsage: usage,
+    conscienceVersion,
+    ...pauseReason ? { pauseReason } : {}
   });
   return {
     sessionId,
     confidence,
     creditsUsed,
-    finalAnswer: cleanFinalAnswer,
+    finalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript,
     caveats,
-    artifacts,
+    artifacts: finalArtifact,
     turns,
     provider: providerName,
     model: modelName,
-    tokenUsage: usage
+    tokenUsage: usage,
+    conscienceVersion,
+    pauseReason,
+    fixedStageTokens: {
+      input: usage.inputTokens - usageAfterDebate.inputTokens,
+      output: usage.outputTokens - usageAfterDebate.outputTokens
+    }
   };
 }
 
-// src/routes/brain.ts
-import { FieldValue as FieldValue5 } from "firebase-admin/firestore";
+// artifacts/api-server/src/routes/brain.ts
+init_firebaseAdmin();
+import { FieldValue as FieldValue6 } from "firebase-admin/firestore";
 
-// src/lib/pricingConfig.ts
-import { FieldValue as FieldValue4 } from "firebase-admin/firestore";
-var _cache2 = null;
+// artifacts/api-server/src/lib/pricingConfig.ts
+init_firebaseAdmin();
+import { FieldValue as FieldValue5 } from "firebase-admin/firestore";
+var _cache4 = null;
 var _cacheExpiry2 = 0;
 var CACHE_TTL_MS2 = 6e4;
 function invalidateMultiplierCache() {
-  _cache2 = null;
+  _cache4 = null;
   _cacheExpiry2 = 0;
 }
 async function getMultiplierOverrides() {
   const now = Date.now();
-  if (_cache2 !== null && now < _cacheExpiry2) {
-    return { ...MODEL_MULTIPLIERS, ..._cache2.multipliers ?? {} };
+  if (_cache4 !== null && now < _cacheExpiry2) {
+    return { ...MODEL_MULTIPLIERS, ..._cache4.multipliers ?? {} };
   }
   const db = getFirestoreDb();
   if (!db) return { ...MODEL_MULTIPLIERS };
   try {
     const doc = await db.collection("config").doc("pricing").get();
-    _cache2 = doc.exists ? doc.data() : {};
+    _cache4 = doc.exists ? doc.data() : {};
     _cacheExpiry2 = now + CACHE_TTL_MS2;
-    return { ...MODEL_MULTIPLIERS, ..._cache2.multipliers ?? {} };
+    return { ...MODEL_MULTIPLIERS, ..._cache4.multipliers ?? {} };
   } catch {
     return { ...MODEL_MULTIPLIERS };
   }
@@ -59875,8 +56090,14 @@ var MODEL_META = {
 };
 async function getAdminPricingTable() {
   const overrides = await getMultiplierOverrides();
-  const EXAMPLE_INPUT = 13e3;
-  const EXAMPLE_OUTPUT = 5600;
+  const EXAMPLE_LITIGANTS = 3, EXAMPLE_ROUNDS = 2, TOKENS_PER_TURN = 600;
+  const variableOutput = 400 + EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * TOKENS_PER_TURN;
+  const variableInput = Math.ceil(
+    EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.8 * (EXAMPLE_ROUNDS / 2))
+  );
+  const exampleFixed = await getCalibratedFixedStageTokens();
+  const EXAMPLE_INPUT = variableInput + exampleFixed.input;
+  const EXAMPLE_OUTPUT = variableOutput + exampleFixed.output;
   const models = Object.entries(MODEL_RATES).map(([model, rate]) => {
     const defaultMultiplier = MODEL_MULTIPLIERS[model] ?? 5;
     const effectiveMultiplier = overrides[model] ?? defaultMultiplier;
@@ -59908,7 +56129,7 @@ async function saveMultiplierOverride(model, multiplier) {
   const db = getFirestoreDb();
   if (!db) throw new Error("Firebase not configured");
   await db.collection("config").doc("pricing").set(
-    { multipliers: { [model]: multiplier }, updatedAt: FieldValue4.serverTimestamp() },
+    { multipliers: { [model]: multiplier }, updatedAt: FieldValue5.serverTimestamp() },
     { merge: true }
   );
   invalidateMultiplierCache();
@@ -59922,11 +56143,11 @@ async function resetMultiplierToDefault(model) {
   const data = doc.data();
   const multipliers = { ...data.multipliers ?? {} };
   delete multipliers[model];
-  await ref.set({ multipliers, updatedAt: FieldValue4.serverTimestamp() });
+  await ref.set({ multipliers, updatedAt: FieldValue5.serverTimestamp() });
   invalidateMultiplierCache();
 }
 
-// src/lib/squareClient.ts
+// artifacts/api-server/src/lib/squareClient.ts
 var SQUARE_BASE_URL = process.env["SQUARE_ENVIRONMENT"] === "production" ? "https://connect.squareup.com" : "https://connect.squareupsandbox.com";
 function isSquareConfigured() {
   return !!(process.env["SQUARE_ACCESS_TOKEN"] && process.env["SQUARE_LOCATION_ID"]);
@@ -59983,14 +56204,15 @@ async function createPaymentLink(opts) {
   return data.payment_link;
 }
 
-// src/lib/creditPacks.ts
+// artifacts/api-server/src/lib/creditPacks.ts
+var CREDITS_PER_DOLLAR = 100;
 var CREDIT_PACKS = [
   {
     id: "starter_pack",
     name: "Starter Pack",
-    description: "100 credits \u2014 great for exploring Litigant AI",
+    description: "500 credits \u2014 perfect for getting started",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "100" },
+    metadata: { type: "credit_pack", creditAmount: "500" },
     prices: [
       {
         id: "price_starter",
@@ -59999,16 +56221,16 @@ var CREDIT_PACKS = [
         currency: "usd",
         recurring: null,
         active: true,
-        metadata: { creditAmount: "100" }
+        metadata: { creditAmount: "500" }
       }
     ]
   },
   {
     id: "pro_pack",
     name: "Pro Pack",
-    description: "500 credits \u2014 best value for power users",
+    description: "2,200 credits \u2014 10% bonus credits",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "500" },
+    metadata: { type: "credit_pack", creditAmount: "2200" },
     prices: [
       {
         id: "price_pro_pack",
@@ -60017,16 +56239,16 @@ var CREDIT_PACKS = [
         currency: "usd",
         recurring: null,
         active: true,
-        metadata: { creditAmount: "500" }
+        metadata: { creditAmount: "2200" }
       }
     ]
   },
   {
     id: "mega_pack",
     name: "Mega Pack",
-    description: "1,000 credits \u2014 maximum savings",
+    description: "4,200 credits \u2014 20% bonus credits",
     active: true,
-    metadata: { type: "credit_pack", creditAmount: "1000" },
+    metadata: { type: "credit_pack", creditAmount: "4200" },
     prices: [
       {
         id: "price_mega_pack",
@@ -60035,7 +56257,7 @@ var CREDIT_PACKS = [
         currency: "usd",
         recurring: null,
         active: true,
-        metadata: { creditAmount: "1000" }
+        metadata: { creditAmount: "4200" }
       }
     ]
   }
@@ -60048,7 +56270,7 @@ function findPackByPriceId(priceId) {
   return null;
 }
 
-// src/routes/brain.ts
+// artifacts/api-server/src/routes/brain.ts
 var router3 = (0, import_express3.Router)();
 async function createAutoRefillUrl(priceId, uid) {
   if (!isSquareConfigured()) return null;
@@ -60071,13 +56293,39 @@ async function createAutoRefillUrl(priceId, uid) {
     return null;
   }
 }
-var guestSessionIPs = /* @__PURE__ */ new Set();
+var _guestMemoryFallback = /* @__PURE__ */ new Set();
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
   return req.socket.remoteAddress ?? "unknown";
 }
-async function reserveCredits(uid, amount, sessionId) {
+async function hasGuestUsed(ip) {
+  const db = getFirestoreDb();
+  if (!db) return _guestMemoryFallback.has(ip);
+  try {
+    const doc = await db.collection("guest_sessions").doc(ip.replace(/[./]/g, "_")).get();
+    return doc.exists;
+  } catch {
+    return _guestMemoryFallback.has(ip);
+  }
+}
+async function markGuestUsed(ip) {
+  const db = getFirestoreDb();
+  const safeKey = ip.replace(/[./]/g, "_");
+  if (!db) {
+    _guestMemoryFallback.add(ip);
+    return;
+  }
+  try {
+    await db.collection("guest_sessions").doc(safeKey).set({
+      ip,
+      usedAt: /* @__PURE__ */ new Date()
+    });
+  } catch {
+    _guestMemoryFallback.add(ip);
+  }
+}
+async function reserveCredits(uid, amount, sessionId, source = "brain_reservation") {
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore not configured");
   return db.runTransaction(async (txn) => {
@@ -60086,16 +56334,16 @@ async function reserveCredits(uid, amount, sessionId) {
     const balance = userDoc.data()?.creditBalance ?? 0;
     if (balance < amount) return false;
     const newBalance = balance - amount;
-    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue5.serverTimestamp() });
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue6.serverTimestamp() });
     const txRef = db.collection("credit_transactions").doc();
     txn.set(txRef, {
       userId: uid,
       type: "usage",
       amount: -amount,
       balanceAfter: newBalance,
-      source: "brain_reservation",
+      source,
       sessionId,
-      createdAt: FieldValue5.serverTimestamp()
+      createdAt: FieldValue6.serverTimestamp()
     });
     return true;
   });
@@ -60108,7 +56356,7 @@ async function reconcileCredits(uid, refundAmount, sessionId, source) {
     const userDoc = await txn.get(userRef);
     const balance = userDoc.data()?.creditBalance ?? 0;
     const newBalance = balance + refundAmount;
-    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue5.serverTimestamp() });
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue6.serverTimestamp() });
     const txRef = db.collection("credit_transactions").doc();
     txn.set(txRef, {
       userId: uid,
@@ -60117,16 +56365,17 @@ async function reconcileCredits(uid, refundAmount, sessionId, source) {
       balanceAfter: newBalance,
       source,
       sessionId,
-      createdAt: FieldValue5.serverTimestamp()
+      createdAt: FieldValue6.serverTimestamp()
     });
   }).catch((e) => console.error(`[brain] ${source} failed for ${uid}:`, e));
 }
 router3.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId } = req.body;
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId } = req.body;
   if (!question?.trim()) {
     res.status(400).json({ message: "question is required" });
     return;
   }
+  const sessionId = clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const effectiveConfig = config ?? {
     courtMode: "adversarial",
     litigantCount: 3,
@@ -60135,7 +56384,7 @@ router3.post("/run-brain", async (req, res) => {
     responseMode: "balanced",
     outputFormat: "report"
   };
-  const estimatedCost = estimateCreditCost(effectiveConfig);
+  const estimatedCost = await estimateSessionCreditsCalibrated(effectiveConfig);
   let uid = null;
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
@@ -60152,7 +56401,7 @@ router3.post("/run-brain", async (req, res) => {
     }
     uid = decoded.uid;
     try {
-      const reserved = await reserveCredits(uid, estimatedCost, sessionId ?? "pending");
+      const reserved = await reserveCredits(uid, estimatedCost, sessionId);
       if (!reserved) {
         res.status(402).json({
           message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`
@@ -60166,13 +56415,14 @@ router3.post("/run-brain", async (req, res) => {
     }
   } else {
     const ip = getClientIp(req);
-    if (guestSessionIPs.has(ip)) {
+    if (await hasGuestUsed(ip)) {
       res.status(402).json({
-        message: "Guest sessions are limited to one free trial. Create a free account to continue \u2014 you'll receive 50 credits.",
+        message: "Guest sessions are limited to one free trial. Create a free account to continue \u2014 you'll receive 100 credits.",
         guestLimitReached: true
       });
       return;
     }
+    await markGuestUsed(ip);
   }
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -60194,36 +56444,43 @@ router3.post("/run-brain", async (req, res) => {
       config: effectiveConfig,
       templateId,
       sessionId,
+      continueFromTranscript,
+      rebuttalContext,
       res,
       abortSignal: abortCtrl.signal
     });
     runSucceeded = true;
     actualCost = result.creditsUsed;
-    if (!uid) {
-      const ip = getClientIp(req);
-      guestSessionIPs.add(ip);
-    }
     if (db && uid) {
       const sessionRef = db.collection("sessions").doc(result.sessionId);
       try {
         await sessionRef.set({
           sessionId: result.sessionId,
           userId: uid,
-          title: question.slice(0, 80),
+          title: rebuttalContext ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}` : question.slice(0, 80),
           question,
           templateId: templateId ?? null,
           confidence: result.confidence,
           creditsUsed: actualCost,
+          fixedStageTokens: result.fixedStageTokens,
           status: "complete",
           finalAnswer: result.finalAnswer,
           debateNotes: result.debateNotes,
           transcript: result.debateNotes ? result.transcript.join("\n\n---\n\n") : "",
           caveats: result.caveats,
           artifacts: result.artifacts,
+          conscienceVersion: result.conscienceVersion,
           shared: false,
           shareId: null,
-          createdAt: FieldValue5.serverTimestamp(),
-          updatedAt: FieldValue5.serverTimestamp()
+          // Rebuttal metadata — present only on challenge runs
+          ...rebuttalContext ? {
+            isRebuttal: true,
+            rebuttalRound: rebuttalContext.rebuttalRound,
+            rebuttalChallenge: rebuttalContext.challenge,
+            parentSessionId: parentSessionId ?? null
+          } : {},
+          createdAt: FieldValue6.serverTimestamp(),
+          updatedAt: FieldValue6.serverTimestamp()
         });
         actualCost = await calculateLiveCredits(
           result.model || "gpt-4o",
@@ -60236,8 +56493,24 @@ router3.post("/run-brain", async (req, res) => {
         }
         if (actualCost > estimatedCost && uid) {
           const overage = actualCost - estimatedCost;
-          await reserveCredits(uid, overage, result.sessionId).catch(() => {
-          });
+          const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage").catch(() => false);
+          if (!overageCollected) {
+            console.warn(
+              `[brain] overage uncollected uid=${uid} sessionId=${result.sessionId} overage=${overage}`
+            );
+            if (db) {
+              db.collection("credit_transactions").add({
+                userId: uid,
+                type: "usage_shortfall",
+                amount: 0,
+                balanceAfter: null,
+                source: "brain_overage_uncollected",
+                sessionId: result.sessionId,
+                overage,
+                createdAt: FieldValue6.serverTimestamp()
+              }).catch((e) => console.error("[brain] failed to record overage shortfall:", e));
+            }
+          }
         }
         try {
           const userSnap = await db.collection("users").doc(uid).get();
@@ -60254,7 +56527,7 @@ router3.post("/run-brain", async (req, res) => {
               role: turn.role,
               round: turn.round,
               content: turn.content,
-              createdAt: FieldValue5.serverTimestamp()
+              createdAt: FieldValue6.serverTimestamp()
             })
           )
         );
@@ -60272,7 +56545,7 @@ router3.post("/run-brain", async (req, res) => {
     }
   } finally {
     if (!runSucceeded && uid && db) {
-      await reconcileCredits(uid, estimatedCost, sessionId ?? "failed", "brain_failure_refund");
+      await reconcileCredits(uid, estimatedCost, sessionId, "brain_failure_refund");
     }
     clearTimeout(sessionTimer);
     if (!res.writableEnded) res.end();
@@ -60280,14 +56553,19 @@ router3.post("/run-brain", async (req, res) => {
 });
 var brain_default = router3;
 
-// src/routes/sessions.ts
+// artifacts/api-server/src/routes/sessions.ts
 var import_express4 = __toESM(require_express2(), 1);
+init_firebaseAdmin();
 var router4 = (0, import_express4.Router)();
 router4.get("/sessions", async (req, res) => {
   const db = getFirestoreDb();
   const authHeader = req.headers["authorization"];
-  if (!db || !authHeader?.startsWith("Bearer ")) {
-    res.json([]);
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  if (!db) {
+    res.status(503).json({ message: "Service unavailable" });
     return;
   }
   const decoded = await verifyIdToken(authHeader.slice(7));
@@ -60461,8 +56739,9 @@ router4.post("/sessions/:id/share", async (req, res) => {
 });
 var sessions_default = router4;
 
-// src/routes/templates.ts
+// artifacts/api-server/src/routes/templates.ts
 var import_express5 = __toESM(require_express2(), 1);
+init_firebaseAdmin();
 var router5 = (0, import_express5.Router)();
 var STATIC_TEMPLATES = [
   { id: "business-plan", category: "business", title: "Business Plan Builder", description: "Stress-test your business concept across viability, market fit, financials, and competition.", estimatedCredits: 25 },
@@ -60514,8 +56793,9 @@ router5.get("/templates/:id", async (req, res) => {
 });
 var templates_default = router5;
 
-// src/routes/account.ts
+// artifacts/api-server/src/routes/account.ts
 var import_express6 = __toESM(require_express2(), 1);
+init_firebaseAdmin();
 var router6 = (0, import_express6.Router)();
 router6.delete("/account", async (req, res) => {
   const db = getFirestoreDb();
@@ -60550,9 +56830,10 @@ router6.delete("/account", async (req, res) => {
 });
 var account_default = router6;
 
-// src/routes/admin.ts
+// artifacts/api-server/src/routes/admin.ts
 var import_express7 = __toESM(require_express2(), 1);
-import { FieldValue as FieldValue6 } from "firebase-admin/firestore";
+init_firebaseAdmin();
+import { FieldValue as FieldValue7 } from "firebase-admin/firestore";
 import { getAuth as getAuth3 } from "firebase-admin/auth";
 var router7 = (0, import_express7.Router)();
 async function requireAdmin(req, res, next) {
@@ -60658,15 +56939,21 @@ router7.get("/admin/system-health", requireAdmin, async (_req, res) => {
       txCount,
       recentSessions,
       errorSessions,
-      feedbackCount
+      feedbackCount,
+      sessions7d
     ] = await Promise.all([
       db.collection("users").count().get(),
       db.collection("sessions").count().get(),
       db.collection("credit_transactions").count().get(),
       db.collection("sessions").where("createdAt", ">=", last24h).count().get(),
       db.collection("sessions").where("status", "==", "error").where("createdAt", ">=", last7d).count().get(),
-      db.collection("feedback").where("createdAt", ">=", last7d).count().get()
+      db.collection("feedback").where("createdAt", ">=", last7d).count().get(),
+      // Scoped to the same 7-day window as errorSessions so the error rate
+      // reflects recent behaviour rather than dividing by the all-time total.
+      db.collection("sessions").where("createdAt", ">=", last7d).count().get()
     ]);
+    const sessionCount7d = sessions7d.data().count;
+    const errorCount7d = errorSessions.data().count;
     return res.json({
       status: "ok",
       serverTime: (/* @__PURE__ */ new Date()).toISOString(),
@@ -60679,9 +56966,12 @@ router7.get("/admin/system-health", requireAdmin, async (_req, res) => {
         newSessions: recentSessions.data().count
       },
       last7d: {
-        errorSessions: errorSessions.data().count,
+        errorSessions: errorCount7d,
         feedbackEntries: feedbackCount.data().count,
-        errorRate: sessionCount.data().count > 0 ? (errorSessions.data().count / Math.max(sessionCount.data().count, 1) * 100).toFixed(1) : "0.0"
+        // Denominator is 7-day session total, not lifetime total.
+        // Using the lifetime total would trend the rate toward zero as the
+        // product ages, masking real spikes in recent error counts.
+        errorRate: sessionCount7d > 0 ? (errorCount7d / sessionCount7d * 100).toFixed(1) : "0.0"
       }
     });
   } catch (err) {
@@ -60714,12 +57004,14 @@ router7.get("/admin/users", requireAdmin, async (req, res) => {
         (u) => u.email?.toLowerCase().includes(search) || u.displayName?.toLowerCase().includes(search)
       );
     }
-    const hasMore = !search && users.length > limit3;
-    if (!search) users = users.slice(0, limit3);
+    const hasMore = users.length > limit3;
+    const boundedSearch = !!(search && !search.includes("@"));
+    users = users.slice(0, limit3);
     return res.json({
       users,
       hasMore,
-      nextCursor: hasMore ? users[users.length - 1]?.id : null
+      nextCursor: hasMore ? users[users.length - 1]?.id : null,
+      ...boundedSearch ? { boundedSearch: true } : {}
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -60771,9 +57063,9 @@ router7.post("/admin/users/:uid/ban", requireAdmin, async (req, res) => {
       {
         banned,
         bannedReason: reason ?? null,
-        bannedAt: banned ? FieldValue6.serverTimestamp() : null,
+        bannedAt: banned ? FieldValue7.serverTimestamp() : null,
         bannedBy: req.adminUid,
-        updatedAt: FieldValue6.serverTimestamp()
+        updatedAt: FieldValue7.serverTimestamp()
       },
       { merge: true }
     );
@@ -60969,16 +57261,83 @@ router7.get("/feature-flags", async (_req, res) => {
 router7.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  const name = req.params["name"];
   const { value } = req.body;
-  if (value === void 0) {
-    return res.status(400).json({ error: "value is required" });
+  const validFlags = Object.keys(DEFAULT_FLAGS);
+  const VALID_SCOPES = /* @__PURE__ */ new Set(["all", "pro", "free"]);
+  if (name.endsWith("_scope")) {
+    const baseName = name.slice(0, -"_scope".length);
+    if (!validFlags.includes(baseName)) {
+      return res.status(400).json({
+        error: `Unknown scope flag "${name}". Valid base flags: ${validFlags.join(", ")}`
+      });
+    }
+    if (typeof value !== "string" || !VALID_SCOPES.has(value)) {
+      return res.status(400).json({
+        error: `Scope value must be one of: ${[...VALID_SCOPES].join(", ")}`
+      });
+    }
+  } else {
+    if (!validFlags.includes(name)) {
+      return res.status(400).json({
+        error: `Unknown flag "${name}". Valid flags: ${validFlags.join(", ")}`
+      });
+    }
+    if (typeof value !== "boolean") {
+      return res.status(400).json({ error: "value must be a boolean (true or false)" });
+    }
   }
   try {
     await db.collection("config").doc("featureFlags").set(
-      { [req.params["name"]]: value, updatedAt: FieldValue6.serverTimestamp() },
+      { [name]: value, updatedAt: FieldValue7.serverTimestamp() },
       { merge: true }
     );
-    return res.json({ success: true, name: req.params["name"], value });
+    return res.json({ success: true, name, value });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.get("/admin/conscience", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  try {
+    const doc = await db.collection("system_config").doc("conscience").get();
+    if (!doc.exists) {
+      return res.json({
+        exists: false,
+        version: CANON_V2_FALLBACK_VERSION,
+        text: CANON_V2_FALLBACK_TEXT,
+        updatedAt: null,
+        updatedBy: null,
+        note: "No Firestore document found \u2014 Canon v2 fallback is in use."
+      });
+    }
+    return res.json({ exists: true, ...serializeDoc(doc) });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.patch("/admin/conscience", requireAdmin, async (req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  const { text, version: version2 } = req.body;
+  if (!text?.trim()) {
+    return res.status(400).json({ error: "text (string) is required and must not be empty" });
+  }
+  const newVersion = version2?.trim() || `v-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}`;
+  try {
+    await db.collection("system_config").doc("conscience").set({
+      text: text.trim(),
+      version: newVersion,
+      updatedAt: FieldValue7.serverTimestamp(),
+      updatedBy: req.adminUid
+    });
+    invalidateConscienceCache();
+    return res.json({
+      success: true,
+      version: newVersion,
+      note: "This instance cache cleared. Other Cloud Run instances update within 5 minutes."
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -60997,7 +57356,7 @@ router7.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
   const { title, description, isActive, systemPrompt, defaultSettings } = req.body;
-  const updates = { updatedAt: FieldValue6.serverTimestamp() };
+  const updates = { updatedAt: FieldValue7.serverTimestamp() };
   if (title !== void 0) updates["title"] = title;
   if (description !== void 0) updates["description"] = description;
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
@@ -61078,10 +57437,84 @@ router7.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => 
     return res.status(500).json({ error: err.message });
   }
 });
+router7.get("/admin/seat-briefs", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  try {
+    const active = await getAllSeatBriefs();
+    const defaults3 = {};
+    for (const id of SEAT_IDS) {
+      defaults3[id] = getSeatBriefFileDefault(id);
+    }
+    let overrides = {};
+    if (db) {
+      const doc = await db.collection("system_config").doc("seat_briefs").get();
+      if (doc.exists) overrides = doc.data() ?? {};
+    }
+    return res.json({
+      active,
+      defaults: defaults3,
+      overrides,
+      seatIds: SEAT_IDS
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.patch("/admin/seat-briefs/:seatId", requireAdmin, async (req, res) => {
+  const { seatId } = req.params;
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  if (!SEAT_IDS.includes(seatId)) {
+    return res.status(400).json({
+      error: `Invalid seatId. Must be one of: ${SEAT_IDS.join(", ")}`
+    });
+  }
+  const { text } = req.body;
+  if (!text?.trim()) {
+    return res.status(400).json({ error: "text (string) is required and must not be empty" });
+  }
+  try {
+    await db.collection("system_config").doc("seat_briefs").set(
+      {
+        [seatId]: text.trim(),
+        updatedAt: FieldValue7.serverTimestamp(),
+        updatedBy: req.adminUid
+      },
+      { merge: true }
+    );
+    invalidateSeatBriefsCache();
+    return res.json({ success: true, seatId, length: text.trim().length });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+router7.delete("/admin/seat-briefs/:seatId", requireAdmin, async (req, res) => {
+  const { seatId } = req.params;
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  if (!SEAT_IDS.includes(seatId)) {
+    return res.status(400).json({ error: `Invalid seatId` });
+  }
+  try {
+    await db.collection("system_config").doc("seat_briefs").set(
+      { [seatId]: FieldValue7.delete() },
+      { merge: true }
+    );
+    invalidateSeatBriefsCache();
+    return res.json({
+      success: true,
+      seatId,
+      note: "Firestore override removed \u2014 file default is now active"
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 var admin_default = router7;
 
-// src/routes/report.ts
+// artifacts/api-server/src/routes/report.ts
 var import_express8 = __toESM(require_express2(), 1);
+init_firebaseAdmin();
 var router8 = (0, import_express8.Router)();
 router8.get("/report/:shareId", async (req, res) => {
   const db = getFirestoreDb();
@@ -61146,7 +57579,7 @@ ${t["content"]}`).join("\n\n---\n\n");
 });
 var report_default = router8;
 
-// src/routes/providers.ts
+// artifacts/api-server/src/routes/providers.ts
 var import_express9 = __toESM(require_express2(), 1);
 var router9 = (0, import_express9.Router)();
 router9.get("/providers", (_req, res) => {
@@ -61167,8 +57600,9 @@ router9.get("/providers", (_req, res) => {
 });
 var providers_default = router9;
 
-// src/routes/billing.ts
+// artifacts/api-server/src/routes/billing.ts
 var import_express10 = __toESM(require_express2(), 1);
+init_firebaseAdmin();
 import crypto4 from "crypto";
 var router10 = (0, import_express10.Router)();
 async function requireAuth(req, res) {
@@ -61205,10 +57639,26 @@ router10.patch("/billing/auto-refill", async (req, res) => {
   if (typeof enabled !== "boolean") {
     return res.status(400).json({ error: "enabled (boolean) is required" });
   }
+  if (thresholdCredits !== void 0) {
+    if (typeof thresholdCredits !== "number" || !Number.isInteger(thresholdCredits) || thresholdCredits < 10 || thresholdCredits > 1e5) {
+      return res.status(400).json({ error: "thresholdCredits must be a whole number between 10 and 100 000" });
+    }
+  }
+  if (packPriceId !== void 0) {
+    const validPriceIds = CREDIT_PACKS.flatMap((p) => p.prices.map((pr) => pr.id));
+    if (!validPriceIds.includes(packPriceId)) {
+      return res.status(400).json({
+        error: `Invalid packPriceId. Valid values: ${validPriceIds.join(", ")}. See GET /billing/products for details.`
+      });
+    }
+  }
   await setAutoRefillPreference(user.uid, {
     enabled,
     thresholdCredits: thresholdCredits ?? 20,
-    packPriceId: packPriceId ?? "starter_pack"
+    // Default to "price_starter" — the valid price ID for the Starter Pack.
+    // "starter_pack" (the pack ID) is intentionally not used here because
+    // findPackByPriceId() looks up by price ID, not pack ID.
+    packPriceId: packPriceId ?? "price_starter"
   });
   return res.json({ success: true });
 });
@@ -61266,7 +57716,7 @@ router10.post("/billing/checkout", async (req, res) => {
   if (!creditAmount) {
     return res.status(400).json({ error: "Credit amount not configured for this product" });
   }
-  const origin = req.headers["origin"] || (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) || `https://${process.env["REPLIT_DOMAINS"]?.split(",")[0]}`;
+  const origin = (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) || `https://${process.env["REPLIT_DOMAINS"]?.split(",")[0]}`;
   try {
     const idempotencyKey = crypto4.randomUUID();
     const note = `LITIGANT:userId=${user.uid},creditAmount=${creditAmount},pack=${product.id}`;
@@ -61284,21 +57734,55 @@ router10.post("/billing/checkout", async (req, res) => {
     return res.status(500).json({ error: "Failed to create checkout link" });
   }
 });
-router10.post("/billing/cancel-subscription", async (_req, res) => {
+router10.post("/billing/checkout/custom", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  if (!isSquareConfigured()) {
+    return res.status(503).json({ error: "Square not configured" });
+  }
+  const { dollars } = req.body;
+  if (!dollars || typeof dollars !== "number" || dollars < 1 || dollars > 500) {
+    return res.status(400).json({ error: "dollars must be a number between 1 and 500" });
+  }
+  const roundedDollars = Math.floor(dollars);
+  const amountCents = roundedDollars * 100;
+  const creditAmount = roundedDollars * CREDITS_PER_DOLLAR;
+  const origin = (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) || `https://${process.env["REPLIT_DOMAINS"]?.split(",")[0]}`;
+  try {
+    const idempotencyKey = crypto4.randomUUID();
+    const note = `LITIGANT:userId=${user.uid},creditAmount=${creditAmount},pack=custom`;
+    const link = await createPaymentLink({
+      name: `Custom Top-Up \u2014 ${creditAmount.toLocaleString()} Credits`,
+      amountCents,
+      note,
+      redirectUrl: `${origin}/billing?success=true`,
+      buyerEmail: user.email,
+      idempotencyKey
+    });
+    return res.json({ url: link.url, creditAmount, amountCents });
+  } catch (err) {
+    console.error("[Billing] Square custom checkout error:", err.message);
+    return res.status(500).json({ error: "Failed to create checkout link" });
+  }
+});
+router10.post("/billing/cancel-subscription", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
   return res.status(501).json({ error: "Subscriptions are not available" });
 });
 var billing_default = router10;
 
-// src/routes/webhook.ts
+// artifacts/api-server/src/routes/webhook.ts
 var import_express11 = __toESM(require_express2(), 1);
 
-// src/lib/squareEventHandler.ts
+// artifacts/api-server/src/lib/squareEventHandler.ts
 import crypto5 from "crypto";
+init_firebaseAdmin();
 
-// src/lib/logger.ts
-var import_pino = __toESM(require_pino(), 1);
+// artifacts/api-server/src/lib/logger.ts
+import pino from "pino";
 var isProduction = process.env.NODE_ENV === "production";
-var logger = (0, import_pino.default)({
+var logger = pino({
   level: process.env.LOG_LEVEL ?? "info",
   redact: [
     "req.headers.authorization",
@@ -61313,19 +57797,22 @@ var logger = (0, import_pino.default)({
   }
 });
 
-// src/lib/squareEventHandler.ts
+// artifacts/api-server/src/lib/squareEventHandler.ts
 function verifySquareWebhook(rawBody, signature, notificationUrl) {
   const signingKey = process.env["SQUARE_WEBHOOK_SIGNATURE_KEY"];
   if (!signingKey) {
-    logger.warn(
-      "[SquareWebhook] SQUARE_WEBHOOK_SIGNATURE_KEY not set \u2014 skipping verification (set it in production)"
+    logger.error(
+      "[SquareWebhook] SQUARE_WEBHOOK_SIGNATURE_KEY not set \u2014 rejecting webhook. Set this env var from the Square Developer Dashboard before going live; without it, credit-granting webhooks cannot be verified and are refused."
     );
-    return true;
+    return false;
   }
   const hmac = crypto5.createHmac("sha256", signingKey);
   hmac.update(notificationUrl + rawBody);
   const expected = hmac.digest("base64");
-  return crypto5.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  if (expectedBuf.length !== signatureBuf.length) return false;
+  return crypto5.timingSafeEqual(expectedBuf, signatureBuf);
 }
 async function handleSquareEvent(event) {
   if (!isFirebaseConfigured()) return;
@@ -61345,6 +57832,13 @@ async function handleSquareEvent(event) {
       const userId = match[1];
       const creditAmount = parseInt(match[2], 10);
       if (!userId || !creditAmount) return;
+      const MAX_CREDIT_GRANT = 1e5;
+      if (creditAmount > MAX_CREDIT_GRANT) {
+        logger.error(
+          `[SquareEvent] Rejected suspicious creditAmount=${creditAmount} for ${userId} \u2014 exceeds ${MAX_CREDIT_GRANT} cap`
+        );
+        return;
+      }
       const result = await addCredits(userId, creditAmount, "purchase", {
         source: "square_checkout",
         paymentId: payment.id,
@@ -61363,7 +57857,7 @@ async function handleSquareEvent(event) {
   }
 }
 
-// src/routes/webhook.ts
+// artifacts/api-server/src/routes/webhook.ts
 var router11 = (0, import_express11.Router)();
 router11.post("/square/webhook", async (req, res) => {
   const signature = req.headers["x-square-hmacsha256-signature"];
@@ -61391,7 +57885,7 @@ router11.post("/square/webhook", async (req, res) => {
 });
 var webhook_default = router11;
 
-// src/routes/index-firebase.ts
+// artifacts/api-server/src/routes/index-firebase.ts
 var router12 = (0, import_express12.Router)();
 router12.use(health_default);
 router12.use(auth_default);
@@ -61406,9 +57900,11 @@ router12.use(billing_default);
 router12.use(webhook_default);
 var index_firebase_default = router12;
 
-// src/app-firebase.ts
+// artifacts/api-server/src/app-firebase.ts
+init_firebaseAdmin();
 initFirebaseAdmin();
 var app2 = (0, import_express13.default)();
+app2.set("trust proxy", 1);
 app2.use((req, _res, next) => {
   console.log(`[${req.method}] ${req.url?.split("?")[0]}`);
   next();
@@ -61440,7 +57936,7 @@ app2.use(import_express13.default.urlencoded({ extended: true }));
 app2.use("/api", index_firebase_default);
 var app_firebase_default = app2;
 
-// src/server-cloudrun.ts
+// artifacts/api-server/src/server-cloudrun.ts
 var wrapperApp = (0, import_express14.default)();
 wrapperApp.use((req, _res, next) => {
   req.url = req.url.replace(/^\/api-server/, "") || "/";
