@@ -42,7 +42,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "business plan",
     category: "business",
     icon: "Briefcase",
-    image: "/tools/business-plan-analyzer.png",
+    image: "/tools/business-plan-analyzer.jpg",
     howItWorks: [
       { step: "01", title: "Describe your concept", desc: "Enter your business idea, target market, revenue model, and any known competition. The more specific, the sharper the analysis." },
       { step: "02", title: "AI models debate it", desc: "A panel of AI litigants each take different positions — advocate, skeptic, devil's advocate — and cross-examine each other's reasoning in real time." },
@@ -74,7 +74,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "website",
     category: "technical",
     icon: "Globe",
-    image: "/tools/website-audit.png",
+    image: "/tools/website-audit.jpg",
     howItWorks: [
       { step: "01", title: "Share your URL and goals", desc: "Provide the website URL, its primary business goal, and any specific concerns you want examined." },
       { step: "02", title: "AI reviewers critique it", desc: "A panel of AI specialists — UX critic, conversion analyst, content editor, technical auditor — each examine the site from their perspective." },
@@ -106,7 +106,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "marketing strategy",
     category: "business",
     icon: "TrendingUp",
-    image: "/tools/marketing-strategy.png",
+    image: "/tools/marketing-strategy.jpg",
     howItWorks: [
       { step: "01", title: "Describe your strategy", desc: "Share your product, target audience, marketing channels, budget range, and primary goal — awareness, leads, or sales." },
       { step: "02", title: "AI models stress-test it", desc: "Each AI litigant attacks a different dimension: channel fit, message clarity, audience alignment, competitive differentiation, and ROI realism." },
@@ -138,7 +138,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "code or architecture",
     category: "technical",
     icon: "Code2",
-    image: "/tools/code-review.png",
+    image: "/tools/code-review.jpg",
     howItWorks: [
       { step: "01", title: "Share your code or architecture", desc: "Paste a code snippet, describe your system architecture, or outline a technical decision you're evaluating." },
       { step: "02", title: "Specialist AI models examine it", desc: "A security auditor, performance analyst, architecture critic, and maintainability reviewer each attack the problem from their domain." },
@@ -170,7 +170,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "contract",
     category: "personal",
     icon: "FileText",
-    image: "/tools/contract-review.png",
+    image: "/tools/contract-review.jpg",
     howItWorks: [
       { step: "01", title: "Share the key clauses", desc: "Paste the contract text, summary, or the specific sections that concern you. Tell the AI your role — buyer, employee, vendor, etc." },
       { step: "02", title: "AI models debate the risks", desc: "Each litigant takes a different angle: risk identifier, negotiation strategist, protection gap analyst, and plain-language translator." },
@@ -192,7 +192,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "decision-analysis",
     templateId: "major-decision",
-    image: "/tools/decision-analysis.png",
+    image: "/tools/decision-analysis.jpg",
     title: "AI Decision Analysis",
     metaTitle: "AI Decision Analysis Tool — Pros, Cons & Confidence Score | Litigant AI",
     metaDescription: "Analyze any major decision with multiple AI perspectives. Get a structured pros/cons analysis, risk assessment, second-order effects, and a confidence-scored recommendation.",
@@ -234,7 +234,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "medical appointment",
     category: "personal",
     icon: "BookOpen",
-    image: "/tools/medical-appointment-prep.png",
+    image: "/tools/medical-appointment-prep.jpg",
     howItWorks: [
       { step: "01", title: "Describe your situation", desc: "Share your symptoms, diagnosis, or the type of appointment you're preparing for. Include any questions you already have." },
       { step: "02", title: "AI models analyze your situation", desc: "Medical educator, patient advocate, and diagnostic questioner AIs each examine your situation and generate questions from different angles." },
@@ -266,7 +266,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "product idea",
     category: "business",
     icon: "FlaskConical",
-    image: "/tools/product-validator.png",
+    image: "/tools/product-validator.jpg",
     howItWorks: [
       { step: "01", title: "Describe your product concept", desc: "Share the problem you're solving, who has it, your proposed solution, and why someone would choose it over alternatives." },
       { step: "02", title: "AI models try to kill it", desc: "Each AI litigant attacks a different core assumption — market size, customer willingness to pay, competitive moat, and technical feasibility." },
@@ -298,7 +298,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "writing",
     category: "writing",
     icon: "BookOpen",
-    image: "/tools/manuscript-critique.png",
+    image: "/tools/manuscript-critique.jpg",
     howItWorks: [
       { step: "01", title: "Share an excerpt or summary", desc: "Paste a chapter, excerpt, or detailed summary of your work. Tell the AI the genre, intended audience, and what you most want feedback on." },
       { step: "02", title: "AI editors attack it", desc: "A structural critic, argument analyst, clarity editor, and audience advocate each examine the work from their perspective." },
@@ -330,7 +330,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "competitive position",
     category: "business",
     icon: "Search",
-    image: "/tools/competitive-intelligence.png",
+    image: "/tools/competitive-intelligence.jpg",
     howItWorks: [
       { step: "01", title: "Describe your market position", desc: "Share your product, key competitors, your claimed differentiation, and the customers you're targeting." },
       { step: "02", title: "AI analysts attack your positioning", desc: "A competitive skeptic, market analyst, customer advocate, and threat modeler each examine your position from a different angle." },
@@ -352,7 +352,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "debate-prep",
     templateId: "debate-prep",
-    image: "/tools/debate-prep.png",
+    image: "/tools/debate-prep.jpg",
     title: "AI Debate Preparation",
     metaTitle: "AI Debate Prep Tool — Find the Strongest Counterarguments | Litigant AI",
     metaDescription: "Use adversarial AI models to find every strong counterargument to your position before you face a live opponent. Never be blindsided in a debate again.",
@@ -394,7 +394,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "hypothesis",
     category: "research",
     icon: "FlaskConical",
-    image: "/tools/hypothesis-testing.png",
+    image: "/tools/hypothesis-testing.jpg",
     howItWorks: [
       { step: "01", title: "State your hypothesis", desc: "Describe your hypothesis, the evidence or reasoning behind it, and what you're trying to decide or prove." },
       { step: "02", title: "AI models challenge it", desc: "A skeptic, an alternative-hypothesis generator, a methodology critic, and a confirmation-bias detector each examine your reasoning from a different angle." },
@@ -426,7 +426,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "report",
     category: "writing",
     icon: "FileText",
-    image: "/tools/report-critique.png",
+    image: "/tools/report-critique.jpg",
     howItWorks: [
       { step: "01", title: "Share your report or summary", desc: "Paste the full text, an executive summary, or key sections. Tell the AI the intended audience and the decision you want the report to support." },
       { step: "02", title: "AI critics examine it", desc: "A logic auditor, evidence evaluator, assumption excavator, and audience advocate each review the report from their perspective." },
@@ -458,7 +458,7 @@ export const TOOL_PAGES: ToolPage[] = [
     subject: "research topic",
     category: "research",
     icon: "Search",
-    image: "/tools/research-summarizer.png",
+    image: "/tools/research-summarizer.jpg",
     howItWorks: [
       { step: "01", title: "Describe the research topic", desc: "Share a paper abstract, research question, or a summary of the evidence you're trying to understand. Add context about what decision you're trying to make." },
       { step: "02", title: "AI specialists examine it", desc: "A methodology critic, consensus mapper, practical implications analyst, and devil's advocate each approach the research from their perspective." },
