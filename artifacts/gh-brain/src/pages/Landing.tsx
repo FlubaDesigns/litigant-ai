@@ -5,6 +5,7 @@ import {
   FileText, BarChart3, Code2, BookOpen, Lightbulb, Search,
   Briefcase, FlaskConical, Newspaper, Vote, TrendingUp, Globe,
   MessageSquare, Lock, ChevronDown, ChevronUp, AlertTriangle,
+  User, Cpu, Hammer, ClipboardCheck, Users, FolderOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -26,23 +27,110 @@ const TOOL_ICON_MAP: Record<string, React.ElementType> = {
 const HOW_IT_WORKS = [
   {
     step: "01",
-    title: "Submit Your Question",
-    desc: "Enter any contested claim, hypothesis, or decision. The more specific, the sharper the trial.",
+    title: "You Submit the Question",
+    desc: "Put any contested claim, decision, or hypothesis on trial. Free-form — no template required. The Orchestrator frames it and opens the courtroom.",
   },
   {
     step: "02",
-    title: "The Court Convenes",
-    desc: "Litigant AI assigns roles: Advocate, Skeptic, Devil's Advocate, and Analyst — each powered by a different top-tier model.",
+    title: "Litigants Debate",
+    desc: "A panel of AI models — each assigned a distinct role — argue the question in real time. Advocate, Skeptic, Devil's Advocate, Empiricist. Watch them clash.",
   },
   {
     step: "03",
-    title: "Cross-Examination",
-    desc: "Models challenge each other's reasoning in real time. Watch the weakest links in an argument get exposed.",
+    title: "Moderator Collects",
+    desc: "The Moderator synthesises the debate: what was agreed, what was contested, what was the strongest argument on each side.",
   },
   {
     step: "04",
-    title: "The Verdict",
-    desc: "A Synthesizer model delivers a final ruling with confidence scores, key uncertainties, and a one-paragraph executive summary.",
+    title: "Architect Designs the Output",
+    desc: "The Architect reads the deliberation and decides what gets built — a legal brief, a decision memo, a risk matrix — whatever the question actually calls for.",
+  },
+  {
+    step: "05",
+    title: "Builder Produces It",
+    desc: "The Builder constructs the artifact to spec. A production-ready document the Auditor then quality-checks before release.",
+  },
+  {
+    step: "06",
+    title: "Verdict Delivered",
+    desc: "The Orchestrator returns a direct answer plus the built artifact. You challenge it — the court responds. Loop continues until you're satisfied or credits run out.",
+  },
+];
+
+// ── Court seats ───────────────────────────────────────────────────────────────
+const COURT_SEATS = [
+  {
+    id: "orchestrator",
+    label: "Orchestrator",
+    icon: Brain,
+    color: "text-yellow-400",
+    border: "border-yellow-400/30",
+    bg: "bg-yellow-400/5",
+    desc: "Speaks directly to you. Frames the question, routes it into the courtroom, delivers the verdict, and asks if you want to keep a copy.",
+  },
+  {
+    id: "moderator",
+    label: "Moderator",
+    icon: Scale,
+    color: "text-blue-400",
+    border: "border-blue-400/30",
+    bg: "bg-blue-400/5",
+    desc: "Controls courtroom flow. Collects the debate, identifies consensus and disagreement, briefs the Architect on what to build.",
+  },
+  {
+    id: "litigants",
+    label: "Litigants",
+    icon: Users,
+    color: "text-primary",
+    border: "border-primary/30",
+    bg: "bg-primary/5",
+    desc: "The debaters. Advocate, Skeptic, Devil's Advocate, Empiricist — each holding a distinct position, each powered by the AI you choose.",
+  },
+  {
+    id: "architect",
+    label: "Architect",
+    icon: Cpu,
+    color: "text-purple-400",
+    border: "border-purple-400/30",
+    bg: "bg-purple-400/5",
+    desc: "Reads the deliberation and designs the deliverable. Decides whether this question needs a brief, a memo, a checklist, or a risk matrix.",
+  },
+  {
+    id: "builder",
+    label: "Builder",
+    icon: Hammer,
+    color: "text-orange-400",
+    border: "border-orange-400/30",
+    bg: "bg-orange-400/5",
+    desc: "Executes the Architect's blueprint. Produces the actual document — complete, formatted, and ready to hand to someone.",
+  },
+  {
+    id: "auditor",
+    label: "Auditor",
+    icon: ClipboardCheck,
+    color: "text-green-400",
+    border: "border-green-400/30",
+    bg: "bg-green-400/5",
+    desc: "Nothing leaves without sign-off. Checks the artifact against the blueprint, verifies claims, adds caveats, and either approves or sends it back.",
+  },
+];
+
+// ── Testimonials ──────────────────────────────────────────────────────────────
+const TESTIMONIALS = [
+  {
+    quote: "I used it to stress-test our Series A pitch before the investor meeting. The Skeptic found a hole in our unit economics that we'd missed for six months.",
+    name: "Founder, B2B SaaS",
+    role: "Series A",
+  },
+  {
+    quote: "I put a contract clause on trial before signing. The Architect built a risk memo I could actually send to our legal team. Saved me $800 in billable hours.",
+    name: "Operations Lead",
+    role: "Mid-size logistics firm",
+  },
+  {
+    quote: "Asked whether our go-to-market strategy was sound. Challenged the verdict twice. By the third round, we had a completely different — and much sharper — positioning.",
+    name: "CMO",
+    role: "E-commerce brand",
   },
 ];
 
@@ -115,27 +203,35 @@ const PLANS = [
 const FAQ = [
   {
     q: "What exactly is a 'credit'?",
-    a: "One credit equals roughly 1,000 tokens consumed across all models in a session. A typical 3-model cross-examination uses 5–15 credits depending on depth.",
+    a: "One credit equals roughly 1,000 tokens consumed across all AI seats in a session. A full trial — Litigants debating, Moderator synthesising, Architect + Builder producing an artifact, Auditor reviewing — typically uses 15–40 credits depending on depth and model choice.",
   },
   {
-    q: "Which AI models are in the courtroom?",
-    a: "Litigant AI routes across GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, and Llama 3 depending on your plan tier. Each model is assigned a distinct argumentative role.",
+    q: "Which AI models are available?",
+    a: "The admin connects providers — GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, Grok, and others. Each seat can be assigned a different model. You pick from what's been connected. Bring your own API key on custom plans to unlock any OpenAI-compatible model.",
   },
   {
-    q: "Can I choose which models argue which role?",
-    a: "Yes — Pro and Team plans include custom court persona configuration. You can pin specific models to specific roles or let Litigant AI assign them dynamically.",
+    q: "What does the court actually produce?",
+    a: "Two things: a direct verdict answer, and an artifact — a built document the Architect designed and the Builder produced specifically for your question. Depending on the question, that might be a decision memo, a risk matrix, a legal brief outline, a project checklist, or a structured report. The Auditor reviews it before you see it.",
   },
   {
-    q: "Is my data used to train any models?",
-    a: "No. All sessions are processed via API calls to model providers. None of your input or output data is used for model training. Sessions are stored encrypted and tied to your account only.",
+    q: "What is the rebuttal loop?",
+    a: "After the Orchestrator delivers the verdict, you can challenge it. Tell the court what it got wrong or missed — the court reconvenes specifically to address your challenge, not to re-run the entire trial. You keep challenging until you're satisfied or your credit limit is hit.",
   },
   {
     q: "How is this different from asking ChatGPT to 'play devil's advocate'?",
-    a: "A single model playing multiple roles still reasons from a single underlying perspective. Litigant AI uses genuinely independent models with different training priors, architectures, and knowledge cutoffs — producing authentic disagreement, not theater.",
+    a: "A single model playing multiple roles still reasons from one perspective. Litigant AI uses independently trained models with different architectures, knowledge cutoffs, and training priors — producing authentic intellectual conflict. The pipeline also goes further: the court doesn't just debate, it builds you a deliverable.",
   },
   {
-    q: "Can I share a verdict report publicly?",
-    a: "Yes. Pro and Team plans allow you to generate a shareable link to a read-only verdict report. No login required to view shared reports.",
+    q: "Is my data used to train any models?",
+    a: "No. All sessions are processed via direct API calls to model providers. Neither your inputs nor the outputs are used for model training by Litigant AI. Sessions are stored encrypted and tied to your account only.",
+  },
+  {
+    q: "Can I share a verdict or export the artifact?",
+    a: "Yes. The Orchestrator prompts you to save at the end of each session. Saved sessions go to your case files. Pro and Team plans include shareable read-only verdict links — no login required to view them.",
+  },
+  {
+    q: "What is a 'court seat brief'?",
+    a: "Each seat is governed by a markdown document that defines its role, responsibilities, tone, and hard constraints. The Architect's brief tells it how to design outputs; the Auditor's brief tells it what quality threshold to enforce. Admin can update any brief at any time — changes take effect within minutes, no redeploy needed.",
   },
 ];
 
@@ -467,32 +563,220 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="max-w-2xl mb-16"
             >
-              <h2 className="text-4xl font-bold tracking-tight mb-4">Trial Protocol</h2>
+              <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary mb-4">⚖ Trial Protocol</div>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">From question to verdict — six deliberate steps.</h2>
               <p className="text-lg text-muted-foreground">
-                Four deliberate steps separate a raw question from a battle-tested verdict.
+                Not a chatbot. A structured pipeline of specialised AI seats, each with a defined job.
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {HOW_IT_WORKS.map((step, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="relative"
+                  transition={{ delay: i * 0.08 }}
+                  className="relative flex gap-5"
                 >
-                  <div className="text-6xl font-bold font-mono text-primary/15 mb-4 leading-none select-none">
+                  <div className="text-4xl font-bold font-mono text-primary/20 leading-none select-none shrink-0 pt-1">
                     {step.step}
                   </div>
-                  <h3 className="text-lg font-bold mb-3">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
-                  {i < HOW_IT_WORKS.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 -right-4 w-8 h-px bg-border" />
-                  )}
+                  <div>
+                    <h3 className="text-base font-bold mb-2">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                  </div>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── 4b. Court Seats ── */}
+        <section className="py-28 border-b border-border">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="max-w-3xl mb-16"
+            >
+              <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary mb-4">⬡ Court Architecture</div>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">Six seats. Six jobs. Any AI in any chair.</h2>
+              <p className="text-lg text-muted-foreground">
+                Every seat has a defined role and a defined brief. As admin you assign which AI model sits in each one — GPT-4o as Architect, Claude as Builder, Grok as Skeptic. Users pick from what you've connected.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {COURT_SEATS.map((seat, i) => {
+                const Icon = seat.icon;
+                return (
+                  <motion.div
+                    key={seat.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.07 }}
+                    className={cn("p-6 border rounded-none", seat.border, seat.bg)}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={cn("p-2 rounded border", seat.border)}>
+                        <Icon className={cn("w-4 h-4", seat.color)} />
+                      </div>
+                      <span className={cn("text-sm font-bold font-mono uppercase tracking-wider", seat.color)}>
+                        {seat.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{seat.desc}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-10 p-5 border border-primary/20 bg-primary/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            >
+              <div>
+                <div className="text-sm font-bold text-primary mb-1">Each seat has its own brief.</div>
+                <p className="text-sm text-muted-foreground">Every seat is governed by a markdown document defining its responsibilities, tone, and constraints. Admin can refine any brief at any time — the court picks it up within minutes, no redeploy needed.</p>
+              </div>
+              <Button asChild variant="outline" className="shrink-0 rounded-none border-primary/30 text-primary hover:bg-primary/10">
+                <Link href={isSignedIn ? "/session" : "/register"}>Try the Court</Link>
+              </Button>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── 4c. Rebuttal Loop ── */}
+        <section className="py-28 bg-secondary/20 border-b border-border">
+          <div className="container mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+              >
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary mb-4">⟳ The Rebuttal Loop</div>
+                <h2 className="text-4xl font-bold tracking-tight mb-6">The verdict is not the end. It's the opening argument.</h2>
+                <p className="text-muted-foreground mb-8 leading-relaxed text-lg">
+                  Challenge the court's conclusion. Tell it what it missed. The court reconvenes specifically to address your challenge — not to re-run the whole debate, but to respond directly to your rebuttal. Continue until you're satisfied.
+                </p>
+                <ul className="space-y-4">
+                  {[
+                    "Court delivers verdict — you challenge a specific point",
+                    "Court reconvenes and responds to your exact challenge",
+                    "You accept, or challenge again with new reasoning",
+                    "Loop ends when you're satisfied — or credits run out",
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full border border-primary/40 bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[10px] font-bold text-primary font-mono">{i + 1}</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="space-y-3"
+              >
+                {[
+                  { from: "You", text: "Is this business model viable?", align: "right", accent: false },
+                  { from: "Court", text: "Verdict: viable with caveats. Unit economics hold at scale, but CAC payback exceeds 18 months in the base case.", align: "left", accent: true },
+                  { from: "You", text: "You ignored the enterprise contract pipeline — those deals close in 90 days.", align: "right", accent: false },
+                  { from: "Court", text: "Acknowledged. Reconvening on enterprise channel dynamics. Confidence revising upward.", align: "left", accent: true },
+                  { from: "You", text: "Satisfied. Save this session.", align: "right", accent: false },
+                ].map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className={cn("flex", msg.align === "right" ? "justify-end" : "justify-start")}
+                  >
+                    <div className={cn(
+                      "max-w-[85%] px-4 py-3 text-sm leading-relaxed",
+                      msg.accent
+                        ? "border border-primary/30 bg-primary/5 text-foreground"
+                        : "border border-border bg-card text-muted-foreground"
+                    )}>
+                      <div className={cn("text-[10px] font-mono uppercase tracking-widest mb-1.5", msg.accent ? "text-primary" : "text-muted-foreground/60")}>
+                        {msg.from}
+                      </div>
+                      {msg.text}
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 4d. Your Case Files ── */}
+        <section className="py-24 border-b border-border">
+          <div className="container mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="space-y-4"
+              >
+                {[
+                  { label: "Business Plan v2 — Series A pitch", date: "Jun 19", confidence: "88%", saved: true },
+                  { label: "Contract dispute — supplier SLA clause 4.2", date: "Jun 17", confidence: "91%", saved: true },
+                  { label: "Go-to-market strategy — US enterprise", date: "Jun 14", confidence: "79%", saved: true },
+                  { label: "Hiring decision — CTO vs fractional", date: "Jun 11", confidence: "84%", saved: false },
+                ].map((file, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.08 }}
+                    className="flex items-center gap-4 p-4 border border-border bg-card hover:border-primary/30 transition-colors group"
+                  >
+                    <FolderOpen className={cn("w-4 h-4 shrink-0", file.saved ? "text-primary" : "text-muted-foreground/40")} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{file.label}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{file.date} · {file.confidence} confidence</div>
+                    </div>
+                    {file.saved && (
+                      <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 border border-primary/30 text-primary bg-primary/5">
+                        Saved
+                      </span>
+                    )}
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+              >
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary mb-4">◫ Your Case Files</div>
+                <h2 className="text-4xl font-bold tracking-tight mb-6">Every verdict, on file.</h2>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  When the Orchestrator delivers a verdict, it asks if you want to keep a copy. Logged-in users save directly to their case files — a searchable archive of every trial you've run.
+                </p>
+                <p className="text-muted-foreground mb-8 leading-relaxed">
+                  Free accounts get basic storage. Need more? Buy additional case file space — your intellectual work, properly organised and retrievable.
+                </p>
+                <Button asChild className="rounded-none bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Link href="/register">Create Free Account</Link>
+                </Button>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -597,6 +881,41 @@ export default function LandingPage() {
                       {plan.name === "Team" ? "Contact Sales" : isSignedIn ? "Buy Credits" : "Get Started"}
                     </Link>
                   </Button>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── 6b. Testimonials ── */}
+        <section className="py-24 border-b border-border bg-secondary/20">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center max-w-xl mx-auto mb-14"
+            >
+              <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary mb-4">— In the field</div>
+              <h2 className="text-3xl font-bold tracking-tight">What happens when you put real decisions on trial.</h2>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-5">
+              {TESTIMONIALS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="p-7 border border-border bg-card flex flex-col"
+                >
+                  <div className="text-primary text-2xl font-serif leading-none mb-4 select-none">"</div>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1 mb-6">{t.quote}</p>
+                  <div>
+                    <div className="text-sm font-semibold">{t.name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{t.role}</div>
+                  </div>
                 </motion.div>
               ))}
             </div>
