@@ -8,3 +8,4 @@
 - [Cloud Run deployment](cloud-run-deployment.md) — use Docker + Cloud Build API to deploy; Firebase Functions buildpack ignores npm start/Procfile entirely.
 - [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
 - [Cloud Run env vars](cloud-run-env.md) — PORT is reserved (cannot set in env array); IAM allUsers must be re-granted after every redeploy; needs FIREBASE_SERVICE_ACCOUNT + AI_INTEGRATIONS_* set.
+- [Canonical cost calibration](cost-calibration.md) — single source for session cost estimates; self-calibrates from last 50 sessions; FIXED_STAGE_PRIOR until 5 sessions accumulate.

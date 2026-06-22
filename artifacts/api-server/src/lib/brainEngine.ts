@@ -139,6 +139,13 @@ export interface BrainRunResult {
   conscienceVersion: string;
   /** Present when the session stopped before hitting the confidence target. */
   pauseReason?: PauseReason;
+  /**
+   * Token usage for the five fixed pipeline stages (Moderator, Architect, Builder,
+   * Auditor, Verdict) — i.e. everything after the debate loop ends.
+   * Saved to Firestore so getCalibratedFixedStageTokens() can learn real averages
+   * across the last 50 sessions instead of relying on hardcoded priors.
+   */
+  fixedStageTokens: { input: number; output: number };
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -398,6 +405,12 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     if (confidence >= config.confidenceTarget && round >= 2) break;
   }
 
+  // Snapshot cumulative usage at end of debate. The delta from here to the end of the
+  // session captures the five fixed pipeline stages (Moderator, Architect, Builder,
+  // Auditor, Verdict). Saved to Firestore so getCalibratedFixedStageTokens() can
+  // learn real averages from the last 50 sessions instead of using hardcoded priors.
+  const usageAfterDebate = { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
+
   // ── Determine why we stopped ──────────────────────────────────────────────
   const pauseReason: PauseReason | undefined = creditCapHit
     ? "credit_cap"
@@ -588,5 +601,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     tokenUsage: usage,
     conscienceVersion,
     pauseReason,
+    fixedStageTokens: {
+      input:  usage.inputTokens  - usageAfterDebate.inputTokens,
+      output: usage.outputTokens - usageAfterDebate.outputTokens,
+    },
   };
 }

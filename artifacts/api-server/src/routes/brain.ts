@@ -32,10 +32,10 @@
  */
 import { Router } from "express";
 import crypto from "crypto";
-import { runBrainSession, estimateCreditCost, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
+import { runBrainSession, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
-import { calculateActualCredits } from "../lib/creditEngine.js";
+import { calculateActualCredits, estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
@@ -251,7 +251,7 @@ router.post("/run-brain", async (req, res) => {
     outputFormat: "report",
   };
 
-  const estimatedCost = estimateCreditCost(effectiveConfig);
+  const estimatedCost = await estimateSessionCreditsCalibrated(effectiveConfig);
 
   // ── Auth + credit reservation ─────────────────────────────────────────────
   let uid: string | null = null;
@@ -355,6 +355,7 @@ router.post("/run-brain", async (req, res) => {
           templateId: templateId ?? null,
           confidence: result.confidence,
           creditsUsed: actualCost,
+          fixedStageTokens: result.fixedStageTokens,
           status: "complete",
           finalAnswer: result.finalAnswer,
           debateNotes: result.debateNotes,

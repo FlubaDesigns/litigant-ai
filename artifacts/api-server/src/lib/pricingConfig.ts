@@ -24,7 +24,7 @@
  * See docs/credits.md §4 for the full multiplier reference.
  */
 import { getFirestoreDb } from "./firebaseAdmin.js";
-import { MODEL_MULTIPLIERS, MODEL_RATES, CREDIT_VALUE_USD, type ModelRate } from "./creditEngine.js";
+import { MODEL_MULTIPLIERS, MODEL_RATES, CREDIT_VALUE_USD, getCalibratedFixedStageTokens, type ModelRate } from "./creditEngine.js";
 import { FieldValue } from "firebase-admin/firestore";
 
 interface PricingDoc {
@@ -168,9 +168,19 @@ export async function getAdminPricingTable(): Promise<{
 }> {
   const overrides = await getMultiplierOverrides();
 
-  // Representative default session token counts (3 litigants, 2 rounds, balanced)
-  const EXAMPLE_INPUT  = 13_000;
-  const EXAMPLE_OUTPUT = 5_600;
+  // Representative default session: 3 litigants, 2 rounds, balanced (600 tokens/turn).
+  // Variable part is computed from the same formula as estimateSessionCredits().
+  // Fixed part comes from getCalibratedFixedStageTokens() — real observed averages
+  // from the last 50 sessions, or FIXED_STAGE_PRIOR until enough data accumulates.
+  const EXAMPLE_LITIGANTS = 3, EXAMPLE_ROUNDS = 2, TOKENS_PER_TURN = 600;
+  const variableOutput = 400 + EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * TOKENS_PER_TURN;
+  const variableInput  = Math.ceil(
+    EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS *
+    (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.8 * (EXAMPLE_ROUNDS / 2))
+  );
+  const exampleFixed   = await getCalibratedFixedStageTokens();
+  const EXAMPLE_INPUT  = variableInput  + exampleFixed.input;
+  const EXAMPLE_OUTPUT = variableOutput + exampleFixed.output;
 
   const models = Object.entries(MODEL_RATES).map(([model, rate]) => {
     const defaultMultiplier   = MODEL_MULTIPLIERS[model] ?? 5;

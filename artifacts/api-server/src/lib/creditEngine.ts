@@ -206,30 +206,113 @@ export interface SessionEstimateConfig {
  * a Firestore round-trip before reservation isn't worth the latency.
  * The post-run settlement (calculateLiveCredits) will apply the real multiplier.
  */
-export function estimateSessionCredits(config: SessionEstimateConfig): number {
+/**
+ * Hardcoded prior for the five fixed pipeline stages (Moderator, Architect,
+ * Builder, Auditor, Verdict) — everything that runs after the debate loop.
+ *
+ * Output: 5 stages × average max tokens (5 400 total) at 70% fill ≈ 3 780.
+ * Input:  accumulated context fed to those five stages ≈ 12 500 tokens.
+ *
+ * These values are used until getCalibratedFixedStageTokens() has at least
+ * CALIBRATION_MIN_SESSIONS real sessions to average over, at which point
+ * observed data takes over automatically.
+ */
+export const FIXED_STAGE_PRIOR = { input: 12_500, output: 3_780 };
+
+/** Minimum sessions required before switching from prior to observed data. */
+const CALIBRATION_MIN_SESSIONS = 5;
+const CALIBRATION_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let _calCache: { input: number; output: number } | null = null;
+let _calExpiry = 0;
+
+/**
+ * Returns the average fixed-stage token usage across the last 50 completed
+ * sessions. Falls back to FIXED_STAGE_PRIOR until at least CALIBRATION_MIN_SESSIONS
+ * sessions have saved fixedStageTokens data.
+ *
+ * Result is cached for 5 minutes — one Firestore query serves every estimate
+ * until the cache expires.
+ */
+export async function getCalibratedFixedStageTokens(): Promise<{ input: number; output: number }> {
+  const now = Date.now();
+  if (_calCache !== null && now < _calExpiry) return _calCache;
+
+  // Lazy import to keep this module free of top-level side effects when Firebase
+  // is not configured (e.g. unit tests, local dev without credentials).
+  const { getFirestoreDb } = await import("./firebaseAdmin.js");
+  const db = getFirestoreDb();
+  if (!db) return FIXED_STAGE_PRIOR;
+
+  try {
+    const snap = await db
+      .collection("sessions")
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
+
+    const records = snap.docs
+      .map((d) => d.data().fixedStageTokens as { input: number; output: number } | undefined)
+      .filter((r): r is { input: number; output: number } => !!r && r.input > 0 && r.output > 0);
+
+    if (records.length < CALIBRATION_MIN_SESSIONS) return FIXED_STAGE_PRIOR;
+
+    const avg = {
+      input:  Math.round(records.reduce((s, r) => s + r.input,  0) / records.length),
+      output: Math.round(records.reduce((s, r) => s + r.output, 0) / records.length),
+    };
+
+    _calCache = avg;
+    _calExpiry = now + CALIBRATION_CACHE_TTL_MS;
+    return avg;
+  } catch {
+    return FIXED_STAGE_PRIOR;
+  }
+}
+
+/**
+ * Builds the variable (litigant + orchestrator open) token counts from config.
+ * Shared by both the sync and async estimators so the formula stays in one place.
+ */
+function variableTokens(config: SessionEstimateConfig): { input: number; output: number } {
   const outputTokensPerTurn: Record<ResponseMode, number> = {
     concise:  300,
     balanced: 600,
     thorough: 1200,
   };
-
-  const tokensPerTurn = outputTokensPerTurn[config.responseMode];
-  const rounds    = config.maxIterations;
-  const litigants = Math.min(config.litigantCount, 4);
-
-  // Output: orchestrator turn + all litigant turns across all rounds + verdict
-  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 1600;
-
-  // Input: each turn sees the system prompt plus a growing transcript.
-  // historyPerRound = tokens generated per full round (all litigants).
-  // We use rounds/2 as the "average" round index to avoid always using worst-case.
-  const baseInput      = 600;
+  const tokensPerTurn   = outputTokensPerTurn[config.responseMode];
+  const rounds          = config.maxIterations;
+  const litigants       = Math.min(config.litigantCount, 4);
   const historyPerRound = tokensPerTurn * litigants * 0.8;
-  const avgInputPerTurn = baseInput + historyPerRound * (rounds / 2);
+  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
+  return {
+    output: 400 + litigants * rounds * tokensPerTurn,
+    input:  litigants * rounds * avgInputPerTurn,
+  };
+}
 
-  // 8000 extra for the verdict's large system context
-  const inputTokens = litigants * rounds * avgInputPerTurn + 8000;
+export function estimateSessionCredits(config: SessionEstimateConfig): number {
+  const v = variableTokens(config);
+  const outputTokens = v.output + FIXED_STAGE_PRIOR.output;
+  const inputTokens  = v.input  + FIXED_STAGE_PRIOR.input;
+  const model = config.model ?? "gpt-4o";
+  return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
+}
 
+/**
+ * Async variant of estimateSessionCredits that replaces the hardcoded
+ * FIXED_STAGE_PRIOR with real averages learned from the last 50 sessions.
+ *
+ * Use this anywhere a Firestore round-trip is already expected (brain.ts
+ * reservation, admin pricing table). The sync version remains for contexts
+ * where you need an instant result (frontend slider maths, unit tests).
+ */
+export async function estimateSessionCreditsCalibrated(
+  config: SessionEstimateConfig
+): Promise<number> {
+  const fixed = await getCalibratedFixedStageTokens();
+  const v = variableTokens(config);
+  const outputTokens = v.output + fixed.output;
+  const inputTokens  = v.input  + fixed.input;
   const model = config.model ?? "gpt-4o";
   return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
 }
