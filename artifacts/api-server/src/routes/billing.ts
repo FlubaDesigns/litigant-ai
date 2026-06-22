@@ -72,10 +72,10 @@ router.patch("/billing/auto-refill", async (req, res) => {
     if (
       typeof thresholdCredits !== "number" ||
       !Number.isInteger(thresholdCredits) ||
-      thresholdCredits < 1 ||
-      thresholdCredits > 10_000
+      thresholdCredits < 10 ||
+      thresholdCredits > 100_000
     ) {
-      return res.status(400).json({ error: "thresholdCredits must be a whole number between 1 and 10 000" });
+      return res.status(400).json({ error: "thresholdCredits must be a whole number between 10 and 100 000" });
     }
   }
 
