@@ -329,6 +329,7 @@ function ConfigPanel({
                 { value: "legal-brief",   label: "Legal Brief",     sub: "Argument structure + supporting points", group: "doc" },
                 { value: "blog-post",     label: "Blog Post",       sub: "Long-form article or editorial",        group: "doc" },
                 { value: "code",          label: "Code",            sub: "Runnable code — function, script, module", group: "code" },
+                { value: "landing-page",  label: "Landing Page",    sub: "HTML/React page — Git integration in v2", group: "code" },
               ] as { value: string; label: string; sub: string; group: string }[]).map(({ value, label, sub, group }) => {
                 const isSelected = (config.artifactType ?? "auto") === value;
                 return (
