@@ -7,6 +7,13 @@ initFirebaseAdmin();
 
 const app: Express = express();
 
+// Cloud Run and Firebase Functions sit behind Google's load balancer.
+// Trust the first proxy hop so req.ip reflects the real client address
+// (read from X-Forwarded-For) rather than the internal load-balancer IP.
+// Without this, the IP-based rate limiters in auth.ts bucket every user
+// together and the limit fires globally rather than per client.
+app.set("trust proxy", 1);
+
 app.use((req, _res, next) => {
   console.log(`[${req.method}] ${req.url?.split("?")[0]}`);
   next();
