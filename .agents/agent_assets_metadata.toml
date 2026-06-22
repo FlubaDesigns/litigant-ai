@@ -125,3 +125,9 @@ id = "4iXT7-56BhSa993x9QSRn"
 uri = "file://litigant-ai.zip"
 type = "unspecified"
 title = "Litigant AI — Full Source"
+
+[[outputs]]
+id = "5G5O82m3dr-rjzCAxkiyk"
+uri = "file://litigant-ai-code.zip"
+type = "unspecified"
+title = "Litigant AI — Source Code (no images)"
