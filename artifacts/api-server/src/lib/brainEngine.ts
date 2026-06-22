@@ -7,6 +7,7 @@ import {
   charsToTokens,
 } from "./creditEngine.js";
 import { getConscienceClause } from "./conscienceConfig.js";
+import { getAllSeatBriefs } from "./seatBriefs.js";
 
 export type CourtMode = "adversarial" | "socratic" | "analysis" | "critique";
 export type ResponseMode = "balanced" | "thorough" | "concise";
@@ -244,6 +245,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // Per-seat providers — fall back to global provider when seat not configured
   const orchProvider   = await resolveSeatProvider("orchestrator", config, provider, configured);
   const modProvider    = await resolveSeatProvider("moderator",    config, provider, configured);
+  const archProvider   = await resolveSeatProvider("architect",    config, provider, configured);
+  const buildProvider  = await resolveSeatProvider("builder",      config, provider, configured);
+  const auditProvider  = await resolveSeatProvider("auditor",      config, provider, configured);
 
   // Cumulative token tracker — passed by reference into every streamRole call
   const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
@@ -267,6 +271,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       : { text: "", version: "disabled" };
   const conscienceClause = conscienceText;
 
+  // ── Seat briefs — loaded from files with optional Firestore override ───────
+  const seatBriefs = await getAllSeatBriefs();
+
   // ── Orchestrator — skipped when continuing a paused session ──────────────────
   if (!continueFromTranscript?.length) {
     throwIfAborted(abortSignal);
@@ -275,11 +282,11 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     const orchMessages: ChatMessage[] = [
       {
         role: "system",
-        content: `You are the Orchestrator of a multi-AI reasoning courtroom. Frame the trial, identify the core contested questions, and set expectations for the debate. Be concise (3-4 sentences max).${conscienceClause}`,
+        content: `${seatBriefs.orchestrator}\n\nContext: ${baseContext}${conscienceClause}`,
       },
       {
         role: "user",
-        content: `${baseContext}\n\nCourt mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session.`,
+        content: `Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`,
       },
     ];
 
@@ -324,7 +331,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       const messages: ChatMessage[] = [
         {
           role: "system",
-          content: `${baseContext}\n\nYour role: ${role.persona}. ${role.instruction}\n\nBe sharp, specific, and argumentative. Do not be vague.${conscienceClause}`,
+          content: `${seatBriefs.litigant}\n\n${baseContext}\n\nYour assigned role this session: ${role.persona}. ${role.instruction}${conscienceClause}`,
         },
         {
           role: "user",
@@ -384,62 +391,139 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? "iteration_limit"
     : undefined;
 
-  // ── Final Verdict ─────────────────────────────────────────────────────────────
+  const debateTranscript = transcript.join("\n\n");
+
+  // ── Moderator — collect and synthesise the deliberation ───────────────────
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: providerName });
+  sendSSE(res, { type: "role_start", role: "Moderator", roleIndex: -2, round: 99, provider: modProvider.name });
 
-  const verdictPrompt = `${baseContext}
-
-You have observed the following structured debate:
-
-${transcript.join("\n\n")}
-
-Now deliver the complete final output. Structure it with these EXACT section headers:
-
-## Final Answer
-A clear, direct response (2-4 paragraphs). Lead with a definitive position where warranted.
-
-## Key Findings
-3-5 bullet points summarising the most important conclusions.
-
-## Artifacts
-Provide concrete, immediately usable output based on the debate. This could be:
-- A prioritised action checklist if the question is a decision
-- A structured analysis table if the question is evaluative
-- A decision memo if the question is strategic
-- A risk matrix if the question involves risk assessment
-Format this as a practical work product the user can use directly.
-
-## Sources & Caveats
-What assumptions underlie this analysis? What would change the verdict? What professional expertise should be consulted? List key limitations.
-
-Output format: ${config.outputFormat}`;
-
-  const verdictMessages: ChatMessage[] = [
+  const moderatorMessages: ChatMessage[] = [
     {
       role: "system",
-      content: `You are the Synthesizer — the final judge in a multi-AI courtroom. Deliver a comprehensive, balanced verdict incorporating all perspectives. Be definitive where evidence is clear, honest about uncertainty where it remains. Always produce all four sections.${conscienceClause}`,
+      content: `${seatBriefs.moderator}\n\n${baseContext}${conscienceClause}`,
     },
-    { role: "user", content: verdictPrompt },
+    {
+      role: "user",
+      content: `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps. Then brief the Architect on what deliverable this question requires.`,
+    },
+  ];
+
+  const moderatorSummary = await streamRole(
+    modProvider, moderatorMessages, 800,
+    (chunk) => sendSSE(res, { type: "content", role: "Moderator", content: chunk }),
+    usage, abortSignal
+  );
+
+  transcript.push(`**Moderator (Summary):** ${moderatorSummary}`);
+  turns.push({ role: "Moderator", round: 99, content: moderatorSummary });
+  sendSSE(res, { type: "role_end", role: "Moderator", fullContent: moderatorSummary });
+
+  // ── Architect — design the artifact blueprint ─────────────────────────────
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Architect", roleIndex: -3, round: 99, provider: archProvider.name });
+
+  const architectMessages: ChatMessage[] = [
+    {
+      role: "system",
+      content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}`,
+    },
+    {
+      role: "user",
+      content: `The Moderator has produced this deliberation summary:\n\n${moderatorSummary}\n\nOriginal question: "${question}"\n\nDesign the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`,
+    },
+  ];
+
+  const architectBlueprint = await streamRole(
+    archProvider, architectMessages, 600,
+    (chunk) => sendSSE(res, { type: "content", role: "Architect", content: chunk }),
+    usage, abortSignal
+  );
+
+  transcript.push(`**Architect (Blueprint):** ${architectBlueprint}`);
+  turns.push({ role: "Architect", round: 99, content: architectBlueprint });
+  sendSSE(res, { type: "role_end", role: "Architect", fullContent: architectBlueprint });
+
+  // ── Builder — construct the artifact ─────────────────────────────────────
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider.name });
+
+  const builderMessages: ChatMessage[] = [
+    {
+      role: "system",
+      content: `${seatBriefs.builder}\n\n${baseContext}${conscienceClause}`,
+    },
+    {
+      role: "user",
+      content: `Architect's blueprint:\n\n${architectBlueprint}\n\nModerator's deliberation summary:\n\n${moderatorSummary}\n\nBuild the artifact exactly to spec. Deliver the complete, production-ready document.`,
+    },
+  ];
+
+  const builtArtifact = await streamRole(
+    buildProvider, builderMessages, 1800,
+    (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
+    usage, abortSignal
+  );
+
+  transcript.push(`**Builder (Artifact):** ${builtArtifact}`);
+  turns.push({ role: "Builder", round: 99, content: builtArtifact });
+  sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact });
+
+  // ── Auditor — quality gate ────────────────────────────────────────────────
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Auditor", roleIndex: -5, round: 99, provider: auditProvider.name });
+
+  const auditorMessages: ChatMessage[] = [
+    {
+      role: "system",
+      content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}`,
+    },
+    {
+      role: "user",
+      content: `Architect's blueprint:\n\n${architectBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed. Output: your release decision (APPROVED or RETURNED) followed by the final artifact text (approved as-is, or corrected version if you found issues).`,
+    },
+  ];
+
+  const auditorOutput = await streamRole(
+    auditProvider, auditorMessages, 1200,
+    (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
+    usage, abortSignal
+  );
+
+  transcript.push(`**Auditor (Release):** ${auditorOutput}`);
+  turns.push({ role: "Auditor", round: 99, content: auditorOutput });
+  sendSSE(res, { type: "role_end", role: "Auditor", fullContent: auditorOutput });
+
+  // Extract the final artifact from auditor output (post-decision text)
+  const approvedArtifactMatch = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+([\s\S]+)/i);
+  const finalArtifact = approvedArtifactMatch ? approvedArtifactMatch[1].trim() : builtArtifact;
+
+  // ── Orchestrator — deliver verdict to user ────────────────────────────────
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: orchProvider.name });
+
+  const orchestratorCloseMessages: ChatMessage[] = [
+    {
+      role: "system",
+      content: `${seatBriefs.orchestrator}\n\n${baseContext}${conscienceClause}`,
+    },
+    {
+      role: "user",
+      content: `The court has completed its work. Here is the Moderator's summary:\n\n${moderatorSummary}\n\nHere is the Auditor-approved artifact:\n\n${finalArtifact}\n\nDeliver the verdict to the user: lead with a direct answer, summarise the key reasons in 2-3 sentences, present the artifact, and close with your standard save prompt asking if they would like to keep a copy in their files.`,
+    },
   ];
 
   const finalAnswer = await streamRole(
-    orchProvider, verdictMessages, 1600,
+    orchProvider, orchestratorCloseMessages, 1000,
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
     usage, abortSignal
   );
 
-  // Extract sections
-  const artifactsMatch = finalAnswer.match(/##\s+Artifacts\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  const artifacts = artifactsMatch ? artifactsMatch[1].trim() : "";
-
-  const caveatMatch = finalAnswer.match(/##\s+(?:Sources &|Sources &amp;|Caveats?|Sources)\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  // Extract caveats from auditor output or final answer
+  const caveatMatch = auditorOutput.match(/##\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i)
+    ?? finalAnswer.match(/##\s+(?:Sources &|Caveats?)\s*(?:Caveats?)?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const caveats = caveatMatch
     ? caveatMatch[1].trim()
     : "This analysis represents AI-generated reasoning and should not substitute for professional advice.";
-
-  const answerMatch = finalAnswer.match(/##\s+Final Answer\s*\n([\s\S]*?)(?=\n##\s|$)/i);
-  const cleanFinalAnswer = answerMatch ? answerMatch[1].trim() : finalAnswer;
 
   confidence = Math.min(95, confidence + 5);
 
@@ -458,12 +542,12 @@ Output format: ${config.outputFormat}`;
     sessionId,
     confidence,
     creditsUsed,
-    finalAnswer: cleanFinalAnswer,
+    finalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript: transcript.join("\n\n---\n\n"),
     transcriptLines: transcript,
     caveats,
-    artifacts,
+    artifacts: finalArtifact,
     provider: providerName,
     model: modelName,
     tokenUsage: usage,
@@ -475,11 +559,11 @@ Output format: ${config.outputFormat}`;
     sessionId,
     confidence,
     creditsUsed,
-    finalAnswer: cleanFinalAnswer,
+    finalAnswer,
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript,
     caveats,
-    artifacts,
+    artifacts: finalArtifact,
     turns,
     provider: providerName,
     model: modelName,

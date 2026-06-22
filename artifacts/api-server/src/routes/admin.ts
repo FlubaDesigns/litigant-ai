@@ -18,6 +18,13 @@ import {
   CANON_V2_FALLBACK_VERSION,
   invalidateConscienceCache,
 } from "../lib/conscienceConfig.js";
+import {
+  SEAT_IDS,
+  getAllSeatBriefs,
+  getSeatBriefFileDefault,
+  invalidateSeatBriefsCache,
+  type SeatId,
+} from "../lib/seatBriefs.js";
 
 const router = Router();
 
@@ -828,6 +835,110 @@ router.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
   try {
     await deleteApiKey(providerId);
     return res.json({ success: true, providerId, note: "env var fallback still applies if set" });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Seat Briefs ───────────────────────────────────────────────────────────────
+
+/**
+ * GET /admin/seat-briefs
+ * Returns all seat briefs — active (Firestore override or file fallback) plus
+ * the factory-default file text for comparison.
+ */
+router.get("/admin/seat-briefs", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+
+  try {
+    const active = await getAllSeatBriefs();
+    const defaults: Record<string, string> = {};
+    for (const id of SEAT_IDS) {
+      defaults[id] = getSeatBriefFileDefault(id);
+    }
+
+    let overrides: Record<string, unknown> = {};
+    if (db) {
+      const doc = await db.collection("system_config").doc("seat_briefs").get();
+      if (doc.exists) overrides = doc.data() ?? {};
+    }
+
+    return res.json({
+      active,
+      defaults,
+      overrides,
+      seatIds: SEAT_IDS,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/seat-briefs/:seatId
+ * Body: { text: string }
+ * Writes an override for a single seat brief to Firestore and invalidates cache.
+ */
+router.patch("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) => {
+  const { seatId } = req.params as { seatId: string };
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  if (!SEAT_IDS.includes(seatId as SeatId)) {
+    return res.status(400).json({
+      error: `Invalid seatId. Must be one of: ${SEAT_IDS.join(", ")}`,
+    });
+  }
+
+  const { text } = req.body as { text?: string };
+  if (!text?.trim()) {
+    return res.status(400).json({ error: "text (string) is required and must not be empty" });
+  }
+
+  try {
+    await db.collection("system_config").doc("seat_briefs").set(
+      {
+        [seatId]: text.trim(),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: req.adminUid as string,
+      },
+      { merge: true }
+    );
+
+    invalidateSeatBriefsCache();
+
+    return res.json({ success: true, seatId, length: text.trim().length });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * DELETE /admin/seat-briefs/:seatId
+ * Removes the Firestore override for a seat — reverts to the file default.
+ */
+router.delete("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) => {
+  const { seatId } = req.params as { seatId: string };
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  if (!SEAT_IDS.includes(seatId as SeatId)) {
+    return res.status(400).json({ error: `Invalid seatId` });
+  }
+
+  try {
+    await db.collection("system_config").doc("seat_briefs").set(
+      { [seatId]: FieldValue.delete() },
+      { merge: true }
+    );
+
+    invalidateSeatBriefsCache();
+
+    return res.json({
+      success: true,
+      seatId,
+      note: "Firestore override removed — file default is now active",
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
