@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, CreditCard, History, AlertTriangle,
-  CheckCircle2, Crown, Package, RefreshCw, ExternalLink,
+  CheckCircle2, Crown, Package, RefreshCw,
   ArrowDownRight, Sparkles, Info, ChevronDown,
   RotateCcw, ToggleLeft, ToggleRight, Receipt,
 } from "lucide-react";
@@ -17,13 +17,14 @@ import { db, isConfigured as isFirebaseConfigured } from "@/lib/firebase";
 import {
   getProducts,
   getTransactions,
-  getSubscription,
   getPaymentHistory,
   setAutoRefill,
+  getBillingDefaults,
   createCheckoutSession,
   createCustomCheckoutSession,
   PLAN_LIMITS,
   type BillingProduct,
+  type BillingDefaults,
   type CreditTransaction,
   type PaymentHistoryItem,
 } from "@/services/billingService";
@@ -410,20 +411,29 @@ export default function BillingPage() {
   const [products, setProducts] = useState<BillingProduct[]>([]);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txNextCursor, setTxNextCursor] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [historyTab, setHistoryTab] = useState<HistoryTab>("credits");
 
-  // Auto-refill: local toggle state reflects saved preference (optimistic UI)
+  // Credit controls state (auto top-up + warning threshold)
   const [autoRefillEnabled, setAutoRefillEnabled] = useState(false);
   const [autoRefillSaving, setAutoRefillSaving] = useState(false);
+  const [autoRefillAmount, setAutoRefillAmount] = useState(20);
+  const [autoRefillThreshold, setAutoRefillThreshold] = useState(100);
+  const [warningThreshold, setWarningThreshold] = useState(200);
+  const [billingDefaults, setBillingDefaults] = useState<BillingDefaults>({
+    autoRefillAmounts: [10, 20, 50, 100, 200],
+    defaultAutoRefillAmount: 20,
+    defaultThresholdCredits: 100,
+    defaultWarningThresholdCredits: 200,
+  });
+  const [creditControlsSaving, setCreditControlsSaving] = useState(false);
 
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingTx, setLoadingTx] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [loadingMoreTx, setLoadingMoreTx] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [portalLoading] = useState(false);
+
   const [customDollars, setCustomDollars] = useState<string>("");
   const [customLoading, setCustomLoading] = useState(false);
 
@@ -481,11 +491,14 @@ export default function BillingPage() {
     setLoadingPayments(false);
   }, [user]);
 
-  const fetchSubscription = useCallback(async () => {
-    if (!user) return;
-    const sub = await getSubscription();
-    setSubscription(sub);
-  }, [user]);
+  useEffect(() => {
+    getBillingDefaults().then((defaults) => {
+      setBillingDefaults(defaults);
+      setAutoRefillAmount(defaults.defaultAutoRefillAmount);
+      setAutoRefillThreshold(defaults.defaultThresholdCredits);
+      setWarningThreshold(defaults.defaultWarningThresholdCredits);
+    });
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -494,11 +507,10 @@ export default function BillingPage() {
   useEffect(() => {
     if (user) {
       fetchTransactions();
-      fetchSubscription();
     } else {
       setLoadingTx(false);
     }
-  }, [user, fetchTransactions, fetchSubscription]);
+  }, [user, fetchTransactions]);
 
   // Lazy-load payment history when tab is first opened
   useEffect(() => {
@@ -507,12 +519,14 @@ export default function BillingPage() {
     }
   }, [historyTab, user, paymentHistory.length, fetchPaymentHistory]);
 
-  // Sync auto-refill toggle from user profile when it loads
+  // Sync credit controls from user profile when it loads
   useEffect(() => {
-    const pref = userProfile?.autoRefill;
-    if (pref && typeof pref.enabled === "boolean") {
-      setAutoRefillEnabled(pref.enabled);
-    }
+    const pref = userProfile?.autoRefill as any;
+    if (!pref) return;
+    if (typeof pref.enabled === "boolean") setAutoRefillEnabled(pref.enabled);
+    if (typeof pref.dollarAmount === "number") setAutoRefillAmount(pref.dollarAmount);
+    if (typeof pref.thresholdCredits === "number") setAutoRefillThreshold(pref.thresholdCredits);
+    if (typeof pref.warningThresholdCredits === "number") setWarningThreshold(pref.warningThresholdCredits);
   }, [userProfile]);
 
   async function handleLoadMoreTx() {
@@ -530,17 +544,40 @@ export default function BillingPage() {
     setAutoRefillEnabled(next);
     setAutoRefillSaving(true);
     try {
-      await setAutoRefill({ enabled: next, thresholdCredits: 20, packPriceId: "price_starter" });
+      await setAutoRefill({
+        enabled: next,
+        thresholdCredits: autoRefillThreshold,
+        dollarAmount: autoRefillAmount,
+        warningThresholdCredits: warningThreshold,
+      });
       toast.success(
         next
-          ? "Auto-refill enabled — you'll get a top-up link when credits drop below 20."
-          : "Auto-refill disabled."
+          ? `Auto top-up enabled — we'll charge $${autoRefillAmount} when you drop below ${autoRefillThreshold} credits.`
+          : "Auto top-up disabled."
       );
     } catch (err: any) {
       setAutoRefillEnabled(!next);
-      toast.error(err.message ?? "Failed to update auto-refill preference.");
+      toast.error(err.message ?? "Failed to update auto top-up preference.");
     } finally {
       setAutoRefillSaving(false);
+    }
+  }
+
+  async function handleSaveCreditControls() {
+    if (!user) return;
+    setCreditControlsSaving(true);
+    try {
+      await setAutoRefill({
+        enabled: autoRefillEnabled,
+        thresholdCredits: autoRefillThreshold,
+        dollarAmount: autoRefillAmount,
+        warningThresholdCredits: warningThreshold,
+      });
+      toast.success("Credit control settings saved.");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to save credit control settings.");
+    } finally {
+      setCreditControlsSaving(false);
     }
   }
 
@@ -584,20 +621,12 @@ export default function BillingPage() {
     }
   }
 
-  function handleManageSubscription() {
-    toast.info("Subscription management is handled via Square. Contact support if you need help.");
-  }
-
   const balance = userProfile?.creditBalance ?? 0;
   const plan = userProfile?.plan ?? "free";
-  const subscriptionStatus = userProfile?.subscriptionStatus ?? "none";
-  const isProActive = plan === "pro" && subscriptionStatus === "active";
+  const isLowBalance = warningThreshold > 0 && balance < warningThreshold;
 
   const creditPacks = products.filter(
     (p) => p.metadata?.type === "credit_pack" || (!p.metadata?.type && !p.prices[0]?.recurring)
-  );
-  const subscriptionProducts = products.filter(
-    (p) => p.metadata?.type === "subscription" || p.prices[0]?.recurring
   );
 
   if (!firebaseReady) {
@@ -645,17 +674,17 @@ export default function BillingPage() {
           </p>
         </div>
 
-        {balance < 10 && (
+        {isLowBalance && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4 flex items-start gap-3"
+            className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4 flex items-start gap-3"
           >
-            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-red-400">You're almost out of credits</p>
+              <p className="text-sm font-semibold text-yellow-300">Low credit balance</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                You need at least 10 credits to run a Brain Session. Top up below.
+                You have {balance.toLocaleString()} credits remaining — below your warning threshold of {warningThreshold.toLocaleString()}.
               </p>
             </div>
           </motion.div>
@@ -668,59 +697,26 @@ export default function BillingPage() {
 
             <PlanLimitsCard plan={plan} />
 
-            {(isProActive || subscription) && (
-              <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Crown className="w-4 h-4 text-violet-400" />
-                  <span className="text-sm font-semibold">Pro Subscription</span>
-                </div>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Status</span>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        subscriptionStatus === "active"
-                          ? "border-green-500/40 text-green-400"
-                          : subscriptionStatus === "past_due"
-                            ? "border-yellow-500/40 text-yellow-400"
-                            : "border-border/60 text-muted-foreground"
-                      )}
-                    >
-                      {subscriptionStatus}
-                    </Badge>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleManageSubscription}
-                  disabled={portalLoading}
-                  className="w-full text-xs border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
-                >
-                  {portalLoading ? (
-                    <RefreshCw className="w-3 h-3 animate-spin mr-1.5" />
-                  ) : (
-                    <ExternalLink className="w-3 h-3 mr-1.5" />
-                  )}
-                  Manage Billing
-                </Button>
+            {/* Credit Controls */}
+            <div className="rounded-xl border border-border/60 bg-card/50 p-5 space-y-5">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold">Credit Controls</span>
               </div>
-            )}
 
-            {/* Auto-refill — server-persisted */}
-            <div className="rounded-xl border border-border/60 bg-card/50 p-5">
+              {/* Auto Top-Up Toggle */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-semibold">Auto-Refill</span>
+                <div>
+                  <p className="text-sm font-medium">Auto Top-Up</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Charge your card automatically when balance runs low.
+                  </p>
                 </div>
                 <button
                   onClick={handleToggleAutoRefill}
                   disabled={autoRefillSaving}
                   className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                  aria-label="Toggle auto-refill"
+                  aria-label="Toggle auto top-up"
                 >
                   {autoRefillSaving ? (
                     <RefreshCw className="w-5 h-5 animate-spin" />
@@ -731,9 +727,73 @@ export default function BillingPage() {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                When credits drop below 20, we'll generate a top-up link for the Starter Pack.
-              </p>
+
+              {/* Charge Amount */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Charge amount</p>
+                <div className="flex flex-wrap gap-2">
+                  {billingDefaults.autoRefillAmounts.map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setAutoRefillAmount(amt)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-mono border transition-colors",
+                        autoRefillAmount === amt
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/60 text-muted-foreground hover:border-primary/40"
+                      )}
+                    >
+                      ${amt}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  = {(autoRefillAmount * 100).toLocaleString()} credits per charge
+                </p>
+              </div>
+
+              {/* Trigger Threshold */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Top-up trigger</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={autoRefillThreshold}
+                    onChange={(e) => setAutoRefillThreshold(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-24 h-8 rounded-lg border border-border/60 bg-card px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  />
+                  <span className="text-xs text-muted-foreground">credits remaining</span>
+                </div>
+              </div>
+
+              {/* Warning Threshold */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Low-balance warning</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100000}
+                    value={warningThreshold}
+                    onChange={(e) => setWarningThreshold(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-24 h-8 rounded-lg border border-border/60 bg-card px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  />
+                  <span className="text-xs text-muted-foreground">credits remaining</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Show a warning banner when balance drops below this level.</p>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleSaveCreditControls}
+                disabled={creditControlsSaving || !user}
+                className="w-full text-xs"
+              >
+                {creditControlsSaving && <RefreshCw className="w-3 h-3 animate-spin mr-1.5" />}
+                Save Settings
+              </Button>
             </div>
           </div>
 
@@ -829,49 +889,6 @@ export default function BillingPage() {
               )}
             </div>
 
-            {/* Pro Subscription */}
-            {!isProActive && (
-              <div>
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Upgrade to Pro
-                </h2>
-                {loadingProducts ? (
-                  <div className="rounded-xl border border-border/40 bg-card/30 h-44 animate-pulse" />
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(subscriptionProducts.length > 0
-                      ? subscriptionProducts
-                      : FALLBACK_SUBSCRIPTION
-                    ).map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onBuy={handleBuy}
-                        loading={checkoutLoading === product.prices[0]?.id}
-                        isSubscription={true}
-                        currentPlan={plan}
-                      />
-                    ))}
-                    <div className="rounded-xl border border-border/60 bg-card/30 p-5 flex flex-col gap-3">
-                      <div>
-                        <h3 className="font-semibold text-sm">Pro Perks</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Included with every Pro Plan
-                        </p>
-                      </div>
-                      <ul className="space-y-2">
-                        {PLAN_LIMITS.pro.features.map((perk) => (
-                          <li key={perk} className="flex items-center gap-2 text-xs">
-                            <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
-                            <span>{perk}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* History — Credits + Payments tabs */}
             <div>
@@ -1051,15 +1068,3 @@ const FALLBACK_PACKS: BillingProduct[] = [
   },
 ];
 
-const FALLBACK_SUBSCRIPTION: BillingProduct[] = [
-  {
-    id: "pro_subscription",
-    name: "Pro Plan",
-    description: "2,000 credits per month + priority access",
-    active: true,
-    metadata: { type: "subscription", plan: "pro", creditAmount: "2000" },
-    prices: [
-      { id: "price_pro_monthly", product: "pro_subscription", unit_amount: 2900, currency: "usd", recurring: { interval: "month", interval_count: 1 }, active: true, metadata: { creditAmount: "2000", plan: "pro" } },
-    ],
-  },
-];

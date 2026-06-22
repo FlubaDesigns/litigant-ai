@@ -499,3 +499,30 @@ export async function deleteApiKey(providerId: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete API key");
 }
 
+export interface BillingDefaults {
+  autoRefillAmounts: number[];
+  defaultAutoRefillAmount: number;
+  defaultThresholdCredits: number;
+  defaultWarningThresholdCredits: number;
+}
+
+export async function getAdminBillingDefaults(): Promise<BillingDefaults> {
+  const res = await adminFetch("/admin/billing-defaults");
+  if (!res.ok) throw new Error("Failed to load billing defaults");
+  return res.json();
+}
+
+export async function saveAdminBillingDefaults(
+  updates: Partial<BillingDefaults>
+): Promise<BillingDefaults> {
+  const res = await adminFetch("/admin/billing-defaults", {
+    method: "PUT",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to save billing defaults");
+  }
+  return res.json();
+}
+

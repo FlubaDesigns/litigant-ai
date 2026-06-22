@@ -59,23 +59,39 @@ router.patch("/billing/auto-refill", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  const { enabled, thresholdCredits, packPriceId } = req.body as {
+  const { enabled, thresholdCredits, dollarAmount, warningThresholdCredits } = req.body as {
     enabled?: boolean;
     thresholdCredits?: number;
-    packPriceId?: string;
+    dollarAmount?: number;
+    warningThresholdCredits?: number;
   };
 
   if (typeof enabled !== "boolean") {
     return res.status(400).json({ error: "enabled (boolean) is required" });
   }
+  if (dollarAmount !== undefined && (typeof dollarAmount !== "number" || dollarAmount < 1 || dollarAmount > 500)) {
+    return res.status(400).json({ error: "dollarAmount must be a number between 1 and 500" });
+  }
 
   await setAutoRefillPreference(user.uid, {
     enabled,
-    thresholdCredits: thresholdCredits ?? 20,
-    packPriceId: packPriceId ?? "starter_pack",
+    thresholdCredits: thresholdCredits ?? 100,
+    dollarAmount: dollarAmount ?? 20,
+    ...(warningThresholdCredits !== undefined && { warningThresholdCredits }),
   });
 
   return res.json({ success: true });
+});
+
+/**
+ * GET /billing/defaults
+ * Returns admin-configured billing defaults (auto-refill amounts, thresholds).
+ * Public — no auth required; used by the frontend to populate UI options.
+ */
+router.get("/billing/defaults", async (_req, res) => {
+  const { getBillingDefaults } = await import("../lib/billingDefaultsConfig.js");
+  const defaults = await getBillingDefaults();
+  return res.json(defaults);
 });
 
 /**

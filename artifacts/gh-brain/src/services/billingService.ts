@@ -147,7 +147,8 @@ export async function grantSignupBonus(user: User): Promise<void> {
 export async function setAutoRefill(opts: {
   enabled: boolean;
   thresholdCredits?: number;
-  packPriceId?: string;
+  dollarAmount?: number;
+  warningThresholdCredits?: number;
 }): Promise<void> {
   const headers = await authHeaders();
   const res = await fetch(`${API_BASE}/billing/auto-refill`, {
@@ -158,6 +159,33 @@ export async function setAutoRefill(opts: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error ?? "Failed to update auto-refill preference");
+  }
+}
+
+export interface BillingDefaults {
+  autoRefillAmounts: number[];
+  defaultAutoRefillAmount: number;
+  defaultThresholdCredits: number;
+  defaultWarningThresholdCredits: number;
+}
+
+const STATIC_BILLING_DEFAULTS: BillingDefaults = {
+  autoRefillAmounts: [10, 20, 50, 100, 200],
+  defaultAutoRefillAmount: 20,
+  defaultThresholdCredits: 100,
+  defaultWarningThresholdCredits: 200,
+};
+
+/**
+ * Fetches admin-configured billing defaults (auto-refill amounts, thresholds).
+ */
+export async function getBillingDefaults(): Promise<BillingDefaults> {
+  try {
+    const res = await fetch(`${API_BASE}/billing/defaults`);
+    if (!res.ok) return STATIC_BILLING_DEFAULTS;
+    return res.json();
+  } catch {
+    return STATIC_BILLING_DEFAULTS;
   }
 }
 

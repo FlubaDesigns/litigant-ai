@@ -38,8 +38,10 @@ import {
   getSystemHealth, getApiUsage, getErrorLogs, getAbuseFlags,
   getPricingConfig, updateModelMultiplier, resetModelMultiplier,
   getApiKeys, saveApiKey, deleteApiKey,
+  getAdminBillingDefaults, saveAdminBillingDefaults,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
+  type BillingDefaults,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
@@ -1351,44 +1353,184 @@ function LimitsTab() {
   if (isLoading) return <TabSkeleton />;
 
   return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Numeric platform limits stored in Firestore{" "}
+            <code className="bg-secondary px-1 rounded text-xs">config/adminLimits</code>.
+            Changes take effect immediately for new sessions.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
+          {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
+            const current = (limits as Record<string, number>)?.[name] ?? meta.min;
+            return (
+              <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-6">
+                <div className="flex-1 space-y-0.5 min-w-0">
+                  <p className="font-medium text-sm font-mono">{name}</p>
+                  <p className="text-xs text-muted-foreground">{meta.description}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => save({ name, value: Math.max(meta.min, current - 1) })}
+                    disabled={isPending || current <= meta.min}
+                    className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
+                  >−</button>
+                  <span className="w-8 text-center font-mono font-semibold text-sm tabular-nums">{current}</span>
+                  <button
+                    onClick={() => save({ name, value: Math.min(meta.max, current + 1) })}
+                    disabled={isPending || current >= meta.max}
+                    className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
+                  >+</button>
+                  <span className="text-xs text-muted-foreground w-14 text-right">{meta.min}–{meta.max}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <BillingDefaultsSection />
+    </div>
+  );
+}
+
+function BillingDefaultsSection() {
+  const qc = useQueryClient();
+  const [amountsInput, setAmountsInput] = useState("");
+  const [edited, setEdited] = useState<Partial<BillingDefaults>>({});
+
+  const { data: defaults, isLoading } = useQuery({
+    queryKey: ["admin-billing-defaults"],
+    queryFn: getAdminBillingDefaults,
+    onSuccess: (d: BillingDefaults) => {
+      setAmountsInput(d.autoRefillAmounts.join(", "));
+    },
+  } as any);
+
+  const { mutate: saveDefs, isPending } = useMutation({
+    mutationFn: (updates: Partial<BillingDefaults>) => saveAdminBillingDefaults(updates),
+    onSuccess: () => {
+      toast.success("Billing defaults saved.");
+      setEdited({});
+      qc.invalidateQueries({ queryKey: ["admin-billing-defaults"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const BILLING_FALLBACK: BillingDefaults = {
+    autoRefillAmounts: [10, 20, 50, 100, 200],
+    defaultAutoRefillAmount: 20,
+    defaultThresholdCredits: 100,
+    defaultWarningThresholdCredits: 200,
+  };
+  const current: BillingDefaults = {
+    ...(defaults ?? BILLING_FALLBACK),
+    ...Object.fromEntries(Object.entries(edited).filter(([, v]) => v !== undefined)),
+  } as BillingDefaults;
+
+  function handleSave() {
+    const parsedAmounts = amountsInput
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n) && n > 0);
+    saveDefs({ ...edited, autoRefillAmounts: parsedAmounts });
+  }
+
+  if (isLoading) return <div className="h-32 rounded-xl border border-border/40 animate-pulse" />;
+
+  return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Numeric platform limits stored in Firestore{" "}
-          <code className="bg-secondary px-1 rounded text-xs">config/adminLimits</code>.
-          Changes take effect immediately for new sessions.
+      <div>
+        <h3 className="text-sm font-semibold">Billing Defaults</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Default values pre-populated for users on the Billing page. Stored in{" "}
+          <code className="bg-secondary px-1 rounded text-xs">config/billingDefaults</code>.
         </p>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
-        </Button>
       </div>
 
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-        {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
-          const current = (limits as Record<string, number>)?.[name] ?? meta.min;
-          return (
-            <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-6">
-              <div className="flex-1 space-y-0.5 min-w-0">
-                <p className="font-medium text-sm font-mono">{name}</p>
-                <p className="text-xs text-muted-foreground">{meta.description}</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => save({ name, value: Math.max(meta.min, current - 1) })}
-                  disabled={isPending || current <= meta.min}
-                  className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
-                >−</button>
-                <span className="w-8 text-center font-mono font-semibold text-sm tabular-nums">{current}</span>
-                <button
-                  onClick={() => save({ name, value: Math.min(meta.max, current + 1) })}
-                  disabled={isPending || current >= meta.max}
-                  className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
-                >+</button>
-                <span className="text-xs text-muted-foreground w-14 text-right">{meta.min}–{meta.max}</span>
-              </div>
-            </div>
-          );
-        })}
+        {/* Auto-refill amounts */}
+        <div className="px-5 py-4 space-y-2">
+          <p className="text-sm font-medium">Auto Top-Up Amounts</p>
+          <p className="text-xs text-muted-foreground">Comma-separated dollar amounts shown as quick-pick options.</p>
+          <input
+            type="text"
+            value={amountsInput}
+            onChange={(e) => setAmountsInput(e.target.value)}
+            placeholder="10, 20, 50, 100, 200"
+            className="w-full h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+
+        {/* Default amount */}
+        <div className="flex items-center justify-between px-5 py-4 gap-6">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Default Charge Amount</p>
+            <p className="text-xs text-muted-foreground">Pre-selected dollar amount for new users.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">$</span>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={current.defaultAutoRefillAmount}
+              onChange={(e) => setEdited((prev) => ({ ...prev, defaultAutoRefillAmount: parseInt(e.target.value) || 20 }))}
+              className="w-20 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
+        </div>
+
+        {/* Default trigger threshold */}
+        <div className="flex items-center justify-between px-5 py-4 gap-6">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Default Top-Up Trigger</p>
+            <p className="text-xs text-muted-foreground">Charge fires when balance drops below this many credits.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={10000}
+              value={current.defaultThresholdCredits}
+              onChange={(e) => setEdited((prev) => ({ ...prev, defaultThresholdCredits: parseInt(e.target.value) || 100 }))}
+              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+            <span className="text-xs text-muted-foreground">credits</span>
+          </div>
+        </div>
+
+        {/* Default warning threshold */}
+        <div className="flex items-center justify-between px-5 py-4 gap-6">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Default Warning Threshold</p>
+            <p className="text-xs text-muted-foreground">Show low-balance banner when credits drop below this.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={100000}
+              value={current.defaultWarningThresholdCredits}
+              onChange={(e) => setEdited((prev) => ({ ...prev, defaultWarningThresholdCredits: parseInt(e.target.value) || 200 }))}
+              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+            <span className="text-xs text-muted-foreground">credits</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button size="sm" onClick={handleSave} disabled={isPending}>
+          {isPending && <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />}
+          Save Billing Defaults
+        </Button>
       </div>
     </div>
   );

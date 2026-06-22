@@ -266,8 +266,10 @@ export async function setAutoRefillPreference(
     enabled: boolean;
     /** Balance level that triggers a top-up (in credits) */
     thresholdCredits: number;
-    /** Credit pack price ID (e.g. "price_starter") */
-    packPriceId: string;
+    /** Dollar amount to charge per automatic top-up */
+    dollarAmount: number;
+    /** Balance level that shows a low-credit warning to the user (in credits) */
+    warningThresholdCredits?: number;
   }
 ): Promise<void> {
   if (!isFirebaseConfigured()) return;
@@ -295,7 +297,7 @@ export async function setAutoRefillPreference(
 export async function checkAndTriggerAutoRefill(
   uid: string,
   newBalance: number,
-  createCheckoutUrl: (priceId: string, uid: string) => Promise<string | null>
+  createCheckoutUrl: (dollarAmount: number, uid: string) => Promise<string | null>
 ): Promise<void> {
   if (!isFirebaseConfigured()) return;
   const db = getFirestoreDb();
@@ -307,13 +309,13 @@ export async function checkAndTriggerAutoRefill(
 
     const data       = userSnap.data()!;
     const autoRefill = data["autoRefill"] as
-      | { enabled: boolean; thresholdCredits: number; packPriceId: string }
+      | { enabled: boolean; thresholdCredits: number; dollarAmount: number; warningThresholdCredits?: number }
       | undefined;
 
     if (!autoRefill?.enabled)                      return;
     if (newBalance >= autoRefill.thresholdCredits) return; // still above threshold
 
-    const url = await createCheckoutUrl(autoRefill.packPriceId, uid);
+    const url = await createCheckoutUrl(autoRefill.dollarAmount, uid);
     if (!url) return;
 
     await db.collection("users").doc(uid).set(

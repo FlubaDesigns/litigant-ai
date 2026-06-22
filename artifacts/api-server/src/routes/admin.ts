@@ -3,6 +3,7 @@ import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/fire
 import { addCredits } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+import { getBillingDefaults, saveBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import {
   getAdminPricingTable,
   saveMultiplierOverride,
@@ -1203,6 +1204,40 @@ router.delete("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) 
       seatId,
       note: "Firestore override removed — file default is now active",
     });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /admin/billing-defaults
+ * Returns the admin-configurable billing defaults.
+ */
+router.get("/admin/billing-defaults", requireAdmin, async (_req: any, res) => {
+  const defaults = await getBillingDefaults();
+  return res.json(defaults);
+});
+
+/**
+ * PUT /admin/billing-defaults
+ * Updates the billing defaults stored in Firestore config/billingDefaults.
+ */
+router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
+  const { autoRefillAmounts, defaultAutoRefillAmount, defaultThresholdCredits, defaultWarningThresholdCredits } = req.body as {
+    autoRefillAmounts?: number[];
+    defaultAutoRefillAmount?: number;
+    defaultThresholdCredits?: number;
+    defaultWarningThresholdCredits?: number;
+  };
+
+  try {
+    const updated = await saveBillingDefaults({
+      ...(autoRefillAmounts !== undefined && { autoRefillAmounts }),
+      ...(defaultAutoRefillAmount !== undefined && { defaultAutoRefillAmount }),
+      ...(defaultThresholdCredits !== undefined && { defaultThresholdCredits }),
+      ...(defaultWarningThresholdCredits !== undefined && { defaultWarningThresholdCredits }),
+    });
+    return res.json(updated);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

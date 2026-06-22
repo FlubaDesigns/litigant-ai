@@ -39,7 +39,6 @@ import { calculateActualCredits, estimateSessionCreditsCalibrated } from "../lib
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
-import { findCreditPackByPriceId } from "../lib/creditPacksConfig.js";
 
 const router = Router();
 
@@ -47,21 +46,20 @@ const router = Router();
  * Creates a Square Payment Link for an auto-refill top-up.
  * Used as the createCheckoutUrl callback passed to checkAndTriggerAutoRefill.
  */
-async function createAutoRefillUrl(priceId: string, uid: string): Promise<string | null> {
+async function createAutoRefillUrl(dollarAmount: number, uid: string): Promise<string | null> {
   if (!isSquareConfigured()) return null;
-  const found = await findCreditPackByPriceId(priceId);
-  if (!found) return null;
-  const { pack, price } = found;
-  const creditAmount = parseInt(price.metadata.creditAmount, 10);
+  const dollars = Math.max(1, Math.round(dollarAmount));
+  const amountCents = dollars * 100;
+  const creditAmount = dollars * 100; // 100 credits per dollar
   const domain =
     process.env["APP_DOMAIN"] ??
     (process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0];
   if (!domain) return null;
   try {
     const link = await createPaymentLink({
-      name: `${pack.name} — Auto-Refill`,
-      amountCents: price.unit_amount,
-      note: `LITIGANT:userId=${uid},creditAmount=${creditAmount},pack=${pack.id}`,
+      name: `Credit Top-Up — $${dollars}`,
+      amountCents,
+      note: `LITIGANT:userId=${uid},creditAmount=${creditAmount},type=auto_refill`,
       redirectUrl: `https://${domain}/billing?success=true&refill=true`,
       idempotencyKey: crypto.randomUUID(),
     });
