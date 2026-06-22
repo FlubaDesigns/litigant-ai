@@ -112,7 +112,7 @@ Set these in Replit Secrets:
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- After every `python3 scripts/build-release.py` run, always present the zip as a download link using `present_asset` with the filename shown.
 
 ## Gotchas
 
