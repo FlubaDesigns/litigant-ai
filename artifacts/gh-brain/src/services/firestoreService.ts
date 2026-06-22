@@ -53,6 +53,7 @@ export interface UserProfile {
     outputStrategy?: string;
     outputPreference?: string;
     format?: string;
+    artifactType?: string;
     confidenceTarget?: number;
     maxIterations?: number;
     maxCredits?: number;

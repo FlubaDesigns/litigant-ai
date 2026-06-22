@@ -173,6 +173,7 @@ function ConfigPanel({
           outputStrategy: config.outputStrategy,
           outputPreference: config.outputPreference,
           format: config.format,
+          artifactType: config.artifactType,
           confidenceTarget: config.confidenceTarget,
           maxIterations: config.maxIterations,
           maxCredits: config.maxCredits,
@@ -311,6 +312,51 @@ function ConfigPanel({
                 <SelectItem value="json">JSON</SelectItem>
               </SelectContent>
             </Select>
+          </V29Field>
+
+          {/* ARTIFACT TYPE */}
+          <V29Field label="Artifact Type" desc="What the Builder produces. Auto: Architect decides based on your question.">
+            <div className="grid grid-cols-1 gap-1.5">
+              {([
+                { value: "auto",          label: "Auto",            sub: "Architect decides from context",         group: "general" },
+                { value: "report",        label: "Report",          sub: "Research summary or analysis",           group: "doc" },
+                { value: "memo",          label: "Decision Memo",   sub: "Clear recommendation + rationale",       group: "doc" },
+                { value: "business-plan", label: "Business Plan",   sub: "Full venture plan",                     group: "doc" },
+                { value: "risk-matrix",   label: "Risk Matrix",     sub: "Structured risk assessment",            group: "doc" },
+                { value: "contract-review", label: "Contract Review", sub: "Risks, red flags, negotiation points", group: "doc" },
+                { value: "technical-spec", label: "Technical Spec", sub: "Architecture or build specification",   group: "doc" },
+                { value: "pitch-deck",    label: "Pitch Deck",      sub: "Slide-by-slide narrative outline",      group: "doc" },
+                { value: "legal-brief",   label: "Legal Brief",     sub: "Argument structure + supporting points", group: "doc" },
+                { value: "blog-post",     label: "Blog Post",       sub: "Long-form article or editorial",        group: "doc" },
+                { value: "code",          label: "Code",            sub: "Runnable code — function, script, module", group: "code" },
+                { value: "landing-page",  label: "Landing Page",    sub: "HTML/React page — Git integration in v2", group: "code" },
+              ] as { value: string; label: string; sub: string; group: string }[]).map(({ value, label, sub, group }) => {
+                const isSelected = (config.artifactType ?? "auto") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleChange({ artifactType: value as CourtConfig["artifactType"] })}
+                    className={cn(
+                      "text-left px-3 py-2 rounded border text-xs transition-colors",
+                      isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border/50 bg-background text-muted-foreground hover:border-border hover:text-foreground"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">{label}</span>
+                      {group === "code" && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-primary/30 text-primary/60 font-mono uppercase tracking-wider">
+                          {value === "landing-page" ? "v2" : "code"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] leading-snug opacity-70 mt-0.5">{sub}</div>
+                  </button>
+                );
+              })}
+            </div>
           </V29Field>
 
           {/* CONFIDENCE TARGET */}
@@ -741,6 +787,7 @@ export default function SessionPage() {
         outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? undefined,
         outputPreference: (userProfile.defaultSettings.outputPreference as CourtConfig["outputPreference"]) ?? undefined,
         format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? undefined,
+        artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
       }
     : undefined;
   const { state, run, stop, reset, acceptPartial, continueSession, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = useBrainSession(savedConfig);

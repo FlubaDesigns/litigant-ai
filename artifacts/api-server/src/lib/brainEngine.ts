@@ -27,6 +27,7 @@ export interface CourtConfig {
   aiReasoning?: "independent" | "chain";
   maxCredits?: number;
   debateMode?: "adversarial" | "collaborative";
+  artifactType?: string;
 }
 
 interface RoleDefinition {
@@ -429,7 +430,11 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
     {
       role: "user",
-      content: `The Moderator has produced this deliberation summary:\n\n${moderatorSummary}\n\nOriginal question: "${question}"\n\nDesign the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`,
+      content: `The Moderator has produced this deliberation summary:\n\n${moderatorSummary}\n\nOriginal question: "${question}"\n\n${
+        config.artifactType && config.artifactType !== "auto"
+          ? `REQUIRED ARTIFACT TYPE: The user has explicitly requested a **${config.artifactType}**. You MUST design the blueprint for this specific document type — do not choose a different format. Design the section structure, tone, and audience for a ${config.artifactType} specifically.\n\n`
+          : ""
+      }Design the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`,
     },
   ];
 

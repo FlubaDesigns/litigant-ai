@@ -10,6 +10,20 @@ import type { SeatMapConfig } from "./seatTypes";
 
 export type ProviderName = "openai" | "anthropic" | "grok" | "gemini";
 
+export type ArtifactType =
+  | "auto"
+  | "report"
+  | "memo"
+  | "business-plan"
+  | "risk-matrix"
+  | "contract-review"
+  | "technical-spec"
+  | "pitch-deck"
+  | "legal-brief"
+  | "code"
+  | "landing-page"
+  | "blog-post";
+
 export interface CourtConfig {
   // ── V29 Mission Briefing (user-facing) ──────────────────────────────────
   conscience: boolean;
@@ -24,6 +38,7 @@ export interface CourtConfig {
     | "artifact";
   outputPreference: "chat" | "download" | "both";
   format: "text" | "markdown" | "json";
+  artifactType: ArtifactType;
   confidenceTarget: number;  // 80 | 90 | 95 | 99
   maxIterations: number;     // 1 | 3 | 5 | 10
   maxCredits: number;
@@ -59,6 +74,7 @@ export const DEFAULT_CONFIG: CourtConfig = {
   outputStrategy: "moderator-consensus",
   outputPreference: "chat",
   format: "text",
+  artifactType: "auto",
   confidenceTarget: 90,
   maxIterations: 5,
   maxCredits: 25,
