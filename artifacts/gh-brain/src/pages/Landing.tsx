@@ -210,7 +210,7 @@ const FAQ = [
   },
   {
     q: "Which AI models are available?",
-    a: "The admin connects providers — GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, Grok, and others. Each seat can be assigned a different model. You pick from what's been connected. Bring your own API key on custom plans to unlock any OpenAI-compatible model.",
+    a: "The admin connects providers — GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, Grok, and others. Each seat can be assigned a different model. You pick from what's been connected. Any OpenAI-compatible model can be unlocked by connecting its provider in the admin panel.",
   },
   {
     q: "What does the court actually produce?",
@@ -230,7 +230,7 @@ const FAQ = [
   },
   {
     q: "Can I share a verdict or export the artifact?",
-    a: "Yes. The Orchestrator prompts you to save at the end of each session. Saved sessions go to your case files. Pro and Team plans include shareable read-only verdict links — no login required to view them.",
+    a: "Yes. The Orchestrator prompts you to save at the end of each session. Saved sessions go to your case files. Shareable read-only verdict links are on the roadmap — no login required to view them.",
   },
   {
     q: "What is a 'court seat brief'?",

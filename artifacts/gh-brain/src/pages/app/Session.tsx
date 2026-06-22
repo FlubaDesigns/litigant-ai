@@ -875,8 +875,8 @@ export default function SessionPage() {
       toast.error("Please enter a question first.");
       return;
     }
-    if (userProfile && userProfile.creditBalance < estimatedCredits) {
-      toast.error(`You need at least ${estimatedCredits} credits to run this session.`, {
+    if (userProfile && userProfile.creditBalance < estimatedCreditsHigh) {
+      toast.error(`You need at least ${estimatedCreditsHigh} credits to run this session.`, {
         action: { label: "Buy Credits", onClick: () => navigate("/billing") },
       });
       return;
@@ -968,12 +968,14 @@ export default function SessionPage() {
   const estimatedCredits = selectedCreditInfo
     ? estimateCredits(selectedCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
     : state.config.litigantCount * state.config.maxIterations * 3 + 6;
+  // Padded high-end estimate (mirrors ConfigPanel's credHigh formula); used for all credit gates
+  // so the UI's displayed safety margin actually protects the credit system.
+  const estimatedCreditsHigh = estimatedCredits + (state.config.conscience ? 1 : 0) + Math.ceil(estimatedCredits * 0.4);
 
   // Live credit health — from Firestore via useUserProfile (updates as backend deducts)
   const creditsCritical = credits < 10;
   const creditsLow = credits < 50 && !creditsCritical;
-  const insufficientCredits = credits < estimatedCredits;
-  const sessionsLeft = estimatedCredits > 0 ? Math.floor(credits / estimatedCredits) : 0;
+  const insufficientCredits = credits < estimatedCreditsHigh;
 
   const filteredTemplates =
     activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
