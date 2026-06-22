@@ -137,64 +137,67 @@ const TESTIMONIALS = [
 // ── Pricing tiers ─────────────────────────────────────────────────────────────
 const PLANS = [
   {
-    name: "Free",
-    price: "$0",
+    name: "Trial",
+    price: "Free",
     period: "",
-    credits: "50 credits / month",
+    credits: "100 credits on signup",
+    badge: null,
     highlight: false,
+    cta: "Start Free",
     features: [
-      "3 sessions per month",
-      "2 AI models in the courtroom",
-      "Basic confidence scoring",
-      "PDF export",
-      "7-day session history",
+      "100 credits included — no card required",
+      "Full access to the courtroom",
+      "All AI models available",
+      "Export to Markdown",
+      "Complete session history",
     ],
   },
   {
     name: "Starter",
-    price: "$19",
-    period: "/mo",
-    credits: "500 credits / month",
+    price: "$4.99",
+    period: "",
+    credits: "500 credits",
+    badge: null,
     highlight: false,
+    cta: "Buy Credits",
     features: [
-      "Unlimited sessions",
-      "Up to 10 litigants in the courtroom",
-      "Advanced confidence scoring",
-      "All export formats (PDF, MD, JSON)",
-      "Custom court personas",
-      "30-day history",
+      "500 credits, never expire",
+      "~12–33 full sessions",
+      "All export formats",
+      "Complete session history",
+      "Auto top-up available",
     ],
   },
   {
-    name: "Pro",
-    price: "$79",
-    period: "/mo",
-    credits: "2,500 credits / month",
+    name: "Pro Pack",
+    price: "$19.99",
+    period: "",
+    credits: "2,200 credits",
+    badge: "Best Value",
     highlight: true,
+    cta: "Buy Credits",
     features: [
-      "Everything in Starter",
-      "6 AI models simultaneously",
-      "Real-time token trace visualization",
-      "Shareable verdict reports",
-      "API access",
-      "Unlimited history",
-      "Priority processing",
+      "2,200 credits (+10% bonus)",
+      "~55–146 full sessions",
+      "All export formats",
+      "Complete session history",
+      "Auto top-up available",
     ],
   },
   {
-    name: "Team",
-    price: "$299",
-    period: "/mo",
-    credits: "15,000 credits / month",
+    name: "Mega Pack",
+    price: "$34.99",
+    period: "",
+    credits: "4,200 credits",
+    badge: "+20% bonus",
     highlight: false,
+    cta: "Buy Credits",
     features: [
-      "Everything in Pro",
-      "Up to 10 seats",
-      "Shared session library",
-      "Admin dashboard",
-      "SSO / SAML",
-      "Dedicated support",
-      "Custom model routing",
+      "4,200 credits (+20% bonus)",
+      "~105–280 full sessions",
+      "All export formats",
+      "Complete session history",
+      "Auto top-up available",
     ],
   },
 ];
@@ -824,9 +827,9 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="text-center max-w-2xl mx-auto mb-16"
             >
-              <h2 className="text-4xl font-bold tracking-tight mb-4">Access the Court</h2>
+              <h2 className="text-4xl font-bold tracking-tight mb-4">Pay Only for What You Use</h2>
               <p className="text-lg text-muted-foreground">
-                Compute is not free. Insight is priceless. Four tiers — from first trial to enterprise-scale analysis.
+                No subscriptions. Credits never expire. Start free — top up when you need more.
               </p>
             </motion.div>
 
@@ -845,16 +848,16 @@ export default function LandingPage() {
                       : "border-border bg-card"
                   )}
                 >
-                  {plan.highlight && (
+                  {plan.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-primary-foreground text-xs font-mono uppercase tracking-widest rounded-full">
-                      Most Popular
+                      {plan.badge}
                     </div>
                   )}
                   <div className="mb-6">
                     <div className="text-sm font-mono text-muted-foreground uppercase tracking-widest mb-2">{plan.name}</div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-bold font-mono">{plan.price}</span>
-                      <span className="text-muted-foreground text-sm">{plan.period}</span>
+                      {plan.period && <span className="text-muted-foreground text-sm">{plan.period}</span>}
                     </div>
                     <div className="text-xs text-primary font-mono mt-1">{plan.credits}</div>
                   </div>
@@ -877,13 +880,24 @@ export default function LandingPage() {
                         : "bg-secondary text-foreground hover:bg-secondary/80"
                     )}
                   >
-                    <Link href={plan.name === "Team" ? "#" : isSignedIn ? "/billing" : "/register"}>
-                      {plan.name === "Team" ? "Contact Sales" : isSignedIn ? "Buy Credits" : "Get Started"}
+                    <Link href={plan.name === "Trial" ? (isSignedIn ? "/billing" : "/register") : (isSignedIn ? "/billing" : "/register")}>
+                      {plan.name === "Trial"
+                        ? (isSignedIn ? "Go to Billing" : "Start Free")
+                        : (isSignedIn ? "Buy Credits" : "Get Started")}
                     </Link>
                   </Button>
                 </motion.div>
               ))}
             </div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-center text-xs text-muted-foreground mt-8"
+            >
+              100 credits = $1.00 · Credits never expire · Auto top-up available · Cancel anytime
+            </motion.p>
           </div>
         </section>
 
