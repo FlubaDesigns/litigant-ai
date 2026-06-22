@@ -4,7 +4,6 @@ import { verifyIdToken, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { isSquareConfigured, createPaymentLink } from "../lib/squareClient.js";
 import {
   getTransactions,
-  updateUserPlan,
   grantSignupBonus,
   setAutoRefillPreference,
 } from "../lib/creditLedger.js";
@@ -266,7 +265,9 @@ router.post("/billing/checkout/custom", async (req, res) => {
  * POST /billing/cancel-subscription
  * Not applicable — Square does not manage subscriptions here.
  */
-router.post("/billing/cancel-subscription", async (_req, res) => {
+router.post("/billing/cancel-subscription", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
   return res.status(501).json({ error: "Subscriptions are not available" });
 });
 

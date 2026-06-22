@@ -128,9 +128,9 @@ router.patch("/auth/preferences", async (req, res) => {
 
   if (ds.courtMode    && VALID_COURT_MODES.has(ds.courtMode as string))
     patch["defaultSettings.courtMode"]    = ds.courtMode;
-  if (typeof ds.litigantCount === "number" && ds.litigantCount >= 2 && ds.litigantCount <= 10)
+  if (typeof ds.litigantCount === "number" && Number.isInteger(ds.litigantCount) && ds.litigantCount >= 2 && ds.litigantCount <= 10)
     patch["defaultSettings.litigantCount"] = ds.litigantCount;
-  if (typeof ds.confidenceTarget === "number" && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
+  if (typeof ds.confidenceTarget === "number" && Number.isInteger(ds.confidenceTarget) && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
     patch["defaultSettings.confidenceTarget"] = ds.confidenceTarget;
   if (ds.responseMode && VALID_RESP_MODES.has(ds.responseMode as string))
     patch["defaultSettings.responseMode"] = ds.responseMode;
