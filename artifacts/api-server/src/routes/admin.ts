@@ -166,7 +166,7 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
 
     const [
       userCount, sessionCount, txCount,
-      recentSessions, errorSessions, feedbackCount,
+      recentSessions, errorSessions, feedbackCount, sessions7d,
     ] = await Promise.all([
       db.collection("users").count().get(),
       db.collection("sessions").count().get(),
@@ -174,7 +174,13 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
       db.collection("sessions").where("createdAt", ">=", last24h).count().get(),
       db.collection("sessions").where("status", "==", "error").where("createdAt", ">=", last7d).count().get(),
       db.collection("feedback").where("createdAt", ">=", last7d).count().get(),
+      // Scoped to the same 7-day window as errorSessions so the error rate
+      // reflects recent behaviour rather than dividing by the all-time total.
+      db.collection("sessions").where("createdAt", ">=", last7d).count().get(),
     ]);
+
+    const sessionCount7d = sessions7d.data().count;
+    const errorCount7d   = errorSessions.data().count;
 
     return res.json({
       status: "ok",
@@ -188,10 +194,13 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
         newSessions: recentSessions.data().count,
       },
       last7d: {
-        errorSessions: errorSessions.data().count,
+        errorSessions: errorCount7d,
         feedbackEntries: feedbackCount.data().count,
-        errorRate: sessionCount.data().count > 0
-          ? ((errorSessions.data().count / Math.max(sessionCount.data().count, 1)) * 100).toFixed(1)
+        // Denominator is 7-day session total, not lifetime total.
+        // Using the lifetime total would trend the rate toward zero as the
+        // product ages, masking real spikes in recent error counts.
+        errorRate: sessionCount7d > 0
+          ? ((errorCount7d / sessionCount7d) * 100).toFixed(1)
           : "0.0",
       },
     });
@@ -242,13 +251,19 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
       );
     }
 
-    const hasMore = !search && users.length > limit;
-    if (!search) users = users.slice(0, limit);
+    // Apply limit and hasMore consistently across all branches.
+    // For name searches the source window is the 200 most-recent accounts —
+    // boundedSearch:true tells the caller the result may be incomplete
+    // (older accounts that match won't appear) rather than implying it's exhaustive.
+    const hasMore = users.length > limit;
+    const boundedSearch = !!(search && !search.includes("@"));
+    users = users.slice(0, limit);
 
     return res.json({
       users,
       hasMore,
       nextCursor: hasMore ? users[users.length - 1]?.id : null,
+      ...(boundedSearch ? { boundedSearch: true } : {}),
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -619,9 +634,34 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
 
-  const { value } = req.body as { value?: boolean | string };
-  if (value === undefined) {
-    return res.status(400).json({ error: "value is required" });
+  const name  = req.params["name"]!;
+  const { value } = req.body as { value?: unknown };
+  const validFlags  = Object.keys(DEFAULT_FLAGS);
+  const VALID_SCOPES = new Set(["all", "pro", "free"]);
+
+  if (name.endsWith("_scope")) {
+    // Scope flags (e.g. "guestMode_scope") — value must be a valid plan scope string.
+    const baseName = name.slice(0, -"_scope".length);
+    if (!validFlags.includes(baseName)) {
+      return res.status(400).json({
+        error: `Unknown scope flag "${name}". Valid base flags: ${validFlags.join(", ")}`,
+      });
+    }
+    if (typeof value !== "string" || !VALID_SCOPES.has(value)) {
+      return res.status(400).json({
+        error: `Scope value must be one of: ${[...VALID_SCOPES].join(", ")}`,
+      });
+    }
+  } else {
+    // Boolean feature flags — name must be in DEFAULT_FLAGS, value must be boolean.
+    if (!validFlags.includes(name)) {
+      return res.status(400).json({
+        error: `Unknown flag "${name}". Valid flags: ${validFlags.join(", ")}`,
+      });
+    }
+    if (typeof value !== "boolean") {
+      return res.status(400).json({ error: "value must be a boolean (true or false)" });
+    }
   }
 
   try {
@@ -629,10 +669,10 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
       .collection("config")
       .doc("featureFlags")
       .set(
-        { [req.params["name"]!]: value, updatedAt: FieldValue.serverTimestamp() },
+        { [name]: value, updatedAt: FieldValue.serverTimestamp() },
         { merge: true }
       );
-    return res.json({ success: true, name: req.params["name"], value });
+    return res.json({ success: true, name, value });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
