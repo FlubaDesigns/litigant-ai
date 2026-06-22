@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getLimits } from "@/services/providerService";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Swords, HelpCircle, BarChart2, Star, Users, AlignLeft, FileText, List, Gavel, ChevronRight, ChevronLeft, Check, Zap, Gauge, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ const COURT_MODES = [
   },
 ];
 
-const LITIGANT_COUNTS = [2, 3, 4, 5, 6, 8];
+const ALL_LITIGANT_COUNTS = [2, 3, 4, 5, 6, 8, 10];
 
 const RESPONSE_MODES = [
   {
@@ -172,12 +173,17 @@ function OptionCard({
 export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [maxLitigants, setMaxLitigants] = useState(10);
   const [prefs, setPrefs] = useState<Prefs>({
     courtMode: "adversarial",
     litigantCount: 3,
     responseMode: "balanced",
     outputFormat: "report",
   });
+
+  useEffect(() => {
+    getLimits().then((l) => setMaxLitigants(l.maxLitigants)).catch(() => {});
+  }, []);
 
   function set<K extends keyof Prefs>(key: K, value: Prefs[K]) {
     setPrefs((p) => ({ ...p, [key]: value }));
@@ -313,7 +319,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                   </p>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                  {LITIGANT_COUNTS.map((n) => (
+                  {ALL_LITIGANT_COUNTS.filter((n) => n <= maxLitigants).map((n) => (
                     <button
                       key={n}
                       onClick={() => set("litigantCount", n)}

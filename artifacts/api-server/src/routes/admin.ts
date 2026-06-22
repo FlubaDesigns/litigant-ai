@@ -678,6 +678,66 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
   }
 });
 
+// ── Admin Limits (public read, admin write) ───────────────────────────────────
+//
+// Numeric platform limits controlled from the admin centre.
+// Stored in Firestore config/adminLimits. Defaults apply when the document
+// doesn't exist or Firestore is unavailable (fail-open, not fail-closed).
+
+const DEFAULT_LIMITS: Record<string, number> = {
+  maxLitigants: 10,
+};
+
+const LIMIT_RANGES: Record<string, { min: number; max: number }> = {
+  maxLitigants: { min: 2, max: 20 },
+};
+
+// Public — the frontend needs this before auth to render pickers correctly.
+router.get("/limits", async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.json({ limits: DEFAULT_LIMITS });
+  try {
+    const doc = await db.collection("config").doc("adminLimits").get();
+    if (!doc.exists) return res.json({ limits: DEFAULT_LIMITS });
+    return res.json({ limits: { ...DEFAULT_LIMITS, ...(doc.data() ?? {}) } });
+  } catch {
+    return res.json({ limits: DEFAULT_LIMITS });
+  }
+});
+
+router.put("/admin/limits/:name", requireAdmin, async (req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  const name  = req.params["name"]!;
+  const { value } = req.body as { value?: unknown };
+
+  if (!(name in DEFAULT_LIMITS)) {
+    return res.status(400).json({
+      error: `Unknown limit "${name}". Valid limits: ${Object.keys(DEFAULT_LIMITS).join(", ")}`,
+    });
+  }
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return res.status(400).json({ error: "value must be an integer" });
+  }
+  const range = LIMIT_RANGES[name]!;
+  if (value < range.min || value > range.max) {
+    return res.status(400).json({
+      error: `${name} must be between ${range.min} and ${range.max}`,
+    });
+  }
+
+  try {
+    await db
+      .collection("config")
+      .doc("adminLimits")
+      .set({ [name]: value, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return res.json({ success: true, name, value });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Canon / Conscience Config ─────────────────────────────────────────────────
 
 /**

@@ -32,6 +32,7 @@ import {
   getProviders, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
   type ProviderInfo, type ModelInfo, type ModelCreditInfo,
 } from "@/services/providerService";
+import { useLimits } from "@/hooks/useLimits";
 import { Input } from "@/components/ui/input";
 import { CourtDiagram } from "@/components/CourtDiagram";
 import { SeatInspector } from "@/components/SeatInspector";
@@ -946,8 +947,10 @@ export default function SessionPage() {
     setSeatAI(seatId, assignment, litIndex);
   }
 
+  const { maxLitigants } = useLimits();
+
   function handleAddLitigant() {
-    const next = Math.min(state.config.litigantCount + 1, 10);
+    const next = Math.min(state.config.litigantCount + 1, maxLitigants);
     setConfig({ litigantCount: next });
   }
 
@@ -1342,7 +1345,7 @@ export default function SessionPage() {
                   <button
                     onClick={handleAddLitigant}
                     className="w-7 h-7 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-base font-bold leading-none"
-                    disabled={state.config.litigantCount >= 10}
+                    disabled={state.config.litigantCount >= maxLitigants}
                   >+</button>
                 </div>
                 {/* Mode pill */}
@@ -1400,7 +1403,7 @@ export default function SessionPage() {
                         <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}{state.config.litigantCount > 4 ? "/4" : ""}</span>
                         <button
                           onClick={handleAddLitigant}
-                          disabled={state.config.litigantCount >= 10}
+                          disabled={state.config.litigantCount >= maxLitigants}
                           className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold"
                         >+</button>
                       </div>

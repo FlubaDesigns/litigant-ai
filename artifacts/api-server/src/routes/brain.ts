@@ -252,6 +252,23 @@ router.post("/run-brain", async (req, res) => {
     outputFormat: "report",
   };
 
+  // Enforce the admin-configured max litigant count before cost estimation so
+  // the credit reservation is never based on a higher count than will actually
+  // run. Non-fatal — if Firestore is unavailable we proceed with the client's
+  // requested count (fail-open, not fail-closed).
+  {
+    const limitDb = getFirestoreDb();
+    if (limitDb) {
+      try {
+        const limitsDoc = await limitDb.collection("config").doc("adminLimits").get();
+        if (limitsDoc.exists) {
+          const maxLitigants = (limitsDoc.data()?.["maxLitigants"] as number) ?? 10;
+          effectiveConfig.litigantCount = Math.min(effectiveConfig.litigantCount, maxLitigants);
+        }
+      } catch { /* non-fatal */ }
+    }
+  }
+
   const estimatedCost = await estimateSessionCreditsCalibrated(effectiveConfig);
 
   // ── Auth + credit reservation ─────────────────────────────────────────────

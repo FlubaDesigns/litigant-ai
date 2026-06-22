@@ -7,7 +7,7 @@ import {
   Ban, Zap, Clock, RefreshCw, Check, Edit3,
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,8 @@ import { cn } from "@/lib/utils";
 import {
   getAdminStats, listAdminUsers, getAdminUser, adjustUserCredits, banUser,
   listAdminSessions, getAdminSession, listAdminTransactions, issueRefund,
-  getFeatureFlags, setFeatureFlag, listAdminTemplates, updateAdminTemplate,
+  getFeatureFlags, setFeatureFlag, getAdminLimits, setAdminLimit,
+  listAdminTemplates, updateAdminTemplate,
   getSystemHealth, getApiUsage, getErrorLogs, getAbuseFlags,
   getPricingConfig, updateModelMultiplier, resetModelMultiplier,
   getApiKeys, saveApiKey, deleteApiKey,
@@ -42,7 +43,7 @@ import {
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
-  | "overview" | "health" | "users" | "sessions" | "transactions"
+  | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
   | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "api-keys";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
@@ -56,6 +57,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "api-usage",    label: "API Usage",       icon: BarChart2 },
   { id: "errors",       label: "Error Logs",      icon: AlertCircle },
   { id: "abuse",        label: "Abuse Flags",     icon: HeartCrack },
+  { id: "limits",       label: "Limits",          icon: SlidersHorizontal },
   { id: "flags",        label: "Feature Flags",   icon: Flag },
   { id: "templates",    label: "Templates",       icon: LayoutTemplate },
 ];
@@ -1003,6 +1005,80 @@ const PLAN_SCOPE_LABELS: Record<string, string> = {
   pro: "Pro only",
   free: "Free only",
 };
+
+// ─── Limits Tab ───────────────────────────────────────────────────────────────
+
+const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
+  maxLitigants: {
+    label: "Max Litigants",
+    description: "Maximum number of AI debaters a user can select per session. Default: 10. Range: 2–20.",
+    min: 2,
+    max: 20,
+  },
+};
+
+function LimitsTab() {
+  const qc = useQueryClient();
+
+  const { data: limits, isLoading, refetch } = useQuery({
+    queryKey: ["admin-limits"],
+    queryFn: getAdminLimits,
+  });
+
+  const { mutate: save, isPending } = useMutation({
+    mutationFn: ({ name, value }: { name: string; value: number }) => setAdminLimit(name, value),
+    onSuccess: (_, { name, value }) => {
+      toast.success(`${name} set to ${value}`);
+      qc.invalidateQueries({ queryKey: ["admin-limits"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Numeric platform limits stored in Firestore{" "}
+          <code className="bg-secondary px-1 rounded text-xs">config/adminLimits</code>.
+          Changes take effect immediately for new sessions.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        </Button>
+      </div>
+
+      <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
+        {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
+          const current = (limits as Record<string, number>)?.[name] ?? meta.min;
+          return (
+            <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-6">
+              <div className="flex-1 space-y-0.5 min-w-0">
+                <p className="font-medium text-sm font-mono">{name}</p>
+                <p className="text-xs text-muted-foreground">{meta.description}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => save({ name, value: Math.max(meta.min, current - 1) })}
+                  disabled={isPending || current <= meta.min}
+                  className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
+                >−</button>
+                <span className="w-8 text-center font-mono font-semibold text-sm tabular-nums">{current}</span>
+                <button
+                  onClick={() => save({ name, value: Math.min(meta.max, current + 1) })}
+                  disabled={isPending || current >= meta.max}
+                  className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
+                >+</button>
+                <span className="text-xs text-muted-foreground w-14 text-right">{meta.min}–{meta.max}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function FeatureFlagsTab() {
   const qc = useQueryClient();
@@ -2118,6 +2194,7 @@ export default function AdminPage() {
           {activeTab === "api-usage"    && <ApiUsageTab />}
           {activeTab === "errors"       && <ErrorLogsTab />}
           {activeTab === "abuse"        && <AbuseFlagsTab />}
+          {activeTab === "limits"       && <LimitsTab />}
           {activeTab === "flags"        && <FeatureFlagsTab />}
           {activeTab === "templates"    && <TemplatesTab />}
         </motion.div>

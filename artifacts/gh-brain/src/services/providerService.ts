@@ -2,6 +2,21 @@ import type { ProviderName } from "@/data/templates";
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
 
+export interface PlatformLimits {
+  maxLitigants: number;
+}
+
+export async function getLimits(): Promise<PlatformLimits> {
+  try {
+    const res = await fetch(`${API_BASE}/limits`);
+    if (!res.ok) return { maxLitigants: 10 };
+    const data = await res.json();
+    return { maxLitigants: data.limits?.maxLitigants ?? 10 };
+  } catch {
+    return { maxLitigants: 10 };
+  }
+}
+
 export interface ModelCreditInfo {
   model: string;
   multiplier: number;

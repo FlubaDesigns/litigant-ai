@@ -200,6 +200,24 @@ export async function setFeatureFlag(name: string, value: boolean | string): Pro
   if (!res.ok) throw new Error("Failed to update feature flag");
 }
 
+export async function getAdminLimits(): Promise<Record<string, number>> {
+  const res = await fetch(`${API_BASE}/limits`);
+  if (!res.ok) return { maxLitigants: 10 };
+  const data = await res.json();
+  return data.limits ?? { maxLitigants: 10 };
+}
+
+export async function setAdminLimit(name: string, value: number): Promise<void> {
+  const res = await adminFetch(`/admin/limits/${name}`, {
+    method: "PUT",
+    body: JSON.stringify({ value }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update limit");
+  }
+}
+
 export async function updateAdminTemplate(
   id: string,
   data: {

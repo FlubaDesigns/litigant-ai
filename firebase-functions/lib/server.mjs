@@ -56375,6 +56375,19 @@ router3.post("/run-brain", async (req, res) => {
     responseMode: "balanced",
     outputFormat: "report"
   };
+  {
+    const limitDb = getFirestoreDb();
+    if (limitDb) {
+      try {
+        const limitsDoc = await limitDb.collection("config").doc("adminLimits").get();
+        if (limitsDoc.exists) {
+          const maxLitigants = limitsDoc.data()?.["maxLitigants"] ?? 10;
+          effectiveConfig.litigantCount = Math.min(effectiveConfig.litigantCount, maxLitigants);
+        }
+      } catch {
+      }
+    }
+  }
   const estimatedCost = await estimateSessionCreditsCalibrated(effectiveConfig);
   let uid = null;
   const authHeader = req.headers["authorization"];
@@ -57312,6 +57325,49 @@ router7.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
       { [name]: value, updatedAt: FieldValue7.serverTimestamp() },
       { merge: true }
     );
+    return res.json({ success: true, name, value });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+var DEFAULT_LIMITS = {
+  maxLitigants: 10
+};
+var LIMIT_RANGES = {
+  maxLitigants: { min: 2, max: 20 }
+};
+router7.get("/limits", async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.json({ limits: DEFAULT_LIMITS });
+  try {
+    const doc = await db.collection("config").doc("adminLimits").get();
+    if (!doc.exists) return res.json({ limits: DEFAULT_LIMITS });
+    return res.json({ limits: { ...DEFAULT_LIMITS, ...doc.data() ?? {} } });
+  } catch {
+    return res.json({ limits: DEFAULT_LIMITS });
+  }
+});
+router7.put("/admin/limits/:name", requireAdmin, async (req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  const name = req.params["name"];
+  const { value } = req.body;
+  if (!(name in DEFAULT_LIMITS)) {
+    return res.status(400).json({
+      error: `Unknown limit "${name}". Valid limits: ${Object.keys(DEFAULT_LIMITS).join(", ")}`
+    });
+  }
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return res.status(400).json({ error: "value must be an integer" });
+  }
+  const range = LIMIT_RANGES[name];
+  if (value < range.min || value > range.max) {
+    return res.status(400).json({
+      error: `${name} must be between ${range.min} and ${range.max}`
+    });
+  }
+  try {
+    await db.collection("config").doc("adminLimits").set({ [name]: value, updatedAt: FieldValue7.serverTimestamp() }, { merge: true });
     return res.json({ success: true, name, value });
   } catch (err) {
     return res.status(500).json({ error: err.message });
