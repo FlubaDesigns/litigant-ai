@@ -116,7 +116,7 @@ const V29_SELECT = "bg-[#0d1a0d] border border-primary/30 text-sm text-foregroun
 
 // ── ConfigPanel ───────────────────────────────────────────────────────────────
 function ConfigPanel({
-  open, onClose, config, onChange, uid, onboardingComplete,
+  open, onClose, config, onChange, uid, onboardingComplete, isAdmin,
 }: {
   open: boolean;
   onClose: () => void;
@@ -124,6 +124,7 @@ function ConfigPanel({
   onChange: (c: Partial<CourtConfig>) => void;
   uid?: string;
   onboardingComplete?: boolean;
+  isAdmin?: boolean;
 }) {
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
   const [saving, setSaving] = useState(false);
@@ -329,7 +330,7 @@ function ConfigPanel({
                 { value: "legal-brief",   label: "Legal Brief",     sub: "Argument structure + supporting points", group: "doc" },
                 { value: "blog-post",     label: "Blog Post",       sub: "Long-form article or editorial",        group: "doc" },
                 { value: "code",          label: "Code",            sub: "Runnable code — function, script, module", group: "code" },
-                { value: "landing-page",  label: "Landing Page",    sub: "HTML/React page — Git integration in v2", group: "code" },
+                { value: "landing-page",  label: "Landing Page",    sub: isAdmin ? "HTML/React page — Git integration in v2" : "Generate a full HTML or React page", group: "code" },
               ] as { value: string; label: string; sub: string; group: string }[]).map(({ value, label, sub, group }) => {
                 const isSelected = (config.artifactType ?? "auto") === value;
                 return (
@@ -765,7 +766,7 @@ function exportPDF(state: ReturnType<typeof useBrainSession>["state"], w: Window
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function SessionPage() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
   const { credits, plan } = useUserProfile();
   const savedConfig = userProfile?.defaultSettings
     ? {
@@ -1018,6 +1019,7 @@ export default function SessionPage() {
         onChange={setConfig}
         uid={user?.uid}
         onboardingComplete={userProfile?.onboardingComplete}
+        isAdmin={isAdmin}
       />
 
       {/* ── HEADER NAV — Configure | Sessions | state controls ── */}
