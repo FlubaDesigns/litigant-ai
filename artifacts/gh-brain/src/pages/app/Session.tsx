@@ -510,8 +510,11 @@ const PROVIDER_SHORT: Record<string, string> = {
   anthropic: "Claude", openai: "GPT", grok: "Grok", gemini: "Gemini",
 };
 
+// Roles that are NOT litigants — defined by exclusion so any new persona
+// added to brainEngine.ts is automatically treated as a litigant turn.
+const NON_LITIGANT_ROLES = new Set(["Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict"]);
 function isLitigantRole(role: string) {
-  return role.toLowerCase().startsWith("litigant");
+  return role !== "You" && !NON_LITIGANT_ROLES.has(role);
 }
 function isOrchestratorRole(role: string) {
   return role === "Orchestrator" || role === "Verdict" || role === "Moderator";

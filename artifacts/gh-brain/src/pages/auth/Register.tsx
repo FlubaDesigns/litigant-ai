@@ -11,33 +11,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Brain, ArrowRight, Loader2, Check } from "lucide-react";
+import { Brain, ArrowRight, Loader2, Zap } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import { cn } from "@/lib/utils";
 import { USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
-
-const PLANS = [
-  {
-    id: "free" as const,
-    name: "Free",
-    price: "$0",
-    credits: "100 credits",
-    features: ["3 sessions/month", "2 AI models", "PDF export"],
-  },
-  {
-    id: "starter" as const,
-    name: "Starter",
-    price: "$19/mo",
-    credits: "500 credits",
-    features: ["Unlimited sessions", "Up to 10 litigants", "All export formats", "Custom personas"],
-  },
-];
 
 const registerSchema = z.object({
   displayName: z.string().min(2, "Name is required"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  plan: z.enum(["free", "starter"]),
   role: z.string().optional(),
   organization: z.string().optional(),
 });
@@ -50,10 +31,8 @@ export default function RegisterPage() {
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { displayName: "", email: "", password: "", plan: "free", role: "", organization: "" },
+    defaultValues: { displayName: "", email: "", password: "", role: "", organization: "" },
   });
-
-  const selectedPlan = form.watch("plan");
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     setIsLoading(true);
@@ -66,11 +45,7 @@ export default function RegisterPage() {
         values.organization?.trim() || undefined,
       );
       toast.success("Account created — please verify your email.");
-      if (values.plan === "starter") {
-        setLocation("/billing");
-      } else {
-        setLocation(`/verify-email?next=${encodeURIComponent(next)}`);
-      }
+      setLocation(`/verify-email?next=${encodeURIComponent(next)}`);
     } catch (error: any) {
       toast.error(error.message || "Failed to create account.");
     } finally {
@@ -105,39 +80,12 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-xl shadow-2xl space-y-6">
-          {/* Plan selection */}
-          <div className="space-y-3">
-            <Label>Plan</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {PLANS.map((plan) => (
-                <button
-                  key={plan.id}
-                  type="button"
-                  onClick={() => form.setValue("plan", plan.id)}
-                  className={cn(
-                    "relative p-4 rounded-lg border text-left transition-all",
-                    selectedPlan === plan.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-border/80 hover:bg-secondary/30"
-                  )}
-                >
-                  {selectedPlan === plan.id && (
-                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                    </div>
-                  )}
-                  <div className="font-bold text-sm mb-0.5">{plan.name}</div>
-                  <div className="text-primary text-xs font-mono mb-2">{plan.price}</div>
-                  <div className="text-xs text-muted-foreground">{plan.credits}</div>
-                  <ul className="mt-2 space-y-0.5">
-                    {plan.features.map((f) => (
-                      <li key={f} className="text-xs text-muted-foreground flex items-center gap-1">
-                        <span className="text-primary">·</span> {f}
-                      </li>
-                    ))}
-                  </ul>
-                </button>
-              ))}
+          {/* Free trial callout */}
+          <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <Zap className="w-4 h-4 text-primary shrink-0" />
+            <div>
+              <div className="text-sm font-semibold text-primary">100 free credits on signup</div>
+              <div className="text-xs text-muted-foreground mt-0.5">No card required. Top up anytime — credits never expire.</div>
             </div>
           </div>
 

@@ -1,0 +1,264 @@
+LITIGANT AI – PASS 10 ADDENDUM HANDOFF
+(Code-Verified Against Current Zip)
+
+Scope Reviewed:
+- Session.tsx
+- SeatInspector.tsx
+- Settings.tsx (PreferencesTab reviewed, NotificationsTab NOT fully reviewed)
+
+This addendum supplements Pass 10.
+
+============================================================
+PASS 10 FINDING #28 – VALID
+DEBATE MODE IS ACTUALLY CHANGING COURT MODE
+============================================================
+
+Status:
+CONFIRMED
+
+Severity:
+Medium-High
+
+What the code actually does:
+
+Session.tsx contains:
+
+onValueChange={(v) => handleChange({
+  debateMode: v,
+  courtMode: v === "adversarial"
+    ? "adversarial"
+    : "analysis"
+})}
+
+The UI label says:
+
+"Debate Mode"
+
+with descriptions implying:
+
+- Adversarial = AIs challenge each other
+- Collaborative = AIs build on each other
+
+However the actual behavior is:
+
+Selecting a Debate Mode changes courtMode.
+
+Backend execution is driven by:
+
+brainEngine.ts
+
+which selects personas using:
+
+config.courtMode
+
+not debateMode.
+
+Therefore:
+
+Changing Debate Mode changes which courtroom personas execute.
+
+============================================================
+WHY THIS IS A REAL PROBLEM
+============================================================
+
+The user is being shown a behavioral control.
+
+The engine is receiving a courtroom selection.
+
+Those are not the same thing.
+
+Current user expectation:
+
+"Use the same courtroom but change how participants interact."
+
+Actual result:
+
+"Switch to a completely different courtroom."
+
+That is a product-behavior mismatch.
+
+============================================================
+ONE IMPORTANT CLARIFICATION
+============================================================
+
+Pass 10 suggests that clicking the already-selected value could overwrite an existing mode.
+
+That specific behavior depends on the Select component implementation.
+
+Many Select controls do not fire when the same value is chosen again.
+
+Therefore:
+
+Do not base the finding on whether re-selecting the same item fires.
+
+The stronger finding is already sufficient:
+
+Selecting Collaborative forces:
+
+courtMode = analysis
+
+Selecting Adversarial forces:
+
+courtMode = adversarial
+
+This behavior is directly visible in the code.
+
+============================================================
+RECOMMENDED ARCHITECTURE
+============================================================
+
+Separate these concepts:
+
+courtMode
+
+controls:
+
+- adversarial personas
+- critique personas
+- analysis personas
+- socratic personas
+
+debateMode
+
+controls:
+
+- adversarial interaction style
+- collaborative interaction style
+
+These should be independent settings.
+
+Examples:
+
+Adversarial Court + Collaborative Debate
+
+Critique Court + Collaborative Debate
+
+Socratic Court + Adversarial Debate
+
+Analysis Court + Collaborative Debate
+
+Currently those combinations cannot exist because debateMode overwrites courtMode.
+
+============================================================
+OPTION A – RECOMMENDED
+============================================================
+
+Keep both fields.
+
+Implement real debateMode logic inside brainEngine.ts.
+
+Example:
+
+debateMode = adversarial
+
+- challenge previous arguments
+- attack weaknesses
+- seek contradictions
+
+debateMode = collaborative
+
+- build on previous arguments
+- strengthen prior evidence
+- seek synthesis
+
+In this model:
+
+courtMode chooses WHO speaks.
+
+debateMode chooses HOW they speak.
+
+This is the cleanest long-term design.
+
+============================================================
+OPTION B
+============================================================
+
+Remove debateMode entirely.
+
+Rename the control:
+
+Court Mode
+
+and expose:
+
+- Adversarial
+- Critique
+- Analysis
+- Socratic
+
+This is acceptable if collaborative behavior is not planned.
+
+============================================================
+OPTION C
+============================================================
+
+Keep the UI exactly as-is.
+
+Update the description text so users understand:
+
+Adversarial = Adversarial Court
+
+Collaborative = Analysis Court
+
+This is the least desirable option because it preserves the hidden coupling.
+
+============================================================
+ADDITIONAL AUDIT CORRECTION
+============================================================
+
+Pass 10 status should be adjusted.
+
+The audit states:
+
+"NotificationsTab referenced."
+
+Later it states:
+
+"NotificationsTab not read line-by-line."
+
+Therefore:
+
+NotificationsTab should remain in the unread / not fully audited category.
+
+The audit should not imply full review of that section.
+
+============================================================
+SEATINSPECTOR CONFIRMATION
+============================================================
+
+Pass 10 correctly confirms the earlier litigant-seat finding.
+
+SeatInspector allows users to:
+
+- assign providers
+- assign models
+- configure higher-numbered litigant seats
+
+while the previously identified engine limitation still exists.
+
+This is not a new finding.
+
+It is valuable confirmation that the issue is visible at the UI level and not just inside backend execution.
+
+============================================================
+BOTTOM LINE
+============================================================
+
+Keep Finding #28.
+
+Strengthen the recommendation:
+
+The real issue is not merely that Debate Mode changes Court Mode.
+
+The deeper issue is that debateMode currently has no independent execution meaning in brainEngine.ts.
+
+Either:
+
+1. Give debateMode real behavioral influence,
+or
+
+2. Remove it and expose courtMode directly.
+
+Also correct the audit status:
+
+NotificationsTab has not yet been fully audited and should remain on the remaining-review list.
