@@ -439,7 +439,7 @@ function ConfigPanel({
             <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
             <div className="text-2xl font-bold text-primary">{credLow}–{credHigh} Credits</div>
             <div className="text-xs text-muted-foreground leading-relaxed">
-              Based on {config.litigantCount} litigants, {config.debateMode} mode,{" "}
+              Based on {Math.min(config.litigantCount, 4)} litigants{config.litigantCount > 4 ? ` of ${config.litigantCount} configured` : ""}, {config.debateMode} mode,{" "}
               {confidenceLabel}{config.conscience ? " + conscience gate (+1 Cr)" : ""}.
             </div>
           </div>
@@ -1337,7 +1337,7 @@ export default function SessionPage() {
                     disabled={state.config.litigantCount <= 2}
                   >−</button>
                   <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">
-                    {state.config.litigantCount} litigants
+                    {state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}
                   </span>
                   <button
                     onClick={handleAddLitigant}
@@ -1397,7 +1397,7 @@ export default function SessionPage() {
                           disabled={state.config.litigantCount <= 2}
                           className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold"
                         >−</button>
-                        <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}</span>
+                        <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}{state.config.litigantCount > 4 ? "/4" : ""}</span>
                         <button
                           onClick={handleAddLitigant}
                           disabled={state.config.litigantCount >= 10}

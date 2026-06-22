@@ -191,12 +191,16 @@ router.post("/auth/send-password-reset", async (req, res) => {
 
   try {
     await sendPasswordResetEmail(email.trim().toLowerCase());
-    // Always return success — don't reveal whether the email exists
-    return res.json({ sent: true });
   } catch (err: any) {
-    console.error("[Auth] send-password-reset error:", err.message);
-    return res.status(500).json({ error: "Failed to send password reset email" });
+    // auth/user-not-found is swallowed silently — all errors return the same { sent: true }
+    // below so callers cannot distinguish registered from unregistered addresses.
+    // Every other error is still logged for ops visibility.
+    if (err?.code !== "auth/user-not-found") {
+      console.error("[Auth] send-password-reset error:", err.message);
+    }
   }
+  // Always return success — don't reveal whether the email exists
+  return res.json({ sent: true });
 });
 
 export default router;

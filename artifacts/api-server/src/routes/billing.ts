@@ -68,10 +68,33 @@ router.patch("/billing/auto-refill", async (req, res) => {
     return res.status(400).json({ error: "enabled (boolean) is required" });
   }
 
+  if (thresholdCredits !== undefined) {
+    if (
+      typeof thresholdCredits !== "number" ||
+      !Number.isInteger(thresholdCredits) ||
+      thresholdCredits < 1 ||
+      thresholdCredits > 10_000
+    ) {
+      return res.status(400).json({ error: "thresholdCredits must be a whole number between 1 and 10 000" });
+    }
+  }
+
+  if (packPriceId !== undefined) {
+    const validPriceIds = CREDIT_PACKS.flatMap((p) => p.prices.map((pr) => pr.id));
+    if (!validPriceIds.includes(packPriceId)) {
+      return res.status(400).json({
+        error: `Invalid packPriceId. Valid values: ${validPriceIds.join(", ")}. See GET /billing/products for details.`,
+      });
+    }
+  }
+
   await setAutoRefillPreference(user.uid, {
     enabled,
     thresholdCredits: thresholdCredits ?? 20,
-    packPriceId: packPriceId ?? "starter_pack",
+    // Default to "price_starter" — the valid price ID for the Starter Pack.
+    // "starter_pack" (the pack ID) is intentionally not used here because
+    // findPackByPriceId() looks up by price ID, not pack ID.
+    packPriceId: packPriceId ?? "price_starter",
   });
 
   return res.json({ success: true });
@@ -169,7 +192,6 @@ router.post("/billing/checkout", async (req, res) => {
   }
 
   const origin =
-    (req.headers["origin"] as string | undefined) ||
     (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
@@ -217,7 +239,6 @@ router.post("/billing/checkout/custom", async (req, res) => {
   const creditAmount = roundedDollars * CREDITS_PER_DOLLAR;
 
   const origin =
-    (req.headers["origin"] as string | undefined) ||
     (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
