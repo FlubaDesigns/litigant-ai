@@ -40,21 +40,33 @@ Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents
 
 ## Rebuttal Loop
 
-After a completed session the user can challenge the verdict. Submitting a challenge triggers a full new brain run with three additions to the context: the original question, the original verdict, and the user's specific objection. Every seat is instructed to address the objection directly and determine whether to uphold, amend, or reverse.
+After a completed session the user can challenge the verdict. The challenge card appears only when `isComplete` (`state.phase === "complete"`, line 961/1157 of Session.tsx). The full chain, verified from code:
 
-- **Frontend:** `useBrainSession.ts` → `submitRebuttal(challenge)` dispatches `REBUTTAL_SUBMIT` (archives prior verdict into `state.rebuttals[]`, increments `state.rebuttalRound`) then fires a new `runBrainSession` call with `rebuttalContext` attached.
-- **Service:** `sessionService.ts` → `BrainRunRequest.rebuttalContext` carries `{ challenge, originalVerdict, rebuttalRound, parentSessionId }` to the API.
-- **Backend:** `brainEngine.ts` → when `rebuttalContext` is present, `baseContext` is rewritten to include the original verdict and challenge; the Orchestrator's opening message acknowledges the challenge by name.
-- **Persistence:** `brain.ts` → rebuttal sessions saved to Firestore with `isRebuttal: true`, `rebuttalRound`, `rebuttalChallenge`, `parentSessionId`; title prefixed `[Rebuttal N]`.
-- **UI:** `Session.tsx` → "Challenge the Verdict" card appears below output tabs when `phase === "complete"`. Shows past challenge trail (R1, R2…), textarea, Reconvene button, credit check, and New Case button.
+- **`useBrainSession.ts` → `submitRebuttal(challenge)`:**
+  - Guards: returns immediately if `!s.finalAnswer || !s.sessionId`
+  - Computes `newRound = s.rebuttalRound + 1`
+  - Dispatches `REBUTTAL_SUBMIT { newRound, challenge, prevSessionId, prevFinalAnswer }` — reducer pushes `{ round: state.rebuttalRound, challenge, sessionId, finalAnswer }` into `state.rebuttals[]`, sets `rebuttalRound: newRound`, sets `phase: "running"`, clears feed/log/answer/error/pause fields
+  - Fires `runBrainSession` with `rebuttalContext: { challenge, originalVerdict: s.finalAnswer, rebuttalRound: newRound, parentSessionId: s.sessionId }`
+
+- **`sessionService.ts`:** The fetch body sends `rebuttalContext` as one field AND `parentSessionId` as a separate top-level field (both extracted from the same source). `RebuttalContext` type: `{ challenge, originalVerdict, rebuttalRound, parentSessionId? }`.
+
+- **`brainEngine.ts`:** When `rebuttalContext` is present, `baseContext` becomes a string containing the original question, the previous verdict, the rebuttal round number, and the challenge text — instructing the court to re-examine and determine whether to uphold, amend, or reverse. The Orchestrator's user message explicitly names the round and challenge and routes litigants to address the specific objection.
+
+- **`brain.ts` (routes/brain.ts):** Session saved to Firestore with `title: "[Rebuttal N] ${question.slice(0, 70)}"`. Extra fields spread in only when `rebuttalContext` present: `isRebuttal: true`, `rebuttalRound`, `rebuttalChallenge`, `parentSessionId: parentSessionId ?? null`.
+
+- **`Session.tsx` UI:** Challenge card inside `{isComplete && (` block. Shows rebuttal round badge when `state.rebuttalRound > 0`. Past challenge trail shows `R{r.round}` + challenge text truncated at 90 chars. "Reconvene the Court" button disabled when `!rebuttalChallenge.trim() || insufficientCredits`; active background `#00c853`.
 
 ## Admin-only UI Gating
 
-The Landing Page artifact type shows a generic description to all users. Admins (`isAdmin === true` from Firebase custom claim) see the internal roadmap note ("Git integration in v2"). Controlled via `isAdmin` prop on `ConfigPanel` in `Session.tsx`.
+`isAdmin` is set in `AuthContext.tsx` and exposed via `useAuth()`. In `Session.tsx` line 769 it is destructured from `useAuth()` and passed as an `isAdmin` prop into `ConfigPanel` at line 1023. Inside `ConfigPanel` (line 333), the Landing Page artifact option reads:
+```
+sub: isAdmin ? "HTML/React page — Git integration in v2" : "Generate a full HTML or React page"
+```
+All other artifact types show the same sub-label to all users. No other UI elements are currently gated on `isAdmin` inside ConfigPanel.
 
 ## Static Assets
 
-Tool page images in `artifacts/gh-brain/public/tools/` are JPEG (converted from PNG). References in `artifacts/gh-brain/src/data/toolPages.ts` use `.jpg` extensions. Do not re-add PNG versions — they were 15 MB combined vs 1 MB as JPEG at quality 82.
+Tool page images referenced in `artifacts/gh-brain/src/data/toolPages.ts` use `.jpg` extensions — confirmed 14 `.jpg` references and zero `.png` references in that file. Do not re-add PNG versions — they were ~15 MB combined vs ~1 MB as JPEG at quality 82.
 
 ## Release Builds
 
