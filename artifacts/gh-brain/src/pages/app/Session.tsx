@@ -233,9 +233,9 @@ function ConfigPanel({
 
           {/* SAFETY FILTER */}
           <V29Field
-            label="Safety Filter"
+            label="Conscience"
             desc="ON: self-checks for bias, harm, and gaps. OFF: raw output."
-            tooltip="Also called Conscience. When ON, every seat's output is checked against a governance clause before it's shown — flagging bias, unsupported claims, and coverage gaps. When OFF, you get the model's raw, unfiltered output with no self-review pass. Turning it off is faster and slightly cheaper, but reduces the safety net on sensitive or high-stakes questions."
+            tooltip="Conscience is a safety filter. When ON, it injects a governance clause into every seat's prompt and reviews each response before it's shown to you — checking for bias, unsupported or harmful claims, and coverage gaps, and revising or flagging output that fails those checks. When OFF, that review pass is skipped entirely and you get the model's raw, unfiltered output — faster and slightly cheaper, but with no safety net on sensitive or high-stakes questions."
           >
             <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => handleChange({ conscience: v === "on" })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
