@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -1557,44 +1558,53 @@ export default function SessionPage() {
               </button>
             </div>
 
-            {/* Suggested prompts */}
-            <div className="flex flex-col gap-1.5">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 px-0.5 mb-0.5">
-                Try asking
-              </div>
-              {[
-                "Is our go-to-market strategy viable for enterprise?",
-                "Should we raise a Series A now or wait 12 months?",
-                "Is this contract clause actually enforceable?",
-                "Which of these two technical approaches is sounder?",
-              ].map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => setQuestion(prompt)}
-                  className="group text-left px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground border border-border/30 hover:border-primary/35 rounded-lg bg-transparent hover:bg-primary/5 transition-all"
-                >
-                  <span className="text-primary/40 group-hover:text-primary/60 mr-1 transition-colors">"</span>
-                  {prompt}
-                  <span className="text-primary/40 group-hover:text-primary/60 transition-colors">"</span>
-                </button>
-              ))}
-            </div>
+            {/* Suggested prompts + template, collapsed into an accordion */}
+            <Accordion type="single" collapsible className="border border-border/20 rounded-xl px-3">
+              <AccordionItem value="get-started" className="border-b-0">
+                <AccordionTrigger className="py-2.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 hover:no-underline hover:text-muted-foreground">
+                  Get started
+                </AccordionTrigger>
+                <AccordionContent className="pt-0 pb-3">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 px-0.5 mb-0.5">
+                      Try asking
+                    </div>
+                    {[
+                      "Is our go-to-market strategy viable for enterprise?",
+                      "Should we raise a Series A now or wait 12 months?",
+                      "Is this contract clause actually enforceable?",
+                      "Which of these two technical approaches is sounder?",
+                    ].map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => setQuestion(prompt)}
+                        className="group text-left px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground border border-border/30 hover:border-primary/35 rounded-lg bg-transparent hover:bg-primary/5 transition-all"
+                      >
+                        <span className="text-primary/40 group-hover:text-primary/60 mr-1 transition-colors">"</span>
+                        {prompt}
+                        <span className="text-primary/40 group-hover:text-primary/60 transition-colors">"</span>
+                      </button>
+                    ))}
+                  </div>
 
-            {/* Template button */}
-            <button
-              onClick={() => setTemplateSheetOpen(true)}
-              className="flex items-center gap-3 p-3 border border-primary/20 rounded-xl hover:border-primary/45 hover:bg-primary/5 transition-all text-left group"
-              style={{ background: "rgba(0,200,83,.03)" }}
-            >
-              <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                <LayoutTemplate className="w-4 h-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-primary leading-none mb-0.5">Use a template</div>
-                <div className="text-[11px] text-muted-foreground">{TEMPLATES.length} purpose-built trials</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary/70 transition-colors shrink-0" />
-            </button>
+                  {/* Template button */}
+                  <button
+                    onClick={() => setTemplateSheetOpen(true)}
+                    className="mt-2 flex items-center gap-3 p-3 border border-primary/20 rounded-xl hover:border-primary/45 hover:bg-primary/5 transition-all text-left group w-full"
+                    style={{ background: "rgba(0,200,83,.03)" }}
+                  >
+                    <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                      <LayoutTemplate className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-primary leading-none mb-0.5">Use a template</div>
+                      <div className="text-[11px] text-muted-foreground">{TEMPLATES.length} purpose-built trials</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary/70 transition-colors shrink-0" />
+                  </button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
           </div>
         )}
