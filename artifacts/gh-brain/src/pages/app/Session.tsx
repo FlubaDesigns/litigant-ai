@@ -1655,11 +1655,11 @@ export default function SessionPage() {
                   Run Trial
                 </button>
               </div>
-            ) : (
+            ) : isComplete ? null : (
               <div className="flex flex-col gap-2">
                 <div className="relative">
                   <Textarea
-                    placeholder={isComplete ? "Challenge the verdict or ask a follow-up…" : "Put your question on trial…"}
+                    placeholder="Put your question on trial…"
                     value={state.question}
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isRunning) handleRun(); } }}
