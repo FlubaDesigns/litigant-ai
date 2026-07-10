@@ -6,7 +6,7 @@ import {
   ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
   Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Shuffle,
-  ChevronRight, Gavel,
+  ChevronRight, Gavel, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -102,11 +103,30 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
 
 // ── V29 field wrapper ─────────────────────────────────────────────────────────
 function V29Field({
-  label, desc, children,
-}: { label: string; desc?: string; children: React.ReactNode }) {
+  label, desc, tooltip, children,
+}: { label: string; desc?: string; tooltip?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">{label}</div>
+      <div className="flex items-center gap-1.5">
+        <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">{label}</div>
+        {tooltip && (
+          <Tooltip delayDuration={150}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                tabIndex={-1}
+                className="text-primary/40 hover:text-primary/80 transition-colors"
+                aria-label={`More info about ${label}`}
+              >
+                <HelpCircle className="w-3 h-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed">
+              {tooltip}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       {children}
       {desc && <p className="text-[11px] text-muted-foreground/70 leading-relaxed">{desc}</p>}
     </div>
@@ -202,6 +222,7 @@ function ConfigPanel({
         side="right"
         className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 overflow-y-auto p-0"
       >
+        <TooltipProvider delayDuration={150}>
         <div className="px-5 py-5 space-y-5">
           {/* Header */}
           <SheetHeader className="pb-0">
@@ -211,7 +232,11 @@ function ConfigPanel({
           </SheetHeader>
 
           {/* SAFETY FILTER */}
-          <V29Field label="Safety Filter" desc="ON: self-checks for bias, harm, and gaps. OFF: raw output.">
+          <V29Field
+            label="Safety Filter"
+            desc="ON: self-checks for bias, harm, and gaps. OFF: raw output."
+            tooltip="Also called Conscience. When ON, every seat's output is checked against a governance clause before it's shown — flagging bias, unsupported claims, and coverage gaps. When OFF, you get the model's raw, unfiltered output with no self-review pass. Turning it off is faster and slightly cheaper, but reduces the safety net on sensitive or high-stakes questions."
+          >
             <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => handleChange({ conscience: v === "on" })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -222,7 +247,11 @@ function ConfigPanel({
           </V29Field>
 
           {/* RESPONSE MODE */}
-          <V29Field label="Response Mode" desc="Consensus Only: one clean answer. All Voices: each AI's response shown.">
+          <V29Field
+            label="Response Mode"
+            desc="Consensus Only: one clean answer. All Voices: each AI's response shown."
+            tooltip="Controls how much of the debate you actually see. Consensus Only hides the individual seats and shows just the final synthesized answer — cleanest for quick decisions. All Voices shows every seat's full response alongside the synthesis, so you can see exactly how each AI reasoned and where they agreed or disagreed."
+          >
             <Select value={config.outputScope} onValueChange={(v) => handleChange({ outputScope: v as CourtConfig["outputScope"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -233,7 +262,11 @@ function ConfigPanel({
           </V29Field>
 
           {/* DEBATE MODE */}
-          <V29Field label="Debate Mode" desc="Adversarial: AIs challenge each other. Collaborative: AIs build on each other.">
+          <V29Field
+            label="Debate Mode"
+            desc="Adversarial: AIs challenge each other. Collaborative: AIs build on each other."
+            tooltip="Sets how the seats treat each other's arguments, independent of which court mode is active. Adversarial: each seat actively challenges others, hunts for contradictions, and attacks weak reasoning — good for pressure-testing an idea. Collaborative: seats build on each other's points and work toward synthesis rather than confrontation — good for exploring or refining an idea together."
+          >
             <Select value={config.debateMode} onValueChange={(v) => handleChange({ debateMode: v as CourtConfig["debateMode"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -244,7 +277,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* AI REASONING */}
-          <V29Field label="AI Reasoning">
+          <V29Field
+            label="AI Reasoning"
+            tooltip="Controls whether seats hear each other. Independent: each AI only sees its own prior turns, never the other seats' responses — faster and cheaper, good for gathering distinct unbiased takes. Chain: each AI reads the entire transcript so far before responding, enabling real cross-examination and rebuttal — richer, but costs significantly more credits since every seat re-reads a growing transcript every round."
+          >
             <div className="flex flex-col gap-1.5">
               {(["independent", "chain"] as const).map((mode) => {
                 const isSelected = config.aiReasoning === mode;
@@ -279,7 +315,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* OUTPUT STRATEGY */}
-          <V29Field label="Output Strategy">
+          <V29Field
+            label="Output Strategy"
+            tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response. Court Transcript: the full raw turn-by-turn debate log. Artifact Only: skips narrative output entirely and produces just the generated artifact (doc, code, etc.) set by Artifact Type."
+          >
             <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -293,7 +332,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* OUTPUT PREFERENCE */}
-          <V29Field label="Output Preference">
+          <V29Field
+            label="Output Preference"
+            tooltip="Controls where the final result ends up. Display in chat: read the result directly in the session, nothing downloaded automatically. Download only: skips the on-screen display and gives you a file to save. Display + download: shows the result in chat and also makes it available as a downloadable file."
+          >
             <Select value={config.outputPreference} onValueChange={(v) => handleChange({ outputPreference: v as CourtConfig["outputPreference"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -305,7 +347,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* FORMAT */}
-          <V29Field label="Format">
+          <V29Field
+            label="Format"
+            tooltip="The file format used when your output is downloaded or exported. Text: plain .txt, no formatting. Markdown: headings, bullets, and emphasis preserved (.md) — best for reading or pasting into docs. JSON: structured data (.json) — best if you're feeding the result into another tool or script."
+          >
             <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -317,7 +362,11 @@ function ConfigPanel({
           </V29Field>
 
           {/* ARTIFACT TYPE */}
-          <V29Field label="Artifact Type" desc="What the Builder produces. Auto: Architect decides based on your question.">
+          <V29Field
+            label="Artifact Type"
+            desc="What the Builder produces. Auto: Architect decides based on your question."
+            tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type (report, memo, business plan, code, etc.) forces the Builder to always produce that structure regardless of how the debate goes."
+          >
             <div className="grid grid-cols-1 gap-1.5">
               {([
                 { value: "auto",          label: "Auto",            sub: "Architect decides from context",         group: "general" },
@@ -362,7 +411,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* CONFIDENCE TARGET */}
-          <V29Field label="Confidence Target">
+          <V29Field
+            label="Confidence Target"
+            tooltip="How rigorous the debate needs to be before the court stops and delivers an answer. Fast (80%) accepts a quicker, less exhaustive pass. Standard (90%) is a balanced default. Deep (95%) and Maximum (99%) push seats to keep iterating and challenging until confidence is very high — higher targets take longer and use more credits since more rounds may run."
+          >
             <Select value={String(config.confidenceTarget)} onValueChange={(v) => handleChange({ confidenceTarget: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -375,7 +427,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* MAXIMUM ITERATIONS */}
-          <V29Field label="Maximum Iterations">
+          <V29Field
+            label="Maximum Iterations"
+            tooltip="The maximum number of debate rounds the court is allowed to run before it must stop and produce a result, even if the Confidence Target hasn't been reached yet. More iterations allow deeper back-and-forth but use more credits — this is a hard ceiling that caps runaway sessions."
+          >
             <Select value={String(config.maxIterations)} onValueChange={(v) => handleChange({ maxIterations: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -388,7 +443,10 @@ function ConfigPanel({
           </V29Field>
 
           {/* MAXIMUM CREDITS */}
-          <V29Field label="Maximum Credits">
+          <V29Field
+            label="Maximum Credits"
+            tooltip="A hard spending cap for this session. If a run is on track to exceed this many credits, it stops early rather than continuing to spend. This protects you from an unexpectedly expensive session — set it higher if you want the court to run as long as it needs, or lower to strictly control cost."
+          >
             <Select value={String(config.maxCredits)} onValueChange={(v) => handleChange({ maxCredits: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -404,7 +462,19 @@ function ConfigPanel({
           {/* AI PROVIDER */}
           {availableProviders.length > 0 && (
             <div className="space-y-2 pt-1 border-t border-primary/10">
-              <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">AI Provider</div>
+              <div className="flex items-center gap-1.5">
+                <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">AI Provider</div>
+                <Tooltip delayDuration={150}>
+                  <TooltipTrigger asChild>
+                    <button type="button" tabIndex={-1} className="text-primary/40 hover:text-primary/80 transition-colors" aria-label="More info about AI Provider">
+                      <HelpCircle className="w-3 h-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed">
+                    Which underlying AI model powers every seat in this session. Different providers vary in reasoning style, speed, and cost per credit. Switching provider also lets you pick a specific model from that provider below.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {availableProviders.map((p) => (
                   <button
@@ -460,6 +530,7 @@ function ConfigPanel({
             }
           </div>
         </div>
+        </TooltipProvider>
       </SheetContent>
     </Sheet>
   );
