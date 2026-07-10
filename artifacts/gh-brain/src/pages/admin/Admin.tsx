@@ -7,13 +7,14 @@ import {
   Ban, Zap, Clock, RefreshCw, Check, Edit3,
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
-  ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2,
+  ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -39,18 +40,21 @@ import {
   getPricingConfig, updateModelMultiplier, resetModelMultiplier,
   getApiKeys, saveApiKey, deleteApiKey,
   getAdminBillingDefaults, saveAdminBillingDefaults,
+  getChecklist, setChecklistItemChecked,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
-  type BillingDefaults,
+  type BillingDefaults, type ChecklistItem,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
-  | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys";
+  | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys"
+  | "checklist";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
+  { id: "checklist",    label: "Setup Checklist", icon: ListChecks },
   { id: "health",       label: "System Health",  icon: Server },
   { id: "pricing",      label: "Pricing",        icon: DollarSign },
   { id: "api-keys",     label: "API Keys",       icon: Shield },
@@ -127,7 +131,7 @@ function SystemNotesCard() {
 }
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
-function OverviewTab() {
+function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: getAdminStats,
@@ -154,6 +158,7 @@ function OverviewTab() {
             </div>
           ))}
         </div>
+        <ChecklistLinkCard onOpenChecklist={onOpenChecklist} />
         <SystemNotesCard />
       </div>
     );
@@ -168,7 +173,158 @@ function OverviewTab() {
         <StatCard label="Last 7 Days"   value={data?.recentSessions ?? 0}    icon={TrendingUp} sub="new sessions" />
       </div>
 
+      <ChecklistLinkCard onOpenChecklist={onOpenChecklist} />
       <SystemNotesCard />
+    </div>
+  );
+}
+
+// ─── Checklist Link Card (Overview access point) ──────────────────────────────
+function ChecklistLinkCard({ onOpenChecklist }: { onOpenChecklist: () => void }) {
+  const { data } = useQuery({
+    queryKey: ["admin-checklist"],
+    queryFn: getChecklist,
+    retry: false,
+  });
+
+  const total = data?.length ?? 0;
+  const done = data?.filter((i) => i.checked).length ?? 0;
+  const ownerTotal = data?.filter((i) => i.section === "owner").length ?? 0;
+  const ownerDone = data?.filter((i) => i.section === "owner" && i.checked).length ?? 0;
+
+  return (
+    <button
+      onClick={onOpenChecklist}
+      className="w-full text-left rounded-xl border border-primary/20 bg-primary/5 p-5 flex items-center justify-between gap-4 hover:bg-primary/10 transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+          <ListChecks className="w-4.5 h-4.5 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-foreground">Setup Checklist</p>
+          <p className="text-xs text-muted-foreground">
+            {total > 0
+              ? `${done}/${total} items done — ${ownerDone}/${ownerTotal} of your action items complete`
+              : "Audit-derived to-do list for launch readiness"}
+          </p>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+    </button>
+  );
+}
+
+// ─── Setup Checklist Tab ────────────────────────────────────────────────────────
+function ChecklistSection({
+  title, subtitle, items, onToggle,
+}: {
+  title: string;
+  subtitle: string;
+  items: ChecklistItem[];
+  onToggle: (id: string, checked: boolean) => void;
+}) {
+  const done = items.filter((i) => i.checked).length;
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+        </div>
+        <Badge variant="outline" className="font-mono text-xs">{done}/{items.length}</Badge>
+      </div>
+      <div className="divide-y divide-border">
+        {items.map((item) => (
+          <label
+            key={item.id}
+            className="flex items-start gap-3 p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
+          >
+            <Checkbox
+              checked={item.checked}
+              onCheckedChange={(v) => onToggle(item.id, v === true)}
+              className="mt-0.5"
+            />
+            <div className="min-w-0">
+              <p className={cn("text-sm", item.checked ? "text-muted-foreground line-through" : "text-foreground")}>
+                {item.text}
+              </p>
+              {item.note && (
+                <p className="text-xs text-muted-foreground mt-1">{item.note}</p>
+              )}
+            </div>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChecklistTab() {
+  const qc = useQueryClient();
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["admin-checklist"],
+    queryFn: getChecklist,
+    retry: false,
+  });
+
+  const toggleMut = useMutation({
+    mutationFn: ({ id, checked }: { id: string; checked: boolean }) => setChecklistItemChecked(id, checked),
+    onMutate: async ({ id, checked }) => {
+      await qc.cancelQueries({ queryKey: ["admin-checklist"] });
+      const prev = qc.getQueryData<ChecklistItem[]>(["admin-checklist"]);
+      qc.setQueryData<ChecklistItem[]>(["admin-checklist"], (old) =>
+        old?.map((i) => (i.id === id ? { ...i, checked } : i)) ?? old
+      );
+      return { prev };
+    },
+    onError: (e: Error, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["admin-checklist"], ctx.prev);
+      toast.error(e.message);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-checklist"] }),
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        Firebase not configured — checklist state can't be saved in dev mode.
+      </div>
+    );
+  }
+
+  const agentItems = data.filter((i) => i.section === "agent");
+  const ownerItems = data.filter((i) => i.section === "owner");
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
+        <ListChecks className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <div>
+          <span className="font-medium text-foreground">Launch readiness checklist. </span>
+          Compiled from a full codebase audit. "Your action items" are things only you can do
+          (secrets, third-party accounts, product decisions, legal content, deployment). "Agent
+          work items" are code-level fixes tracked here so nothing falls through the cracks — check
+          them off as they're completed.
+        </div>
+      </div>
+
+      <ChecklistSection
+        title="Your action items"
+        subtitle="Manual setup, accounts, decisions, and content only you can complete"
+        items={ownerItems}
+        onToggle={(id, checked) => toggleMut.mutate({ id, checked })}
+      />
+
+      <ChecklistSection
+        title="Agent work items"
+        subtitle="Code-level fixes and audit follow-ups"
+        items={agentItems}
+        onToggle={(id, checked) => toggleMut.mutate({ id, checked })}
+      />
     </div>
   );
 }
@@ -2640,7 +2796,8 @@ export default function AdminPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {activeTab === "overview"     && <OverviewTab />}
+          {activeTab === "overview"     && <OverviewTab onOpenChecklist={() => setActiveTab("checklist")} />}
+          {activeTab === "checklist"    && <ChecklistTab />}
           {activeTab === "health"       && <SystemHealthTab />}
           {activeTab === "pricing"      && <PricingTab />}
           {activeTab === "api-keys"     && <ApiKeysTab />}

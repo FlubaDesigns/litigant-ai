@@ -200,6 +200,29 @@ export async function setFeatureFlag(name: string, value: boolean | string): Pro
   if (!res.ok) throw new Error("Failed to update feature flag");
 }
 
+export interface ChecklistItem {
+  id: string;
+  section: "agent" | "owner";
+  text: string;
+  note?: string;
+  checked: boolean;
+}
+
+export async function getChecklist(): Promise<ChecklistItem[]> {
+  const res = await adminFetch("/admin/checklist");
+  if (!res.ok) throw new Error("Failed to load checklist");
+  const data = await res.json();
+  return data.items ?? [];
+}
+
+export async function setChecklistItemChecked(id: string, checked: boolean): Promise<void> {
+  const res = await adminFetch(`/admin/checklist/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ checked }),
+  });
+  if (!res.ok) throw new Error("Failed to update checklist item");
+}
+
 export async function getAdminLimits(): Promise<Record<string, number>> {
   const res = await fetch(`${API_BASE}/limits`);
   if (!res.ok) return { maxLitigants: 10 };
