@@ -113,6 +113,7 @@ Set these in Replit Secrets:
 ## User preferences
 
 - After every `python3 scripts/build-release.py` run, always present the zip as a download link using `present_asset` with the filename shown.
+- Always publish/deploy the app after completing work — don't wait to be asked.
 
 ## Gotchas
 
