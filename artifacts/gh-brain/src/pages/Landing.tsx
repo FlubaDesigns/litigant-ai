@@ -3,20 +3,11 @@ import { Link } from "wouter";
 import {
   Brain, Scale, ChevronRight, ChevronDown, ChevronUp, AlertTriangle,
   Cpu, Hammer, ClipboardCheck, Users,
-  Briefcase, Globe, TrendingUp, Code2, FileText,
-  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
-import { TOOL_PAGES } from "@/data/toolPages";
-
-// ── Tool page icon map ────────────────────────────────────────────────────────
-const TOOL_ICON_MAP: Record<string, React.ElementType> = {
-  Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
-  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
-};
 
 // ── How it works ─────────────────────────────────────────────────────────────
 const HOW_IT_WORKS = [
@@ -458,35 +449,6 @@ export default function LandingPage() {
                   onToggle={() => setOpenBench(openBench === i ? null : i)}
                 />
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 5. Use Cases ── */}
-        <section id="use-cases" className="border-t border-white/[0.06] py-20">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="mb-12">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">14 Tools</p>
-              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
-                Put your toughest questions on trial.
-              </h2>
-              <p className="text-zinc-500 mt-3 text-sm">
-                Each tool deploys a purpose-built panel of AI models to cross-examine your question and deliver a verdict.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-white/[0.05]">
-              {TOOL_PAGES.map((tool) => {
-                const Icon = TOOL_ICON_MAP[tool.icon] ?? Briefcase;
-                return (
-                  <Link key={tool.slug} href={`/tools/${tool.slug}`}>
-                    <div className="bg-[#080808] p-5 hover:bg-white/[0.03] transition-colors group cursor-pointer h-full">
-                      <Icon className="w-5 h-5 text-zinc-600 mb-3 group-hover:text-white transition-colors" />
-                      <h3 className="text-sm font-medium text-white mb-1.5">{tool.title}</h3>
-                      <p className="text-xs text-zinc-600 leading-relaxed">{tool.metaDescription}</p>
-                    </div>
-                  </Link>
-                );
-              })}
             </div>
           </div>
         </section>

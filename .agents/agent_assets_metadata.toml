@@ -161,3 +161,9 @@ id = "f6RDu4M8oyPj9uJ93xzxc"
 uri = "file://screenshots/landing-preview.jpg"
 type = "image"
 title = "Current homepage — new design is live in dev"
+
+[[outputs]]
+id = "eU50c0FZbessDA6vm_YFt"
+uri = "file://attached_assets/screenshots/litigant-ai_web_app.png"
+type = "image"
+title = "litigant-ai.web.app — LIVE right now"
