@@ -24,7 +24,7 @@
  * See docs/credits.md §4 for the full multiplier reference.
  */
 import { getFirestoreDb } from "./firebaseAdmin.js";
-import { MODEL_MULTIPLIERS, MODEL_RATES, CREDIT_VALUE_USD, getCalibratedFixedStageTokens, type ModelRate } from "./creditEngine.js";
+import { MODEL_MULTIPLIERS, MODEL_RATES, CREDIT_VALUE_USD, getCalibratedFixedStageTokens, HISTORY_FILL_RATE, type ModelRate } from "./creditEngine.js";
 import { FieldValue } from "firebase-admin/firestore";
 
 interface PricingDoc {
@@ -176,7 +176,7 @@ export async function getAdminPricingTable(): Promise<{
   const variableOutput = 400 + EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * TOKENS_PER_TURN;
   const variableInput  = Math.ceil(
     EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS *
-    (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.85 * (EXAMPLE_ROUNDS / 2))
+    (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * HISTORY_FILL_RATE * (EXAMPLE_ROUNDS / 2))
   );
   const exampleFixed   = await getCalibratedFixedStageTokens();
   const EXAMPLE_INPUT  = variableInput  + exampleFixed.input;

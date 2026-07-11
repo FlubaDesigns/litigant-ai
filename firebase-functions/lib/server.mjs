@@ -59745,6 +59745,14 @@ function calculateActualCredits(model, inputTokens, outputTokens) {
 function charsToTokens(chars) {
   return Math.ceil(chars / 4);
 }
+var HISTORY_FILL_RATE = 0.85;
+var ORCHESTRATOR_OUTPUT_TOKENS = 400;
+var SYSTEM_PROMPT_INPUT_TOKENS = 600;
+var TOKENS_PER_TURN_BY_MODE = {
+  concise: 300,
+  balanced: 600,
+  thorough: 1200
+};
 var FIXED_STAGE_PRIOR = { input: 12500, output: 4590 };
 var CALIBRATION_MIN_SESSIONS = 5;
 var CALIBRATION_CACHE_TTL_MS = 5 * 60 * 1e3;
@@ -59772,18 +59780,13 @@ async function getCalibratedFixedStageTokens() {
   }
 }
 function variableTokens(config) {
-  const outputTokensPerTurn = {
-    concise: 300,
-    balanced: 600,
-    thorough: 1200
-  };
-  const tokensPerTurn = outputTokensPerTurn[config.responseMode];
+  const tokensPerTurn = TOKENS_PER_TURN_BY_MODE[config.responseMode];
   const rounds = config.maxIterations;
   const litigants = Math.min(config.litigantCount, 10);
-  const historyPerRound = tokensPerTurn * litigants * 0.85;
-  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
+  const historyPerRound = tokensPerTurn * litigants * HISTORY_FILL_RATE;
+  const avgInputPerTurn = SYSTEM_PROMPT_INPUT_TOKENS + historyPerRound * (rounds / 2);
   return {
-    output: 400 + litigants * rounds * tokensPerTurn,
+    output: ORCHESTRATOR_OUTPUT_TOKENS + litigants * rounds * tokensPerTurn,
     input: litigants * rounds * avgInputPerTurn
   };
 }
@@ -59815,7 +59818,13 @@ function getModelCreditInfo(model) {
       maxIterations: 2,
       responseMode: "balanced",
       model
-    })
+    }),
+    // Formula constants — single source of truth
+    fixedStagePrior: { ...FIXED_STAGE_PRIOR },
+    historyFillRate: HISTORY_FILL_RATE,
+    tokensPerTurnByMode: { ...TOKENS_PER_TURN_BY_MODE },
+    orchestratorOutputTokens: ORCHESTRATOR_OUTPUT_TOKENS,
+    systemPromptInputTokens: SYSTEM_PROMPT_INPUT_TOKENS
   };
 }
 
@@ -60458,7 +60467,7 @@ async function getAdminPricingTable() {
   const EXAMPLE_LITIGANTS = 3, EXAMPLE_ROUNDS = 2, TOKENS_PER_TURN = 600;
   const variableOutput = 400 + EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * TOKENS_PER_TURN;
   const variableInput = Math.ceil(
-    EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.85 * (EXAMPLE_ROUNDS / 2))
+    EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * HISTORY_FILL_RATE * (EXAMPLE_ROUNDS / 2))
   );
   const exampleFixed = await getCalibratedFixedStageTokens();
   const EXAMPLE_INPUT = variableInput + exampleFixed.input;

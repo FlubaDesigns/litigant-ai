@@ -24,6 +24,13 @@ export interface ModelCreditInfo {
   outputRatePer1k: number;
   creditValueUsd: number;
   exampleSessionCredits: number;
+  // Formula constants shipped from the server (creditEngine.ts is the source of truth).
+  // The frontend uses these so it never needs its own hardcoded copies.
+  fixedStagePrior: { input: number; output: number };
+  historyFillRate: number;
+  tokensPerTurnByMode: Record<"concise" | "balanced" | "thorough", number>;
+  orchestratorOutputTokens: number;
+  systemPromptInputTokens: number;
 }
 
 export interface ModelInfo {
@@ -76,8 +83,10 @@ export const PROVIDER_ICONS: Record<ProviderName, string> = {
 export type ResponseMode = "concise" | "balanced" | "thorough";
 
 /**
- * Estimate credit cost client-side using the same formula as the backend.
- * Requires creditInfo from the providers response.
+ * Estimate credit cost client-side.
+ *
+ * All formula constants come from creditInfo, which is shipped by the server
+ * (creditEngine.ts is the single source of truth). No magic numbers here.
  */
 export function estimateCredits(
   creditInfo: ModelCreditInfo,
@@ -85,21 +94,22 @@ export function estimateCredits(
   maxIterations: number,
   responseMode: ResponseMode
 ): number {
-  const tokensPerTurn = { concise: 300, balanced: 600, thorough: 1200 }[responseMode];
-  const litigants = Math.min(litigantCount, 4);
-  const rounds = maxIterations;
+  const tokensPerTurn = creditInfo.tokensPerTurnByMode[responseMode];
+  const litigants     = Math.min(litigantCount, 10);
+  const rounds        = maxIterations;
 
-  // Output: orchestrator + litigant turns + fixed pipeline stages (85% fill of 5 400 cap = 4 590)
-  // Fixed stages mirror FIXED_STAGE_PRIOR in api-server/src/lib/creditEngine.ts
-  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 4_590;
+  const historyPerRound = tokensPerTurn * litigants * creditInfo.historyFillRate;
+  const avgInputPerTurn = creditInfo.systemPromptInputTokens + historyPerRound * (rounds / 2);
 
-  // Input grows each round as history accumulates; fixed stages add 12 500 context tokens
-  const historyPerRound = tokensPerTurn * litigants * 0.85;
-  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
-  const inputTokens = litigants * rounds * avgInputPerTurn + 12_500;
+  const outputTokens = creditInfo.orchestratorOutputTokens
+    + litigants * rounds * tokensPerTurn
+    + creditInfo.fixedStagePrior.output;
+
+  const inputTokens = litigants * rounds * avgInputPerTurn
+    + creditInfo.fixedStagePrior.input;
 
   const costUSD =
-    (inputTokens / 1000) * creditInfo.inputRatePer1k +
+    (inputTokens  / 1000) * creditInfo.inputRatePer1k +
     (outputTokens / 1000) * creditInfo.outputRatePer1k;
 
   return Math.max(1, Math.ceil((costUSD * creditInfo.multiplier) / creditInfo.creditValueUsd));

@@ -174,6 +174,26 @@ export function charsToTokens(chars: number): number {
 
 export type ResponseMode = "concise" | "balanced" | "thorough";
 
+// ── Formula constants (single source of truth) ────────────────────────────────
+// These are exported so that pricingConfig.ts and the frontend (via ModelCreditInfo)
+// never need their own copies. Update here; every consumer picks up the change.
+
+/** Fraction of a stage's token cap assumed to be used, for pre-run estimation. */
+export const HISTORY_FILL_RATE = 0.85;
+
+/** Output tokens budgeted for the orchestrator stage that opens every session. */
+export const ORCHESTRATOR_OUTPUT_TOKENS = 400;
+
+/** Base system-prompt input tokens fed to each litigant turn. */
+export const SYSTEM_PROMPT_INPUT_TOKENS = 600;
+
+/** Expected output tokens per litigant turn, keyed by response mode. */
+export const TOKENS_PER_TURN_BY_MODE: Record<ResponseMode, number> = {
+  concise:  300,
+  balanced: 600,
+  thorough: 1200,
+};
+
 export interface SessionEstimateConfig {
   litigantCount: number;
   maxIterations: number;
@@ -274,18 +294,13 @@ export async function getCalibratedFixedStageTokens(): Promise<{ input: number; 
  * Shared by both the sync and async estimators so the formula stays in one place.
  */
 function variableTokens(config: SessionEstimateConfig): { input: number; output: number } {
-  const outputTokensPerTurn: Record<ResponseMode, number> = {
-    concise:  300,
-    balanced: 600,
-    thorough: 1200,
-  };
-  const tokensPerTurn   = outputTokensPerTurn[config.responseMode];
+  const tokensPerTurn   = TOKENS_PER_TURN_BY_MODE[config.responseMode];
   const rounds          = config.maxIterations;
   const litigants       = Math.min(config.litigantCount, 10);
-  const historyPerRound = tokensPerTurn * litigants * 0.85;
-  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
+  const historyPerRound = tokensPerTurn * litigants * HISTORY_FILL_RATE;
+  const avgInputPerTurn = SYSTEM_PROMPT_INPUT_TOKENS + historyPerRound * (rounds / 2);
   return {
-    output: 400 + litigants * rounds * tokensPerTurn,
+    output: ORCHESTRATOR_OUTPUT_TOKENS + litigants * rounds * tokensPerTurn,
     input:  litigants * rounds * avgInputPerTurn,
   };
 }
@@ -323,6 +338,11 @@ export async function estimateSessionCreditsCalibrated(
  * The frontend uses this to compute live credit estimates as the user
  * moves the litigant/round/responseMode sliders — without a round-trip
  * per slider change.
+ *
+ * All formula constants (fill rate, tokens-per-turn, fixed stage prior, etc.)
+ * are included here so the frontend never needs its own hardcoded copies.
+ * creditEngine.ts is the single source of truth; this payload propagates
+ * any change automatically.
  */
 export interface ModelCreditInfo {
   model: string;
@@ -336,6 +356,20 @@ export interface ModelCreditInfo {
    * (3 litigants, 2 rounds, balanced response mode).
    */
   exampleSessionCredits: number;
+
+  // ── Formula constants ──────────────────────────────────────────────────────
+  // These let the frontend reproduce estimateSessionCredits() exactly without
+  // maintaining its own copy of the numbers.
+  /** Fixed pipeline stages token budget (input + output). Mirrors FIXED_STAGE_PRIOR. */
+  fixedStagePrior: { input: number; output: number };
+  /** Fill-rate assumption for history accumulation. Mirrors HISTORY_FILL_RATE. */
+  historyFillRate: number;
+  /** Expected output tokens per litigant turn by response mode. Mirrors TOKENS_PER_TURN_BY_MODE. */
+  tokensPerTurnByMode: Record<ResponseMode, number>;
+  /** Output tokens for the orchestrator stage. Mirrors ORCHESTRATOR_OUTPUT_TOKENS. */
+  orchestratorOutputTokens: number;
+  /** Base system-prompt input tokens per litigant turn. Mirrors SYSTEM_PROMPT_INPUT_TOKENS. */
+  systemPromptInputTokens: number;
 }
 
 /** Builds the ModelCreditInfo snapshot for a given model. */
@@ -353,5 +387,11 @@ export function getModelCreditInfo(model: string): ModelCreditInfo {
       responseMode:  "balanced",
       model,
     }),
+    // Formula constants — single source of truth
+    fixedStagePrior:          { ...FIXED_STAGE_PRIOR },
+    historyFillRate:          HISTORY_FILL_RATE,
+    tokensPerTurnByMode:      { ...TOKENS_PER_TURN_BY_MODE },
+    orchestratorOutputTokens: ORCHESTRATOR_OUTPUT_TOKENS,
+    systemPromptInputTokens:  SYSTEM_PROMPT_INPUT_TOKENS,
   };
 }
