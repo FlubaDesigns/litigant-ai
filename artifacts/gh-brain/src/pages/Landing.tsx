@@ -306,7 +306,7 @@ export default function LandingPage() {
 
         {/* ── 1. Hero ── */}
         <section className="section--screen">
-          <div className="lgt-container">
+          <div className="lgt-container py-16">
             <div className="row">
             <div className="layout__split-3-2">
             <motion.div
@@ -345,11 +345,11 @@ export default function LandingPage() {
                 </a>
               </div>
             </motion.div>
-            <div className="img-col" style={{alignSelf:"stretch", overflow:"hidden"}}>
+            <div className="img-col">
               <img
                 src="/hero-courtroom.png"
                 alt="Full courtroom scene — Litigant AI"
-                style={{width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top"}}
+                className="img-fill"
               />
             </div>
             </div>{/* /layout__split-3-2 */}
