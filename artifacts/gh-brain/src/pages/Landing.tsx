@@ -291,6 +291,7 @@ export default function LandingPage() {
   const [openPanel, setOpenPanel] = useState<number | null>(null);
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [openTool, setOpenTool] = useState<number | null>(null);
 
   return (
@@ -590,22 +591,42 @@ export default function LandingPage() {
         {/* ── 8. Tools ── */}
         <section id="tools" className="border-t border-white/[0.06] bg-[#060606] py-20">
           <div className="max-w-3xl mx-auto px-6">
-            <div className="mb-12">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">The Docket</p>
-              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
-                Put Your Toughest Questions on Trial
-              </h2>
-              <p className="text-zinc-500 mt-3 text-sm">14 purpose-built tools — each one a full AI courtroom for a specific domain.</p>
-            </div>
-            <div>
-              {TOOL_PAGES.map((tool, i) => (
-                <ToolRow
-                  key={tool.slug}
-                  tool={tool}
-                  open={openTool === i}
-                  onToggle={() => setOpenTool(openTool === i ? null : i)}
-                />
-              ))}
+            <div className="border-t border-white/[0.07]">
+              <button
+                onClick={() => setToolsOpen(!toolsOpen)}
+                className="w-full flex items-center gap-6 py-6 text-left group"
+              >
+                <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">⚖</span>
+                <div className="flex-1">
+                  <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-1 uppercase">The Docket</p>
+                  <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${toolsOpen ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
+                    Put It to the Question.
+                  </span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">14 purpose-built tools — each one a full AI courtroom for a specific domain.</span>
+                </div>
+                {toolsOpen
+                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
+                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+              </button>
+              {toolsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pb-8 pl-12 border-t border-white/[0.07]">
+                    {TOOL_PAGES.map((tool, i) => (
+                      <ToolRow
+                        key={tool.slug}
+                        tool={tool}
+                        open={openTool === i}
+                        onToggle={() => setOpenTool(openTool === i ? null : i)}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </section>
