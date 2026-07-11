@@ -76,7 +76,7 @@ type Action =
   | { type: "APPLY_FEEDBACK_GRADES"; thumbs: "good" | "bad"; flow: "answer" | "build" }
   | { type: "SET_PHASE"; phase: SessionPhase }
   | { type: "SESSION_STARTED"; sessionId: string; estimatedCredits: number }
-  | { type: "ROLE_START"; role: string; round: number; roleIndex: number; provider: string }
+  | { type: "ROLE_START"; role: string; round: number; roleIndex: number; provider: string; attempt?: number }
   | { type: "CONTENT_CHUNK"; role: string; content: string }
   | { type: "ROLE_END"; role: string }
   | { type: "ROUND_START"; round: number; confidence: number }
@@ -222,7 +222,7 @@ function reducer(state: SessionState, action: Action): SessionState {
       };
 
     case "ROLE_START": {
-      const { role, round, roleIndex, provider } = action;
+      const { role, round, roleIndex, provider, attempt } = action;
       const isLitigant = roleIndex >= 0 && roleIndex !== 99;
       const isVerdict = roleIndex === 99 || role === "Verdict";
       let logEntry = "";
@@ -237,6 +237,10 @@ function reducer(state: SessionState, action: Action): SessionState {
         logEntry = `[Orchestrator] routing…`;
       } else if (role === "Moderator") {
         logEntry = state.courtHappened ? `[Moderator] synthesizing…` : `[Moderator] framing…`;
+      } else if (role === "Builder") {
+        logEntry = attempt && attempt > 1 ? `[Builder] revising artifact (pass ${attempt})…` : `[Builder] constructing artifact…`;
+      } else if (role === "Auditor") {
+        logEntry = attempt && attempt > 1 ? `[Auditor] re-reviewing (pass ${attempt})…` : `[Auditor] reviewing artifact…`;
       } else {
         logEntry = `[${role}] working…`;
       }
@@ -362,7 +366,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
         dispatch({ type: "SESSION_STARTED", sessionId: event.sessionId!, estimatedCredits: event.estimatedCredits ?? 0 });
         break;
       case "role_start":
-        dispatch({ type: "ROLE_START", role: event.role!, round: event.round ?? 0, roleIndex: event.roleIndex ?? -1, provider: event.provider ?? "" });
+        dispatch({ type: "ROLE_START", role: event.role!, round: event.round ?? 0, roleIndex: event.roleIndex ?? -1, provider: event.provider ?? "", attempt: event.attempt });
         break;
       case "content":
         dispatch({ type: "CONTENT_CHUNK", role: event.role!, content: event.content! });

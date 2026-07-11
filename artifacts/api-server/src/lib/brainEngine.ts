@@ -486,11 +486,18 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   turns.push({ role: "Architect", round: 99, content: architectBlueprint });
   sendSSE(res, { type: "role_end", role: "Architect", fullContent: architectBlueprint });
 
-  // ── Builder — construct the artifact ─────────────────────────────────────
-  throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider.name });
+  // ── Builder → Auditor retry loop ─────────────────────────────────────────
+  // The Auditor is a real quality gate. If it returns RETURNED, the artifact
+  // goes back to the Builder with the Auditor's specific feedback for a revision
+  // pass. Capped at MAX_AUDITOR_RETRIES to bound cost and latency.
+  // On exhausting retries the last Auditor output is used as-is.
+  const MAX_AUDITOR_RETRIES = 2;
 
-  const builderMessages: ChatMessage[] = [
+  // ── Builder — initial build ───────────────────────────────────────────────
+  throwIfAborted(abortSignal);
+  sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider.name, attempt: 1 });
+
+  const initialBuilderMessages: ChatMessage[] = [
     {
       role: "system",
       content: `${seatBriefs.builder}\n\n${baseContext}${conscienceClause}`,
@@ -501,44 +508,81 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
   ];
 
-  const builtArtifact = await streamRole(
-    buildProvider, builderMessages, 1800,
+  let builtArtifact = await streamRole(
+    buildProvider, initialBuilderMessages, 1800,
     (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
     usage, abortSignal
   );
 
   transcript.push(`**Builder (Artifact):** ${builtArtifact}`);
   turns.push({ role: "Builder", round: 99, content: builtArtifact });
-  sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact });
+  sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact, attempt: 1 });
 
-  // ── Auditor — quality gate ────────────────────────────────────────────────
-  throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Auditor", roleIndex: -5, round: 99, provider: auditProvider.name });
+  // ── Auditor retry loop ────────────────────────────────────────────────────
+  let auditorOutput = "";
+  let finalArtifact  = builtArtifact;
 
-  const auditorMessages: ChatMessage[] = [
-    {
-      role: "system",
-      content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}`,
-    },
-    {
-      role: "user",
-      content: `Architect's blueprint:\n\n${architectBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed. Output: your release decision (APPROVED or RETURNED) followed by the final artifact text (approved as-is, or corrected version if you found issues).`,
-    },
-  ];
+  for (let attempt = 1; attempt <= 1 + MAX_AUDITOR_RETRIES; attempt++) {
+    throwIfAborted(abortSignal);
 
-  const auditorOutput = await streamRole(
-    auditProvider, auditorMessages, 1200,
-    (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
-    usage, abortSignal
-  );
+    // ── Auditor — review ────────────────────────────────────────────────────
+    sendSSE(res, { type: "role_start", role: "Auditor", roleIndex: -5, round: 99, provider: auditProvider.name, attempt });
 
-  transcript.push(`**Auditor (Release):** ${auditorOutput}`);
-  turns.push({ role: "Auditor", round: 99, content: auditorOutput });
-  sendSSE(res, { type: "role_end", role: "Auditor", fullContent: auditorOutput });
+    const auditorUserPrompt = attempt === 1
+      ? `Architect's blueprint:\n\n${architectBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed.\n\nOutput format:\n1. Start with your release decision on its own line: APPROVED or RETURNED\n2. If RETURNED, follow immediately with a ## Revision Notes section listing the specific issues the Builder must fix\n3. Then output the complete artifact text (approved as-is, or your corrected version if you found issues)`
+      : `Architect's blueprint:\n\n${architectBlueprint}\n\nBuilder's revised artifact (revision ${attempt - 1} of ${MAX_AUDITOR_RETRIES}):\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nRe-review the revised artifact. Have the Builder's corrections addressed your earlier concerns?\n\nOutput format:\n1. Start with your release decision on its own line: APPROVED or RETURNED\n2. If RETURNED, follow immediately with a ## Revision Notes section listing any remaining issues\n3. Then output the complete artifact text`;
 
-  // Extract the final artifact from auditor output (post-decision text)
-  const approvedArtifactMatch = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+([\s\S]+)/i);
-  const finalArtifact = approvedArtifactMatch ? approvedArtifactMatch[1].trim() : builtArtifact;
+    const auditorMessages: ChatMessage[] = [
+      { role: "system", content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}` },
+      { role: "user",   content: auditorUserPrompt },
+    ];
+
+    auditorOutput = await streamRole(
+      auditProvider, auditorMessages, 1200,
+      (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
+      usage, abortSignal
+    );
+
+    const auditLabel = attempt === 1 ? "Auditor (Release)" : `Auditor (Re-review ${attempt - 1})`;
+    transcript.push(`**${auditLabel}:** ${auditorOutput}`);
+    turns.push({ role: "Auditor", round: 99, content: auditorOutput });
+    sendSSE(res, { type: "role_end", role: "Auditor", fullContent: auditorOutput, attempt });
+
+    // Parse decision and extract final artifact text
+    const decision       = auditorOutput.match(/^(APPROVED|RETURNED)\b/im)?.[1]?.toUpperCase() ?? "APPROVED";
+    const artifactMatch  = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+(?:##\s+Revision Notes[\s\S]*?\n\n)?([\s\S]+)/i);
+    finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
+
+    // APPROVED or out of retries — we're done
+    if (decision === "APPROVED" || attempt === 1 + MAX_AUDITOR_RETRIES) break;
+
+    // ── Builder — revision pass ─────────────────────────────────────────────
+    throwIfAborted(abortSignal);
+    const revisionAttempt = attempt + 1; // Builder revision number (2, 3, …)
+    sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider.name, attempt: revisionAttempt });
+
+    // Extract just the Revision Notes from the Auditor output for a focused brief
+    const revisionNotes = auditorOutput.match(/##\s+Revision Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim()
+      ?? auditorOutput;
+
+    const revisionMessages: ChatMessage[] = [
+      { role: "system", content: `${seatBriefs.builder}\n\n${baseContext}${conscienceClause}` },
+      {
+        role: "user",
+        content: `The Auditor has reviewed your artifact and returned it for revision (pass ${attempt} of ${MAX_AUDITOR_RETRIES}).\n\n## Auditor's Revision Notes\n${revisionNotes}\n\n## Architect's Blueprint\n${architectBlueprint}\n\n## Your Previous Artifact\n${builtArtifact}\n\nAddress every point in the Revision Notes. Deliver the complete, corrected, production-ready document.`,
+      },
+    ];
+
+    builtArtifact = await streamRole(
+      buildProvider, revisionMessages, 1800,
+      (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
+      usage, abortSignal
+    );
+
+    transcript.push(`**Builder (Revision ${attempt}):** ${builtArtifact}`);
+    turns.push({ role: "Builder", round: 99, content: builtArtifact });
+    sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact, attempt: revisionAttempt });
+  }
 
   // ── Orchestrator — deliver verdict to user ────────────────────────────────
   throwIfAborted(abortSignal);

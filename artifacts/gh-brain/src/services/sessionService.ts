@@ -60,6 +60,11 @@ export interface SSEEvent {
   provider?: string;
   /** Present when the session hit a stopping condition before the confidence target. */
   pauseReason?: PauseReason;
+  /**
+   * For Builder and Auditor stages: 1 = initial pass, 2+ = revision/re-review.
+   * Absent on all other roles.
+   */
+  attempt?: number;
 }
 
 export function runBrainSession(
