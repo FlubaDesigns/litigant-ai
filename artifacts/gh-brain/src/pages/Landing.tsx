@@ -301,7 +301,7 @@ export default function LandingPage() {
       <header className="fixed top-0 w-full z-50 border-b border-white/[0.06] bg-[#080808]/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 opacity-90 hover:opacity-100 transition-opacity">
-            <img src="/logo.svg" alt="Litigant AI" className="h-7 w-auto" />
+            <img src="/logo.png" alt="Litigant AI" className="h-7 w-auto" />
           </Link>
           <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500">
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
@@ -679,7 +679,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/[0.06] py-10">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Litigant AI" className="h-5 w-auto opacity-40" />
+            <img src="/logo.png" alt="Litigant AI" className="h-5 w-auto opacity-40" />
             <span className="font-mono text-xs text-zinc-700">© 2025</span>
           </div>
           <p className="text-xs text-zinc-700 text-center">
