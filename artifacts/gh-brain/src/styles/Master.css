@@ -1,0 +1,386 @@
+/* ═══════════════════════════════════════════════════════════════════
+   LITIGANT AI — MASTER STYLE SHEET
+   Structural layout system for all pages. Adapted from BlastyBiz
+   global-style.css (same design lineage, same green/dark palette).
+
+   Design tokens (colors, fonts, Tailwind config) live in index.css.
+   Do NOT duplicate color or font definitions here.
+
+   Import once in main.tsx:  import "./styles/Master.css"
+   ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ── LAYOUT TOKENS ──────────────────────────────────────────────────
+   Single source of truth for all spacing across every page.
+
+   --sv          : section vertical padding (responsive)
+   --gutter      : horizontal page padding (responsive)
+   --main-offset : fixed header height — all pages use this for padding-top
+   --max-w       : max content width
+   --col-gap     : gap between grid columns
+   ─────────────────────────────────────────────────────────────────── */
+:root {
+  --sv:          3.5rem;    /* 56px  — mobile  */
+  --gutter:      1.25rem;   /* 20px  — mobile  */
+  --main-offset: 4rem;      /* 64px  — matches h-16 fixed navbar */
+  --max-w:       1200px;
+  --col-gap:     1.5rem;    /* 24px  — column gap */
+}
+
+@media (min-width: 640px) {
+  :root {
+    --sv:      5rem;    /* 80px */
+    --gutter:  2rem;    /* 32px */
+    --col-gap: 2rem;    /* 32px */
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --sv:      6.5rem;  /* 104px */
+    --gutter:  3rem;    /* 48px */
+    --col-gap: 2.5rem;  /* 40px */
+  }
+}
+
+
+/* ── PAGE WRAPPER ────────────────────────────────────────────────────
+   .main       : full-width page root. Clears the fixed header.
+   .main-inner : inner wrapper — max-width + horizontal gutters.
+                 Used on app/auth/legal pages that need both layers.
+   ─────────────────────────────────────────────────────────────────── */
+.main {
+  padding-top: var(--main-offset);
+  min-height: 100vh;
+}
+
+.main-inner {
+  width: 100%;
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+
+/* ── CONTAINER ───────────────────────────────────────────────────────
+   Drop-in replacement for `container mx-auto px-6`.
+   Use inside every section as the width/gutter wrapper.
+   ─────────────────────────────────────────────────────────────────── */
+.lgt-container {
+  width: 100%;
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+
+/* ── SECTION BASE ────────────────────────────────────────────────────
+   .section            : base section — adds vertical rhythm via --sv
+   .section--alt       : subtle secondary-bg stripe
+   .section--bordered  : adds top + bottom border
+   .section--hero      : hero variant — taller padding, no bg modifier
+   ─────────────────────────────────────────────────────────────────── */
+.section {
+  padding-top: var(--sv);
+  padding-bottom: var(--sv);
+}
+
+.section--alt {
+  background-color: hsl(var(--secondary) / 0.2);
+}
+
+.section--bordered {
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.section--hero {
+  padding-top: calc(var(--sv) * 1.6);
+  padding-bottom: calc(var(--sv) * 1.6);
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* ── ROW GROUPER ─────────────────────────────────────────────────────
+   .row : block-level content grouper. One job: separate a heading
+          block from a content/grid block inside the same section.
+          NOT a flex container — use .flex-row for inline alignment.
+
+   Pattern:
+     <section class="section">
+       <div class="lgt-container">
+         <div class="row">  ← heading / eyebrow / description
+         <div class="row">  ← grid or content block
+   ─────────────────────────────────────────────────────────────────── */
+.row {
+  display: block;
+  width: 100%;
+}
+
+.row + .row {
+  margin-top: calc(var(--sv) * 0.55);
+}
+
+
+/* ── LAYOUT GRID FAMILY ──────────────────────────────────────────────
+   Named semantic grids — all collapse to 1-col on mobile.
+   Grid children are clamped inside their tracks (min-width: 0).
+
+   layout__split-2    1fr 1fr
+   layout__split-3    1fr 1fr 1fr
+   layout__split-4    repeat(4,1fr)   → 2-col on tablet
+   layout__split-2-1  2fr 1fr         (wide-left)
+   layout__split-1-2  1fr 2fr         (wide-right)
+   layout__split-3-2  3fr 2fr         (hero: copy + visual)
+   ─────────────────────────────────────────────────────────────────── */
+[class*="layout__"] {
+  display: grid;
+  gap: var(--col-gap);
+  grid-template-columns: 1fr;       /* mobile: always single column */
+}
+
+[class*="layout__"] > * {
+  min-width: 0;                     /* grid children never bust tracks */
+}
+
+@media (min-width: 768px) {
+  .layout__split-2   { grid-template-columns: 1fr 1fr; }
+  .layout__split-3   { grid-template-columns: repeat(3, 1fr); }
+  .layout__split-2-1 { grid-template-columns: 2fr 1fr; }
+  .layout__split-1-2 { grid-template-columns: 1fr 2fr; }
+  .layout__split-3-2 { grid-template-columns: 3fr 2fr; }
+}
+
+/* Tablet: 4-col → 2-col */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .layout__split-4 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .layout__split-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+
+/* ── FLEX HELPERS ────────────────────────────────────────────────────
+   .flex-row    : align-items center row with 8px gap
+   .flex-between: space-between + 12px gap (items need spacing)
+   .row-sb      : space-between, NO gap (heading/CTA pairs)
+   ─────────────────────────────────────────────────────────────────── */
+.flex-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.row-sb {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-wrap  { flex-wrap: wrap; }
+.shrink-0   { flex-shrink: 0; }
+.items-start { align-items: flex-start; }
+
+
+/* ── TYPOGRAPHY HELPERS ──────────────────────────────────────────────
+   .eyebrow      : small all-caps label above section headings
+   .section-title: section h2 (fluid type)
+   .section-body : section lead paragraph
+   ─────────────────────────────────────────────────────────────────── */
+.eyebrow {
+  display: block;
+  font-size: 0.6875rem;         /* 11px */
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+  margin-bottom: 0.75rem;
+}
+
+.section-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: hsl(var(--foreground));
+  margin: 0 0 1rem;
+}
+
+.section-body {
+  font-size: 1.0625rem;         /* 17px */
+  line-height: 1.7;
+  color: hsl(var(--muted-foreground));
+  max-width: 44ch;
+}
+
+.section-body--wide {
+  max-width: 62ch;
+}
+
+
+/* ── STATUS DOT ──────────────────────────────────────────────────────
+   Inline pulsing green dot. Replaces one-off animate-pulse spans.
+   ─────────────────────────────────────────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: hsl(var(--primary));
+  flex-shrink: 0;
+  animation: lgt-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes lgt-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+
+/* ── BADGE VARIANTS ──────────────────────────────────────────────────
+   Consistent status badges used across app, admin, and landing pages.
+   ─────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;     /* 11px */
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.3rem 0.625rem;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.badge--live    { background: hsl(140 100% 8%); color: hsl(var(--primary)); border: 1px solid hsl(var(--primary) / 0.5); }
+.badge--warn    { background: hsl(38 100% 8%);  color: #ffa726; border: 1px solid hsl(38 100% 38% / 0.4); }
+.badge--error   { background: hsl(0 60% 8%);    color: #f87171; border: 1px solid hsl(0 60% 50% / 0.4); }
+.badge--info    { background: hsl(210 80% 8%);  color: #60a5fa; border: 1px solid hsl(210 80% 50% / 0.4); }
+.badge--muted   { background: hsl(var(--muted) / 0.15); color: hsl(var(--muted-foreground)); border: 1px solid hsl(var(--border)); }
+
+
+/* ── CARD BASE ───────────────────────────────────────────────────────
+   .lgt-card: shared card surface — replaces ad-hoc border/bg combos.
+   ─────────────────────────────────────────────────────────────────── */
+.lgt-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  padding: 1.5rem;
+}
+
+.lgt-card--accent {
+  border-color: hsl(var(--primary) / 0.35);
+  background-color: hsl(var(--primary) / 0.04);
+}
+
+
+/* ── HELPERS ─────────────────────────────────────────────────────────
+   Small utilities used site-wide.
+   ─────────────────────────────────────────────────────────────────── */
+.img-fill {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.text-center  { text-align: center; }
+.mx-auto      { margin-left: auto; margin-right: auto; }
+
+/* Visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+
+/* ── PROSE PAGES (legal / docs) ──────────────────────────────────────
+   .prose-page: max-width constrained content for Privacy, Terms, etc.
+   ─────────────────────────────────────────────────────────────────── */
+.prose-page {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: var(--sv) var(--gutter);
+}
+
+.prose-page h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.prose-page h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  color: hsl(var(--foreground));
+}
+
+.prose-page p,
+.prose-page li {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: hsl(var(--muted-foreground));
+}
+
+.prose-page ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+
+/* ── AUTH PAGES ──────────────────────────────────────────────────────
+   .auth-shell: centered single-column layout for sign-in / register.
+   ─────────────────────────────────────────────────────────────────── */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sv) var(--gutter);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  padding: 2.5rem 2rem;
+}
+
+
+/* ── DIVIDER ─────────────────────────────────────────────────────────
+   .lgt-divider: horizontal rule that matches the design system border.
+   ─────────────────────────────────────────────────────────────────── */
+.lgt-divider {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: calc(var(--sv) * 0.5) 0;
+}
