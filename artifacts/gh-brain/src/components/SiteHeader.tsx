@@ -56,14 +56,14 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             href={variant === "app" ? "/session" : "/"}
             className="flex items-center gap-3 shrink-0 opacity-90 hover:opacity-100 transition-opacity group"
           >
-            <img src="/logo.png" alt="Litigant AI" className={variant === "app" ? "w-8 h-8" : "h-10 w-auto"} />
+            <img src="/logo.png" alt="Litigant AI" className={variant === "app" ? "h-7 w-auto" : "h-9 w-auto"} />
             <div className="flex flex-col leading-none">
-              <span className={cn("font-extrabold uppercase tracking-wider", variant === "app" ? "text-xs" : "text-sm")}>
+              <span className={cn("font-extrabold uppercase tracking-wider", variant === "app" ? "text-xs" : "text-base")}>
                 <span style={{ color: "hsl(108 94% 50%)" }}>LITIGANT-</span>
                 <span style={{ color: "hsl(38 92% 50%)" }}>AI</span>
               </span>
               <span
-                className="hidden sm:block text-[10px] font-mono mt-0.5"
+                className="hidden sm:block text-[11px] font-mono mt-0.5"
                 style={{ color: "hsl(108 94% 50% / 0.55)" }}
               >
                 Put <em>it</em> to the question.
