@@ -155,3 +155,9 @@ id = "zwP3_ldhCEAdUPfPG228t"
 uri = "file://downloads/litigant-ai-latest.zip"
 type = "unspecified"
 title = "litigant-ai-latest.zip"
+
+[[outputs]]
+id = "f6RDu4M8oyPj9uJ93xzxc"
+uri = "file://screenshots/landing-preview.jpg"
+type = "image"
+title = "Litigant AI — New Homepage"
