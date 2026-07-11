@@ -371,10 +371,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── 1b. Live Demo Player ── */}
-        <section
-          className="section section--bordered"
-          style={{ background: "radial-gradient(ellipse at top, rgba(0,200,83,.05) 0%, transparent 70%)" }}
-        >
+        <section className="section section--bordered section--demo-glow">
           <div className="lgt-container">
             <div className="row">
               <motion.div
@@ -383,7 +380,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-primary border border-primary/30 rounded-full px-4 py-1.5 mb-5" style={{ background: "rgba(0,200,83,.06)" }}>
+                <div className="badge--eyebrow-glow inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-primary border border-primary/30 rounded-full px-4 py-1.5 mb-5">
                   <span className="status-dot" />
                   Live Demo — pre-scripted, no API calls
                 </div>

@@ -384,3 +384,289 @@
   border-top: 1px solid hsl(var(--border));
   margin: calc(var(--sv) * 0.5) 0;
 }
+
+
+/* ── AUTH GLOW + INNER ───────────────────────────────────────────────
+   Used by SignIn, Register, ForgotPassword, VerifyEmail.
+   .auth-glow  : centred radial blur blob behind the card.
+   .auth-inner : max-width card-column wrapper, stacks above the glow.
+   ─────────────────────────────────────────────────────────────────── */
+.auth-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 800px;
+  background: hsl(var(--primary) / 0.05);
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
+.auth-inner {
+  width: 100%;
+  max-width: 440px;
+  padding: 2rem;
+  position: relative;
+  z-index: 10;
+}
+
+.auth-inner--wide {
+  max-width: 528px;
+}
+
+
+/* ── DEMO SECTION (Landing) ──────────────────────────────────────────
+   .section--demo-glow : radial green glow variant for the demo section.
+   .badge--eyebrow-glow: subtle bg for the "Live Demo" eyebrow badge.
+   ─────────────────────────────────────────────────────────────────── */
+.section--demo-glow {
+  background: radial-gradient(ellipse at top, rgba(0, 200, 83, 0.05) 0%, transparent 70%);
+}
+
+.badge--eyebrow-glow {
+  background: rgba(0, 200, 83, 0.06);
+}
+
+
+/* ── SESSION PAGE ────────────────────────────────────────────────────
+   Classes for the full-screen app Session page and its sub-components:
+   boxes, dialog lines, activity log, nav strip, meters, status cards.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* Page root */
+.session-bg {
+  background: radial-gradient(circle at top, #102010, #070f07 56%, #020402);
+}
+
+/* Top nav strip — Configure / Sessions / Stop / New Trial buttons */
+.session-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 7px 8px;
+  border-bottom: 1px solid #1d331d;
+  background: rgba(4, 8, 4, 0.96);
+  flex-shrink: 0;
+}
+
+.session-nav-btn {
+  background: #0d1a0d;
+  color: #eef7ee;
+  border: 1px solid #1d331d;
+  border-radius: 9px;
+  font-size: 15px;
+  min-height: 40px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.session-nav-btn--full { grid-column: 1 / -1; font-size: 14px; min-height: 36px; font-weight: 700; }
+.session-nav-btn--stop  { background: rgba(200, 64, 64, 0.12); color: #ff6b6b; border-color: rgba(200, 64, 64, 0.33); }
+.session-nav-btn--reset { background: rgba(0, 200, 83, 0.1); color: #00c853; border-color: rgba(0, 200, 83, 0.33); }
+
+/* Conversation panel */
+.session-conv {
+  border: 1px solid #1d331d;
+  border-radius: 12px;
+  margin: 8px;
+  padding: 8px;
+  background: linear-gradient(160deg, rgba(14, 26, 14, 0.95), rgba(7, 16, 7, 0.95));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-conv-label {
+  font-size: 10px;
+  color: #00c853;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+/* Tool pre-load banner */
+.session-tool-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(0, 200, 83, 0.07);
+  border: 1px solid rgba(0, 200, 83, 0.2);
+  border-radius: 8px;
+}
+
+.session-tool-banner-text { font-size: 12px; color: #7ab87a; flex: 1; }
+.session-tool-banner-clear { background: transparent; border: none; color: #3a5a3a; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+
+/* Meters (Confidence, Credits) */
+.session-meters    { display: flex; flex-direction: column; gap: 4px; }
+.session-meter-hd  { display: flex; justify-content: space-between; font-size: 11px; color: #7ab87a; margin-bottom: 3px; }
+.session-meter-val { font-family: monospace; }
+.session-meter-track { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.4); overflow: hidden; }
+.session-meter-fill  { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+/* Running status badge */
+.session-running-badge {
+  background: rgba(0, 200, 83, 0.12);
+  border: 1px solid #00c853;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #b6ff6a;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-round-label { margin-left: auto; font-family: monospace; font-size: 11px; color: #7ab87a; }
+
+/* Paused decision card */
+.session-pause-card {
+  background: rgba(243, 210, 106, 0.07);
+  border: 1px solid rgba(243, 210, 106, 0.35);
+  border-radius: 9px;
+  padding: 10px 12px;
+}
+
+.session-pause-title { font-size: 13px; font-weight: 700; color: #f3d26a; margin-bottom: 6px; }
+.session-pause-btns  { display: flex; gap: 6px; margin-top: 8px; }
+
+.session-pause-btn-primary {
+  flex: 1; padding: 8px 0; border-radius: 8px;
+  background: #00c853; color: #000;
+  font-size: 13px; font-weight: 800; border: none; cursor: pointer;
+}
+
+.session-pause-btn-secondary {
+  flex: 1; padding: 8px 0; border-radius: 8px;
+  background: transparent; color: #7ab87a;
+  font-size: 13px; border: 1px solid #1d331d; cursor: pointer;
+}
+
+/* Error card */
+.session-error-card {
+  background: rgba(200, 64, 64, 0.08);
+  border: 1px solid rgba(200, 64, 64, 0.3);
+  border-radius: 9px;
+  padding: 16px;
+  text-align: center;
+}
+
+/* Activity log accordion */
+.actlog { border: 1px solid rgba(0, 200, 83, 0.2); border-radius: 9px; overflow: hidden; }
+
+.actlog-hd {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 200, 83, 0.05);
+  cursor: pointer;
+  border: none;
+  color: #eef7ee;
+}
+
+.actlog-hd-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7ab87a;
+}
+
+.actlog-chevron { font-size: 12px; color: #7ab87a; }
+
+.actlog-bd {
+  padding: 8px 12px;
+  max-height: 160px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.actlog-entry {
+  font-size: 11px;
+  font-family: monospace;
+  line-height: 1.5;
+}
+
+/* ── PANEL BOXES (LitigantVoices, Orchestrator) ──────────────────── */
+.sbox           { border-radius: 12px; overflow: hidden; }
+.sbox--lit      { border: 1px solid #7ab87a; margin-bottom: 8px; }
+.sbox--orch     { border: 1px solid #00c853; }
+
+.sbox-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid #1d331d;
+  gap: 6px;
+}
+
+.sbox-hd--lit  { background: rgba(122, 184, 122, 0.07); }
+.sbox-hd--orch { background: rgba(0, 200, 83, 0.07); }
+
+.sbox-hd-left  { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+.sbox-hd-right { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.sbox-hd-right--orch { display: flex; gap: 4px; flex-shrink: 0; }
+
+.sbox-label {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sbox-label--lit  { color: #7ab87a; }
+.sbox-label--orch { color: #00c853; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.adv-badge {
+  font-size: 9px;
+  font-weight: 900;
+  color: #ff6b6b;
+  border: 1px solid #c84040;
+  border-radius: 999px;
+  padding: 1px 6px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.sbox-btn {
+  font-size: 12px;
+  padding: 3px 7px;
+  min-height: 26px;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #eef7ee;
+}
+
+.sbox-btn--lit  { border: 1px solid #7ab87a; }
+.sbox-btn--orch { border: 1px solid #00c853; }
+
+.sbox-bd {
+  min-height: 80px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.sbox-bd--lit  { max-height: clamp(120px, 22vh, 280px); padding: 10px; }
+.sbox-bd--orch { max-height: clamp(160px, 32vh, 360px); padding: 10px 10px 6px; font-size: 14px; line-height: 1.6; }
+
+.sbox-empty            { font-size: 12px; color: #3a5a3a; font-style: italic; }
+.sbox-empty--mt        { margin-top: 6px; }
+
+/* ── DIALOG LINE ─────────────────────────────────────────────────── */
+.dialog-round      { font-weight: 400; color: #4a6a4a; margin-left: 6px; font-size: 10px; }
+.dialog-typing     { margin-left: 6px; display: inline-flex; gap: 2px; vertical-align: middle; }
+.dialog-disclosure { font-size: 11px; color: #3a5a3a; font-style: italic; display: block; margin-bottom: 4px; line-height: 1.3; }
+.dialog-nocontent  { color: #4a6a4a; font-style: italic; }

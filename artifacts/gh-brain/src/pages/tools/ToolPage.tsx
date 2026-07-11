@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
-import { Brain, ChevronRight, Check, ArrowLeft, Zap, Shield, BarChart3 } from "lucide-react";
+import { ChevronRight, Check, ArrowLeft, Zap, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getToolBySlug } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -81,7 +81,7 @@ export default function ToolPage() {
       {/* Nav */}
       <header className="h-14 border-b border-border/60 bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 gap-4">
         <Link href="/" className="flex items-center gap-2 group">
-          <Brain className="w-5 h-5 text-primary" />
+          <img src="/logo.png" alt="Litigant AI" className="w-6 h-6" />
           <span className="font-bold tracking-tight">Litigant AI</span>
         </Link>
         <Link href="/tools" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors ml-4">

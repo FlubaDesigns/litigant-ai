@@ -64,10 +64,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-background brain-grid relative overflow-hidden py-12">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+    <div className="auth-shell bg-background brain-grid relative overflow-hidden">
+      <div className="auth-glow" />
 
-      <div className="w-full max-w-lg px-4 relative z-10">
+      <div className="auth-inner auth-inner--wide">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />

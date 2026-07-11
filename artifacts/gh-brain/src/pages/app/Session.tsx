@@ -638,10 +638,10 @@ function DialogLine({ item, adversarial }: { item: FeedItem; adversarial?: boole
       <span style={{ fontWeight: 800, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 2, color: speakerColor }}>
         {speakerLabel}
         {item.round > 0 && item.round < 99 && (
-          <span style={{ fontWeight: 400, color: "#4a6a4a", marginLeft: 6, fontSize: 10 }}>R{item.round}</span>
+          <span className="dialog-round">R{item.round}</span>
         )}
         {!item.isComplete && (
-          <span style={{ marginLeft: 6, display: "inline-flex", gap: 2, verticalAlign: "middle" }}>
+          <span className="dialog-typing">
             {[0, 130, 260].map((d) => (
               <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce inline-block" style={{ animationDelay: `${d}ms` }} />
             ))}
@@ -649,11 +649,11 @@ function DialogLine({ item, adversarial }: { item: FeedItem; adversarial?: boole
         )}
       </span>
       {disclosure && (
-        <span style={{ fontSize: 11, color: "#3a5a3a", fontStyle: "italic", display: "block", marginBottom: 4, lineHeight: 1.3 }}>
+        <span className="dialog-disclosure">
           {disclosure.trim()}
         </span>
       )}
-      {body || (!item.isComplete ? "" : <span style={{ color: "#4a6a4a", fontStyle: "italic" }}>No content.</span>)}
+      {body || (!item.isComplete ? "" : <span className="dialog-nocontent">No content.</span>)}
     </motion.div>
   );
 }
@@ -676,27 +676,25 @@ function LitigantVoicesBox({
   }
 
   return (
-    <div style={{ border: "1px solid #7ab87a", borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
+    <div className="sbox sbox--lit">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", background: "rgba(122,184,122,.07)", borderBottom: "1px solid #1d331d", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
-          <span style={{ fontSize: 11, color: "#7ab87a", letterSpacing: "0.07em", textTransform: "uppercase", fontWeight: 800, whiteSpace: "nowrap" }}>Litigant Voices</span>
-          {adversarial && (
-            <span style={{ fontSize: 9, fontWeight: 900, color: "#ff6b6b", border: "1px solid #c84040", borderRadius: 999, padding: "1px 6px", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>⚔ ADV</span>
-          )}
+      <div className="sbox-hd sbox-hd--lit">
+        <div className="sbox-hd-left">
+          <span className="sbox-label sbox-label--lit">Litigant Voices</span>
+          {adversarial && <span className="adv-badge">⚔ ADV</span>}
         </div>
-        <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
-          <button onClick={handleSave} title="Export" style={{ fontSize: 12, padding: "3px 7px", minHeight: 26, background: "transparent", border: "1px solid #7ab87a", borderRadius: 6, cursor: "pointer", color: "#eef7ee" }}>⬇</button>
-          <button onClick={() => setOpen(v => !v)} style={{ fontSize: 11, padding: "3px 8px", minHeight: 26, background: "transparent", border: "1px solid #7ab87a", borderRadius: 6, color: "#7ab87a", cursor: "pointer", whiteSpace: "nowrap" }}>
+        <div className="sbox-hd-right">
+          <button onClick={handleSave} title="Export" className="sbox-btn sbox-btn--lit">⬇</button>
+          <button onClick={() => setOpen(v => !v)} className="sbox-btn sbox-btn--lit">
             {open ? "▼" : "▶"}
           </button>
         </div>
       </div>
       {/* Body */}
       {open && (
-        <div ref={scrollRef} style={{ minHeight: 80, maxHeight: "clamp(120px,22vh,280px)", overflowY: "auto", padding: 10, background: "rgba(0,0,0,.12)" }}>
+        <div ref={scrollRef} className="sbox-bd sbox-bd--lit">
           {items.length === 0 ? (
-            <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic" }}>Waiting for litigant debate…</div>
+            <div className="sbox-empty">Waiting for litigant debate…</div>
           ) : (
             items.map(item => <DialogLine key={item.id} item={item} adversarial={adversarial} />)
           )}
@@ -726,21 +724,21 @@ function OrchestratorBox({
   const youItem: FeedItem = { id: "you", role: "You", provider: "", content: question, round: 0, timestamp: 0, isComplete: true };
 
   return (
-    <div style={{ border: "1px solid #00c853", borderRadius: 12, overflow: "hidden" }}>
+    <div className="sbox sbox--orch">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", background: "rgba(0,200,83,.07)", borderBottom: "1px solid #1d331d", gap: 6 }}>
-        <span style={{ fontSize: 11, color: "#00c853", letterSpacing: "0.07em", textTransform: "uppercase", fontWeight: 800, whiteSpace: "nowrap", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>Orchestrator / Consensus</span>
-        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-          <button onClick={handleSave} title="Save" style={{ fontSize: 12, padding: "3px 7px", minHeight: 26, background: "transparent", border: "1px solid #00c853", borderRadius: 6, cursor: "pointer", color: "#eef7ee" }}>⬇</button>
-          <button onClick={handlePrint} title="Print" style={{ fontSize: 12, padding: "3px 7px", minHeight: 26, background: "transparent", border: "1px solid #00c853", borderRadius: 6, cursor: "pointer", color: "#eef7ee" }}>🖨</button>
+      <div className="sbox-hd sbox-hd--orch">
+        <span className="sbox-label sbox-label--orch">Orchestrator / Consensus</span>
+        <div className="sbox-hd-right--orch">
+          <button onClick={handleSave} title="Save" className="sbox-btn sbox-btn--orch">⬇</button>
+          <button onClick={handlePrint} title="Print" className="sbox-btn sbox-btn--orch">🖨</button>
         </div>
       </div>
       {/* Body */}
-      <div ref={scrollRef} style={{ minHeight: 80, maxHeight: "clamp(160px,32vh,360px)", overflowY: "auto", padding: "10px 10px 6px", fontSize: 14, lineHeight: 1.6, background: "rgba(0,0,0,.12)" }}>
+      <div ref={scrollRef} className="sbox-bd sbox-bd--orch">
         {question && <DialogLine key="you" item={youItem} />}
         {items.map(item => <DialogLine key={item.id} item={item} />)}
         {items.length === 0 && question && (
-          <div style={{ fontSize: 12, color: "#3a5a3a", fontStyle: "italic", marginTop: 6 }}>Courtroom assembling…</div>
+          <div className="sbox-empty sbox-empty--mt">Courtroom assembling…</div>
         )}
       </div>
     </div>
@@ -1058,30 +1056,27 @@ export default function SessionPage() {
   // Activity log renderer (shared across idle/running/complete)
   function ActivityLogSection() {
     return (
-      <div style={{ border: "1px solid rgba(0,200,83,.2)", borderRadius: 9, overflow: "hidden" }}>
-        <button
-          onClick={() => setActivityLogOpen((v) => !v)}
-          style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "rgba(0,200,83,.05)", cursor: "pointer", border: "none", color: "#eef7ee" }}
-        >
-          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab87a" }}>
+      <div className="actlog">
+        <button onClick={() => setActivityLogOpen((v) => !v)} className="actlog-hd">
+          <span className="actlog-hd-label">
             Activity Log
             {isRunning && [0, 120, 240].map((d) => (
               <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce inline-block" style={{ animationDelay: `${d}ms` }} />
             ))}
           </span>
-          <span style={{ fontSize: 12, color: "#7ab87a" }}>{activityLogOpen ? "▼" : "▶"}</span>
+          <span className="actlog-chevron">{activityLogOpen ? "▼" : "▶"}</span>
         </button>
         {activityLogOpen && (
-          <div ref={activityLogRef} style={{ padding: "8px 12px", maxHeight: 160, overflowY: "auto", background: "rgba(0,0,0,.3)" }}>
+          <div ref={activityLogRef} className="actlog-bd">
             {state.activityLog.map((entry, i) => {
               const col = entry.startsWith("[Courtroom]") ? "#7ab87a"
                 : entry.startsWith("[Orchestrator]") ? "#d4b75a"
                 : entry.startsWith("[Moderator]") ? "#6ab4c0"
                 : entry.startsWith("[System]") ? "#5a5a5a"
                 : "#7ab87a";
-              return <div key={i} style={{ fontSize: 11, fontFamily: "monospace", lineHeight: 1.5, color: col }}>{entry}</div>;
+              return <div key={i} className="actlog-entry" style={{ color: col }}>{entry}</div>;
             })}
-            {state.activityLog.length === 0 && <div style={{ fontSize: 11, fontFamily: "monospace", color: "#3a5a3a" }}>Waiting…</div>}
+            {state.activityLog.length === 0 && <div className="actlog-entry" style={{ color: "#3a5a3a" }}>Waiting…</div>}
           </div>
         )}
       </div>
@@ -1090,8 +1085,7 @@ export default function SessionPage() {
 
   return (
     <div
-      className="flex flex-col overflow-y-auto min-h-[calc(100vh-3.5rem)]"
-      style={{ background: "radial-gradient(circle at top, #102010, #070f07 56%, #020402)" }}
+      className="session-bg flex flex-col overflow-y-auto min-h-[calc(100vh-3.5rem)]"
     >
       <ConfigPanel
         open={configOpen}
@@ -1104,87 +1098,75 @@ export default function SessionPage() {
       />
 
       {/* ── HEADER NAV — Configure | Sessions | state controls ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: "7px 8px", borderBottom: "1px solid #1d331d", background: "rgba(4,8,4,.96)", flexShrink: 0 }}>
-        <button
-          onClick={() => setConfigOpen(true)}
-          style={{ background: "#0d1a0d", color: "#eef7ee", border: "1px solid #1d331d", borderRadius: 9, fontSize: 15, minHeight: 40, cursor: "pointer", fontWeight: 600 }}
-        >
+      <div className="session-nav">
+        <button onClick={() => setConfigOpen(true)} className="session-nav-btn">
           ⚙ Configure
         </button>
-        <button
-          onClick={() => navigate("/sessions")}
-          style={{ background: "#0d1a0d", color: "#eef7ee", border: "1px solid #1d331d", borderRadius: 9, fontSize: 15, minHeight: 40, cursor: "pointer", fontWeight: 600 }}
-        >
+        <button onClick={() => navigate("/sessions")} className="session-nav-btn">
           📂 Sessions
         </button>
         {isRunning && (
-          <button
-            onClick={handleStop}
-            style={{ gridColumn: "1 / -1", background: "rgba(200,64,64,.12)", color: "#ff6b6b", border: "1px solid #c8404055", borderRadius: 9, fontSize: 14, minHeight: 36, cursor: "pointer", fontWeight: 700 }}
-          >
+          <button onClick={handleStop} className="session-nav-btn session-nav-btn--full session-nav-btn--stop">
             ⏹ Stop Trial
           </button>
         )}
         {(isComplete || isError) && (
-          <button
-            onClick={handleReset}
-            style={{ gridColumn: "1 / -1", background: "rgba(0,200,83,.1)", color: "#00c853", border: "1px solid #00c85355", borderRadius: 9, fontSize: 14, minHeight: 36, cursor: "pointer", fontWeight: 700 }}
-          >
+          <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">
             ↺ New Trial
           </button>
         )}
       </div>
 
       {/* ── CONVERSATION PANEL ── */}
-      <div style={{ border: "1px solid #1d331d", borderRadius: 12, margin: "8px", padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.95),rgba(7,16,7,.95))", display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800, marginBottom: 2 }}>Conversation</div>
+      <div className="session-conv">
+        <div className="session-conv-label">Conversation</div>
 
         {/* Tool page pre-load banner */}
         {toolBanner && isIdle && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "rgba(0,200,83,.07)", border: "1px solid rgba(0,200,83,.2)", borderRadius: 8 }}>
+          <div className="session-tool-banner">
             <LayoutTemplate style={{ width: 13, height: 13, color: "#7ab87a", flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: "#7ab87a", flex: 1 }}>
+            <span className="session-tool-banner-text">
               Pre-loaded: <strong>{toolBanner}</strong>
             </span>
             <button
               onClick={() => { setTemplate(null); setToolBanner(null); }}
-              style={{ background: "transparent", border: "none", color: "#3a5a3a", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: "0 2px" }}
+              className="session-tool-banner-clear"
               title="Start fresh instead"
             >✕</button>
           </div>
         )}
 
         {/* Confidence + Credits bars — always visible */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="session-meters">
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#7ab87a", marginBottom: 3 }}>
+            <div className="session-meter-hd">
               <span>Confidence</span>
-              <span style={{ fontFamily: "monospace", color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
+              <span className="session-meter-val" style={{ color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
                 {state.confidence}% / {state.config.confidenceTarget}%
               </span>
             </div>
-            <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.4)", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 3, background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%`, transition: "width .5s" }} />
+            <div className="session-meter-track">
+              <div className="session-meter-fill" style={{ background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
             </div>
           </div>
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#7ab87a", marginBottom: 3 }}>
+            <div className="session-meter-hd">
               <span>Credits Used</span>
-              <span style={{ fontFamily: "monospace" }}>{state.creditsUsed} / ~{estimatedCredits} est</span>
+              <span className="session-meter-val">{state.creditsUsed} / ~{estimatedCredits} est</span>
             </div>
-            <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.4)", overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 3, background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%`, transition: "width .5s" }} />
+            <div className="session-meter-track">
+              <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%` }} />
             </div>
           </div>
         </div>
 
         {/* Running/paused status badge */}
         {isRunning && (
-          <div style={{ background: "rgba(0,200,83,.12)", border: "1px solid #00c853", borderRadius: 8, padding: "6px 10px", fontSize: 12, color: "#b6ff6a", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="session-running-badge">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
             ⚡ Brain is thinking…
             {state.currentRound > 0 && state.currentRound < 99 && (
-              <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 11, color: "#7ab87a" }}>
+              <span className="session-round-label">
                 Revolution {state.currentRound} / {state.config.maxIterations}
               </span>
             )}
@@ -1193,17 +1175,17 @@ export default function SessionPage() {
 
         {/* Paused decision card */}
         {isPaused && state.pauseReason && (
-          <div style={{ background: "rgba(243,210,106,.07)", border: "1px solid rgba(243,210,106,.35)", borderRadius: 9, padding: "10px 12px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f3d26a", marginBottom: 6 }}>
+          <div className="session-pause-card">
+            <div className="session-pause-title">
               ⏸ {state.pauseReason === "credit_cap" ? `Credit cap reached — ${Math.round(state.confidence)}% confidence` : `${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
             </div>
-            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <div className="session-pause-btns">
               {credits === 0 ? (
-                <button onClick={() => navigate("/billing")} style={{ flex: 1, padding: "8px 0", borderRadius: 8, background: "#00c853", color: "#000", fontSize: 13, fontWeight: 800, border: "none", cursor: "pointer" }}>Top Up Wallet</button>
+                <button onClick={() => navigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
               ) : (
-                <button onClick={() => { void continueSession(); }} style={{ flex: 1, padding: "8px 0", borderRadius: 8, background: "#00c853", color: "#000", fontSize: 13, fontWeight: 800, border: "none", cursor: "pointer" }}>Continue — {credits} cr</button>
+                <button onClick={() => { void continueSession(); }} className="session-pause-btn-primary">Continue — {credits} cr</button>
               )}
-              <button onClick={acceptPartial} style={{ flex: 1, padding: "8px 0", borderRadius: 8, background: "transparent", color: "#7ab87a", fontSize: 13, border: "1px solid #1d331d", cursor: "pointer" }}>Accept answer</button>
+              <button onClick={acceptPartial} className="session-pause-btn-secondary">Accept answer</button>
             </div>
           </div>
         )}

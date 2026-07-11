@@ -2,7 +2,7 @@ import { Link } from "wouter";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+    <div className="auth-shell bg-background text-foreground">
       <div className="text-center">
         <p className="text-8xl font-bold text-primary font-mono">404</p>
         <h1 className="mt-4 text-2xl font-bold">Page not found</h1>
