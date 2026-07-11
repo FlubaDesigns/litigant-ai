@@ -571,7 +571,7 @@ export default function LandingPage() {
               </p>
             </div></div>{/* /row — pricing heading */}
             <div className="row">
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="layout__split-4">
               {PLANS.map((plan, i) => (
                 <motion.div
                   key={i}
