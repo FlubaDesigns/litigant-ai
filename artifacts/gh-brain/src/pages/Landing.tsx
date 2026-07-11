@@ -369,6 +369,10 @@ export default function LandingPage() {
             </div>
 
             <div className="row">
+            <div className="layout__split-2-1">
+
+            {/* ── Left: accordion panels ── */}
+            <div>
             {/* Panel 1 — Court Architecture */}
             <div className="border-t border-white/[0.07]">
               <button
@@ -485,7 +489,44 @@ export default function LandingPage() {
                 </motion.div>
               )}
             </div>
-            </div>{/* /row — accordion panels */}
+            </div>{/* /left accordion col */}
+
+            {/* ── Right: trial flow visual ── */}
+            <div className="hero-img-col flex-col gap-0 pt-0" style={{alignItems:"stretch"}}>
+              <div className="border border-white/[0.08] rounded-lg overflow-hidden" style={{background:"#0a0a0a"}}>
+                <div className="px-5 py-4 border-b border-white/[0.06]">
+                  <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">Trial Flow</p>
+                </div>
+                {[
+                  { n:"01", label:"Submit Question", sub:"State your decision, dilemma, or dispute", color:"hsl(108 94% 50%)" },
+                  { n:"02", label:"Panel Convenes", sub:"AI seats take their assigned roles and briefs", color:"hsl(38 92% 50%)" },
+                  { n:"03", label:"Structured Debate", sub:"Each seat argues, cross-examines, and rebuts", color:"hsl(108 94% 50%)" },
+                  { n:"04", label:"Verdict Delivered", sub:"Confidence-scored conclusion with full transcript", color:"hsl(38 92% 50%)" },
+                ].map((step, i, arr) => (
+                  <div key={i} className="relative">
+                    <div className="flex items-start gap-4 px-5 py-5">
+                      <div className="shrink-0 w-8 h-8 rounded-full border flex items-center justify-center text-xs font-mono font-bold mt-0.5"
+                        style={{borderColor: step.color + "44", color: step.color, background: step.color + "11"}}>
+                        {step.n}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white mb-0.5">{step.label}</p>
+                        <p className="text-xs text-zinc-500 leading-relaxed">{step.sub}</p>
+                      </div>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <div className="absolute left-[2.1rem] top-[3.5rem] w-px h-4" style={{background:"linear-gradient(to bottom, hsl(108 94% 50% / 0.2), transparent)"}} />
+                    )}
+                  </div>
+                ))}
+                <div className="px-5 py-4 border-t border-white/[0.06]" style={{background:"hsl(108 94% 50% / 0.04)"}}>
+                  <p className="text-xs text-zinc-600 leading-relaxed">Credits deducted only after verdict. Cancel any time.</p>
+                </div>
+              </div>
+            </div>{/* /right visual col */}
+
+            </div>{/* /layout__split-2-1 */}
+            </div>{/* /row — accordion + visual */}
 
           </div>
         </section>
