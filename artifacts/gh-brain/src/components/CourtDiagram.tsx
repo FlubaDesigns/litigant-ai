@@ -59,6 +59,8 @@ const ROUTE_PATHS: Record<string, string> = {
   "route-moderator-architect":    `M ${F.left} ${Y_MID} L ${F.left} ${F.bottom} L ${CX} ${F.bottom}`,
   "route-architect-builder":      `M ${CX} ${F.bottom} L ${CX} 845`,
   "route-builder-architect":      `M ${CX} 845 L ${CX} ${F.bottom}`,
+  "route-builder-auditor":        `M ${CX} 845 L ${CX} ${F.bottom} L ${F.right} ${F.bottom} L ${F.right} ${Y_MID}`,
+  "route-auditor-builder":        `M ${F.right} ${Y_MID} L ${F.right} ${F.bottom} L ${CX} ${F.bottom} L ${CX} 845`,
   "route-architect-auditor":      `M ${CX} ${F.bottom} L ${F.right} ${F.bottom} L ${F.right} ${Y_MID}`,
   "route-auditor-orchestrator":   `M ${F.right} ${Y_MID} L ${F.right} ${F.top} L ${CX} ${F.top}`,
 };
@@ -66,6 +68,7 @@ const ROUTE_PATHS: Record<string, string> = {
 const GUIDE_ROUTE_IDS = [
   "route-user-orchestrator", "route-architect-builder",
   "route-orchestrator-moderator", "route-moderator-architect",
+  "route-builder-auditor", "route-auditor-builder",
   "route-architect-auditor", "route-auditor-orchestrator",
   "route-courtroom-loop",
   "route-courtroom-moderator", "route-moderator-orchestrator", "route-orchestrator-user",
@@ -155,6 +158,8 @@ function SeatIcon({ id, x, y }: { id: string; x: number; y: number }) {
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface CourtDiagramProps {
   activeRole: string | null;
+  /** Current attempt for Builder/Auditor — 1 = initial pass, 2+ = retry. */
+  activeAttempt?: number;
   litigantCount: number;
   running: boolean;
   complete?: boolean;
@@ -170,6 +175,7 @@ interface CourtDiagramProps {
 
 export function CourtDiagram({
   activeRole,
+  activeAttempt = 1,
   litigantCount,
   running,
   complete = false,
@@ -255,13 +261,15 @@ export function CourtDiagram({
       setActiveSeatId("architect");
       setLogicText("Architect planning the build…");
     } else if (activeRole === "Builder") {
-      switchRoute("route-architect-builder");
+      // Retry pass: meteor travels back from Auditor → Builder
+      switchRoute(activeAttempt > 1 ? "route-auditor-builder" : "route-architect-builder");
       setActiveSeatId("builder");
-      setLogicText("Builder executing…");
+      setLogicText(activeAttempt > 1 ? `Builder revising (pass ${activeAttempt})…` : "Builder executing…");
     } else if (activeRole === "Auditor") {
-      switchRoute("route-architect-auditor");
+      // Always comes from Builder — initial review or re-review
+      switchRoute("route-builder-auditor");
       setActiveSeatId("auditor");
-      setLogicText("Auditor quality-checking output…");
+      setLogicText(activeAttempt > 1 ? `Auditor re-reviewing (pass ${activeAttempt})…` : "Auditor quality-checking output…");
     } else if (LITIGANT_ROLES.has(activeRole)) {
       // First litigant marks entry into courtroom — enable return-path routing from here on
       postCourtroomRef.current = true;
@@ -281,7 +289,7 @@ export function CourtDiagram({
         });
       }, 900);
     }
-  }, [activeRole, running, complete, litigantCount]);
+  }, [activeRole, activeAttempt, running, complete, litigantCount]);
 
   // Meteor animation — one direction only, always forward.
   // Runs during `running` AND during `complete` (final return-to-user leg).

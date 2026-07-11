@@ -76,10 +76,11 @@ router.get("/report/:shareId", async (req, res) => {
         //   Orchestrator  round: 0   (opening frame)
         //   Moderator     round: 99  (post-debate summary)
         //   Architect     round: 99  (artifact blueprint)
-        //   Builder       round: 99  (artifact construction)
-        //   Auditor       round: 99  (artifact audit)
+        //   Builder       round: 99  (initial build + any retry revision passes)
+        //   Auditor       round: 99  (initial review + any retry re-review passes)
         //   Verdict       round: 99  (final verdict)
         // All others are actual litigants carrying real round numbers (1, 2, 3…).
+        // Multiple Builder/Auditor turns appear when the Auditor retry loop fires.
         const NON_LITIGANT_ROLES = new Set([
           "Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict",
         ]);

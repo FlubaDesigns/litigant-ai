@@ -1710,6 +1710,7 @@ export default function SessionPage() {
       <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
         <CourtDiagram
           activeRole={state.activeRole}
+          activeAttempt={state.activeAttempt}
           litigantCount={state.config.litigantCount}
           running={isRunning}
           confidence={state.confidence}

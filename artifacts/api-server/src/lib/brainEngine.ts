@@ -152,10 +152,11 @@ export interface BrainRunResult {
   /** Present when the session stopped before hitting the confidence target. */
   pauseReason?: PauseReason;
   /**
-   * Token usage for the five fixed pipeline stages (Moderator, Architect, Builder,
-   * Auditor, Verdict) — i.e. everything after the debate loop ends.
-   * Saved to Firestore so getCalibratedFixedStageTokens() can learn real averages
-   * across the last 50 sessions instead of relying on hardcoded priors.
+   * Token usage for the fixed pipeline stages (Moderator, Architect, Builder,
+   * Auditor, Verdict) — everything after the debate loop ends, including any
+   * Auditor retry passes (Builder revision + re-review). Saved to Firestore so
+   * getCalibratedFixedStageTokens() can learn real averages across the last 50
+   * sessions instead of relying on hardcoded priors.
    */
   fixedStageTokens: { input: number; output: number };
 }

@@ -49,6 +49,8 @@ export interface SessionState {
   activityLog: string[];
   courtHappened: boolean;
   activeRole: string | null;
+  /** Current attempt number for Builder/Auditor (1 = initial pass, 2+ = retry). */
+  activeAttempt: number;
   confidence: number;
   creditsUsed: number;
   estimatedCredits: number;
@@ -119,6 +121,7 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     activityLog: [],
     courtHappened: false,
     activeRole: null,
+    activeAttempt: 1,
     confidence: 0,
     creditsUsed: 0,
     estimatedCredits: 0,
@@ -247,6 +250,7 @@ function reducer(state: SessionState, action: Action): SessionState {
       return {
         ...state,
         activeRole: role,
+        activeAttempt: attempt ?? 1,
         currentRound: round > 0 ? round : state.currentRound,
         courtHappened: nextCourtHappened,
         activityLog: [...state.activityLog, logEntry],
