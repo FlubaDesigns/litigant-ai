@@ -25,6 +25,7 @@ export interface ChecklistItemDef {
   section: ChecklistSection;
   text: string;
   note?: string;
+  steps?: string[];
 }
 
 export interface ChecklistItem extends ChecklistItemDef {
@@ -68,7 +69,37 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   { id: "owner-secrets", section: "owner", text: "Set all required secrets in Replit (Firebase, Square, AI provider keys, Resend, ADMIN_MASTER_SECRET, APP_DOMAIN)", note: "See replit.md Admin Setup section for the full list." },
   { id: "owner-firebase-setup", section: "owner", text: "Create/configure the Firebase project: enable Email/Password auth, initialize Firestore, deploy firestore.rules, create a service account key", note: "" },
   { id: "owner-square-setup", section: "owner", text: "Create a Square developer account/app, get the access token + location ID, configure the payment.updated webhook", note: "" },
-  { id: "owner-ai-provider-keys", section: "owner", text: "Obtain at least one AI provider API key (OpenAI, Anthropic, Gemini, or Grok)", note: "" },
+  {
+    id: "owner-ai-provider-keys",
+    section: "owner",
+    text: "Connect AI provider API keys (OpenAI, Anthropic, Gemini, Grok)",
+    note: "At least one is required to run trials. Each additional provider gives the engine more model choices.",
+    steps: [
+      "── OpenAI (GPT-4o, GPT-4, GPT-4.1) ──",
+      "1. Go to https://platform.openai.com/api-keys and sign in.",
+      "2. Click 'Create new secret key', give it a name (e.g. 'litigant-ai'), copy the key.",
+      "3. In Replit → Secrets, add: OPENAI_API_KEY = sk-...",
+      "4. Restart the API Server workflow. OpenAI models will now appear in seat dropdowns.",
+      "── Anthropic (Claude 3.5, Claude 4) ──",
+      "5. Go to https://console.anthropic.com/settings/keys and sign in.",
+      "6. Click 'Create Key', name it, copy the key.",
+      "7. In Replit → Secrets, add: ANTHROPIC_API_KEY = sk-ant-...",
+      "8. Restart the API Server workflow.",
+      "── Google Gemini ──",
+      "9. Go to https://aistudio.google.com/app/apikey and sign in with a Google account.",
+      "10. Click 'Create API key', copy it.",
+      "11. In Replit → Secrets, add: GEMINI_API_KEY = AIza...",
+      "12. Restart the API Server workflow.",
+      "── xAI Grok ──",
+      "13. Go to https://console.x.ai and sign in.",
+      "14. Navigate to API Keys, create a key, copy it.",
+      "15. In Replit → Secrets, add: XAI_API_KEY = xai-...",
+      "16. Restart the API Server workflow.",
+      "── Verify ──",
+      "17. Open Admin → System tab, check the Provider Discovery section — each connected provider should show a green status.",
+      "18. Run a test trial on /session and confirm the seat dropdown lists models from your connected providers.",
+    ],
+  },
   { id: "owner-resend-setup", section: "owner", text: "Create a Resend account and verify the sending domain for transactional email", note: "" },
   { id: "owner-bootstrap-scripts", section: "owner", text: "Run the one-time bootstrap scripts: seed-conscience.mjs and set-admin-claim", note: "" },
   { id: "owner-legal-content", section: "owner", text: "Write real Privacy Policy and Terms of Service content", note: "Landing.tsx currently links these to placeholder \"#\" anchors." },

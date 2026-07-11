@@ -9,6 +9,7 @@ import {
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
   ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks,
 } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -216,6 +217,60 @@ function ChecklistLinkCard({ onOpenChecklist }: { onOpenChecklist: () => void })
 }
 
 // ─── Setup Checklist Tab ────────────────────────────────────────────────────────
+function ChecklistRow({
+  item,
+  onToggle,
+}: {
+  item: ChecklistItem;
+  onToggle: (id: string, checked: boolean) => void;
+}) {
+  const hasSteps = item.steps && item.steps.length > 0;
+  return (
+    <div className="divide-y divide-border/50">
+      <div className="flex items-start gap-3 p-4 hover:bg-secondary/20 transition-colors">
+        <Checkbox
+          checked={item.checked}
+          onCheckedChange={(v) => onToggle(item.id, v === true)}
+          className="mt-0.5 shrink-0"
+        />
+        <div className="min-w-0 flex-1">
+          <p className={cn("text-sm", item.checked ? "text-muted-foreground line-through" : "text-foreground")}>
+            {item.text}
+          </p>
+          {item.note && (
+            <p className="text-xs text-muted-foreground mt-1">{item.note}</p>
+          )}
+          {hasSteps && (
+            <Accordion type="single" collapsible className="mt-2 -mx-0.5">
+              <AccordionItem value="steps" className="border border-border/40 rounded-lg overflow-hidden">
+                <AccordionTrigger className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-primary/70 hover:text-primary hover:no-underline hover:bg-primary/5 transition-colors">
+                  Step-by-step instructions
+                </AccordionTrigger>
+                <AccordionContent className="px-0 pb-0">
+                  <ol className="flex flex-col divide-y divide-border/30">
+                    {item.steps!.map((step, i) => {
+                      const isHeader = step.startsWith("──");
+                      return isHeader ? (
+                        <li key={i} className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary/50 bg-primary/3">
+                          {step.replace(/^──\s*/, "").replace(/\s*──$/, "")}
+                        </li>
+                      ) : (
+                        <li key={i} className="px-3 py-2.5 text-xs text-muted-foreground leading-relaxed hover:bg-secondary/20 transition-colors">
+                          {step}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChecklistSection({
   title, subtitle, items, onToggle,
 }: {
@@ -236,24 +291,7 @@ function ChecklistSection({
       </div>
       <div className="divide-y divide-border">
         {items.map((item) => (
-          <label
-            key={item.id}
-            className="flex items-start gap-3 p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
-          >
-            <Checkbox
-              checked={item.checked}
-              onCheckedChange={(v) => onToggle(item.id, v === true)}
-              className="mt-0.5"
-            />
-            <div className="min-w-0">
-              <p className={cn("text-sm", item.checked ? "text-muted-foreground line-through" : "text-foreground")}>
-                {item.text}
-              </p>
-              {item.note && (
-                <p className="text-xs text-muted-foreground mt-1">{item.note}</p>
-              )}
-            </div>
-          </label>
+          <ChecklistRow key={item.id} item={item} onToggle={onToggle} />
         ))}
       </div>
     </div>

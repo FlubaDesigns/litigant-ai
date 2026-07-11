@@ -205,6 +205,7 @@ export interface ChecklistItem {
   section: "agent" | "owner";
   text: string;
   note?: string;
+  steps?: string[];
   checked: boolean;
 }
 
