@@ -83,7 +83,7 @@
    content flows naturally; .main provides the header clearance.
    ─────────────────────────────────────────────────────────────────── */
 .hero {
-  padding: 0 0 var(--sv);
+  padding: var(--sv) 0;
   position: relative;
   overflow: hidden;
 }
@@ -147,12 +147,13 @@
   .hero-img-col {
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding-top: 35px;
+    align-items: flex-start;
   }
   .hero-img-col img {
     width: 100%;
-    height: auto;
+    max-height: 55vh;
+    object-fit: cover;
+    object-position: center top;
     display: block;
   }
 }
