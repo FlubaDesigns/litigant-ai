@@ -20,7 +20,7 @@
    --col-gap     : gap between grid columns
    ─────────────────────────────────────────────────────────────────── */
 :root {
-  --sv:          2rem;      /* 32px  — mobile  */
+  --sv:          1.25rem;   /* 20px  — mobile  */
   --gutter:      1.25rem;   /* 20px  — mobile  */
   --main-offset: 4rem;      /* 64px  — matches h-16 fixed navbar */
   --max-w:       1200px;
@@ -29,7 +29,7 @@
 
 @media (min-width: 640px) {
   :root {
-    --sv:      3rem;    /* 48px */
+    --sv:      2rem;    /* 32px */
     --gutter:  2rem;    /* 32px */
     --col-gap: 2rem;    /* 32px */
   }
@@ -37,7 +37,7 @@
 
 @media (min-width: 1024px) {
   :root {
-    --sv:      4.5rem;  /* 72px */
+    --sv:      3rem;    /* 48px */
     --gutter:  3rem;    /* 48px */
     --col-gap: 2.5rem;  /* 40px */
   }
@@ -96,7 +96,7 @@
    .section--hero      : hero variant — taller padding, no bg modifier
    ─────────────────────────────────────────────────────────────────── */
 .section {
-  padding-top: var(--sv);
+  padding-top: 0;
   padding-bottom: var(--sv);
 }
 
@@ -110,7 +110,7 @@
 }
 
 .section--hero {
-  padding-top: calc(var(--sv) * 1.6);
+  padding-top: var(--sv);
   padding-bottom: calc(var(--sv) * 1.6);
   position: relative;
   overflow: hidden;
