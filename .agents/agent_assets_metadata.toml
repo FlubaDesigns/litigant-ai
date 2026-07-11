@@ -167,3 +167,9 @@ id = "eU50c0FZbessDA6vm_YFt"
 uri = "file://attached_assets/screenshots/litigant-ai_web_app.png"
 type = "image"
 title = "litigant-ai.web.app — LIVE right now"
+
+[[outputs]]
+id = "njtltUdojfM1vx5q9FCSL"
+uri = "file://artifacts/gh-brain/public/logo.svg"
+type = "image"
+title = "Litigant AI Logo (SVG)"
