@@ -595,34 +595,10 @@ export default function LandingPage() {
             </p>
             </div>{/* /row — pricing grid */}
 
-            <div className="row">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">In the Field</p>
-            </div>
-            <div className="row">
-            <div className="layout__split-2">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="border-l-2 border-white/[0.08] pl-6"
-                >
-                  <p className="text-zinc-300 text-sm leading-relaxed mb-5">"{t.quote}"</p>
-                  <div>
-                    <div className="text-white text-xs font-medium">{t.name}</div>
-                    <div className="text-zinc-600 text-xs font-mono mt-0.5">{t.role}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            </div>{/* /row — reviews */}
-
           </div>
         </section>
 
-        {/* ── 8. Tools ── */}
+        {/* ── 8. Tools / Docket ── */}
         <section id="tools" className="section border-t border-white/[0.06] bg-[#060606]">
           <div className="lgt-container">
             <div className="row">
@@ -667,7 +643,35 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── 9. CTA ── */}
+        {/* ── 9. In the Field ── */}
+        <section id="in-the-field" className="section border-t border-white/[0.06]">
+          <div className="lgt-container">
+            <div className="row"><div className="max-w-3xl">
+              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">In the Field</p>
+              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">What practitioners say</h2>
+            </div></div>
+            <div className="row">
+            <div className="layout__split-2">
+              {TESTIMONIALS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="border-l-2 border-white/[0.08] pl-6"
+                >
+                  <p className="text-zinc-300 text-sm leading-relaxed mb-5">"{t.quote}"</p>
+                  <div className="text-white text-xs font-medium">{t.name}</div>
+                  <div className="text-zinc-600 text-xs font-mono mt-0.5">{t.role}</div>
+                </motion.div>
+              ))}
+            </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 10. CTA ── */}
         <section className="section border-t border-white/[0.06] relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/[0.02] to-transparent pointer-events-none" />
           <div className="lgt-container relative z-10 text-center">
