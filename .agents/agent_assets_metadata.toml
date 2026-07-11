@@ -173,3 +173,9 @@ id = "njtltUdojfM1vx5q9FCSL"
 uri = "file://artifacts/gh-brain/public/logo.svg"
 type = "image"
 title = "New Logo — cloud brain, amber scales"
+
+[[outputs]]
+id = "YavsAlBXWPEBtQS_GFmsA"
+uri = "file://artifacts/gh-brain/public/logo.png"
+type = "image"
+title = "Logo — green brain, amber scales, 400×400"
