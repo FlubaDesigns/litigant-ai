@@ -120,8 +120,8 @@
   --popover-foreground: 230 20% 94%;
   --popover-border: 240 10% 18%;
 
-  /* Electric green — the signature color */
-  --primary: 140 100% 39%;
+  /* Amber — the signature color */
+  --primary: 38 92% 50%;
   --primary-foreground: 240 15% 5%;
 
   /* Muted dark surface */
@@ -142,14 +142,14 @@
   --sidebar: 240 15% 6%;
   --sidebar-foreground: 230 20% 94%;
   --sidebar-border: 240 10% 14%;
-  --sidebar-primary: 140 100% 39%;
+  --sidebar-primary: 38 92% 50%;
   --sidebar-primary-foreground: 240 15% 5%;
   --sidebar-accent: 240 12% 12%;
   --sidebar-accent-foreground: 230 15% 80%;
-  --sidebar-ring: 140 100% 39%;
+  --sidebar-ring: 38 92% 50%;
 
   /* Chart colors */
-  --chart-1: 140 100% 39%;
+  --chart-1: 38 92% 50%;
   --chart-2: 267 60% 55%;
   --chart-3: 200 80% 55%;
   --chart-4: 45 90% 55%;
@@ -199,14 +199,14 @@
   --foreground: 230 20% 94%;
   --border: 240 10% 16%;
   --input: 240 10% 20%;
-  --ring: 140 100% 39%;
+  --ring: 38 92% 50%;
   --card: 240 13% 8%;
   --card-foreground: 230 20% 94%;
   --card-border: 240 10% 14%;
   --popover: 240 13% 8%;
   --popover-foreground: 230 20% 94%;
   --popover-border: 240 10% 18%;
-  --primary: 140 100% 39%;
+  --primary: 38 92% 50%;
   --primary-foreground: 240 15% 5%;
   --secondary: 240 12% 12%;
   --secondary-foreground: 230 15% 75%;
@@ -219,12 +219,12 @@
   --sidebar: 240 15% 6%;
   --sidebar-foreground: 230 20% 94%;
   --sidebar-border: 240 10% 14%;
-  --sidebar-primary: 140 100% 39%;
+  --sidebar-primary: 38 92% 50%;
   --sidebar-primary-foreground: 240 15% 5%;
   --sidebar-accent: 240 12% 12%;
   --sidebar-accent-foreground: 230 15% 80%;
-  --sidebar-ring: 140 100% 39%;
-  --chart-1: 140 100% 39%;
+  --sidebar-ring: 38 92% 50%;
+  --chart-1: 38 92% 50%;
   --chart-2: 267 60% 55%;
   --chart-3: 200 80% 55%;
   --chart-4: 45 90% 55%;
