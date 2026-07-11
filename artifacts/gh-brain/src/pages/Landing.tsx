@@ -302,11 +302,11 @@ export default function LandingPage() {
       {/* ── Navbar (shared SiteHeader — edit SiteHeader.tsx to update everywhere) ── */}
       <SiteHeader variant="landing" />
 
-      <main>
+      <main className="main">
 
         {/* ── 1. Hero ── */}
-        <section className="min-h-screen flex items-center pt-14">
-          <div className="max-w-6xl mx-auto px-6 py-28">
+        <section className="min-h-screen flex items-center">
+          <div className="lgt-container py-28">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -362,7 +362,7 @@ export default function LandingPage() {
 
         {/* ── 2–4. Three-panel accordion ── */}
         <section id="how-it-works" className="border-t border-white/[0.06] py-20">
-          <div className="max-w-3xl mx-auto px-6">
+          <div className="lgt-container">
             <div className="mb-12">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Inside the Courtroom</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
@@ -492,7 +492,7 @@ export default function LandingPage() {
 
         {/* ── 6. Testimonials ── */}
         <section className="border-t border-white/[0.06] bg-[#060606] py-20">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="lgt-container">
             <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-12 uppercase">In the Field</p>
             <div className="grid md:grid-cols-2 gap-10">
               {TESTIMONIALS.map((t, i) => (
@@ -517,7 +517,7 @@ export default function LandingPage() {
 
         {/* ── 7. Pricing ── */}
         <section id="pricing" className="border-t border-white/[0.06] py-20">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="lgt-container">
             <div className="mb-12 max-w-3xl">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Docket</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">Open a Case</h2>
@@ -581,7 +581,7 @@ export default function LandingPage() {
 
         {/* ── 8. Tools ── */}
         <section id="tools" className="border-t border-white/[0.06] bg-[#060606] py-20">
-          <div className="max-w-3xl mx-auto px-6">
+          <div className="lgt-container">
             <div className="border-t border-white/[0.07]">
               <button
                 onClick={() => setToolsOpen(!toolsOpen)}
@@ -625,7 +625,7 @@ export default function LandingPage() {
         {/* ── 9. CTA ── */}
         <section className="border-t border-white/[0.06] py-28 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/[0.02] to-transparent pointer-events-none" />
-          <div className="max-w-6xl mx-auto px-6 relative z-10 text-center">
+          <div className="lgt-container relative z-10 text-center">
             <div className="inline-flex items-start gap-3 p-4 mb-12 border border-amber-500/20 bg-amber-500/[0.04] text-left text-xs text-amber-500/60 max-w-xl mx-auto">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500/50" />
               <span>

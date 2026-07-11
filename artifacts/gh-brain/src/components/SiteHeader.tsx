@@ -39,10 +39,10 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
     <>
       <header
         className={cn(
-          "fixed top-0 w-full z-50 border-b backdrop-blur-md",
+          "top-0 w-full z-50 border-b backdrop-blur-md",
           variant === "app"
-            ? "h-14 border-border bg-background/95"
-            : "h-16 border-white/[0.06] bg-[#080808]/90"
+            ? "sticky h-14 border-border bg-background/95"
+            : "fixed h-16 border-white/[0.06] bg-[#080808]/90"
         )}
       >
         <div
