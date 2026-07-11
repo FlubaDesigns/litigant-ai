@@ -58,26 +58,14 @@ export interface PaymentHistoryItem {
 
 export const PLAN_LIMITS = {
   free: {
-    label: "Free",
+    label: "Pay as you go",
     trialCredits: 50,
     creditsPerMonth: null,
     features: [
-      "100 trial credits included",
-      "Standard AI models",
-      "Export to Markdown",
-      "Session history (last 10)",
-    ],
-  },
-  pro: {
-    label: "Pro",
-    trialCredits: null,
-    creditsPerMonth: 2000,
-    features: [
-      "2,000 credits per month",
-      "Priority AI model access",
-      "Unlimited session history",
-      "Advanced export options",
-      "Early access to new features",
+      "Welcome bonus credits on signup",
+      "All AI models available",
+      "Export to Markdown & PDF",
+      "Session history",
     ],
   },
 } as const;

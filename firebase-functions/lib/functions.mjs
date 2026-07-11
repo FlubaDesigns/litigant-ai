@@ -55465,7 +55465,7 @@ function variableTokens(config) {
   };
   const tokensPerTurn = outputTokensPerTurn[config.responseMode];
   const rounds = config.maxIterations;
-  const litigants = Math.min(config.litigantCount, 4);
+  const litigants = Math.min(config.litigantCount, 10);
   const historyPerRound = tokensPerTurn * litigants * 0.8;
   const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
   return {
@@ -56875,7 +56875,7 @@ var DEFAULT_CHECKLIST_ITEMS = [
   { id: "agent-dup-model-map", section: "agent", text: "Remove the duplicate hardcoded default-model map in createProviderAsync", note: "Audit Pass 3 #8 \u2014 should reference the single DEFAULT_MODELS export." },
   { id: "agent-password-reset-leak", section: "agent", text: "Fix password-reset endpoint so it actually doesn't reveal whether an email exists", note: "Audit Pass 4 #9 \u2014 comment claims this but the error handling doesn't back it up." },
   { id: "agent-square-redirect", section: "agent", text: "Fix Square checkout redirect URL being built from a client-controllable header", note: "Audit Pass 4 #10" },
-  { id: "agent-litigant-cap", section: "agent", text: "Fix configured litigant count silently exceeding what the engine executes", note: "Audit Pass 4 #11 \u2014 blocked on owner decision on how to handle seats past 4." },
+  { id: "agent-litigant-cap", section: "agent", text: "\u2705 DONE: Fixed litigant cap \u2014 creditEngine.ts raised from 4 to 10 to match brainEngine", note: "Audit Pass 4 #11 \u2014 resolved." },
   { id: "agent-autorefill-validation", section: "agent", text: "Add validation to auto-refill thresholdCredits / packPriceId", note: "Audit Pass 4 #12" },
   { id: "agent-user-search-pagination", section: "agent", text: "Fix unbounded/unpaginated admin user name search", note: "Audit Pass 5 #13" },
   { id: "agent-flag-validation", section: "agent", text: "Validate feature flag name and value (boolean only) on write", note: "Audit Pass 5 #14" },
@@ -56883,7 +56883,7 @@ var DEFAULT_CHECKLIST_ITEMS = [
   { id: "agent-shared-report-count", section: "agent", text: "Fix shared reports displaying a litigant count inflated by 3", note: "Audit Pass 6 #16" },
   { id: "agent-provider-discovery", section: "agent", text: "Fix provider-discovery endpoint being blind to Firestore-only-configured providers", note: "Audit Pass 6 #17" },
   { id: "agent-round-count-99", section: "agent", text: 'Fix public reports always displaying "99" for round count', note: "Audit Pass 6 #18" },
-  { id: "agent-billing-404", section: "agent", text: "Resolve Billing.tsx's live but always-404ing Pro subscription purchase path", note: "Audit Pass 8 #25 \u2014 same underlying product decision as the litigant-cap and signup-plan findings." },
+  { id: "agent-billing-404", section: "agent", text: "\u2705 DONE: Removed Pro subscription purchase path from Billing.tsx \u2014 product is credits-only", note: "Audit Pass 8 #25 \u2014 resolved by dropping subscription tier." },
   { id: "agent-audit-admin-tsx", section: "agent", text: "Code-review Admin.tsx (~2,660 lines) \u2014 tabs exist but internals are unreviewed", note: "" },
   { id: "agent-verify-share-report", section: "agent", text: "Verify the public Share Report page matches spec (shared-only gating, CTA, OG tags)", note: "" },
   { id: "agent-review-notifications", section: "agent", text: "Review NotificationsTab in Settings", note: "Flagged unreviewed in Pass 10." },
@@ -56891,13 +56891,43 @@ var DEFAULT_CHECKLIST_ITEMS = [
   { id: "agent-review-remaining-frontend", section: "agent", text: "Review Landing.tsx, tools pages, and shared components (AppLayout, CourtDiagram, LandingDemoPlayer, OnboardingWizard)", note: "Never audited." },
   // ── Owner: manual / business actions ────────────────────────────────────
   { id: "owner-fill-rate-decision", section: "owner", text: "Decide the fill-rate assumption for non-litigant pipeline stages", note: "Needed to fix the credit-estimate formula everywhere it's duplicated." },
-  { id: "owner-subscription-decision", section: "owner", text: "Decide whether the product has a real subscription tier, or drop subscription language entirely", note: "Affects Register.tsx's plan picker and Billing.tsx's Pro path." },
-  { id: "owner-litigant-cap-decision", section: "owner", text: "Decide how to handle configured litigant counts above 4", note: "Cap the picker at 4, implement seats 5+, or surface a clear warning." },
+  { id: "owner-subscription-decision", section: "owner", text: "\u2705 DONE: Dropped subscription tier \u2014 product is pay-as-you-go credits only", note: "Billing.tsx and billingService.ts updated. No Pro plan, no subscription language." },
+  { id: "owner-litigant-cap-decision", section: "owner", text: "\u2705 DONE: Litigant cap set to 10 \u2014 creditEngine.ts and brainEngine.ts updated", note: "Picker max and cost formula both respect 10." },
   { id: "owner-auditor-loop-decision", section: "owner", text: "Decide the Auditor retry-loop UX", note: "Inline correction vs. a real automated retry loop back to the Builder." },
   { id: "owner-secrets", section: "owner", text: "Set all required secrets in Replit (Firebase, Square, AI provider keys, Resend, ADMIN_MASTER_SECRET, APP_DOMAIN)", note: "See replit.md Admin Setup section for the full list." },
   { id: "owner-firebase-setup", section: "owner", text: "Create/configure the Firebase project: enable Email/Password auth, initialize Firestore, deploy firestore.rules, create a service account key", note: "" },
   { id: "owner-square-setup", section: "owner", text: "Create a Square developer account/app, get the access token + location ID, configure the payment.updated webhook", note: "" },
-  { id: "owner-ai-provider-keys", section: "owner", text: "Obtain at least one AI provider API key (OpenAI, Anthropic, Gemini, or Grok)", note: "" },
+  {
+    id: "owner-ai-provider-keys",
+    section: "owner",
+    text: "Connect AI provider API keys (OpenAI, Anthropic, Gemini, Grok)",
+    note: "At least one is required to run trials. Each additional provider gives the engine more model choices.",
+    steps: [
+      "\u2500\u2500 OpenAI (GPT-4o, GPT-4, GPT-4.1) \u2500\u2500",
+      "1. Go to https://platform.openai.com/api-keys and sign in.",
+      "2. Click 'Create new secret key', give it a name (e.g. 'litigant-ai'), copy the key.",
+      "3. In Replit \u2192 Secrets, add: OPENAI_API_KEY = sk-...",
+      "4. Restart the API Server workflow. OpenAI models will now appear in seat dropdowns.",
+      "\u2500\u2500 Anthropic (Claude 3.5, Claude 4) \u2500\u2500",
+      "5. Go to https://console.anthropic.com/settings/keys and sign in.",
+      "6. Click 'Create Key', name it, copy the key.",
+      "7. In Replit \u2192 Secrets, add: ANTHROPIC_API_KEY = sk-ant-...",
+      "8. Restart the API Server workflow.",
+      "\u2500\u2500 Google Gemini \u2500\u2500",
+      "9. Go to https://aistudio.google.com/app/apikey and sign in with a Google account.",
+      "10. Click 'Create API key', copy it.",
+      "11. In Replit \u2192 Secrets, add: GEMINI_API_KEY = AIza...",
+      "12. Restart the API Server workflow.",
+      "\u2500\u2500 xAI Grok \u2500\u2500",
+      "13. Go to https://console.x.ai and sign in.",
+      "14. Navigate to API Keys, create a key, copy it.",
+      "15. In Replit \u2192 Secrets, add: XAI_API_KEY = xai-...",
+      "16. Restart the API Server workflow.",
+      "\u2500\u2500 Verify \u2500\u2500",
+      "17. Open Admin \u2192 System tab, check the Provider Discovery section \u2014 each connected provider should show a green status.",
+      "18. Run a test trial on /session and confirm the seat dropdown lists models from your connected providers."
+    ]
+  },
   { id: "owner-resend-setup", section: "owner", text: "Create a Resend account and verify the sending domain for transactional email", note: "" },
   { id: "owner-bootstrap-scripts", section: "owner", text: "Run the one-time bootstrap scripts: seed-conscience.mjs and set-admin-claim", note: "" },
   { id: "owner-legal-content", section: "owner", text: "Write real Privacy Policy and Terms of Service content", note: 'Landing.tsx currently links these to placeholder "#" anchors.' },

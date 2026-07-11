@@ -147,17 +147,8 @@ function CreditBalanceCard({ balance, plan }: { balance: number; plan: string })
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-xs capitalize",
-              plan === "pro"
-                ? "border-violet-500/40 text-violet-400 bg-violet-500/10"
-                : "border-border/60 text-muted-foreground"
-            )}
-          >
-            {plan === "pro" && <Crown className="w-3 h-3 mr-1" />}
-            {limits.label} Plan
+          <Badge variant="outline" className="text-xs border-border/60 text-muted-foreground">
+            {limits.label}
           </Badge>
           {isCritical && (
             <span className="text-xs text-red-400 flex items-center gap-1">
@@ -193,16 +184,6 @@ function PlanLimitsCard({ plan }: { plan: string }) {
           </li>
         ))}
       </ul>
-      {limits.creditsPerMonth && (
-        <div className="mt-3 pt-3 border-t border-border/40">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Monthly grant</span>
-            <span className="font-mono text-primary font-semibold">
-              {limits.creditsPerMonth.toLocaleString()} cr/mo
-            </span>
-          </div>
-        </div>
-      )}
       {limits.trialCredits && (
         <div className="mt-3 pt-3 border-t border-border/40">
           <div className="flex items-center justify-between text-xs">
@@ -221,20 +202,15 @@ function ProductCard({
   product,
   onBuy,
   loading,
-  isSubscription,
-  currentPlan,
 }: {
   product: BillingProduct;
   onBuy: (priceId: string) => void;
   loading: boolean;
-  isSubscription: boolean;
-  currentPlan: string;
 }) {
   const price = product.prices[0];
   const credits = parseInt(product.metadata?.creditAmount ?? "0", 10);
   const label = CREDIT_PACKS_LABELS[product.name];
   const badge = label?.badge;
-  const isCurrentPlan = isSubscription && currentPlan === "pro";
 
   return (
     <motion.div
@@ -242,11 +218,9 @@ function ProductCard({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "relative rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200",
-        isSubscription
-          ? "border-violet-500/30 bg-violet-500/5 hover:border-violet-500/50"
-          : badge === "Popular"
-            ? "border-primary/40 bg-primary/5 hover:border-primary/60"
-            : "border-border/60 bg-card/50 hover:border-border"
+        badge === "Popular"
+          ? "border-primary/40 bg-primary/5 hover:border-primary/60"
+          : "border-border/60 bg-card/50 hover:border-border"
       )}
     >
       {badge && (
@@ -264,17 +238,6 @@ function ProductCard({
           </Badge>
         </div>
       )}
-      {isSubscription && (
-        <div className="absolute -top-2.5 left-4">
-          <Badge
-            className="text-xs bg-violet-500/20 text-violet-400 border-violet-500/30"
-            variant="outline"
-          >
-            <Crown className="w-3 h-3 mr-1" />
-            Subscription
-          </Badge>
-        </div>
-      )}
 
       <div className="mt-1">
         <div className="flex items-start justify-between">
@@ -286,9 +249,6 @@ function ProductCard({
             <div className="text-lg font-bold tabular-nums">
               {formatCurrency(price?.unit_amount ?? null)}
             </div>
-            {price?.recurring && (
-              <div className="text-xs text-muted-foreground">/{price.recurring.interval}</div>
-            )}
           </div>
         </div>
       </div>
@@ -299,35 +259,17 @@ function ProductCard({
           <span className="text-primary font-mono font-semibold">
             {credits.toLocaleString()} credits
           </span>
-          {isSubscription && (
-            <span className="text-muted-foreground">per month</span>
-          )}
         </div>
       )}
 
       <Button
         size="sm"
-        disabled={loading || isCurrentPlan || !price?.id}
+        disabled={loading || !price?.id}
         onClick={() => price?.id && onBuy(price.id)}
-        className={cn(
-          "w-full mt-auto",
-          isSubscription
-            ? "bg-violet-600 hover:bg-violet-500 text-white"
-            : "bg-primary hover:bg-primary/90 text-primary-foreground"
-        )}
+        className="w-full mt-auto bg-primary hover:bg-primary/90 text-primary-foreground"
       >
         {loading ? (
           <RefreshCw className="w-3 h-3 animate-spin" />
-        ) : isCurrentPlan ? (
-          <>
-            <CheckCircle2 className="w-3 h-3 mr-1.5" />
-            Current Plan
-          </>
-        ) : isSubscription ? (
-          <>
-            <Crown className="w-3 h-3 mr-1.5" />
-            Upgrade to Pro
-          </>
         ) : (
           <>
             <Package className="w-3 h-3 mr-1.5" />
@@ -638,7 +580,7 @@ export default function BillingPage() {
           </div>
           <h2 className="text-lg font-bold mb-2">Billing & Credits</h2>
           <p className="text-muted-foreground text-sm">
-            Firebase is not configured. Sign in to manage your credits and subscription.
+            Firebase is not configured. Sign in to manage your credits.
           </p>
         </div>
       </div>
@@ -670,7 +612,7 @@ export default function BillingPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold mb-1">Billing & Credits</h1>
           <p className="text-muted-foreground text-sm">
-            Manage your credit balance and subscription.
+            Manage your credit balance.
           </p>
         </div>
 
@@ -881,8 +823,6 @@ export default function BillingPage() {
                       product={product}
                       onBuy={handleBuy}
                       loading={checkoutLoading === product.prices[0]?.id}
-                      isSubscription={false}
-                      currentPlan={plan}
                     />
                   ))}
                 </div>

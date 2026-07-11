@@ -281,7 +281,7 @@ function variableTokens(config: SessionEstimateConfig): { input: number; output:
   };
   const tokensPerTurn   = outputTokensPerTurn[config.responseMode];
   const rounds          = config.maxIterations;
-  const litigants       = Math.min(config.litigantCount, 4);
+  const litigants       = Math.min(config.litigantCount, 10);
   const historyPerRound = tokensPerTurn * litigants * 0.8;
   const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
   return {

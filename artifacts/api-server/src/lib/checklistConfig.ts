@@ -46,7 +46,7 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   { id: "agent-dup-model-map", section: "agent", text: "Remove the duplicate hardcoded default-model map in createProviderAsync", note: "Audit Pass 3 #8 — should reference the single DEFAULT_MODELS export." },
   { id: "agent-password-reset-leak", section: "agent", text: "Fix password-reset endpoint so it actually doesn't reveal whether an email exists", note: "Audit Pass 4 #9 — comment claims this but the error handling doesn't back it up." },
   { id: "agent-square-redirect", section: "agent", text: "Fix Square checkout redirect URL being built from a client-controllable header", note: "Audit Pass 4 #10" },
-  { id: "agent-litigant-cap", section: "agent", text: "Fix configured litigant count silently exceeding what the engine executes", note: "Audit Pass 4 #11 — blocked on owner decision on how to handle seats past 4." },
+  { id: "agent-litigant-cap", section: "agent", text: "✅ DONE: Fixed litigant cap — creditEngine.ts raised from 4 to 10 to match brainEngine", note: "Audit Pass 4 #11 — resolved." },
   { id: "agent-autorefill-validation", section: "agent", text: "Add validation to auto-refill thresholdCredits / packPriceId", note: "Audit Pass 4 #12" },
   { id: "agent-user-search-pagination", section: "agent", text: "Fix unbounded/unpaginated admin user name search", note: "Audit Pass 5 #13" },
   { id: "agent-flag-validation", section: "agent", text: "Validate feature flag name and value (boolean only) on write", note: "Audit Pass 5 #14" },
@@ -54,7 +54,7 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   { id: "agent-shared-report-count", section: "agent", text: "Fix shared reports displaying a litigant count inflated by 3", note: "Audit Pass 6 #16" },
   { id: "agent-provider-discovery", section: "agent", text: "Fix provider-discovery endpoint being blind to Firestore-only-configured providers", note: "Audit Pass 6 #17" },
   { id: "agent-round-count-99", section: "agent", text: "Fix public reports always displaying \"99\" for round count", note: "Audit Pass 6 #18" },
-  { id: "agent-billing-404", section: "agent", text: "Resolve Billing.tsx's live but always-404ing Pro subscription purchase path", note: "Audit Pass 8 #25 — same underlying product decision as the litigant-cap and signup-plan findings." },
+  { id: "agent-billing-404", section: "agent", text: "✅ DONE: Removed Pro subscription purchase path from Billing.tsx — product is credits-only", note: "Audit Pass 8 #25 — resolved by dropping subscription tier." },
   { id: "agent-audit-admin-tsx", section: "agent", text: "Code-review Admin.tsx (~2,660 lines) — tabs exist but internals are unreviewed", note: "" },
   { id: "agent-verify-share-report", section: "agent", text: "Verify the public Share Report page matches spec (shared-only gating, CTA, OG tags)", note: "" },
   { id: "agent-review-notifications", section: "agent", text: "Review NotificationsTab in Settings", note: "Flagged unreviewed in Pass 10." },
@@ -63,8 +63,8 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
 
   // ── Owner: manual / business actions ────────────────────────────────────
   { id: "owner-fill-rate-decision", section: "owner", text: "Decide the fill-rate assumption for non-litigant pipeline stages", note: "Needed to fix the credit-estimate formula everywhere it's duplicated." },
-  { id: "owner-subscription-decision", section: "owner", text: "Decide whether the product has a real subscription tier, or drop subscription language entirely", note: "Affects Register.tsx's plan picker and Billing.tsx's Pro path." },
-  { id: "owner-litigant-cap-decision", section: "owner", text: "Decide how to handle configured litigant counts above 4", note: "Cap the picker at 4, implement seats 5+, or surface a clear warning." },
+  { id: "owner-subscription-decision", section: "owner", text: "✅ DONE: Dropped subscription tier — product is pay-as-you-go credits only", note: "Billing.tsx and billingService.ts updated. No Pro plan, no subscription language." },
+  { id: "owner-litigant-cap-decision", section: "owner", text: "✅ DONE: Litigant cap set to 10 — creditEngine.ts and brainEngine.ts updated", note: "Picker max and cost formula both respect 10." },
   { id: "owner-auditor-loop-decision", section: "owner", text: "Decide the Auditor retry-loop UX", note: "Inline correction vs. a real automated retry loop back to the Builder." },
   { id: "owner-secrets", section: "owner", text: "Set all required secrets in Replit (Firebase, Square, AI provider keys, Resend, ADMIN_MASTER_SECRET, APP_DOMAIN)", note: "See replit.md Admin Setup section for the full list." },
   { id: "owner-firebase-setup", section: "owner", text: "Create/configure the Firebase project: enable Email/Password auth, initialize Firestore, deploy firestore.rules, create a service account key", note: "" },
