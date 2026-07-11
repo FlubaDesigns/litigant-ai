@@ -346,6 +346,10 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
               className="max-w-3xl"
             >
+              <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full border text-xs font-mono" style={{borderColor:'hsl(108 94% 50% / 0.3)', color:'hsl(108 94% 50% / 0.85)', background:'hsl(108 94% 50% / 0.05)'}}>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{background:'hsl(108 94% 50%)'}} />
+                Uploaded to production — litigant-ai.web.app
+              </div>
               <p className="text-xs font-mono tracking-widest mb-5 uppercase" style={{color:'hsl(108 94% 50% / 0.7)'}}>
                 Adversarial Reasoning Engine
               </p>
