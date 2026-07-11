@@ -176,7 +176,7 @@ export async function getAdminPricingTable(): Promise<{
   const variableOutput = 400 + EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * TOKENS_PER_TURN;
   const variableInput  = Math.ceil(
     EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS *
-    (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.8 * (EXAMPLE_ROUNDS / 2))
+    (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.85 * (EXAMPLE_ROUNDS / 2))
   );
   const exampleFixed   = await getCalibratedFixedStageTokens();
   const EXAMPLE_INPUT  = variableInput  + exampleFixed.input;

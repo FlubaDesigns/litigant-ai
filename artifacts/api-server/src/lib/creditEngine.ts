@@ -210,14 +210,14 @@ export interface SessionEstimateConfig {
  * Hardcoded prior for the five fixed pipeline stages (Moderator, Architect,
  * Builder, Auditor, Verdict) — everything that runs after the debate loop.
  *
- * Output: 5 stages × average max tokens (5 400 total) at 70% fill ≈ 3 780.
+ * Output: 5 stages × average max tokens (5 400 total) at 85% fill ≈ 4 590.
  * Input:  accumulated context fed to those five stages ≈ 12 500 tokens.
  *
  * These values are used until getCalibratedFixedStageTokens() has at least
  * CALIBRATION_MIN_SESSIONS real sessions to average over, at which point
  * observed data takes over automatically.
  */
-export const FIXED_STAGE_PRIOR = { input: 12_500, output: 3_780 };
+export const FIXED_STAGE_PRIOR = { input: 12_500, output: 4_590 };
 
 /** Minimum sessions required before switching from prior to observed data. */
 const CALIBRATION_MIN_SESSIONS = 5;
@@ -282,7 +282,7 @@ function variableTokens(config: SessionEstimateConfig): { input: number; output:
   const tokensPerTurn   = outputTokensPerTurn[config.responseMode];
   const rounds          = config.maxIterations;
   const litigants       = Math.min(config.litigantCount, 10);
-  const historyPerRound = tokensPerTurn * litigants * 0.8;
+  const historyPerRound = tokensPerTurn * litigants * 0.85;
   const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
   return {
     output: 400 + litigants * rounds * tokensPerTurn,

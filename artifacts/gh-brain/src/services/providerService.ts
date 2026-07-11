@@ -89,13 +89,14 @@ export function estimateCredits(
   const litigants = Math.min(litigantCount, 4);
   const rounds = maxIterations;
 
-  // Output: orchestrator + roles × rounds + verdict
-  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 1600;
+  // Output: orchestrator + litigant turns + fixed pipeline stages (85% fill of 5 400 cap = 4 590)
+  // Fixed stages mirror FIXED_STAGE_PRIOR in api-server/src/lib/creditEngine.ts
+  const outputTokens = 400 + litigants * rounds * tokensPerTurn + 4_590;
 
-  // Input grows each round as history accumulates
-  const historyPerRound = tokensPerTurn * litigants * 0.8;
+  // Input grows each round as history accumulates; fixed stages add 12 500 context tokens
+  const historyPerRound = tokensPerTurn * litigants * 0.85;
   const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
-  const inputTokens = litigants * rounds * avgInputPerTurn + 8000;
+  const inputTokens = litigants * rounds * avgInputPerTurn + 12_500;
 
   const costUSD =
     (inputTokens / 1000) * creditInfo.inputRatePer1k +
