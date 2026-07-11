@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearch, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -2901,7 +2902,22 @@ function TabSkeleton() {
 
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const search = useSearch();
+  const [, setLocation] = useLocation();
+  const tabFromUrl = new URLSearchParams(search).get("tab") as AdminTab | null;
+  const validTab = tabFromUrl && TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : "overview";
+  const [activeTab, setActiveTabState] = useState<AdminTab>(validTab);
+
+  useEffect(() => {
+    if (tabFromUrl && TABS.some((t) => t.id === tabFromUrl)) {
+      setActiveTabState(tabFromUrl as AdminTab);
+    }
+  }, [tabFromUrl]);
+
+  function setActiveTab(tab: AdminTab) {
+    setActiveTabState(tab);
+    setLocation(`/admin?tab=${tab}`, { replace: true });
+  }
 
   return (
     <div className="flex min-h-full">
