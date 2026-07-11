@@ -198,8 +198,8 @@ function HowItWorksRow({
           {step.title}
         </span>
         {open
-          ? <ChevronUp className="w-5 h-5 text-[#39f70a]/50 shrink-0" />
-          : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+          ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+          : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
       </button>
       {open && (
         <motion.div
@@ -234,8 +234,8 @@ function BenchRow({
           {seat.label}
         </span>
         {open
-          ? <ChevronUp className="w-5 h-5 text-[#39f70a]/50 shrink-0" />
-          : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+          ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+          : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
       </button>
       {open && (
         <motion.div
@@ -270,8 +270,8 @@ function ToolRow({
           {tool.title}
         </span>
         {open
-          ? <ChevronUp className="w-5 h-5 text-[#39f70a]/50 shrink-0" />
-          : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+          ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+          : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
       </button>
       {open && (
         <motion.div
@@ -395,7 +395,7 @@ export default function LandingPage() {
                 </div>
                 {openPanel === 0
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
               </button>
               {openPanel === 0 && (
                 <motion.div
@@ -438,7 +438,7 @@ export default function LandingPage() {
                 </div>
                 {openPanel === 1
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
               </button>
               {openPanel === 1 && (
                 <motion.div
@@ -481,7 +481,7 @@ export default function LandingPage() {
                 </div>
                 {openPanel === 2
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
               </button>
               {openPanel === 2 && (
                 <motion.div
@@ -508,7 +508,7 @@ export default function LandingPage() {
                               <span className="text-[10px] text-zinc-700 tabular-nums shrink-0">{t.estimatedCredits}cr</span>
                               {isOpen
                                 ? <ChevronUp className="w-4 h-4 text-[#39f70a] shrink-0" />
-                                : <ChevronDown className="w-4 h-4 text-[#39f70a]/40 shrink-0" />}
+                                : <ChevronDown className="w-4 h-4 text-[#39f70a]/50 shrink-0 animate-pulse" />}
                             </button>
                             {isOpen && (
                               <motion.div
@@ -627,7 +627,7 @@ export default function LandingPage() {
                 </div>
                 {toolsOpen
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
               </button>
               {toolsOpen && (
                 <motion.div
