@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Brain, ArrowLeft, KeyRound, Loader2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2 } from "lucide-react";
 
 const resetSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md p-8 relative z-10">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
-            <Brain className="w-8 h-8 text-primary text-primary-glow" />
+            <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
           <div className="w-12 h-12 bg-secondary/50 rounded-full flex items-center justify-center mb-4 border border-border">

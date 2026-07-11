@@ -11,7 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Brain, ArrowRight, Loader2, Zap } from "lucide-react";
+import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
 
@@ -70,7 +70,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-lg px-4 relative z-10">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
-            <Brain className="w-8 h-8 text-primary" />
+            <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight font-sans">Litigant AI</span>
           </Link>
           <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Create an account</h1>
