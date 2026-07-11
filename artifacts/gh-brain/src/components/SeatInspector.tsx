@@ -113,24 +113,18 @@ export function SeatInspector({
       {/* Backdrop */}
       <div
         className={cn(
-          "fixed inset-0 z-40 transition-opacity duration-200",
+          "fixed inset-0 z-40 transition-opacity duration-200 seat-inspector-backdrop",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
-        style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)" }}
         onClick={handleClose}
       />
 
       {/* Bottom sheet */}
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 transition-transform duration-220 ease-out rounded-t-2xl border-t border-[#1d331d]",
+          "fixed bottom-0 left-0 right-0 z-50 transition-transform duration-220 ease-out rounded-t-2xl border-t border-[#1d331d] seat-inspector-sheet",
           open ? "translate-y-0" : "translate-y-full"
         )}
-        style={{
-          background: "linear-gradient(160deg, #0e1a0e, #071007)",
-          maxWidth: 520,
-          margin: "0 auto",
-        }}
       >
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
@@ -226,8 +220,7 @@ export function SeatInspector({
             </button>
             <button
               onClick={handleConfirm}
-              className="flex-1 h-10 rounded-xl text-sm font-bold transition-colors"
-              style={{ background: "#00c853", color: "#071007" }}
+              className="flex-1 h-10 rounded-xl text-sm font-bold transition-colors bg-[#00c853] text-[#071007]"
             >
               Assign {selectedOption.shortName}
             </button>

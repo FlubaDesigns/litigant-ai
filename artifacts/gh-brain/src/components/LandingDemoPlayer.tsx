@@ -12,15 +12,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 
-// ── Pre-scripted session content ──────────────────────────────────────────────
-
 const DEMO_QUESTION = "Is the Earth flat?";
 
 const DEMO_CONFIG = [
-  { label: "Court Mode",    value: "Adversarial" },
-  { label: "Litigants",     value: "4 (+ / −)"  },
-  { label: "Reasoning",     value: "Chain of Thought" },
-  { label: "Confidence Target", value: "80%" },
+  { label: "Court Mode",        value: "Adversarial"      },
+  { label: "Litigants",         value: "4 (+ / −)"        },
+  { label: "Reasoning",         value: "Chain of Thought"  },
+  { label: "Confidence Target", value: "80%"               },
 ];
 
 interface Turn {
@@ -33,31 +31,19 @@ interface Turn {
 
 const TURNS: Turn[] = [
   {
-    role: "Advocate",
-    model: "GPT-4o",
-    color: "#4fc3f7",
-    confidenceAfter: 28,
+    role: "Advocate", model: "GPT-4o", color: "#4fc3f7", confidenceAfter: 28,
     text: `I'll steelman every possible argument. Ancient civilisations universally described a flat Earth — a reasonable inference from lived experience. Some claim GPS paths and flight routes are "corrected" for curvature. These intuitions feel compelling.\n\nHowever, I must be honest: every one of these arguments disintegrates under direct observational testing. I cannot in good conscience sustain the position.`,
   },
   {
-    role: "Skeptic",
-    model: "Claude 3.5",
-    color: "#ef9a9a",
-    confidenceAfter: 63,
+    role: "Skeptic", model: "Claude 3.5", color: "#ef9a9a", confidenceAfter: 63,
     text: `Every flat-Earth claim fails basic empirical scrutiny — ships disappear hull-first over the horizon, star constellations shift with latitude, lunar eclipses cast circular shadows regardless of angle, time zones exist, circumnavigation is routine, and orbital mechanics require a spheroid.\n\nThe Earth is an oblate spheroid. This is not contested science. Confidence in the contrary position: 0.0%.`,
   },
   {
-    role: "Devil's Advocate",
-    model: "Gemini 1.5 Pro",
-    color: "#fff176",
-    confidenceAfter: 81,
+    role: "Devil's Advocate", model: "Gemini 1.5 Pro", color: "#fff176", confidenceAfter: 81,
     text: `For completeness: flat-Earth cosmology dominated recorded history for millennia. The psychological appeal of a bounded, knowable world is real and worth understanding. Modern flat-Earth communities signal a genuine crisis of institutional trust — that sociological fact deserves serious analysis.\n\nNone of this changes the underlying physics. The Earth is round. I'm simply noting that dismissing the belief without understanding its roots misses something important.`,
   },
   {
-    role: "Analyst",
-    model: "Grok 3",
-    color: "#a5d6a7",
-    confidenceAfter: 97,
+    role: "Analyst", model: "Grok 3", color: "#a5d6a7", confidenceAfter: 97,
     text: `The empirical record is unambiguous. We have direct photographic evidence from orbit, laser-ranging experiments, independent satellite networks operated by competing nations with adversarial interests, and a century of aviation physics — none of which are mutually compatible with a flat surface.\n\nCross-referencing all litigant arguments: zero credible scientific framework supports flat-Earth models. The Advocate's concession is telling.`,
   },
 ];
@@ -75,12 +61,9 @@ Round 4 — Analyst cross-referenced all positions; confirmed unanimity.
 
 Court consensus reached without dissent.`;
 
-// ── Typewriter hook ───────────────────────────────────────────────────────────
-
 function useTypewriter(text: string, active: boolean, speed = 18): string {
   const [displayed, setDisplayed] = useState("");
   const idx = useRef(0);
-
   useEffect(() => {
     if (!active) { setDisplayed(""); idx.current = 0; return; }
     idx.current = 0;
@@ -92,67 +75,60 @@ function useTypewriter(text: string, active: boolean, speed = 18): string {
     }, speed);
     return () => clearInterval(interval);
   }, [text, active, speed]);
-
   return displayed;
 }
-
-// ── Confidence bar ────────────────────────────────────────────────────────────
 
 function ConfidenceBar({ value, target = 80 }: { value: number; target?: number }) {
   const pct = Math.min(100, (value / target) * 100);
   const met = value >= target;
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#7ab87a", marginBottom: 3 }}>
+      <div className="flex justify-between text-[11px] text-[#7ab87a] mb-[3px]">
         <span>Confidence</span>
-        <span style={{ fontFamily: "monospace", color: met ? "#00c853" : "#7ab87a" }}>
+        <span className={`font-mono ${met ? "text-[#00c853]" : "text-[#7ab87a]"}`}>
           {value}% / {target}%
         </span>
       </div>
-      <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.4)", overflow: "hidden" }}>
-        <div style={{
-          height: "100%", borderRadius: 3,
-          background: met ? "#00c853" : "rgba(0,200,83,.55)",
-          width: `${pct}%`,
-          transition: "width 1.2s ease",
-        }} />
+      <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden">
+        <div
+          className={`h-full rounded-[3px] transition-[width] duration-[1200ms] ease-linear ${met ? "bg-[#00c853]" : "bg-[rgba(0,200,83,0.55)]"}`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );
 }
-
-// ── Single AI turn card ───────────────────────────────────────────────────────
 
 function TurnCard({ turn, active, done }: { turn: Turn; active: boolean; done: boolean }) {
   const text = useTypewriter(turn.text, active || done, 12);
   if (!active && !done) return null;
   return (
-    <div style={{
-      border: `1px solid ${turn.color}33`,
-      borderRadius: 9, padding: "10px 12px",
-      background: `${turn.color}08`,
-      animation: "fadeSlideUp .3s ease",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: turn.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-          {turn.role}
-        </span>
-        <span style={{ fontSize: 10, color: "#3a5a3a", fontFamily: "monospace" }}>· {turn.model}</span>
-        {active && <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: turn.color, animation: "pulse 1s infinite", marginLeft: "auto" }} />}
+    <div
+      className="demo-turn-card demo-fade-in-up"
+      style={{ border: `1px solid ${turn.color}33`, background: `${turn.color}08` }}
+    >
+      <div className="demo-turn-header">
+        <span className="demo-turn-role" style={{ color: turn.color }}>{turn.role}</span>
+        <span className="demo-turn-model">· {turn.model}</span>
+        {active && (
+          <span
+            className="w-[6px] h-[6px] rounded-full inline-block demo-blink ml-auto"
+            style={{ background: turn.color }}
+          />
+        )}
       </div>
-      <div style={{ fontSize: 12, lineHeight: 1.65, color: "#cce8cc", whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
+      <div className="demo-turn-body">
         {text}
-        {active && text.length < turn.text.length && <span style={{ color: turn.color, animation: "pulse 1s infinite" }}>▋</span>}
+        {active && text.length < turn.text.length && (
+          <span className="demo-blink" style={{ color: turn.color }}>▋</span>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Phase: Config ─────────────────────────────────────────────────────────────
-
 function PhaseConfig({ onRun }: { onRun: () => void }) {
   const [btnActive, setBtnActive] = useState(false);
-
   useEffect(() => {
     const t1 = setTimeout(() => setBtnActive(true), 2200);
     const t2 = setTimeout(() => onRun(), 3000);
@@ -160,109 +136,72 @@ function PhaseConfig({ onRun }: { onRun: () => void }) {
   }, [onRun]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {/* Config chips */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+    <div className="flex flex-col gap-2">
+      <div className="demo-config-chips">
         {DEMO_CONFIG.map((c) => (
-          <div key={c.label} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, border: "1px solid #1d331d", background: "rgba(0,200,83,.06)", color: "#7ab87a", fontFamily: "monospace" }}>
-            <span style={{ color: "#3a5a3a" }}>{c.label}: </span>{c.value}
+          <div key={c.label} className="demo-chip">
+            <span className="demo-chip-label">{c.label}: </span>{c.value}
           </div>
         ))}
       </div>
 
-      {/* Question textarea */}
-      <div style={{ position: "relative" }}>
-        <div style={{ fontSize: 10, color: "#7ab87a", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, marginBottom: 4 }}>Question</div>
-        <div style={{
-          minHeight: 72, padding: "10px 12px", borderRadius: 9,
-          border: "1px solid rgba(0,200,83,.4)",
-          background: "#0a150a",
-          fontSize: 14, color: "#eef7ee", lineHeight: 1.5,
-          boxShadow: "0 0 0 2px rgba(0,200,83,.08)",
-        }}>
+      <div className="relative">
+        <div className="demo-q-label">Question</div>
+        <div className="demo-q-box">
           {DEMO_QUESTION}
-          <span style={{ display: "inline-block", width: 2, height: 16, background: "#00c853", marginLeft: 1, verticalAlign: "middle", animation: "pulse 1s infinite" }} />
+          <span className="demo-cursor demo-blink" />
         </div>
       </div>
 
-      {/* Run button */}
       <button
+        className="demo-run-btn"
         style={{
-          width: "100%", padding: "12px 0",
-          borderRadius: 9, border: "none",
           background: btnActive ? "#00c853" : "rgba(0,200,83,.15)",
           color: btnActive ? "#000" : "#3a5a3a",
-          fontSize: 15, fontWeight: 800, cursor: "default",
-          transition: "all .4s ease",
           transform: btnActive ? "scale(1.01)" : "scale(1)",
           boxShadow: btnActive ? "0 0 24px rgba(0,200,83,.4)" : "none",
         }}
       >
-        {btnActive ? "▶ Run Trial" : "▶ Run Trial"}
+        ▶ Run Trial
       </button>
     </div>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
 type Phase = "config" | "starting" | "running" | "complete";
 
 export default function LandingDemoPlayer() {
-  const [phase, setPhase] = useState<Phase>("config");
+  const [phase, setPhase]           = useState<Phase>("config");
   const [activeTurn, setActiveTurn] = useState(-1);
-  const [doneTurns, setDoneTurns] = useState<number[]>([]);
+  const [doneTurns, setDoneTurns]   = useState<number[]>([]);
   const [confidence, setConfidence] = useState(0);
-  const [activeTab, setActiveTab] = useState<"answer" | "debate">("answer");
+  const [activeTab, setActiveTab]   = useState<"answer" | "debate">("answer");
 
-  // How long each turn takes: ~12ms/char
   const turnDurations = TURNS.map((t) => t.text.length * 12 + 600);
 
   function reset() {
-    setPhase("config");
-    setActiveTurn(-1);
-    setDoneTurns([]);
-    setConfidence(0);
-    setActiveTab("answer");
+    setPhase("config"); setActiveTurn(-1);
+    setDoneTurns([]); setConfidence(0); setActiveTab("answer");
   }
 
   function handleRun() {
     setPhase("starting");
-    setTimeout(() => startRunning(), 700);
+    setTimeout(() => { setPhase("running"); setActiveTurn(0); setConfidence(0); }, 700);
   }
 
-  function startRunning() {
-    setPhase("running");
-    setActiveTurn(0);
-    setConfidence(0);
-  }
-
-  // Advance through turns
   useEffect(() => {
     if (phase !== "running" || activeTurn < 0) return;
     const turn = TURNS[activeTurn];
     if (!turn) return;
-
-    // Animate confidence after a short delay into the turn
-    const confTimer = setTimeout(() => {
-      setConfidence(turn.confidenceAfter);
-    }, 400);
-
-    // Move to next turn after typing completes
+    const confTimer = setTimeout(() => setConfidence(turn.confidenceAfter), 400);
     const nextTimer = setTimeout(() => {
       setDoneTurns((prev) => [...prev, activeTurn]);
-      if (activeTurn + 1 < TURNS.length) {
-        setActiveTurn(activeTurn + 1);
-      } else {
-        // All turns done → complete
-        setTimeout(() => setPhase("complete"), 800);
-      }
+      if (activeTurn + 1 < TURNS.length) setActiveTurn(activeTurn + 1);
+      else setTimeout(() => setPhase("complete"), 800);
     }, turnDurations[activeTurn]);
-
     return () => { clearTimeout(confTimer); clearTimeout(nextTimer); };
   }, [phase, activeTurn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-loop
   useEffect(() => {
     if (phase !== "complete") return;
     const t = setTimeout(() => reset(), 7000);
@@ -275,107 +214,58 @@ export default function LandingDemoPlayer() {
   }, [activeTurn, doneTurns]);
 
   return (
-    <div style={{ width: "100%", maxWidth: 480, margin: "0 auto" }}>
-      <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse {
-          0%,100% { opacity: 1; } 50% { opacity: 0; }
-        }
-      `}</style>
-
-      {/* Outer shell — matches Session.tsx exactly */}
-      <div style={{
-        borderRadius: 14,
-        overflow: "hidden",
-        border: "1px solid #1d331d",
-        background: "radial-gradient(circle at top, #102010, #070f07 56%, #020402)",
-        boxShadow: "0 0 60px rgba(0,200,83,.12), 0 0 0 1px rgba(0,200,83,.08)",
-        fontFamily: "system-ui, sans-serif",
-      }}>
+    <div className="w-full max-w-[480px] mx-auto">
+      <div className="demo-shell">
 
         {/* Header bar */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: "7px 8px", borderBottom: "1px solid #1d331d", background: "rgba(4,8,4,.96)" }}>
-          <div style={{ background: "#0d1a0d", color: "#eef7ee", border: "1px solid #1d331d", borderRadius: 9, fontSize: 13, minHeight: 36, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>
-            ⚙ Configure
-          </div>
-          <div style={{ background: "#0d1a0d", color: "#eef7ee", border: "1px solid #1d331d", borderRadius: 9, fontSize: 13, minHeight: 36, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>
-            📂 Sessions
-          </div>
+        <div className="demo-header">
+          <div className="demo-header-tab">⚙ Configure</div>
+          <div className="demo-header-tab">📂 Sessions</div>
+
           {(phase === "running" || phase === "starting") && (
-            <div style={{ gridColumn: "1 / -1", background: "rgba(0,200,83,.12)", color: "#b6ff6a", border: "1px solid #00c85355", borderRadius: 9, fontSize: 13, minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#00c853", display: "inline-block", animation: "pulse .9s infinite" }} />
+            <div className="demo-status-bar demo-status-bar--running">
+              <span className="w-2 h-2 rounded-full bg-[#00c853] inline-block demo-blink" />
               ⚡ Brain is thinking…
               {activeTurn >= 0 && (
-                <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 11, color: "#7ab87a", paddingRight: 12 }}>
+                <span className="ml-auto font-mono text-[11px] text-[#7ab87a] pr-3">
                   Revolution {Math.min(activeTurn + 1, TURNS.length)} / {TURNS.length}
                 </span>
               )}
             </div>
           )}
+
           {phase === "complete" && (
-            <div style={{ gridColumn: "1 / -1", background: "rgba(0,200,83,.1)", color: "#00c853", border: "1px solid #00c85355", borderRadius: 9, fontSize: 13, minHeight: 34, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, cursor: "pointer" }}
-              onClick={reset}
-            >
+            <div className="demo-status-bar demo-status-bar--complete" onClick={reset}>
               ↺ New Trial
             </div>
           )}
         </div>
 
         {/* Conversation panel */}
-        <div style={{ padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800 }}>Conversation</div>
-
-          {/* Confidence bar */}
+        <div className="demo-body">
+          <div className="demo-conv-label">Conversation</div>
           <ConfidenceBar value={confidence} target={80} />
 
-          {/* Config phase */}
-          {phase === "config" && <PhaseConfig onRun={handleRun} />}
+          {phase === "config"    && <PhaseConfig onRun={handleRun} />}
+          {phase === "starting"  && <div className="demo-starting">Convening the court…</div>}
 
-          {/* Starting flash */}
-          {phase === "starting" && (
-            <div style={{ textAlign: "center", padding: "24px 0", color: "#3a5a3a", fontSize: 12, fontFamily: "monospace" }}>
-              Convening the court…
-            </div>
-          )}
-
-          {/* Running / complete — conversation feed */}
           {(phase === "running" || phase === "complete") && (
-            <div ref={feedRef} style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 340, overflowY: "auto", scrollBehavior: "smooth" }}>
-              {/* Question pill */}
-              <div style={{ fontSize: 12, color: "#7ab87a", padding: "6px 10px", borderRadius: 8, background: "rgba(0,200,83,.06)", border: "1px solid rgba(0,200,83,.15)", fontStyle: "italic" }}>
-                "{DEMO_QUESTION}"
-              </div>
-
+            <div ref={feedRef} className="demo-feed">
+              <div className="demo-q-pill">"{DEMO_QUESTION}"</div>
               {TURNS.map((turn, i) => (
-                <TurnCard
-                  key={turn.role}
-                  turn={turn}
-                  active={activeTurn === i}
-                  done={doneTurns.includes(i)}
-                />
+                <TurnCard key={turn.role} turn={turn} active={activeTurn === i} done={doneTurns.includes(i)} />
               ))}
             </div>
           )}
 
-          {/* Verdict — complete phase */}
           {phase === "complete" && (
-            <div style={{ animation: "fadeSlideUp .5s ease" }}>
-              {/* Tab bar */}
-              <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
+            <div className="demo-fade-in-up--slow flex flex-col gap-2">
+              <div className="demo-tabs">
                 {(["answer", "debate"] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    style={{
-                      fontSize: 11, padding: "4px 12px", borderRadius: 6, border: "1px solid",
-                      borderColor: activeTab === tab ? "#00c853" : "#1d331d",
-                      background: activeTab === tab ? "rgba(0,200,83,.1)" : "transparent",
-                      color: activeTab === tab ? "#00c853" : "#3a5a3a",
-                      cursor: "pointer", fontWeight: 600, textTransform: "capitalize",
-                    }}
+                    className={`demo-tab ${activeTab === tab ? "demo-tab--on" : "demo-tab--off"}`}
                   >
                     {tab === "answer" ? "Final Answer" : "Debate"}
                   </button>
@@ -383,35 +273,21 @@ export default function LandingDemoPlayer() {
               </div>
 
               {activeTab === "answer" && (
-                <div style={{ border: "1px solid rgba(0,200,83,.25)", borderRadius: 10, background: "rgba(0,200,83,.05)", padding: "12px 14px" }}>
-                  <div style={{ fontSize: 11, color: "#00c853", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                    Verdict — {confidence}% confidence
-                  </div>
-                  <div style={{ fontSize: 12, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap" }}>
-                    {VERDICT}
-                  </div>
+                <div className="demo-answer-box">
+                  <div className="demo-answer-hdr">Verdict — {confidence}% confidence</div>
+                  <div className="demo-answer-body">{VERDICT}</div>
                 </div>
               )}
 
               {activeTab === "debate" && (
-                <div style={{ border: "1px solid #1d331d", borderRadius: 10, padding: "12px 14px", background: "rgba(0,0,0,.12)" }}>
-                  <div style={{ fontSize: 11, color: "#7ab87a", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Debate Notes</div>
-                  <div style={{ fontSize: 12, lineHeight: 1.6, color: "#9aaa9a", whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
-                    {DEBATE_NOTES}
-                  </div>
+                <div className="demo-debate-box">
+                  <div className="demo-debate-hdr">Debate Notes</div>
+                  <div className="demo-debate-body">{DEBATE_NOTES}</div>
                 </div>
               )}
 
-              {/* CTA */}
-              <Link href="/register">
-                <div style={{
-                  marginTop: 10, padding: "11px 0", textAlign: "center", borderRadius: 9,
-                  background: "#00c853", color: "#000", fontSize: 14, fontWeight: 800,
-                  cursor: "pointer", letterSpacing: "0.02em",
-                  boxShadow: "0 0 20px rgba(0,200,83,.35)",
-                }}>
-                  Put your question on trial — 100 credits free →
-                </div>
+              <Link href="/register" className="demo-cta">
+                Put your question on trial — 100 credits free →
               </Link>
             </div>
           )}

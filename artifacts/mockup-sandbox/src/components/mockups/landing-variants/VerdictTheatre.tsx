@@ -124,7 +124,7 @@ export default function VerdictTheatre() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scale className="h-5 w-5 text-amber-500" />
-            <span className="text-lg font-semibold tracking-tight text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <span className="text-lg font-semibold tracking-tight text-white font-['Playfair_Display']">
               Litigant AI
             </span>
           </div>
@@ -151,7 +151,7 @@ export default function VerdictTheatre() {
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 COURT IN SESSION
               </div>
-              <h1 className="text-6xl sm:text-7xl font-bold text-white leading-[1.05] mb-6 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h1 className="text-6xl sm:text-7xl font-bold text-white leading-[1.05] mb-6 tracking-tight font-['Playfair_Display']">
                 Put Any Question{' '}
                 <em className="text-transparent bg-clip-text bg-gradient-to-br from-amber-300 to-amber-600 not-italic">
                   on Trial.
@@ -191,7 +191,7 @@ export default function VerdictTheatre() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="mb-12">
             <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3">HOW IT WORKS</p>
-            <h2 className="text-3xl font-semibold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h2 className="text-3xl font-semibold text-white font-['Playfair_Display']">
               The Trial in Six Stages
             </h2>
           </div>
@@ -204,7 +204,7 @@ export default function VerdictTheatre() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="mb-12">
             <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3">THE PANEL</p>
-            <h2 className="text-3xl font-semibold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h2 className="text-3xl font-semibold text-white font-['Playfair_Display']">
               The Bench
             </h2>
             <p className="text-zinc-500 mt-3 text-sm">Six specialized AI roles — each with a distinct responsibility.</p>
@@ -219,13 +219,13 @@ export default function VerdictTheatre() {
           <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-12">FILED VERDICTS</p>
           <div className="space-y-10">
             <div>
-              <p className="text-xl text-zinc-200 leading-relaxed mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <p className="text-xl text-zinc-200 leading-relaxed mb-4 font-['Playfair_Display']">
                 "The Skeptic found a hole in our unit economics that we'd missed for six months. We fixed the pitch deck that afternoon."
               </p>
               <p className="text-xs font-mono text-zinc-600 tracking-widest">— FOUNDER, B2B SAAS · SERIES A</p>
             </div>
             <div className="border-t border-white/5 pt-10">
-              <p className="text-xl text-zinc-200 leading-relaxed mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <p className="text-xl text-zinc-200 leading-relaxed mb-4 font-['Playfair_Display']">
                 "By the third round, we had a completely different — and much sharper — positioning. Worth three strategy sessions."
               </p>
               <p className="text-xs font-mono text-zinc-600 tracking-widest">— CMO · E-COMMERCE BRAND</p>
@@ -239,7 +239,7 @@ export default function VerdictTheatre() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="mb-12 max-w-3xl">
             <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3">DOCKET</p>
-            <h2 className="text-3xl font-semibold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h2 className="text-3xl font-semibold text-white font-['Playfair_Display']">
               Open a Case
             </h2>
             <p className="text-zinc-500 mt-3 text-sm">Credits never expire. No subscriptions, no seat fees — pay for what you use.</p>
@@ -262,7 +262,7 @@ export default function VerdictTheatre() {
                 )}
                 <div className="mb-6">
                   <p className="text-xs font-mono text-zinc-600 tracking-widest uppercase mb-3">{tier.name}</p>
-                  <p className="text-4xl font-semibold text-white mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>{tier.price}</p>
+                  <p className="text-4xl font-semibold text-white mb-1 font-['Playfair_Display']">{tier.price}</p>
                   <p className="text-sm text-emerald-400 font-mono">{tier.credits}</p>
                   <p className="text-xs text-zinc-600 mt-1">{tier.note}</p>
                 </div>
