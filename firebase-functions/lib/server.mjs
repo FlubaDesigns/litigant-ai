@@ -57039,7 +57039,35 @@ var DEFAULT_CHECKLIST_ITEMS = [
       "21. Check Resend \u2192 Logs to confirm delivery status for both sends."
     ]
   },
-  { id: "owner-bootstrap-scripts", section: "owner", text: "Run the one-time bootstrap scripts: seed-conscience.mjs and set-admin-claim", note: "" },
+  {
+    id: "owner-bootstrap-scripts",
+    section: "owner",
+    text: "Run the one-time bootstrap scripts: seed-conscience.mjs and set-admin-claim",
+    note: "Both scripts are safe to re-run. seed-conscience seeds the AI ethics mandate into Firestore. set-admin-claim grants your account access to the /admin panel.",
+    steps: [
+      "\u2500\u2500 Prerequisites \u2500\u2500",
+      "1. Your FIREBASE_SERVICE_ACCOUNT secret must be set in Replit (the full JSON of your Firebase service account key).",
+      "2. Open a Shell tab in Replit (bottom panel \u2192 Shell).",
+      "\u2500\u2500 Script 1: Seed the AI Conscience \u2500\u2500",
+      "3. This seeds the Canon v2 ethics mandate into Firestore (system_config/conscience). Without it the AI engine falls back to a hardcoded copy \u2014 seeding it lets you edit it later from Admin.",
+      "4. In the Shell, run: node scripts/seed-conscience.mjs",
+      "5. You should see: \u2713 system_config/conscience seeded successfully",
+      "\u2500\u2500 Script 2: Grant yourself admin access \u2500\u2500",
+      "6. This grants the admin: true Firebase Auth custom claim to your account. Without it you cannot access /admin.",
+      "7. First, make sure you have already registered an account at /register using your email.",
+      "8. In the Shell, run (replace with your email): pnpm --filter @workspace/scripts exec tsx src/set-admin-claim.ts you@yourdomain.com",
+      "9. You should see: \u2713 Set admin: true on you@yourdomain.com",
+      "10. IMPORTANT: Sign out of the app and sign back in. The admin claim only appears in your token after a fresh sign-in.",
+      "11. After signing back in, navigate to /admin \u2014 you should have full access.",
+      "\u2500\u2500 Alternative: use the HTTP endpoint instead of the script \u2500\u2500",
+      "12. If you prefer not to use the shell, you can also call the API directly (requires ADMIN_MASTER_SECRET to be set on Cloud Run):",
+      `13. curl -X POST https://litigant-ai.com/api-server/api/admin/set-claim -H 'Content-Type: application/json' -d '{"email":"you@yourdomain.com","secret":"YOUR_ADMIN_MASTER_SECRET"}'`,
+      "14. Then sign out and back in as above.",
+      "\u2500\u2500 Verify \u2500\u2500",
+      "15. Visit /admin \u2014 if you see the admin dashboard, both scripts succeeded.",
+      "16. In Admin \u2192 Overview, confirm the conscience version shows 'v2.0-canon'."
+    ]
+  },
   { id: "owner-legal-content", section: "owner", text: "Write real Privacy Policy and Terms of Service content", note: "\u2705 DONE \u2014 /privacy and /terms pages live with entertainment-only disclaimer. Contact: info@litigant-ai.com." },
   { id: "owner-domain-dns", section: "owner", text: "Set up the production custom domain/DNS and match it to APP_DOMAIN", note: "" },
   { id: "owner-deploy", section: "owner", text: "Choose and complete the deployment path (Cloud Run script or Replit Deployments)", note: "" }
