@@ -120,6 +120,18 @@ uri = "file://artifacts/gh-brain/public/hero-courtroom.png"
 type = "image"
 title = "robots jury courtroom"
 
+[[generated]]
+id = "gc-9LmSXHQ99LTNfclnu0"
+uri = "file://artifacts/gh-brain/public/hero-option-a.png"
+type = "image"
+title = "elegant courtroom interior"
+
+[[generated]]
+id = "DOqiDu3ErhJiOLkYTFI0-"
+uri = "file://artifacts/gh-brain/public/hero-option-b.png"
+type = "image"
+title = "professionals debating round table"
+
 [[outputs]]
 id = "oHu2SZNBZ0NyJBnLPlLe_"
 uri = "file://downloads/website.zip"
