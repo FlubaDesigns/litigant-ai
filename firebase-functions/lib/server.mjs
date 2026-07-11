@@ -56928,9 +56928,43 @@ var DEFAULT_CHECKLIST_ITEMS = [
       "18. Run a test trial on /session and confirm the seat dropdown lists models from your connected providers."
     ]
   },
-  { id: "owner-resend-setup", section: "owner", text: "Create a Resend account and verify the sending domain for transactional email", note: "" },
+  {
+    id: "owner-resend-setup",
+    section: "owner",
+    text: "Create a Resend account and verify the sending domain for transactional email",
+    note: "The email code is fully built. This is purely account setup + DNS + two env vars.",
+    steps: [
+      "\u2500\u2500 Create your Resend account \u2500\u2500",
+      "1. Go to resend.com and sign up for a free account.",
+      "2. From the Resend dashboard, click 'Domains' in the left sidebar.",
+      "3. Click 'Add Domain'.",
+      "\u2500\u2500 Add the sending subdomain \u2500\u2500",
+      "4. Enter: send.litigant-ai.com (this is a dedicated subdomain for outbound mail \u2014 do not use the bare litigant-ai.com domain).",
+      "5. Resend will show you a set of DNS records to add. Copy them \u2014 you will need: one TXT record (SPF/ownership), two CNAME records (DKIM keys), and optionally an MX record for bounce handling.",
+      "\u2500\u2500 Add DNS records \u2500\u2500",
+      "6. Log in to wherever you manage DNS for litigant-ai.com (your domain registrar or Cloudflare/Route 53).",
+      "7. Add the TXT record exactly as Resend shows it (Name: send.litigant-ai.com or just 'send' depending on your registrar).",
+      "8. Add both CNAME records for DKIM exactly as shown.",
+      "9. If Resend provided an MX record, add that too \u2014 it enables bounce/reply tracking.",
+      "10. Back in Resend \u2192 Domains, click 'Verify DNS Records'. DNS propagation can take a few minutes to a few hours. Resend will show green checkmarks when verified.",
+      "\u2500\u2500 Get your API key \u2500\u2500",
+      "11. In Resend, go to 'API Keys' in the sidebar.",
+      "12. Click 'Create API Key'. Name it 'litigant-ai-production'.",
+      "13. Set permission to 'Sending access' only.",
+      "14. Copy the key \u2014 it starts with 're_'. You will only see it once.",
+      "\u2500\u2500 Add env vars to Cloud Run \u2500\u2500",
+      "15. Go to Google Cloud Console \u2192 Cloud Run \u2192 your api service \u2192 Edit & Deploy New Revision.",
+      "16. Under 'Variables & Secrets', add: RESEND_API_KEY = re_... (your key from step 14).",
+      "17. Also add: APP_DOMAIN = litigant-ai.com (used to build verification/reset links in emails).",
+      "18. Click Deploy and wait for the new revision to go live.",
+      "\u2500\u2500 Verify \u2500\u2500",
+      "19. Go to /register on your site and create a test account. You should receive a verification email from noreply@send.litigant-ai.com within a few seconds.",
+      "20. Go to /forgot-password and submit your email. You should receive a password reset email.",
+      "21. Check Resend \u2192 Logs to confirm delivery status for both sends."
+    ]
+  },
   { id: "owner-bootstrap-scripts", section: "owner", text: "Run the one-time bootstrap scripts: seed-conscience.mjs and set-admin-claim", note: "" },
-  { id: "owner-legal-content", section: "owner", text: "Write real Privacy Policy and Terms of Service content", note: 'Landing.tsx currently links these to placeholder "#" anchors.' },
+  { id: "owner-legal-content", section: "owner", text: "Write real Privacy Policy and Terms of Service content", note: "\u2705 DONE \u2014 /privacy and /terms pages live with entertainment-only disclaimer. Contact: info@litigant-ai.com." },
   { id: "owner-domain-dns", section: "owner", text: "Set up the production custom domain/DNS and match it to APP_DOMAIN", note: "" },
   { id: "owner-deploy", section: "owner", text: "Choose and complete the deployment path (Cloud Run script or Replit Deployments)", note: "" }
 ];
