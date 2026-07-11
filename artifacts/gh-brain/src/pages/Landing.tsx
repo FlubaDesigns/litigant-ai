@@ -3,11 +3,19 @@ import { Link } from "wouter";
 import {
   Brain, Scale, ChevronRight, ChevronDown, ChevronUp, AlertTriangle,
   Cpu, Hammer, ClipboardCheck, Users,
+  Briefcase, Globe, TrendingUp, Code2, FileText,
+  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
+import { TOOL_PAGES } from "@/data/toolPages";
+
+const TOOL_ICON_MAP: Record<string, React.ElementType> = {
+  Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
+  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
+};
 
 // ── How it works ─────────────────────────────────────────────────────────────
 const HOW_IT_WORKS = [
@@ -163,42 +171,6 @@ const PLANS = [
   },
 ];
 
-// ── FAQ data ─────────────────────────────────────────────────────────────────
-const FAQ = [
-  {
-    q: "What exactly is a 'credit'?",
-    a: "One credit equals roughly 1,000 tokens consumed across all AI seats in a session. A full trial — Litigants debating, Moderator synthesising, Architect + Builder producing an artifact, Auditor reviewing — typically uses 15–40 credits depending on depth and model choice.",
-  },
-  {
-    q: "Which AI models are available?",
-    a: "The admin connects providers — GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, Grok, and others. Each seat can be assigned a different model. You pick from what's been connected. Any OpenAI-compatible model can be unlocked by connecting its provider in the admin panel.",
-  },
-  {
-    q: "What does the court actually produce?",
-    a: "Two things: a direct verdict answer, and an artifact — a built document the Architect designed and the Builder produced specifically for your question. Depending on the question, that might be a decision memo, a risk matrix, a legal brief outline, a project checklist, or a structured report. The Auditor reviews it before you see it.",
-  },
-  {
-    q: "What is the rebuttal loop?",
-    a: "After the Orchestrator delivers the verdict, you can challenge it. Tell the court what it got wrong or missed — the court reconvenes specifically to address your challenge, not to re-run the entire trial. You keep challenging until you're satisfied or your credit limit is hit.",
-  },
-  {
-    q: "How is this different from asking ChatGPT to 'play devil's advocate'?",
-    a: "A single model playing multiple roles still reasons from one perspective. Litigant AI uses independently trained models with different architectures, knowledge cutoffs, and training priors — producing authentic intellectual conflict. The pipeline also goes further: the court doesn't just debate, it builds you a deliverable.",
-  },
-  {
-    q: "Is my data used to train any models?",
-    a: "No. All sessions are processed via direct API calls to model providers. Neither your inputs nor the outputs are used for model training by Litigant AI. Sessions are stored encrypted and tied to your account only.",
-  },
-  {
-    q: "Can I share a verdict or export the artifact?",
-    a: "Yes. The Orchestrator prompts you to save at the end of each session. Saved sessions go to your case files. Shareable read-only verdict links are on the roadmap — no login required to view them.",
-  },
-  {
-    q: "What is a 'court seat brief'?",
-    a: "Each seat is governed by a markdown document that defines its role, responsibilities, tone, and hard constraints. Admin can update any brief at any time — changes take effect within minutes, no redeploy needed.",
-  },
-];
-
 // ── Accordion components ──────────────────────────────────────────────────────
 function HowItWorksRow({
   step, open, onToggle,
@@ -271,15 +243,24 @@ function BenchRow({
   );
 }
 
-function FAQItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
+function ToolRow({
+  tool, open, onToggle,
+}: {
+  tool: typeof TOOL_PAGES[0];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = TOOL_ICON_MAP[tool.icon] ?? Briefcase;
   return (
-    <div className="border-b border-white/[0.07] last:border-none">
+    <div className="border-b border-white/[0.07]">
       <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left gap-4 group"
+        onClick={onToggle}
+        className="w-full flex items-center gap-4 py-5 text-left group"
       >
-        <span className="text-sm font-medium text-white group-hover:text-white/70 transition-colors">{q}</span>
+        <Icon className="w-4 h-4 shrink-0 text-zinc-600 group-hover:text-white transition-colors" />
+        <span className="flex-1 text-sm font-medium text-white group-hover:text-white/70 transition-colors">
+          {tool.title}
+        </span>
         {open
           ? <ChevronUp className="w-4 h-4 text-zinc-600 shrink-0" />
           : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
@@ -291,7 +272,12 @@ function FAQItem({ q, a }: { q: string; a: string }) {
           transition={{ duration: 0.18 }}
           className="overflow-hidden"
         >
-          <p className="pb-5 text-sm text-zinc-500 leading-relaxed">{a}</p>
+          <div className="pb-5 pl-8 flex items-start justify-between gap-6">
+            <p className="text-sm text-zinc-500 leading-relaxed">{tool.metaDescription}</p>
+            <Link href={`/tools/${tool.slug}`} className="shrink-0 text-xs font-mono text-white/40 hover:text-white transition-colors whitespace-nowrap">
+              Try it →
+            </Link>
+          </div>
         </motion.div>
       )}
     </div>
@@ -304,6 +290,7 @@ export default function LandingPage() {
   const isSignedIn = !loading && !!user;
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
+  const [openTool, setOpenTool] = useState<number | null>(null);
 
   return (
     <div className="min-h-screen bg-[#080808] text-white selection:bg-white/10">
@@ -317,8 +304,8 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500">
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             <a href="#the-bench" className="hover:text-white transition-colors">The Bench</a>
+            <a href="#tools" className="hover:text-white transition-colors">Tools</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-3">
             {isSignedIn ? (
@@ -542,18 +529,24 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── 8. FAQ ── */}
-        <section id="faq" className="border-t border-white/[0.06] bg-[#060606] py-20">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="mb-12 max-w-2xl">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Record</p>
+        {/* ── 8. Tools ── */}
+        <section id="tools" className="border-t border-white/[0.06] bg-[#060606] py-20">
+          <div className="max-w-3xl mx-auto px-6">
+            <div className="mb-12">
+              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">The Docket</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
-                Objections, answered.
+                Put Your Toughest Questions on Trial
               </h2>
+              <p className="text-zinc-500 mt-3 text-sm">14 purpose-built tools — each one a full AI courtroom for a specific domain.</p>
             </div>
-            <div className="max-w-2xl">
-              {FAQ.map((item, i) => (
-                <FAQItem key={i} q={item.q} a={item.a} />
+            <div>
+              {TOOL_PAGES.map((tool, i) => (
+                <ToolRow
+                  key={tool.slug}
+                  tool={tool}
+                  open={openTool === i}
+                  onToggle={() => setOpenTool(openTool === i ? null : i)}
+                />
               ))}
             </div>
           </div>

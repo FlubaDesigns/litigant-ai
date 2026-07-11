@@ -10,17 +10,21 @@ After every change to the gh-brain frontend, ALWAYS run build + deploy as the fi
 ## Commands
 
 ```bash
-# Build
+# Write service account
+echo $FIREBASE_SERVICE_ACCOUNT > /tmp/sa.json
+
+# Build (run from artifact dir)
 cd artifacts/gh-brain && PORT=5173 BASE_PATH=/ npx vite build --config vite.config.ts
 
-# Deploy
-GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json node_modules/.bin/firebase deploy \
+# Deploy (firebase CLI is at workspace root, NOT inside artifact)
+GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json /home/runner/workspace/node_modules/.bin/firebase deploy \
   --only hosting \
   --project $VITE_FIREBASE_PROJECT_ID \
   --non-interactive
 ```
 
 ## Notes
+- Firebase CLI is at `/home/runner/workspace/node_modules/.bin/firebase` — NOT `artifacts/gh-brain/node_modules/.bin/firebase`
 - Service account is in `$FIREBASE_SERVICE_ACCOUNT` env var — write to `/tmp/sa.json` before deploying
 - Firebase Hosting public dir: `artifacts/gh-brain/dist/public`
 - Live URL: https://litigant-ai.web.app
