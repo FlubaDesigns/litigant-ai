@@ -45,7 +45,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50 flex items-center px-4 gap-4">
         <Link href="/session" className="flex items-center gap-2 shrink-0 group">
           <img src="/logo.png" alt="Litigant AI" className="w-6 h-6 group-hover:opacity-80 transition-opacity" />
-          <span className="font-bold tracking-tight hidden sm:inline">Litigant AI</span>
+          <span className="hidden sm:inline text-sm font-extrabold uppercase tracking-wider">
+            <span className="text-brand-green">LITIGANT-</span><span className="text-brand-amber">AI</span>
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -181,7 +183,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="border-t border-border py-4 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-muted-foreground font-mono">
-          <span>Litigant AI — adversarial reasoning engine</span>
+          <span><span className="text-brand-green">LITIGANT-</span><span className="text-brand-amber">AI</span> — adversarial reasoning engine</span>
           <span>AI outputs are not legal, financial, or medical advice.</span>
         </div>
       </footer>

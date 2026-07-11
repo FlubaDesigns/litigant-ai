@@ -45,7 +45,9 @@ export default function ForgotPasswordPage() {
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
-            <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
+            <span className="text-xl font-extrabold uppercase tracking-wider">
+              <span className="text-brand-green">LITIGANT-</span><span className="text-brand-amber">AI</span>
+            </span>
           </Link>
           <div className="w-12 h-12 bg-card rounded-full flex items-center justify-center mb-4 border border-border">
             <KeyRound className="w-6 h-6 text-primary" />

@@ -20,6 +20,8 @@
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-popover-border: hsl(var(--popover-border));
 
+  --color-brand-green: hsl(var(--brand-green));
+
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-primary-border: var(--primary-border);
@@ -120,6 +122,9 @@
   --popover-foreground: 0 0% 96%;
   --popover-border: 0 0% 14%;
 
+  /* Brand green — brain outline, wordmark "LITIGANT-" */
+  --brand-green: 108 94% 50%;
+
   /* Amber — the signature color */
   --primary: 38 92% 50%;
   --primary-foreground: 0 0% 0%;
@@ -205,6 +210,7 @@
   --popover: 0 0% 6%;
   --popover-foreground: 0 0% 96%;
   --popover-border: 0 0% 14%;
+  --brand-green: 108 94% 50%;
   --primary: 38 92% 50%;
   --primary-foreground: 0 0% 0%;
   --secondary: 0 0% 10%;
@@ -328,6 +334,10 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Brand colour utilities */
+  .text-brand-green { color: hsl(var(--brand-green)); }
+  .text-brand-amber { color: hsl(var(--primary)); }
 
   /* Glowing green text/border utilities */
   .text-primary-glow {

@@ -300,8 +300,11 @@ export default function LandingPage() {
       {/* ── Navbar ── */}
       <header className="fixed top-0 w-full z-50 border-b border-white/[0.06] bg-[#080808]/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 opacity-90 hover:opacity-100 transition-opacity">
+          <Link href="/" className="flex items-center gap-2.5 opacity-90 hover:opacity-100 transition-opacity">
             <img src="/logo.png" alt="Litigant AI" className="h-7 w-auto" />
+            <span className="text-sm font-extrabold uppercase tracking-wider">
+              <span style={{color:'hsl(108 94% 50%)'}}>LITIGANT-</span><span style={{color:'hsl(38 92% 50%)'}}>AI</span>
+            </span>
           </Link>
           <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500">
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
@@ -322,7 +325,7 @@ export default function LandingPage() {
                   Sign In
                 </Link>
                 <Link href="/register">
-                  <button className="h-8 px-4 text-xs font-medium bg-white text-black hover:bg-white/90 transition-colors">
+                  <button className="h-8 px-4 text-xs font-bold uppercase tracking-wide transition-all" style={{background:'hsl(38 92% 50%)', color:'#000'}}>
                     Start Free
                   </button>
                 </Link>
@@ -343,24 +346,35 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
               className="max-w-3xl"
             >
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-5 uppercase">
+              <p className="text-xs font-mono tracking-widest mb-5 uppercase" style={{color:'hsl(108 94% 50% / 0.7)'}}>
                 Adversarial Reasoning Engine
               </p>
-              <h1 className="font-['Playfair_Display'] text-5xl lg:text-7xl font-semibold text-white leading-[1.08] mb-6">
+              <h1 className="font-['Playfair_Display'] text-5xl lg:text-7xl font-semibold text-white leading-[1.08] mb-4">
                 Every great decision<br />deserves a trial.
               </h1>
-              <p className="text-lg text-zinc-400 mb-10 max-w-xl leading-relaxed">
+              <p className="text-base font-semibold mb-8 tracking-wide">
+                Put <em style={{color:'hsl(108 94% 50%)'}}>it</em>{" "}
+                <span className="text-white">to the</span>{" "}
+                <span style={{color:'hsl(38 92% 50%)'}}>question!</span>
+              </p>
+              <p className="text-base text-zinc-400 mb-10 max-w-xl leading-relaxed">
                 Put your toughest questions before a panel of AI models that genuinely disagree. Watch them argue, cross-examine, and deliver a confidence-scored verdict you can actually trust.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href={isSignedIn ? "/session" : "/register"}>
-                  <button className="h-11 px-7 bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2">
+                  <button
+                    className="h-11 px-7 text-sm font-bold tracking-wide transition-all inline-flex items-center gap-2"
+                    style={{background:'hsl(38 92% 50%)', color:'#000'}}
+                  >
                     {isSignedIn ? "Open App" : "Start Free — 100 credits"}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
                 <a href="#how-it-works">
-                  <button className="h-11 px-7 border border-white/[0.15] text-white/80 text-sm hover:border-white/30 hover:text-white transition-colors">
+                  <button
+                    className="h-11 px-7 text-sm font-medium transition-colors border"
+                    style={{borderColor:'hsl(108 94% 50% / 0.35)', color:'hsl(108 94% 50%)'}}
+                  >
                     Read the Protocol
                   </button>
                 </a>
@@ -656,14 +670,20 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link href={isSignedIn ? "/session" : "/register"}>
-                  <button className="h-12 px-10 bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2">
+                  <button
+                    className="h-12 px-10 text-sm font-bold uppercase tracking-wide transition-all inline-flex items-center gap-2"
+                    style={{background:'hsl(38 92% 50%)', color:'#000'}}
+                  >
                     {isSignedIn ? "Open App" : "Start Free — 100 credits included"}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
                 {!isSignedIn && (
                   <Link href="/sign-in">
-                    <button className="h-12 px-8 border border-white/[0.15] text-white/80 text-sm hover:border-white/30 hover:text-white transition-colors">
+                    <button
+                      className="h-12 px-8 text-sm font-medium transition-colors border"
+                      style={{borderColor:'hsl(108 94% 50% / 0.35)', color:'hsl(108 94% 50%)'}}
+                    >
                       Sign In
                     </button>
                   </Link>
@@ -679,7 +699,10 @@ export default function LandingPage() {
       <footer className="border-t border-white/[0.06] py-10">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Litigant AI" className="h-5 w-auto opacity-40" />
+            <img src="/logo.png" alt="Litigant AI" className="h-5 w-auto opacity-60" />
+            <span className="text-xs font-extrabold uppercase tracking-wider opacity-50">
+              <span style={{color:'hsl(108 94% 50%)'}}>LITIGANT-</span><span style={{color:'hsl(38 92% 50%)'}}>AI</span>
+            </span>
             <span className="font-mono text-xs text-zinc-700">© 2025</span>
           </div>
           <p className="text-xs text-zinc-700 text-center">
