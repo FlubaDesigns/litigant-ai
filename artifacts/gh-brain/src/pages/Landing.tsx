@@ -301,6 +301,7 @@ export default function LandingPage() {
   const [openBench, setOpenBench] = useState<number | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [openTool, setOpenTool] = useState<number | null>(0);
+  const [openTemplate, setOpenTemplate] = useState<number>(0);
 
   return (
     <div className="min-h-screen bg-[#080808] text-white selection:bg-white/10">
@@ -490,19 +491,36 @@ export default function LandingPage() {
                   className="overflow-hidden"
                 >
                   <div className="pb-6 pl-12">
-                    <div className="grid grid-cols-2 gap-2">
-                      {TEMPLATES.map((t) => {
+                    <div className="flex flex-col">
+                      {TEMPLATES.map((t, i) => {
                         const Icon = TEMPLATE_ICON_MAP[t.icon] || Scale;
+                        const isOpen = openTemplate === i;
                         return (
-                          <Link key={t.id} href={isSignedIn ? `/session?template=${t.id}` : "/register"}>
-                            <div className="border border-white/[0.07] p-3 hover:border-amber-500/30 hover:bg-amber-500/[0.03] transition-colors cursor-pointer group/t">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Icon className="w-3.5 h-3.5 text-amber-500/60 shrink-0" />
-                                <span className="text-xs font-semibold text-zinc-300 group-hover/t:text-white transition-colors leading-snug">{t.title}</span>
-                              </div>
-                              <p className="text-[11px] text-zinc-600 leading-relaxed line-clamp-2">{t.description}</p>
-                            </div>
-                          </Link>
+                          <div key={t.id} className="border-t border-white/[0.06] first:border-t-0">
+                            <button
+                              onClick={() => setOpenTemplate(isOpen ? -1 : i)}
+                              className="w-full flex items-center gap-3 py-2.5 text-left group/t"
+                            >
+                              <Icon className="w-3.5 h-3.5 text-amber-500/50 shrink-0" />
+                              <span className={`flex-1 text-xs font-medium transition-colors ${isOpen ? "text-white" : "text-zinc-400 group-hover/t:text-zinc-200"}`}>
+                                {t.title}
+                              </span>
+                              <span className="text-[10px] text-zinc-700 tabular-nums shrink-0">{t.estimatedCredits}cr</span>
+                              {isOpen
+                                ? <ChevronUp className="w-3 h-3 text-amber-500/60 shrink-0" />
+                                : <ChevronDown className="w-3 h-3 text-zinc-700 shrink-0" />}
+                            </button>
+                            {isOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                transition={{ duration: 0.15 }}
+                                className="overflow-hidden"
+                              >
+                                <p className="text-[11px] text-zinc-500 leading-relaxed pb-3 pl-[1.625rem]">{t.description}</p>
+                              </motion.div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
