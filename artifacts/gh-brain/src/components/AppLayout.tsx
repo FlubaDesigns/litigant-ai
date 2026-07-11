@@ -44,7 +44,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Top nav */}
       <header className="h-14 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50 flex items-center px-4 gap-4">
         <Link href="/session" className="flex items-center gap-2 shrink-0 group">
-          <img src="/logo.png" alt="Litigant AI" className="w-6 h-6 group-hover:opacity-80 transition-opacity" />
+          <img src="/logo.svg" alt="Litigant AI" className="w-6 h-6 group-hover:opacity-80 transition-opacity" />
           <span className="font-bold tracking-tight hidden sm:inline">Litigant AI</span>
         </Link>
 

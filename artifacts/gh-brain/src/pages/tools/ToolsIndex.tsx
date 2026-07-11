@@ -51,7 +51,7 @@ export default function ToolsIndexPage() {
       {/* Nav */}
       <header className="h-14 border-b border-border/60 bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 gap-4">
         <Link href="/" className="flex items-center gap-2 group">
-          <img src="/logo.png" alt="Litigant AI" className="w-6 h-6" />
+          <img src="/logo.svg" alt="Litigant AI" className="w-6 h-6" />
           <span className="font-bold tracking-tight">Litigant AI</span>
         </Link>
         <nav className="flex items-center gap-4 ml-6 text-sm text-muted-foreground">

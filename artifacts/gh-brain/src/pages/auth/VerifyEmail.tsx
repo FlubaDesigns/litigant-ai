@@ -36,7 +36,7 @@ export default function VerifyEmailPage() {
       <div className="auth-inner">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
-            <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
+            <img src="/logo.svg" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
           <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mb-6 border border-border relative">
