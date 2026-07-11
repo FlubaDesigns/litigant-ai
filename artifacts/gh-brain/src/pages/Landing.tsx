@@ -4,7 +4,7 @@ import {
   Brain, Scale, ChevronRight, ChevronDown, ChevronUp, AlertTriangle,
   Cpu, Hammer, ClipboardCheck, Users,
   Briefcase, Globe, TrendingUp, Code2, FileText,
-  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
+  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb, Stethoscope,
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -13,10 +13,16 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
 import { TOOL_PAGES } from "@/data/toolPages";
+import { TEMPLATES } from "@/data/templates";
 
 const TOOL_ICON_MAP: Record<string, React.ElementType> = {
   Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
   BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
+};
+
+const TEMPLATE_ICON_MAP: Record<string, React.ElementType> = {
+  Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
+  BookOpen, FlaskConical, Search, Stethoscope, Lightbulb,
 };
 
 // ── How it works ─────────────────────────────────────────────────────────────
@@ -459,7 +465,7 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Panel 3 — Watch the Court */}
+            {/* Panel 3 — Templates */}
             <div className="border-t border-white/[0.07]">
               <button
                 onClick={() => setOpenPanel(openPanel === 2 ? null : 2)}
@@ -468,9 +474,9 @@ export default function LandingPage() {
                 <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">03</span>
                 <div className="flex-1">
                   <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 2 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
-                    Watch the Court
+                    Start From a Template
                   </span>
-                  <span className="text-xs text-zinc-600 mt-0.5 block">Pre-scripted replay — exactly what you'll see on your first trial.</span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">10 pre-built courtrooms — pick a case type and go.</span>
                 </div>
                 {openPanel === 2
                   ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
@@ -483,8 +489,23 @@ export default function LandingPage() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="pb-8">
-                    <LandingDemoPlayer />
+                  <div className="pb-6 pl-12">
+                    <div className="grid grid-cols-2 gap-2">
+                      {TEMPLATES.map((t) => {
+                        const Icon = TEMPLATE_ICON_MAP[t.icon] || Scale;
+                        return (
+                          <Link key={t.id} href={isSignedIn ? `/session?template=${t.id}` : "/register"}>
+                            <div className="border border-white/[0.07] p-3 hover:border-amber-500/30 hover:bg-amber-500/[0.03] transition-colors cursor-pointer group/t">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Icon className="w-3.5 h-3.5 text-amber-500/60 shrink-0" />
+                                <span className="text-xs font-semibold text-zinc-300 group-hover/t:text-white transition-colors leading-snug">{t.title}</span>
+                              </div>
+                              <p className="text-[11px] text-zinc-600 leading-relaxed line-clamp-2">{t.description}</p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 </motion.div>
               )}
