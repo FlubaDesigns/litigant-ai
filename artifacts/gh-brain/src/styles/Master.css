@@ -78,16 +78,14 @@
 }
 
 
-/* ── FULL-SCREEN SECTION ─────────────────────────────────────────────
-   .section--screen: fills exactly the visible viewport below the fixed
-   header — calc(100dvh - --main-offset). Use only on the hero section.
-   Vertically centers its direct child (the lgt-container).
+/* ── HERO SECTION ────────────────────────────────────────────────────
+   Matches BlastyBiz .hero exactly. No viewport height tricks —
+   content flows naturally; .main provides the header clearance.
    ─────────────────────────────────────────────────────────────────── */
-.section--screen {
-  min-height: calc(100dvh - var(--main-offset));
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.hero {
+  padding: 0 0 var(--sv);
+  position: relative;
+  overflow: hidden;
 }
 
 
@@ -140,19 +138,22 @@
 }
 
 
-/* ── RESPONSIVE IMAGE COLUMN ─────────────────────────────────────────
-   .img-col: decorative grid column — hidden on mobile phones,
-             shown on tablet/desktop (≥ 600px). Place inside any
-             layout__split-* grid to suppress the image column
-             on small screens without disrupting the text column.
+/* ── HERO IMAGE COLUMN ───────────────────────────────────────────────
+   .hero-img-col: decorative grid column — hidden on mobile,
+   shown on tablet/desktop (≥ 600px). Matches BlastyBiz exactly.
    ─────────────────────────────────────────────────────────────────── */
-.img-col {
-  display: none;
-}
+.hero-img-col { display: none; }
 @media (min-width: 600px) {
-  .img-col {
+  .hero-img-col {
     display: flex;
+    justify-content: center;
     align-items: center;
+    padding-top: 35px;
+  }
+  .hero-img-col img {
+    width: 100%;
+    height: auto;
+    display: block;
   }
 }
 
