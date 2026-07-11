@@ -23,6 +23,10 @@ import SettingsPage from "@/pages/app/Settings";
 // Admin
 import AdminPage from "@/pages/admin/Admin";
 
+// Legal
+import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicy";
+import TermsPage from "@/pages/legal/Terms";
+
 // Shared
 import ShareReportPage from "@/pages/ShareReport";
 import NotFoundPage from "@/pages/not-found";
@@ -69,6 +73,8 @@ function AppRoutes() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/verify-email" component={VerifyEmailPage} />
       <Route path="/report/:shareId" component={ShareReportPage} />
+      <Route path="/privacy" component={PrivacyPolicyPage} />
+      <Route path="/terms" component={TermsPage} />
 
       {/* Protected app pages — wrapped with shared AppLayout */}
       <Route path="/session">
