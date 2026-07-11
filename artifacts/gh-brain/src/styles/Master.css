@@ -127,6 +127,23 @@
 }
 
 
+/* ── RESPONSIVE IMAGE COLUMN ─────────────────────────────────────────
+   .img-col: decorative grid column — hidden on mobile phones,
+             shown on tablet/desktop (≥ 600px). Place inside any
+             layout__split-* grid to suppress the image column
+             on small screens without disrupting the text column.
+   ─────────────────────────────────────────────────────────────────── */
+.img-col {
+  display: none;
+}
+@media (min-width: 600px) {
+  .img-col {
+    display: flex;
+    align-items: center;
+  }
+}
+
+
 /* ── LAYOUT GRID FAMILY ──────────────────────────────────────────────
    Named semantic grids — all collapse to 1-col on mobile.
    Grid children are clamped inside their tracks (min-width: 0).

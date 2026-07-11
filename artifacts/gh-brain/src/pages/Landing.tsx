@@ -307,6 +307,7 @@ export default function LandingPage() {
         {/* ── 1. Hero ── */}
         <section className="min-h-screen flex items-center">
           <div className="lgt-container py-28">
+            <div className="row">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -357,19 +358,21 @@ export default function LandingPage() {
                 </a>
               </div>
             </motion.div>
+            </div>
           </div>
         </section>
 
         {/* ── 2–4. Three-panel accordion ── */}
         <section id="how-it-works" className="border-t border-white/[0.06] py-20">
           <div className="lgt-container">
-            <div className="mb-12">
+            <div className="row">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Inside the Courtroom</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
                 How Litigant AI Works
               </h2>
             </div>
 
+            <div className="row">
             {/* Panel 1 — Court Architecture */}
             <div className="border-t border-white/[0.07]">
               <button
@@ -486,6 +489,7 @@ export default function LandingPage() {
                 </motion.div>
               )}
             </div>
+            </div>{/* /row — accordion panels */}
 
           </div>
         </section>
@@ -493,8 +497,11 @@ export default function LandingPage() {
         {/* ── 6. Testimonials ── */}
         <section className="border-t border-white/[0.06] bg-[#060606] py-20">
           <div className="lgt-container">
-            <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-12 uppercase">In the Field</p>
-            <div className="grid md:grid-cols-2 gap-10">
+            <div className="row">
+              <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">In the Field</p>
+            </div>
+            <div className="row">
+            <div className="layout__split-2" style={{gap:"2.5rem"}}>
               {TESTIMONIALS.map((t, i) => (
                 <motion.div
                   key={i}
@@ -512,19 +519,21 @@ export default function LandingPage() {
                 </motion.div>
               ))}
             </div>
+            </div>{/* /row — testimonials grid */}
           </div>
         </section>
 
         {/* ── 7. Pricing ── */}
         <section id="pricing" className="border-t border-white/[0.06] py-20">
           <div className="lgt-container">
-            <div className="mb-12 max-w-3xl">
+            <div className="row"><div className="max-w-3xl">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Docket</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">Open a Case</h2>
               <p className="text-zinc-500 mt-3 text-sm">
                 Credits never expire. No subscriptions, no seat fees — pay for what you use.
               </p>
-            </div>
+            </div></div>{/* /row — pricing heading */}
+            <div className="row">
             <div className="grid md:grid-cols-4 gap-4">
               {PLANS.map((plan, i) => (
                 <motion.div
@@ -576,12 +585,14 @@ export default function LandingPage() {
             <p className="text-center text-xs text-zinc-600 font-mono mt-8">
               100 credits = $1.00 · Credits never expire · Auto top-up available · Cancel anytime
             </p>
+            </div>{/* /row — pricing grid */}
           </div>
         </section>
 
         {/* ── 8. Tools ── */}
         <section id="tools" className="border-t border-white/[0.06] bg-[#060606] py-20">
           <div className="lgt-container">
+            <div className="row">
             <div className="border-t border-white/[0.07]">
               <button
                 onClick={() => setToolsOpen(!toolsOpen)}
@@ -619,6 +630,7 @@ export default function LandingPage() {
                 </motion.div>
               )}
             </div>
+            </div>{/* /row — tools accordion */}
           </div>
         </section>
 
@@ -626,7 +638,8 @@ export default function LandingPage() {
         <section className="border-t border-white/[0.06] py-28 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/[0.02] to-transparent pointer-events-none" />
           <div className="lgt-container relative z-10 text-center">
-            <div className="inline-flex items-start gap-3 p-4 mb-12 border border-amber-500/20 bg-amber-500/[0.04] text-left text-xs text-amber-500/60 max-w-xl mx-auto">
+            <div className="row">
+            <div className="inline-flex items-start gap-3 p-4 border border-amber-500/20 bg-amber-500/[0.04] text-left text-xs text-amber-500/60 max-w-xl mx-auto">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500/50" />
               <span>
                 Litigant AI outputs are{" "}
@@ -634,6 +647,8 @@ export default function LandingPage() {
                 Always apply human judgment before acting on any output.
               </span>
             </div>
+            </div>{/* /row — disclaimer */}
+            <div className="row">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -667,6 +682,7 @@ export default function LandingPage() {
                 )}
               </div>
             </motion.div>
+            </div>{/* /row — CTA motion */}
           </div>
         </section>
 
