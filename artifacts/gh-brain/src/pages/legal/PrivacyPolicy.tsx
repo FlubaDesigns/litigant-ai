@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-lg font-semibold text-foreground mb-3">11. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Questions about this Privacy Policy? Contact us at <span className="text-primary">support@litigant-ai.com</span>.
+              Questions about this Privacy Policy? Contact us at <span className="text-primary">info@litigant-ai.com</span>.
             </p>
           </section>
         </div>

@@ -125,7 +125,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-foreground mb-3">12. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Questions about these Terms? Contact us at <span className="text-primary">support@litigant-ai.com</span>.
+              Questions about these Terms? Contact us at <span className="text-primary">info@litigant-ai.com</span>.
             </p>
           </section>
         </div>

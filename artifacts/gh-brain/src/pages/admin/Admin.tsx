@@ -550,6 +550,93 @@ function UsersTab() {
   );
 }
 
+function SessionTranscriptRow({ sessionId }: { sessionId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-session-detail", sessionId],
+    queryFn: () => getAdminSession(sessionId),
+  });
+
+  if (isLoading) return (
+    <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading transcript…
+    </div>
+  );
+
+  if (!data) return <p className="text-xs text-muted-foreground py-2">No transcript available.</p>;
+
+  const { session, turns } = data;
+
+  return (
+    <div className="mt-3 space-y-3">
+      {session.question && (
+        <div className="rounded-md bg-primary/5 border border-primary/20 p-3">
+          <p className="text-xs font-mono text-primary uppercase tracking-wider mb-1">Full Question</p>
+          <p className="text-sm text-foreground leading-relaxed">{session.question}</p>
+        </div>
+      )}
+      {session.finalAnswer && (
+        <div className="rounded-md bg-secondary/30 border border-border p-3">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-1">Verdict</p>
+          <p className="text-sm text-foreground leading-relaxed line-clamp-6">{session.finalAnswer}</p>
+        </div>
+      )}
+      {turns.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Transcript ({turns.length} turns)</p>
+          <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+            {turns.map((t) => (
+              <div key={t.id} className="rounded-md border border-border bg-background p-2.5">
+                <p className="text-xs font-semibold text-primary mb-1">{t.role}{t.round != null && t.round > 0 ? ` · Round ${t.round}` : ""}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-8">{t.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UserSessionRow({ session }: { session: AdminSession }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border bg-background text-sm overflow-hidden">
+      <button
+        className="w-full text-left p-3 hover:bg-secondary/20 transition-colors"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-medium leading-snug flex-1 min-w-0">
+            {session.question ?? session.title ?? "Untitled"}
+          </p>
+          {expanded ? <ChevronUp className="w-3.5 h-3.5 shrink-0 text-muted-foreground mt-0.5" /> : <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted-foreground mt-0.5" />}
+        </div>
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          <span className="text-xs text-muted-foreground">{formatDate(session.createdAt)}</span>
+          {session.creditsUsed != null && (
+            <span className="text-xs text-muted-foreground">{session.creditsUsed} cr</span>
+          )}
+          {session.confidence != null && session.confidence > 0 && (
+            <span className="text-xs text-muted-foreground">{session.confidence}% conf</span>
+          )}
+          {session.status && session.status !== "complete" && (
+            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{session.status}</Badge>
+          )}
+          {session.shared && (
+            <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/30">shared</Badge>
+          )}
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-3 pb-3 border-t border-border/50">
+          <SessionTranscriptRow sessionId={session.id} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UserProfileSheet({
   uid, onClose, onAdjust, onBan,
 }: {
@@ -563,9 +650,25 @@ function UserProfileSheet({
     queryFn: () => getAdminUser(uid),
   });
 
+  const {
+    data: sessionsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: sessionsLoading,
+  } = useInfiniteQuery({
+    queryKey: ["admin-user-sessions", uid],
+    queryFn: ({ pageParam }) =>
+      listAdminSessions({ userId: uid, limit: 15, cursor: pageParam as string | undefined }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.hasMore ? (last.nextCursor ?? undefined) : undefined,
+  });
+
+  const sessions = sessionsData?.pages.flatMap((p) => p.sessions) ?? [];
+
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg bg-card border-l border-border overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-xl bg-card border-l border-border overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle>User Profile</SheetTitle>
         </SheetHeader>
@@ -591,8 +694,8 @@ function UserProfileSheet({
                 <p className="font-mono font-bold uppercase">{data.user.plan ?? "free"}</p>
               </div>
               <div className="rounded-lg border border-border bg-background p-3">
-                <p className="text-xs text-muted-foreground">Subscription</p>
-                <p className="text-sm">{data.user.subscriptionStatus ?? "none"}</p>
+                <p className="text-xs text-muted-foreground">Joined</p>
+                <p className="text-sm">{formatDate(data.user.createdAt)}</p>
               </div>
               <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs text-muted-foreground">Status</p>
@@ -617,21 +720,34 @@ function UserProfileSheet({
               </Button>
             </div>
 
-            {data.recentSessions.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Recent Sessions</p>
-                {data.recentSessions.map((s) => (
-                  <div key={s.id} className="rounded-lg border border-border bg-background p-3 text-sm">
-                    <p className="font-medium truncate">{s.title ?? s.question?.slice(0, 60) ?? "Untitled"}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
-                      <span>{formatDate(s.createdAt)}</span>
-                      {s.creditsUsed != null && <span>{s.creditsUsed} credits</span>}
-                      {s.confidence != null && s.confidence > 0 && <span>{s.confidence}% conf</span>}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="space-y-2">
+              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                Sessions
+                {sessions.length > 0 && <span className="text-primary">{sessions.length}{hasNextPage ? "+" : ""}</span>}
+              </p>
+              {sessionsLoading ? (
+                <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading sessions…
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">No sessions yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.map((s) => <UserSessionRow key={s.id} session={s} />)}
+                  {hasNextPage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                    >
+                      {isFetchingNextPage ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Loading…</> : "Load more sessions"}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {data.recentTransactions.length > 0 && (
               <div className="space-y-2">
