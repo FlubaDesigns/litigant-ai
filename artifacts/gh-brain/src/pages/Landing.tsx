@@ -314,9 +314,6 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-xs font-mono tracking-widest mb-5 uppercase" style={{color:'hsl(108 94% 50% / 0.7)'}}>
-                Adversarial Reasoning Engine
-              </p>
               <h1 className="font-['Playfair_Display'] text-5xl lg:text-7xl font-semibold text-white leading-[1.08] mb-4">
                 Every great decision<br />deserves a trial.
               </h1>
