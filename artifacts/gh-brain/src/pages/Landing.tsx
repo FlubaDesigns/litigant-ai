@@ -531,35 +531,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── 6. Testimonials ── */}
-        <section className="section border-t border-white/[0.06] bg-[#060606]">
-          <div className="lgt-container">
-            <div className="row">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">In the Field</p>
-            </div>
-            <div className="row">
-            <div className="layout__split-2" style={{gap:"2.5rem"}}>
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="border-l-2 border-white/[0.08] pl-6"
-                >
-                  <p className="text-zinc-300 text-sm leading-relaxed mb-5">"{t.quote}"</p>
-                  <div>
-                    <div className="text-white text-xs font-medium">{t.name}</div>
-                    <div className="text-zinc-600 text-xs font-mono mt-0.5">{t.role}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            </div>{/* /row — testimonials grid */}
-          </div>
-        </section>
-
         {/* ── 7. Pricing ── */}
         <section id="pricing" className="section border-t border-white/[0.06]">
           <div className="lgt-container">
@@ -623,6 +594,31 @@ export default function LandingPage() {
               100 credits = $1.00 · Credits never expire · Auto top-up available · Cancel anytime
             </p>
             </div>{/* /row — pricing grid */}
+
+            <div className="row">
+              <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">In the Field</p>
+            </div>
+            <div className="row">
+            <div className="layout__split-2">
+              {TESTIMONIALS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="border-l-2 border-white/[0.08] pl-6"
+                >
+                  <p className="text-zinc-300 text-sm leading-relaxed mb-5">"{t.quote}"</p>
+                  <div>
+                    <div className="text-white text-xs font-medium">{t.name}</div>
+                    <div className="text-zinc-600 text-xs font-mono mt-0.5">{t.role}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            </div>{/* /row — reviews */}
+
           </div>
         </section>
 
