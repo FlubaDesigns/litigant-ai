@@ -392,16 +392,7 @@
    .auth-inner : max-width card-column wrapper, stacks above the glow.
    ─────────────────────────────────────────────────────────────────── */
 .auth-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 800px;
-  height: 800px;
-  background: hsl(var(--primary) / 0.05);
-  border-radius: 50%;
-  filter: blur(120px);
-  pointer-events: none;
+  display: none;
 }
 
 .auth-inner {
@@ -437,7 +428,7 @@
 
 /* Page root */
 .session-bg {
-  background: radial-gradient(circle at top, #151008, #070707 56%, #020202);
+  background: #000;
 }
 
 /* Top nav strip — Configure / Sessions / Stop / New Trial buttons */

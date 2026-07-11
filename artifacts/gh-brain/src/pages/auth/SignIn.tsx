@@ -51,7 +51,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="auth-shell bg-background brain-grid relative overflow-hidden">
+    <div className="auth-shell bg-background relative overflow-hidden">
       <div className="auth-glow" />
 
       <div className="auth-inner">
@@ -60,13 +60,13 @@ export default function SignInPage() {
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
-          <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Initiate Session</h1>
+          <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Initiate Session</h1>
           <p className="text-muted-foreground text-center">
             Authenticate to access the adversarial reasoning engine.
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-xl shadow-2xl">
+        <div className="bg-card border border-border p-8 rounded-lg shadow-2xl">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Operator Email</Label>

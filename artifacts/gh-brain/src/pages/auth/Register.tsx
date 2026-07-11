@@ -64,7 +64,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-shell bg-background brain-grid relative overflow-hidden">
+    <div className="auth-shell bg-background relative overflow-hidden">
       <div className="auth-glow" />
 
       <div className="auth-inner auth-inner--wide">
@@ -73,13 +73,13 @@ export default function RegisterPage() {
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight font-sans">Litigant AI</span>
           </Link>
-          <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Create an account</h1>
+          <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Create an account</h1>
           <p className="text-muted-foreground text-center text-sm">
             Get 100 free credits to explore the adversarial reasoning engine.
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-xl shadow-2xl space-y-6">
+        <div className="bg-card border border-border p-8 rounded-lg shadow-2xl space-y-6">
           {/* Free trial callout */}
           <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
             <Zap className="w-4 h-4 text-primary shrink-0" />

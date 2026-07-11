@@ -30,7 +30,7 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="auth-shell bg-background brain-grid relative overflow-hidden">
+    <div className="auth-shell bg-background relative overflow-hidden">
       <div className="auth-glow" />
 
       <div className="auth-inner">
@@ -39,17 +39,16 @@ export default function VerifyEmailPage() {
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
-          <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-6 border border-border relative">
-            <div className="absolute inset-0 border border-primary/30 rounded-full animate-ping [animation-duration:3s]" />
+          <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mb-6 border border-border relative">
             <Mail className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Verify Clearance</h1>
+          <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Verify Clearance</h1>
           <p className="text-muted-foreground text-center">
             A verification signal has been transmitted to your terminal.
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-xl shadow-2xl text-center space-y-6">
+        <div className="bg-card border border-border p-8 rounded-lg shadow-2xl text-center space-y-6">
           <div className="p-4 bg-background/50 border border-border/50 rounded-lg">
             <p className="text-sm font-mono text-muted-foreground break-all">
               {user?.email || "Unknown Operator"}

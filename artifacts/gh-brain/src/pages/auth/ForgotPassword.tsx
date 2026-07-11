@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="auth-shell bg-background brain-grid relative overflow-hidden">
+    <div className="auth-shell bg-background relative overflow-hidden">
       <div className="auth-glow" />
 
       <div className="auth-inner">
@@ -47,16 +47,16 @@ export default function ForgotPasswordPage() {
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
             <span className="text-2xl font-bold tracking-tight text-foreground font-sans">Litigant AI</span>
           </Link>
-          <div className="w-12 h-12 bg-secondary/50 rounded-full flex items-center justify-center mb-4 border border-border">
+          <div className="w-12 h-12 bg-card rounded-full flex items-center justify-center mb-4 border border-border">
             <KeyRound className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold font-sans tracking-tight mb-2">Recover Access</h1>
+          <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Recover Access</h1>
           <p className="text-muted-foreground text-center">
             Initiate passkey reset protocol.
           </p>
         </div>
 
-        <div className="bg-card/50 backdrop-blur-xl border border-border p-8 rounded-xl shadow-2xl">
+        <div className="bg-card border border-border p-8 rounded-lg shadow-2xl">
           {isSubmitted ? (
             <div className="text-center space-y-6">
               <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
