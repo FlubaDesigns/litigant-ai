@@ -294,7 +294,7 @@ export default function LandingPage() {
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
-  const [openTool, setOpenTool] = useState<number | null>(null);
+  const [openTool, setOpenTool] = useState<number | null>(0);
 
   return (
     <div className="min-h-screen bg-[#080808] text-white selection:bg-white/10">
@@ -492,7 +492,7 @@ export default function LandingPage() {
             </div>{/* /left accordion col */}
 
             {/* ── Right: trial flow visual ── */}
-            <div className="hero-img-col flex-col gap-0 pt-0" style={{alignItems:"stretch"}}>
+            <div className="hero-img-col flex-col gap-0 pt-0 justify-start" style={{alignItems:"stretch"}}>
               <div className="border border-white/[0.08] rounded-lg overflow-hidden" style={{background:"#0a0a0a"}}>
                 <div className="px-5 py-4 border-b border-white/[0.06]">
                   <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">Trial Flow</p>
