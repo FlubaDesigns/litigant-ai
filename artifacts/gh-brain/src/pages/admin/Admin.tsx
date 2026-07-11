@@ -250,13 +250,22 @@ function ChecklistRow({
                   <ol className="flex flex-col divide-y divide-border/30">
                     {item.steps!.map((step, i) => {
                       const isHeader = step.startsWith("──");
-                      return isHeader ? (
+                      if (isHeader) return (
                         <li key={i} className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary/50 bg-primary/3">
                           {step.replace(/^──\s*/, "").replace(/\s*──$/, "")}
                         </li>
-                      ) : (
+                      );
+                      const parts = step.split(/(https?:\/\/[^\s)]+)/g);
+                      return (
                         <li key={i} className="px-3 py-2.5 text-xs text-muted-foreground leading-relaxed hover:bg-secondary/20 transition-colors">
-                          {step}
+                          {parts.map((part, j) =>
+                            part.match(/^https?:\/\//) ? (
+                              <a key={j} href={part} target="_blank" rel="noopener noreferrer"
+                                className="text-primary underline underline-offset-2 hover:text-primary/80 break-all">
+                                {part}
+                              </a>
+                            ) : part
+                          )}
                         </li>
                       );
                     })}
