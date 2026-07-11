@@ -87,6 +87,13 @@
   min-height: calc(100dvh - var(--main-offset));
   display: flex;
   flex-direction: column;
+}
+
+/* Stretch the container so it fills the full hero height */
+.section--screen > .lgt-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
 }
 

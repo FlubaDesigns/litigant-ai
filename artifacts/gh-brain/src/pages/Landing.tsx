@@ -306,7 +306,7 @@ export default function LandingPage() {
 
         {/* ── 1. Hero ── */}
         <section className="section--screen">
-          <div className="lgt-container py-20">
+          <div className="lgt-container">
             <div className="row">
             <div className="layout__split-3-2">
             <motion.div
@@ -345,12 +345,11 @@ export default function LandingPage() {
                 </a>
               </div>
             </motion.div>
-            <div className="img-col" style={{justifyContent:"flex-end"}}>
+            <div className="img-col" style={{alignSelf:"stretch", overflow:"hidden"}}>
               <img
                 src="/hero-courtroom.png"
-                alt="Lawyer arguing before a judge — Litigant AI"
-                className="img-fill"
-                style={{maxHeight:"80vh", objectFit:"cover", objectPosition:"center top"}}
+                alt="Full courtroom scene — Litigant AI"
+                style={{width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top"}}
               />
             </div>
             </div>{/* /layout__split-3-2 */}
@@ -359,7 +358,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── 2–4. Three-panel accordion ── */}
-        <section id="how-it-works" className="border-t border-white/[0.06] py-20">
+        <section id="how-it-works" className="section border-t border-white/[0.06]">
           <div className="lgt-container">
             <div className="row">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Inside the Courtroom</p>
@@ -491,7 +490,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── 6. Testimonials ── */}
-        <section className="border-t border-white/[0.06] bg-[#060606] py-20">
+        <section className="section border-t border-white/[0.06] bg-[#060606]">
           <div className="lgt-container">
             <div className="row">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest uppercase">In the Field</p>
@@ -520,7 +519,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── 7. Pricing ── */}
-        <section id="pricing" className="border-t border-white/[0.06] py-20">
+        <section id="pricing" className="section border-t border-white/[0.06]">
           <div className="lgt-container">
             <div className="row"><div className="max-w-3xl">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Docket</p>
@@ -586,7 +585,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── 8. Tools ── */}
-        <section id="tools" className="border-t border-white/[0.06] bg-[#060606] py-20">
+        <section id="tools" className="section border-t border-white/[0.06] bg-[#060606]">
           <div className="lgt-container">
             <div className="row">
             <div className="border-t border-white/[0.07]">
@@ -631,7 +630,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── 9. CTA ── */}
-        <section className="border-t border-white/[0.06] py-28 relative overflow-hidden">
+        <section className="section border-t border-white/[0.06] relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/[0.02] to-transparent pointer-events-none" />
           <div className="lgt-container relative z-10 text-center">
             <div className="row">
