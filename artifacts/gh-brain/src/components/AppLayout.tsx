@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, userProfile, firebaseReady } = useAuth();
@@ -25,13 +26,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Page content */}
       <main className="flex-1">{children}</main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-4 px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-muted-foreground font-mono">
-          <span><span className="text-brand-green">LITIGANT-</span><span className="text-brand-amber">AI</span> — adversarial reasoning engine</span>
-          <span>AI outputs are not legal, financial, or medical advice.</span>
-        </div>
-      </footer>
+      {/* Shared footer — edit SiteFooter.tsx to update everywhere */}
+      <SiteFooter variant="app" />
     </div>
   );
 }

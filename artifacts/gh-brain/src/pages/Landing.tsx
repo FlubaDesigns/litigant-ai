@@ -7,6 +7,7 @@ import {
   BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -671,27 +672,8 @@ export default function LandingPage() {
 
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-white/[0.06] py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Litigant AI" className="h-5 w-auto opacity-60" />
-            <span className="text-xs font-extrabold uppercase tracking-wider opacity-50">
-              <span style={{color:'hsl(108 94% 50%)'}}>LITIGANT-</span><span style={{color:'hsl(38 92% 50%)'}}>AI</span>
-            </span>
-            <span className="font-mono text-xs text-zinc-700">© 2025</span>
-          </div>
-          <p className="text-xs text-zinc-700 text-center">
-            AI outputs are not legal, financial, or medical advice. Use judgment.
-          </p>
-          <div className="flex gap-5 text-xs text-zinc-600 font-mono">
-            <a href="#" className="hover:text-white transition-colors">Docs</a>
-            <a href="#" className="hover:text-white transition-colors">Status</a>
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-          </div>
-        </div>
-      </footer>
+      {/* Shared footer — edit SiteFooter.tsx to update everywhere */}
+      <SiteFooter variant="landing" />
 
     </div>
   );
