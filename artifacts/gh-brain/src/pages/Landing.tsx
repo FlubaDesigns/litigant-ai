@@ -288,6 +288,7 @@ function ToolRow({
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const isSignedIn = !loading && !!user;
+  const [openPanel, setOpenPanel] = useState<number | null>(null);
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
   const [openTool, setOpenTool] = useState<number | null>(null);
@@ -367,76 +368,133 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── 2. Live Demo Player ── */}
-        <section className="border-t border-white/[0.06] bg-[#060606] py-20">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="mb-10 text-center">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Live Preview</p>
-              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
-                Watch the Court in Session
-              </h2>
-              <p className="text-zinc-500 mt-3 text-sm max-w-md mx-auto">
-                Pre-scripted — no API calls. This is exactly what you'll see when you run your first trial.
-              </p>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-            >
-              <LandingDemoPlayer />
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── 3. How It Works (accordion) ── */}
+        {/* ── 2–4. Three-panel accordion ── */}
         <section id="how-it-works" className="border-t border-white/[0.06] py-20">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto px-6">
             <div className="mb-12">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Trial Protocol</p>
+              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Inside the Courtroom</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
-                From question to verdict — six deliberate steps.
+                How Litigant AI Works
               </h2>
-              <p className="text-zinc-500 mt-3 text-sm max-w-lg">
-                Not a chatbot. A structured pipeline of specialised AI seats, each with a defined job.
-              </p>
             </div>
-            <div className="border-t border-white/[0.07]">
-              {HOW_IT_WORKS.map((step, i) => (
-                <HowItWorksRow
-                  key={i}
-                  step={step}
-                  open={openHIW === i}
-                  onToggle={() => setOpenHIW(openHIW === i ? null : i)}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* ── 4. The Bench (accordion) ── */}
-        <section id="the-bench" className="border-t border-white/[0.06] bg-[#060606] py-20">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="mb-12">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Court Architecture</p>
-              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
-                Six seats. Six jobs. Any AI in any chair.
-              </h2>
-              <p className="text-zinc-500 mt-3 text-sm max-w-xl">
-                Every seat has a defined role and a defined brief. Admin assigns which AI model sits in each one — GPT-4o as Architect, Claude as Builder, Grok as Skeptic.
-              </p>
-            </div>
+            {/* Panel 1 — Court Architecture */}
             <div className="border-t border-white/[0.07]">
-              {COURT_SEATS.map((seat, i) => (
-                <BenchRow
-                  key={seat.id}
-                  seat={seat}
-                  open={openBench === i}
-                  onToggle={() => setOpenBench(openBench === i ? null : i)}
-                />
-              ))}
+              <button
+                onClick={() => setOpenPanel(openPanel === 0 ? null : 0)}
+                className="w-full flex items-center gap-6 py-6 text-left group"
+              >
+                <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">01</span>
+                <div className="flex-1">
+                  <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 0 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
+                    Court Architecture
+                  </span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">Six specialized seats. What you control before a trial starts.</span>
+                </div>
+                {openPanel === 0
+                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
+                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+              </button>
+              {openPanel === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pb-8 pl-12">
+                    <p className="text-zinc-500 text-sm mb-6 max-w-lg leading-relaxed">
+                      Every seat has a defined role and brief. Admin assigns which AI model sits in each one — GPT-4o as Architect, Claude as Builder, Grok as Skeptic. You set panel size with the +/− control before the trial begins.
+                    </p>
+                    <div className="border-t border-white/[0.07]">
+                      {COURT_SEATS.map((seat, i) => (
+                        <BenchRow
+                          key={seat.id}
+                          seat={seat}
+                          open={openBench === i}
+                          onToggle={() => setOpenBench(openBench === i ? null : i)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
+
+            {/* Panel 2 — Trial Protocol */}
+            <div className="border-t border-white/[0.07]">
+              <button
+                onClick={() => setOpenPanel(openPanel === 1 ? null : 1)}
+                className="w-full flex items-center gap-6 py-6 text-left group"
+              >
+                <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">02</span>
+                <div className="flex-1">
+                  <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 1 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
+                    Trial Protocol
+                  </span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">From question to verdict — six deliberate steps.</span>
+                </div>
+                {openPanel === 1
+                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
+                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+              </button>
+              {openPanel === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pb-8 pl-12">
+                    <p className="text-zinc-500 text-sm mb-6 max-w-lg leading-relaxed">
+                      Not a chatbot. A structured pipeline of specialised AI seats — each with a defined job, in a defined order.
+                    </p>
+                    <div className="border-t border-white/[0.07]">
+                      {HOW_IT_WORKS.map((step, i) => (
+                        <HowItWorksRow
+                          key={i}
+                          step={step}
+                          open={openHIW === i}
+                          onToggle={() => setOpenHIW(openHIW === i ? null : i)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Panel 3 — Watch the Court */}
+            <div className="border-t border-white/[0.07]">
+              <button
+                onClick={() => setOpenPanel(openPanel === 2 ? null : 2)}
+                className="w-full flex items-center gap-6 py-6 text-left group"
+              >
+                <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">03</span>
+                <div className="flex-1">
+                  <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 2 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
+                    Watch the Court
+                  </span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">Pre-scripted replay — exactly what you'll see on your first trial.</span>
+                </div>
+                {openPanel === 2
+                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
+                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+              </button>
+              {openPanel === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pb-8">
+                    <LandingDemoPlayer />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
           </div>
         </section>
 

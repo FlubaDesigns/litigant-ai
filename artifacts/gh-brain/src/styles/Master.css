@@ -422,7 +422,7 @@
    .badge--eyebrow-glow: subtle bg for the "Live Demo" eyebrow badge.
    ─────────────────────────────────────────────────────────────────── */
 .section--demo-glow {
-  background: radial-gradient(ellipse at top, rgba(0, 200, 83, 0.05) 0%, transparent 70%);
+  background: radial-gradient(ellipse at top, rgba(245, 158, 11, 0.04) 0%, transparent 70%);
 }
 
 .badge--eyebrow-glow {
@@ -721,47 +721,47 @@
   justify-content: center;
   font-weight: 700;
 }
-.demo-status-bar--running  { background: rgba(0,200,83,.12); color: #b6ff6a; border: 1px solid #00c85355; gap: 8px; }
-.demo-status-bar--complete { background: rgba(0,200,83,.1); color: #00c853; border: 1px solid #00c85355; cursor: pointer; }
+.demo-status-bar--running  { background: rgba(245,158,11,.08); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); gap: 8px; }
+.demo-status-bar--complete { background: rgba(245,158,11,.07); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); cursor: pointer; }
 
 .demo-body           { padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-.demo-conv-label     { font-size: 10px; color: #00c853; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; }
+.demo-conv-label     { font-size: 10px; color: #a16207; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; }
 
 .demo-config-chips   { display: flex; flex-wrap: wrap; gap: 6px; }
-.demo-chip           { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid #1d331d; background: rgba(0,200,83,.06); color: #7ab87a; font-family: monospace; }
-.demo-chip-label     { color: #3a5a3a; }
+.demo-chip           { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid #27272a; background: rgba(255,255,255,.04); color: #71717a; font-family: monospace; }
+.demo-chip-label     { color: #52525b; }
 
-.demo-q-label        { font-size: 10px; color: #7ab87a; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; margin-bottom: 4px; }
-.demo-q-box          { min-height: 72px; padding: 10px 12px; border-radius: 9px; border: 1px solid rgba(0,200,83,.4); background: #0a150a; font-size: 14px; color: #eef7ee; line-height: 1.5; box-shadow: 0 0 0 2px rgba(0,200,83,.08); }
-.demo-cursor         { display: inline-block; width: 2px; height: 16px; background: #00c853; margin-left: 1px; vertical-align: middle; }
+.demo-q-label        { font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; margin-bottom: 4px; }
+.demo-q-box          { min-height: 72px; padding: 10px 12px; border-radius: 9px; border: 1px solid rgba(245,158,11,.25); background: #0a0a0a; font-size: 14px; color: #f4f4f5; line-height: 1.5; box-shadow: 0 0 0 2px rgba(245,158,11,.05); }
+.demo-cursor         { display: inline-block; width: 2px; height: 16px; background: #f59e0b; margin-left: 1px; vertical-align: middle; }
 
 .demo-run-btn        { width: 100%; padding: 12px 0; border-radius: 9px; border: none; font-size: 15px; font-weight: 800; cursor: default; transition: all .4s ease; }
 
-.demo-starting       { text-align: center; padding: 24px 0; color: #3a5a3a; font-size: 12px; font-family: monospace; }
+.demo-starting       { text-align: center; padding: 24px 0; color: #52525b; font-size: 12px; font-family: monospace; }
 
 .demo-feed           { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; scroll-behavior: smooth; }
-.demo-q-pill         { font-size: 12px; color: #7ab87a; padding: 6px 10px; border-radius: 8px; background: rgba(0,200,83,.06); border: 1px solid rgba(0,200,83,.15); font-style: italic; }
+.demo-q-pill         { font-size: 12px; color: #71717a; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); font-style: italic; }
 
 .demo-turn-card      { border-radius: 9px; padding: 10px 12px; }
 .demo-turn-header    { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .demo-turn-role      { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; }
-.demo-turn-model     { font-size: 10px; color: #3a5a3a; font-family: monospace; }
-.demo-turn-body      { font-size: 12px; line-height: 1.65; color: #cce8cc; white-space: pre-wrap; font-family: monospace; }
+.demo-turn-model     { font-size: 10px; color: #52525b; font-family: monospace; }
+.demo-turn-body      { font-size: 12px; line-height: 1.65; color: #a1a1aa; white-space: pre-wrap; font-family: monospace; }
 
 .demo-tabs           { display: flex; gap: 4px; margin-bottom: 6px; }
 .demo-tab            { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid; font-weight: 600; text-transform: capitalize; cursor: pointer; transition: all .15s; }
-.demo-tab--on        { border-color: #00c853; background: rgba(0,200,83,.1); color: #00c853; }
-.demo-tab--off       { border-color: #1d331d; background: transparent; color: #3a5a3a; }
+.demo-tab--on        { border-color: rgba(245,158,11,.5); background: rgba(245,158,11,.08); color: #f59e0b; }
+.demo-tab--off       { border-color: #27272a; background: transparent; color: #52525b; }
 
-.demo-answer-box     { border: 1px solid rgba(0,200,83,.25); border-radius: 10px; background: rgba(0,200,83,.05); padding: 12px 14px; }
-.demo-answer-hdr     { font-size: 11px; color: #00c853; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
-.demo-answer-body    { font-size: 12px; line-height: 1.65; color: #eef7ee; white-space: pre-wrap; }
+.demo-answer-box     { border: 1px solid rgba(245,158,11,.2); border-radius: 10px; background: rgba(245,158,11,.04); padding: 12px 14px; }
+.demo-answer-hdr     { font-size: 11px; color: #d97706; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.demo-answer-body    { font-size: 12px; line-height: 1.65; color: #f4f4f5; white-space: pre-wrap; }
 
-.demo-debate-box     { border: 1px solid #1d331d; border-radius: 10px; padding: 12px 14px; background: rgba(0,0,0,.12); }
-.demo-debate-hdr     { font-size: 11px; color: #7ab87a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
-.demo-debate-body    { font-size: 12px; line-height: 1.6; color: #9aaa9a; white-space: pre-wrap; font-family: monospace; }
+.demo-debate-box     { border: 1px solid #27272a; border-radius: 10px; padding: 12px 14px; background: rgba(0,0,0,.12); }
+.demo-debate-hdr     { font-size: 11px; color: #71717a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.demo-debate-body    { font-size: 12px; line-height: 1.6; color: #71717a; white-space: pre-wrap; font-family: monospace; }
 
-.demo-cta            { margin-top: 10px; padding: 11px 0; text-align: center; border-radius: 9px; background: #00c853; color: #000; font-size: 14px; font-weight: 800; cursor: pointer; letter-spacing: 0.02em; box-shadow: 0 0 20px rgba(0,200,83,.35); display: block; }
+.demo-cta            { margin-top: 10px; padding: 11px 0; text-align: center; border-radius: 9px; background: #f59e0b; color: #000; font-size: 14px; font-weight: 800; cursor: pointer; letter-spacing: 0.02em; box-shadow: 0 0 20px rgba(245,158,11,.25); display: block; }
 
 /* ── SEAT INSPECTOR ──────────────────────────────────────────────── */
 .seat-inspector-backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }

@@ -31,19 +31,19 @@ interface Turn {
 
 const TURNS: Turn[] = [
   {
-    role: "Advocate", model: "GPT-4o", color: "#4fc3f7", confidenceAfter: 28,
+    role: "Advocate", model: "GPT-4o", color: "#d4a860", confidenceAfter: 28,
     text: `I'll steelman every possible argument. Ancient civilisations universally described a flat Earth — a reasonable inference from lived experience. Some claim GPS paths and flight routes are "corrected" for curvature. These intuitions feel compelling.\n\nHowever, I must be honest: every one of these arguments disintegrates under direct observational testing. I cannot in good conscience sustain the position.`,
   },
   {
-    role: "Skeptic", model: "Claude 3.5", color: "#ef9a9a", confidenceAfter: 63,
+    role: "Skeptic", model: "Claude 3.5", color: "#94a3b8", confidenceAfter: 63,
     text: `Every flat-Earth claim fails basic empirical scrutiny — ships disappear hull-first over the horizon, star constellations shift with latitude, lunar eclipses cast circular shadows regardless of angle, time zones exist, circumnavigation is routine, and orbital mechanics require a spheroid.\n\nThe Earth is an oblate spheroid. This is not contested science. Confidence in the contrary position: 0.0%.`,
   },
   {
-    role: "Devil's Advocate", model: "Gemini 1.5 Pro", color: "#fff176", confidenceAfter: 81,
+    role: "Devil's Advocate", model: "Gemini 1.5 Pro", color: "#a78bfa", confidenceAfter: 81,
     text: `For completeness: flat-Earth cosmology dominated recorded history for millennia. The psychological appeal of a bounded, knowable world is real and worth understanding. Modern flat-Earth communities signal a genuine crisis of institutional trust — that sociological fact deserves serious analysis.\n\nNone of this changes the underlying physics. The Earth is round. I'm simply noting that dismissing the belief without understanding its roots misses something important.`,
   },
   {
-    role: "Analyst", model: "Grok 3", color: "#a5d6a7", confidenceAfter: 97,
+    role: "Analyst", model: "Grok 3", color: "#34d399", confidenceAfter: 97,
     text: `The empirical record is unambiguous. We have direct photographic evidence from orbit, laser-ranging experiments, independent satellite networks operated by competing nations with adversarial interests, and a century of aviation physics — none of which are mutually compatible with a flat surface.\n\nCross-referencing all litigant arguments: zero credible scientific framework supports flat-Earth models. The Advocate's concession is telling.`,
   },
 ];
@@ -83,15 +83,15 @@ function ConfidenceBar({ value, target = 80 }: { value: number; target?: number 
   const met = value >= target;
   return (
     <div>
-      <div className="flex justify-between text-[11px] text-[#7ab87a] mb-[3px]">
+      <div className="flex justify-between text-[11px] text-zinc-500 mb-[3px]">
         <span>Confidence</span>
-        <span className={`font-mono ${met ? "text-[#00c853]" : "text-[#7ab87a]"}`}>
+        <span className={`font-mono ${met ? "text-amber-400" : "text-zinc-500"}`}>
           {value}% / {target}%
         </span>
       </div>
       <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden">
         <div
-          className={`h-full rounded-[3px] transition-[width] duration-[1200ms] ease-linear ${met ? "bg-[#00c853]" : "bg-[rgba(0,200,83,0.55)]"}`}
+          className={`h-full rounded-[3px] transition-[width] duration-[1200ms] ease-linear ${met ? "bg-amber-500" : "bg-amber-500/50"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -156,10 +156,10 @@ function PhaseConfig({ onRun }: { onRun: () => void }) {
       <button
         className="demo-run-btn"
         style={{
-          background: btnActive ? "#00c853" : "rgba(0,200,83,.15)",
-          color: btnActive ? "#000" : "#3a5a3a",
+          background: btnActive ? "#f59e0b" : "rgba(245,158,11,.12)",
+          color: btnActive ? "#000" : "#6b5a2d",
           transform: btnActive ? "scale(1.01)" : "scale(1)",
-          boxShadow: btnActive ? "0 0 24px rgba(0,200,83,.4)" : "none",
+          boxShadow: btnActive ? "0 0 24px rgba(245,158,11,.35)" : "none",
         }}
       >
         ▶ Run Trial
@@ -224,10 +224,10 @@ export default function LandingDemoPlayer() {
 
           {(phase === "running" || phase === "starting") && (
             <div className="demo-status-bar demo-status-bar--running">
-              <span className="w-2 h-2 rounded-full bg-[#00c853] inline-block demo-blink" />
+              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block demo-blink" />
               ⚡ Brain is thinking…
               {activeTurn >= 0 && (
-                <span className="ml-auto font-mono text-[11px] text-[#7ab87a] pr-3">
+                <span className="ml-auto font-mono text-[11px] text-zinc-500 pr-3">
                   Revolution {Math.min(activeTurn + 1, TURNS.length)} / {TURNS.length}
                 </span>
               )}
