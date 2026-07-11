@@ -198,8 +198,8 @@ function HowItWorksRow({
           {step.title}
         </span>
         {open
-          ? <ChevronUp className="w-4 h-4 text-zinc-600 shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+          ? <ChevronUp className="w-5 h-5 text-[#39f70a]/50 shrink-0" />
+          : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
       </button>
       {open && (
         <motion.div
@@ -234,8 +234,8 @@ function BenchRow({
           {seat.label}
         </span>
         {open
-          ? <ChevronUp className="w-4 h-4 text-zinc-600 shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+          ? <ChevronUp className="w-5 h-5 text-[#39f70a]/50 shrink-0" />
+          : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
       </button>
       {open && (
         <motion.div
@@ -270,8 +270,8 @@ function ToolRow({
           {tool.title}
         </span>
         {open
-          ? <ChevronUp className="w-4 h-4 text-zinc-600 shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+          ? <ChevronUp className="w-5 h-5 text-[#39f70a]/50 shrink-0" />
+          : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
       </button>
       {open && (
         <motion.div
@@ -394,8 +394,8 @@ export default function LandingPage() {
                   <span className="text-xs text-zinc-600 mt-0.5 block">Six specialized seats. What you control before a trial starts.</span>
                 </div>
                 {openPanel === 0
-                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+                  ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
               </button>
               {openPanel === 0 && (
                 <motion.div
@@ -437,8 +437,8 @@ export default function LandingPage() {
                   <span className="text-xs text-zinc-600 mt-0.5 block">From question to verdict — six deliberate steps.</span>
                 </div>
                 {openPanel === 1
-                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+                  ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
               </button>
               {openPanel === 1 && (
                 <motion.div
@@ -480,8 +480,8 @@ export default function LandingPage() {
                   <span className="text-xs text-zinc-600 mt-0.5 block">10 pre-built courtrooms — pick a case type and go.</span>
                 </div>
                 {openPanel === 2
-                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+                  ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
               </button>
               {openPanel === 2 && (
                 <motion.div
@@ -507,8 +507,8 @@ export default function LandingPage() {
                               </span>
                               <span className="text-[10px] text-zinc-700 tabular-nums shrink-0">{t.estimatedCredits}cr</span>
                               {isOpen
-                                ? <ChevronUp className="w-3 h-3 text-amber-500/60 shrink-0" />
-                                : <ChevronDown className="w-3 h-3 text-zinc-700 shrink-0" />}
+                                ? <ChevronUp className="w-4 h-4 text-[#39f70a] shrink-0" />
+                                : <ChevronDown className="w-4 h-4 text-[#39f70a]/40 shrink-0" />}
                             </button>
                             {isOpen && (
                               <motion.div
@@ -626,8 +626,8 @@ export default function LandingPage() {
                   <span className="text-xs text-zinc-600 mt-0.5 block">14 purpose-built tools — each one a full AI courtroom for a specific domain.</span>
                 </div>
                 {toolsOpen
-                  ? <ChevronUp className="w-4 h-4 text-amber-500 shrink-0" />
-                  : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0" />}
+                  ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
+                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/50 shrink-0" />}
               </button>
               {toolsOpen && (
                 <motion.div
