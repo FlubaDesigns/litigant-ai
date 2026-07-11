@@ -6,6 +6,7 @@ import {
   Briefcase, Globe, TrendingUp, Code2, FileText,
   BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
 } from "lucide-react";
+import { SiteHeader } from "@/components/SiteHeader";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -297,43 +298,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#080808] text-white selection:bg-white/10">
 
-      {/* ── Navbar ── */}
-      <header className="fixed top-0 w-full z-50 border-b border-white/[0.06] bg-[#080808]/90 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 opacity-90 hover:opacity-100 transition-opacity">
-            <img src="/logo.png" alt="Litigant AI" className="h-7 w-auto" />
-            <span className="text-sm font-extrabold uppercase tracking-wider">
-              <span style={{color:'hsl(108 94% 50%)'}}>LITIGANT-</span><span style={{color:'hsl(38 92% 50%)'}}>AI</span>
-            </span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500">
-            <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-            <a href="#the-bench" className="hover:text-white transition-colors">The Bench</a>
-            <a href="#tools" className="hover:text-white transition-colors">Tools</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            {isSignedIn ? (
-              <Link href="/session">
-                <button className="h-8 px-4 text-xs font-medium bg-white text-black hover:bg-white/90 transition-colors">
-                  Open App
-                </button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/sign-in" className="text-sm text-zinc-500 hover:text-white transition-colors">
-                  Sign In
-                </Link>
-                <Link href="/register">
-                  <button className="h-8 px-4 text-xs font-bold uppercase tracking-wide transition-all" style={{background:'hsl(38 92% 50%)', color:'#000'}}>
-                    Start Free
-                  </button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* ── Navbar (shared SiteHeader — edit SiteHeader.tsx to update everywhere) ── */}
+      <SiteHeader variant="landing" />
 
       <main>
 
