@@ -114,6 +114,12 @@ uri = "file://artifacts/mockup-sandbox/public/images/hero-feed.png"
 type = "image"
 title = "Hero AI network abstract"
 
+[[generated]]
+id = "TTqHRKsHxCbguv4gkhVSt"
+uri = "file://artifacts/gh-brain/public/hero-courtroom.png"
+type = "image"
+title = "robots jury courtroom"
+
 [[outputs]]
 id = "oHu2SZNBZ0NyJBnLPlLe_"
 uri = "file://downloads/website.zip"

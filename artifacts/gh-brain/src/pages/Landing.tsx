@@ -305,14 +305,14 @@ export default function LandingPage() {
       <main className="main">
 
         {/* ── 1. Hero ── */}
-        <section className="min-h-screen flex items-center">
-          <div className="lgt-container py-28">
+        <section className="section--screen">
+          <div className="lgt-container py-20">
             <div className="row">
+            <div className="layout__split-3-2">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="max-w-3xl"
             >
               <a
                 href="https://litigant-ai.web.app"
@@ -358,7 +358,16 @@ export default function LandingPage() {
                 </a>
               </div>
             </motion.div>
+            <div className="img-col" style={{justifyContent:"flex-end"}}>
+              <img
+                src="/hero-courtroom.png"
+                alt="Lawyer arguing before a judge — Litigant AI"
+                className="img-fill"
+                style={{maxHeight:"80vh", objectFit:"cover", objectPosition:"center top"}}
+              />
             </div>
+            </div>{/* /layout__split-3-2 */}
+            </div>{/* /row */}
           </div>
         </section>
 

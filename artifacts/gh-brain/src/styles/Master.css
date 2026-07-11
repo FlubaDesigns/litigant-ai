@@ -78,6 +78,19 @@
 }
 
 
+/* ── FULL-SCREEN SECTION ─────────────────────────────────────────────
+   .section--screen: fills exactly the visible viewport below the fixed
+   header — calc(100dvh - --main-offset). Use only on the hero section.
+   Vertically centers its direct child (the lgt-container).
+   ─────────────────────────────────────────────────────────────────── */
+.section--screen {
+  min-height: calc(100dvh - var(--main-offset));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
 /* ── SECTION BASE ────────────────────────────────────────────────────
    .section            : base section — adds vertical rhythm via --sv
    .section--alt       : subtle secondary-bg stripe
