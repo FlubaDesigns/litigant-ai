@@ -94,19 +94,26 @@ export function estimateCredits(
   maxIterations: number,
   responseMode: ResponseMode
 ): number {
-  const tokensPerTurn = creditInfo.tokensPerTurnByMode[responseMode];
+  // tokensPerTurnByMode may be absent on older API server deployments — fall back gracefully.
+  const tokensPerTurn = creditInfo.tokensPerTurnByMode?.[responseMode] ?? 2000;
   const litigants     = Math.min(litigantCount, 10);
   const rounds        = maxIterations;
 
-  const historyPerRound = tokensPerTurn * litigants * creditInfo.historyFillRate;
-  const avgInputPerTurn = creditInfo.systemPromptInputTokens + historyPerRound * (rounds / 2);
+  const historyFillRate        = creditInfo.historyFillRate ?? 0.6;
+  const systemPromptInputTokens = creditInfo.systemPromptInputTokens ?? 1500;
+  const orchestratorOutputTokens = creditInfo.orchestratorOutputTokens ?? 500;
+  const fixedInput  = creditInfo.fixedStagePrior?.input  ?? 2000;
+  const fixedOutput = creditInfo.fixedStagePrior?.output ?? 500;
 
-  const outputTokens = creditInfo.orchestratorOutputTokens
+  const historyPerRound = tokensPerTurn * litigants * historyFillRate;
+  const avgInputPerTurn = systemPromptInputTokens + historyPerRound * (rounds / 2);
+
+  const outputTokens = orchestratorOutputTokens
     + litigants * rounds * tokensPerTurn
-    + creditInfo.fixedStagePrior.output;
+    + fixedOutput;
 
   const inputTokens = litigants * rounds * avgInputPerTurn
-    + creditInfo.fixedStagePrior.input;
+    + fixedInput;
 
   const costUSD =
     (inputTokens  / 1000) * creditInfo.inputRatePer1k +
