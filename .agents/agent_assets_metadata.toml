@@ -96,6 +96,24 @@ uri = "file://artifacts/gh-brain/src/assets/images/tools/research-summarizer.png
 type = "image"
 title = "research knowledge graph constellation"
 
+[[generated]]
+id = "bmQbLzd0e4KPZUAEM7rMF"
+uri = "file://artifacts/mockup-sandbox/public/images/hero-command.png"
+type = "image"
+title = "Tactical command center"
+
+[[generated]]
+id = "G8xQuxJJot33Y47yXyHbf"
+uri = "file://artifacts/mockup-sandbox/public/images/hero-theatre.png"
+type = "image"
+title = "Dramatic courtroom AI neural network"
+
+[[generated]]
+id = "X-b8TCKzMDNuLtJggZ-Zj"
+uri = "file://artifacts/mockup-sandbox/public/images/hero-feed.png"
+type = "image"
+title = "Hero AI network abstract"
+
 [[outputs]]
 id = "oHu2SZNBZ0NyJBnLPlLe_"
 uri = "file://downloads/website.zip"
