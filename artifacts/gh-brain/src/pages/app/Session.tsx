@@ -153,20 +153,58 @@ function ConfigPanel({
   isAdmin?: boolean;
 }) {
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const hasChanges = useRef(false);
+  const configRef = useRef(config);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { configRef.current = config; }, [config]);
 
   useEffect(() => {
     if (open) {
       hasChanges.current = false;
+      setSaveState("idle");
       getProviders().then((p) => setAvailableProviders(p.providers));
     }
   }, [open]);
 
-  // Wrap onChange to track that the user made at least one change
+  async function doSave(showToast = false) {
+    if (!uid || !onboardingComplete) return;
+    setSaveState("saving");
+    try {
+      const c = configRef.current;
+      const rawSettings = {
+        conscience: c.conscience, outputScope: c.outputScope,
+        debateMode: c.debateMode, aiReasoning: c.aiReasoning,
+        outputStrategy: c.outputStrategy, format: c.format,
+        artifactType: c.artifactType, confidenceTarget: c.confidenceTarget,
+        maxIterations: c.maxIterations, maxCredits: c.maxCredits,
+        litigantCount: c.litigantCount, courtMode: c.courtMode,
+        responseMode: c.responseMode, outputFormat: c.outputFormat,
+        provider: c.provider, model: c.model,
+      };
+      const settings = Object.fromEntries(
+        Object.entries(rawSettings).filter(([, v]) => v !== undefined)
+      ) as UserProfile["defaultSettings"];
+      await saveUserConfig(uid, settings);
+      hasChanges.current = false;
+      setSaveState("saved");
+      if (showToast) toast.success("Settings saved to your profile");
+      setTimeout(() => setSaveState("idle"), 2000);
+    } catch (err) {
+      console.error("[Session] saveUserConfig failed:", err);
+      setSaveState("idle");
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Could not save: ${msg}`);
+    }
+  }
+
+  // Wrap onChange — track changes and auto-save after 1.5 s of inactivity
   function handleChange(partial: Partial<CourtConfig>) {
     hasChanges.current = true;
     onChange(partial);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => doSave(false), 1500);
   }
 
   const selectedProvider = availableProviders.find((p) => p.name === config.provider)
@@ -186,43 +224,10 @@ function ConfigPanel({
     80: "80% Fast", 90: "90% Standard", 95: "95% Deep", 99: "99% Maximum",
   }[config.confidenceTarget as 80 | 90 | 95 | 99] ?? `${config.confidenceTarget}%`;
 
-  // Auto-saves whenever the panel closes if the user made any change
+  // On close: flush any pending debounce and save if there are unsaved changes
   async function handleClose() {
-    if (hasChanges.current && uid && onboardingComplete) {
-      hasChanges.current = false;
-      setSaving(true);
-      try {
-        const rawSettings = {
-          conscience: config.conscience,
-          outputScope: config.outputScope,
-          debateMode: config.debateMode,
-          aiReasoning: config.aiReasoning,
-          outputStrategy: config.outputStrategy,
-          format: config.format,
-          artifactType: config.artifactType,
-          confidenceTarget: config.confidenceTarget,
-          maxIterations: config.maxIterations,
-          maxCredits: config.maxCredits,
-          litigantCount: config.litigantCount,
-          courtMode: config.courtMode,
-          responseMode: config.responseMode,
-          outputFormat: config.outputFormat,
-          provider: config.provider,
-          model: config.model,
-        };
-        const settings = Object.fromEntries(
-          Object.entries(rawSettings).filter(([, v]) => v !== undefined)
-        ) as UserProfile["defaultSettings"];
-        await saveUserConfig(uid, settings);
-        toast.success("Court configured & saved to your profile");
-      } catch (err) {
-        console.error("[Session] saveUserConfig failed:", err);
-        const msg = err instanceof Error ? err.message : String(err);
-        toast.error(`Could not save configuration: ${msg}`);
-      } finally {
-        setSaving(false);
-      }
-    }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (hasChanges.current) await doSave(false);
     onClose();
   }
 
@@ -532,17 +537,24 @@ function ConfigPanel({
             </div>
           </div>
 
-          {/* CLOSE — auto-saves if anything changed */}
+          {/* FOOTER */}
           <div className="flex flex-col gap-2 pb-2">
             <Button
-              onClick={handleClose}
-              disabled={saving}
+              onClick={() => doSave(true)}
+              disabled={saveState === "saving"}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
             >
-              {saving ? "Saving…" : "Done"}
+              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : "Save Settings"}
+            </Button>
+            <Button
+              onClick={handleClose}
+              variant="ghost"
+              className="w-full text-muted-foreground hover:text-foreground"
+            >
+              Done
             </Button>
             {onboardingComplete
-              ? <p className="text-[11px] text-muted-foreground/50 text-center">Changes save automatically when you close</p>
+              ? <p className="text-[11px] text-muted-foreground/50 text-center">Changes also save automatically as you go</p>
               : uid && <p className="text-[11px] text-muted-foreground/50 text-center">Complete onboarding to persist settings</p>
             }
           </div>
@@ -991,11 +1003,11 @@ export default function SessionPage() {
         conscience:       userProfile.defaultSettings.conscience ?? true,
         aiReasoning:      (userProfile.defaultSettings.aiReasoning as CourtConfig["aiReasoning"]) ?? "chain",
         debateMode:       (userProfile.defaultSettings.debateMode as CourtConfig["debateMode"]) ?? "adversarial",
-        maxCredits:       userProfile.defaultSettings.maxCredits ?? undefined,
-        outputScope:      (userProfile.defaultSettings.outputScope as CourtConfig["outputScope"]) ?? undefined,
-        outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? undefined,
+        maxCredits:       userProfile.defaultSettings.maxCredits ?? DEFAULT_CONFIG.maxCredits,
+        outputScope:      (userProfile.defaultSettings.outputScope as CourtConfig["outputScope"]) ?? DEFAULT_CONFIG.outputScope,
+        outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? DEFAULT_CONFIG.outputStrategy,
         outputPreference: "both" as CourtConfig["outputPreference"],
-        format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? undefined,
+        format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? DEFAULT_CONFIG.format,
         artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
       }
     : undefined;
