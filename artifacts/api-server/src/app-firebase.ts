@@ -22,6 +22,8 @@ app.use((req, _res, next) => {
 const allowedOrigins = [
   "https://litigant-ai.com",
   "https://www.litigant-ai.com",
+  "https://litigant-ai.web.app",
+  "https://litigant-ai.firebaseapp.com",
   ...(process.env["APP_DOMAIN"] ? [`https://${process.env["APP_DOMAIN"]}`] : []),
   ...(process.env["REPLIT_DOMAINS"]
     ? process.env["REPLIT_DOMAINS"].split(",").map((d) => `https://${d.trim()}`)
