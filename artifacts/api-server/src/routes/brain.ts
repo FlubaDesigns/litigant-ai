@@ -271,6 +271,7 @@ router.post("/run-brain", async (req, res) => {
 
   // ── Auth + credit reservation ─────────────────────────────────────────────
   let uid: string | null = null;
+  let isAdminRun = false;
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
 
@@ -288,21 +289,24 @@ router.post("/run-brain", async (req, res) => {
       return;
     }
     uid = decoded.uid;
+    isAdminRun = decoded.isAdmin === true;
 
-    // Optimistic credit reservation: deduct estimatedCost upfront.
-    // Every balance change (reservation, refund, failure refund) is ledgered atomically.
-    try {
-      const reserved = await reserveCredits(uid, estimatedCost, sessionId);
-      if (!reserved) {
-        res.status(402).json({
-          message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
-        });
+    if (!isAdminRun) {
+      // Optimistic credit reservation: deduct estimatedCost upfront.
+      // Every balance change (reservation, refund, failure refund) is ledgered atomically.
+      try {
+        const reserved = await reserveCredits(uid, estimatedCost, sessionId);
+        if (!reserved) {
+          res.status(402).json({
+            message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
+          });
+          return;
+        }
+      } catch (err) {
+        console.error("[brain] Credit reservation failed:", err);
+        res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
         return;
       }
-    } catch (err) {
-      console.error("[brain] Credit reservation failed:", err);
-      res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
-      return;
     }
   } else {
     // Guest mode: one free session per IP, then require signup.
@@ -393,21 +397,23 @@ router.post("/run-brain", async (req, res) => {
         });
 
             // Settle with real token-based cost using live (Firestore-backed) multiplier
-        actualCost = await calculateLiveCredits(
-          result.model || "gpt-5",
-          result.tokenUsage.inputTokens,
-          result.tokenUsage.outputTokens
-        );
+        if (!isAdminRun) {
+          actualCost = await calculateLiveCredits(
+            result.model || "gpt-5",
+            result.tokenUsage.inputTokens,
+            result.tokenUsage.outputTokens
+          );
 
-        // Reconcile: if actual < estimated, refund the difference
-        const refund = Math.max(0, estimatedCost - actualCost);
-        if (refund > 0) {
-          await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+          // Reconcile: if actual < estimated, refund the difference
+          const refund = Math.max(0, estimatedCost - actualCost);
+          if (refund > 0) {
+            await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+          }
         }
         // If actual > estimated, charge the overage.
         // This path is not a rare edge case — the pre-run estimate converges to real cost
         // over time via calibration (see creditEngine.ts) but a gap can remain.
-        if (actualCost > estimatedCost && uid) {
+        if (!isAdminRun && actualCost > estimatedCost && uid) {
           const overage = actualCost - estimatedCost;
           const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage")
             .catch(() => false);
@@ -469,7 +475,7 @@ router.post("/run-brain", async (req, res) => {
     }
   } finally {
     // If run failed and credits were reserved, refund the full reservation as a ledger entry
-    if (!runSucceeded && uid && db) {
+    if (!runSucceeded && !isAdminRun && uid && db) {
       await reconcileCredits(uid, estimatedCost, sessionId, "brain_failure_refund");
     }
 
