@@ -242,7 +242,6 @@ router.post("/run-brain", async (req, res) => {
     clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const effectiveConfig: CourtConfig = config ?? {
-    courtMode: "adversarial",
     litigantCount: 3,
     confidenceTarget: 80,
     maxIterations: 2,

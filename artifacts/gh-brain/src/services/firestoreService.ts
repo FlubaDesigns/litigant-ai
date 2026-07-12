@@ -58,8 +58,6 @@ export interface UserProfile {
     maxIterations?: number;
     maxCredits?: number;
     litigantCount?: number;
-    // Legacy
-    courtMode?: string;
     responseMode?: string;
     outputFormat?: string;
     provider?: string;

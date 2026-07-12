@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getLimits } from "@/services/providerService";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Swords, HelpCircle, BarChart2, Star, Users, AlignLeft, FileText, List, Gavel, ChevronRight, ChevronLeft, Check, Zap, Gauge, BookOpen } from "lucide-react";
+import { Brain, Swords, Users, AlignLeft, FileText, List, Gavel, ChevronRight, ChevronLeft, Check, Zap, Gauge, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
@@ -11,7 +11,6 @@ const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-s
 
 async function savePreferences(prefs: {
   defaultSettings: {
-    courtMode: string;
     litigantCount: number;
     responseMode: string;
     outputFormat: string;
@@ -29,42 +28,10 @@ async function savePreferences(prefs: {
 }
 
 interface Prefs {
-  courtMode: string;
   litigantCount: number;
   responseMode: string;
   outputFormat: string;
 }
-
-const COURT_MODES = [
-  {
-    id: "adversarial",
-    label: "Adversarial",
-    icon: Swords,
-    description: "AI litigants actively argue opposing sides. Best for stress-testing ideas and decisions.",
-    tag: "Most popular",
-  },
-  {
-    id: "socratic",
-    label: "Socratic",
-    icon: HelpCircle,
-    description: "Guided questioning to uncover hidden assumptions and blind spots.",
-    tag: null,
-  },
-  {
-    id: "critique",
-    label: "Critique",
-    icon: Star,
-    description: "A panel of expert reviewers evaluate existing work, plans, or proposals.",
-    tag: null,
-  },
-  {
-    id: "analysis",
-    label: "Analysis",
-    icon: BarChart2,
-    description: "Neutral multi-perspective synthesis. Best for research and information gathering.",
-    tag: null,
-  },
-];
 
 const ALL_LITIGANT_COUNTS = [2, 3, 4, 5, 6, 8, 10];
 
@@ -121,7 +88,7 @@ const OUTPUT_FORMATS = [
   },
 ];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 function OptionCard({
   selected,
@@ -175,7 +142,6 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const [saving, setSaving] = useState(false);
   const [maxLitigants, setMaxLitigants] = useState(10);
   const [prefs, setPrefs] = useState<Prefs>({
-    courtMode: "adversarial",
     litigantCount: 3,
     responseMode: "balanced",
     outputFormat: "report",
@@ -194,7 +160,6 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
     try {
       await savePreferences({
         defaultSettings: {
-          courtMode: prefs.courtMode,
           litigantCount: prefs.litigantCount,
           responseMode: prefs.responseMode,
           outputFormat: prefs.outputFormat,
@@ -214,7 +179,6 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const isDone = step === TOTAL_STEPS + 1;
   const progress = isWelcome ? 0 : isDone ? 100 : (step / TOTAL_STEPS) * 100;
 
-  const courtLabel = COURT_MODES.find((m) => m.id === prefs.courtMode)?.label ?? prefs.courtMode;
   const responseLabel = RESPONSE_MODES.find((m) => m.id === prefs.responseMode)?.label ?? prefs.responseMode;
   const outputLabel = OUTPUT_FORMATS.find((m) => m.id === prefs.outputFormat)?.label ?? prefs.outputFormat;
 
@@ -264,7 +228,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                 </div>
                 <div className="grid grid-cols-3 gap-3 pt-2 text-center">
                   {[
-                    { icon: Swords, label: "Court mode" },
+                    { icon: Swords, label: "Debate mode" },
                     { icon: Users, label: "Panel size" },
                     { icon: FileText, label: "Output style" },
                   ].map(({ icon: Icon, label }) => (
@@ -286,31 +250,8 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
               </div>
             )}
 
-            {/* ── Step 1: Court Mode ── */}
+            {/* ── Step 1: Panel Size ── */}
             {step === 1 && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-lg font-bold">How should your AI panel debate?</h2>
-                  <p className="text-sm text-muted-foreground mt-1">This shapes how the litigants interact with each other.</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {COURT_MODES.map((m) => (
-                    <OptionCard
-                      key={m.id}
-                      selected={prefs.courtMode === m.id}
-                      onClick={() => set("courtMode", m.id)}
-                      icon={m.icon}
-                      label={m.label}
-                      description={m.description}
-                      tag={m.tag}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Step 2: Litigant Count ── */}
-            {step === 2 && (
               <div className="space-y-4">
                 <div>
                   <h2 className="text-lg font-bold">How many AI minds on your panel?</h2>
@@ -347,8 +288,8 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
               </div>
             )}
 
-            {/* ── Step 3: Response Style ── */}
-            {step === 3 && (
+            {/* ── Step 2: Response Style ── */}
+            {step === 2 && (
               <div className="space-y-4">
                 <div>
                   <h2 className="text-lg font-bold">How much detail do you want?</h2>
@@ -370,8 +311,8 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
               </div>
             )}
 
-            {/* ── Step 4: Output Format ── */}
-            {step === 4 && (
+            {/* ── Step 3: Output Format ── */}
+            {step === 3 && (
               <div className="space-y-4">
                 <div>
                   <h2 className="text-lg font-bold">How should results be presented?</h2>
@@ -407,7 +348,6 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-left">
                   {[
-                    { label: "Court mode", value: courtLabel },
                     { label: "Litigants", value: `${prefs.litigantCount} minds` },
                     { label: "Response style", value: responseLabel },
                     { label: "Output format", value: outputLabel },

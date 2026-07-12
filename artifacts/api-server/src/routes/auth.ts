@@ -113,7 +113,6 @@ router.post("/auth/provision", async (req, res) => {
         createdAt:          FieldValue.serverTimestamp(),
         updatedAt:          FieldValue.serverTimestamp(),
         defaultSettings: {
-          courtMode:         "adversarial",
           litigantCount:     3,
           confidenceTarget:  80,
           responseMode:      "balanced",
@@ -153,7 +152,6 @@ router.patch("/auth/preferences", async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ saved: false, reason: "firestore_unavailable" });
 
-  const VALID_COURT_MODES  = new Set(["adversarial", "socratic", "analysis", "critique"]);
   const VALID_RESP_MODES   = new Set(["balanced", "thorough", "concise"]);
   const VALID_OUT_FORMATS  = new Set(["report", "memo", "bullets", "verdict"]);
   const VALID_PROVIDERS    = new Set(["openai", "anthropic", "grok", "gemini"]);
@@ -165,8 +163,6 @@ router.patch("/auth/preferences", async (req, res) => {
 
   if (body.onboardingComplete === true) patch["onboardingComplete"] = true;
 
-  if (ds.courtMode    && VALID_COURT_MODES.has(ds.courtMode as string))
-    patch["defaultSettings.courtMode"]    = ds.courtMode;
   if (typeof ds.litigantCount === "number" && Number.isInteger(ds.litigantCount) && ds.litigantCount >= 2 && ds.litigantCount <= 10)
     patch["defaultSettings.litigantCount"] = ds.litigantCount;
   if (typeof ds.confidenceTarget === "number" && Number.isInteger(ds.confidenceTarget) && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)

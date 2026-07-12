@@ -106,7 +106,6 @@ function TemplateDetail({ template, onClose, onLaunch }: {
     `${cfg.litigantCount} litigants`,
     `${cfg.confidenceTarget ?? 80}% target`,
     cfg.debateMode,
-    cfg.courtMode,
     RESPONSE_MODE_LABELS[cfg.responseMode ?? "balanced"] ?? cfg.responseMode,
   ].filter(Boolean);
 

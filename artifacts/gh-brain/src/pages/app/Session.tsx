@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { applyPdfTrimGuard, buildPdfToastActions } from "@/lib/pdfExport";
 import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
-import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
+import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
 import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
 import { saveUserConfig, type UserProfile } from "@/services/firestoreService";
@@ -183,7 +183,7 @@ function ConfigPanel({
         outputStrategy: c.outputStrategy, format: c.format,
         artifactType: c.artifactType, confidenceTarget: c.confidenceTarget,
         maxIterations: c.maxIterations, maxCredits: c.maxCredits,
-        litigantCount: c.litigantCount, courtMode: c.courtMode,
+        litigantCount: c.litigantCount,
         responseMode: c.responseMode, outputFormat: c.outputFormat,
         provider: c.provider, model: c.model,
       };
@@ -275,30 +275,6 @@ function ConfigPanel({
               <SelectContent>
                 <SelectItem value="on">Conscience ON</SelectItem>
                 <SelectItem value="off">Conscience OFF</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* COURT MODE */}
-          <V29Field
-            label="Court Mode"
-            tooltip="Sets the structural logic of the entire session. Adversarial: seats argue opposing positions and attack each other's reasoning — best for pressure-testing ideas and stress-testing decisions. Socratic: seats ask probing questions to expose assumptions and surface blind spots — best for deep exploration. Analysis: seats each analyze the question from a different lens (strategic, technical, risk, etc.) without direct conflict — best for multi-angle assessment. Critique: seats act as reviewers who find flaws, weaknesses, and risks in the idea as presented — best for pre-mortem and quality review."
-          >
-            <Select value={config.courtMode} onValueChange={(v) => handleChange({ courtMode: v as CourtConfig["courtMode"] })}>
-              <SelectTrigger className={V29_SELECT}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {([
-                  { value: "adversarial", label: "Adversarial", desc: "Seats argue opposing positions and attack each other's reasoning. Best for pressure-testing ideas." },
-                  { value: "socratic",    label: "Socratic",    desc: "Seats ask probing questions to expose assumptions and surface blind spots. Best for deep exploration." },
-                  { value: "analysis",   label: "Analysis",    desc: "Seats each analyze from a different lens — strategic, technical, risk. Best for multi-angle assessment." },
-                  { value: "critique",   label: "Critique",    desc: "Seats act as reviewers who find flaws, weaknesses, and risks. Best for pre-mortem and quality review." },
-                ] as const).map(({ value, label, desc }) => (
-                  <SelectItem key={value} value={value} label={label} className="cursor-pointer">
-                    <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal break-words pr-2">{desc}</span>
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </V29Field>
@@ -605,18 +581,11 @@ function ConfigPanel({
 }
 
 // ── RuntimeControl ────────────────────────────────────────────────────────────
-const COURT_MODE_LABELS: Record<string, string> = {
-  adversarial: "Adversarial",
-  socratic: "Socratic",
-  analysis: "Analysis",
-  critique: "Critique",
-};
-
 function RuntimeControl({
-  starting, current, used, round, maxRound, cap, mode,
+  starting, current, used, round, maxRound, cap,
 }: {
   starting: number; current: number; used: number;
-  round: number; maxRound: number; cap: number; mode: string;
+  round: number; maxRound: number; cap: number;
 }) {
   const cells = [
     { label: "STARTING", value: String(starting), color: "text-white" },
@@ -624,7 +593,6 @@ function RuntimeControl({
     { label: "USED",     value: String(used),      color: "text-white" },
     { label: "ROUND",    value: `${round} / ${maxRound}`, color: "text-white" },
     { label: "CREDIT CAP", value: cap > 0 ? `~${cap}` : "—", color: "text-muted-foreground" },
-    { label: "MODE",     value: COURT_MODE_LABELS[mode] ?? mode, color: "text-primary/80" },
   ];
   return (
     <div className="rounded-lg border border-primary/20 overflow-hidden">
@@ -1030,7 +998,6 @@ export default function SessionPage() {
   const savedConfig = userProfile?.defaultSettings
     ? {
         // Core settings
-        courtMode:        (userProfile.defaultSettings.courtMode as CourtConfig["courtMode"]) ?? "adversarial",
         litigantCount:    userProfile.defaultSettings.litigantCount ?? 3,
         confidenceTarget: userProfile.defaultSettings.confidenceTarget ?? 80,
         maxIterations:    userProfile.defaultSettings.maxIterations ?? 2,
@@ -1473,7 +1440,7 @@ export default function SessionPage() {
             {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
               <LitigantVoicesBox
                 items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
-                adversarial={state.config.courtMode === "adversarial"}
+                adversarial={state.config.debateMode !== "collaborative"}
               />
             )}
             <OrchestratorBox
@@ -1542,7 +1509,7 @@ export default function SessionPage() {
               <TabsContent value="transcript">
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
-                    <LitigantVoicesBox items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))} adversarial={state.config.courtMode === "adversarial"} />
+                    <LitigantVoicesBox items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))} adversarial={state.config.debateMode !== "collaborative"} />
                   )}
                   <OrchestratorBox question={state.question} items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))} />
                 </div>
@@ -1952,7 +1919,6 @@ export default function SessionPage() {
             round={state.currentRound}
             maxRound={state.config.maxIterations}
             cap={state.estimatedCredits}
-            mode={state.config.courtMode}
           />
           <ActivityLogSection />
         </div>

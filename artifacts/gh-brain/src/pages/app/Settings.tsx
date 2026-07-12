@@ -360,7 +360,6 @@ function ProfileTab({ user }: { user: User }) {
 }
 
 interface DefaultSettings {
-  courtMode: string;
   litigantCount: number;
   confidenceTarget: number;
   responseMode: string;
@@ -369,7 +368,6 @@ interface DefaultSettings {
 
 function PreferencesTab({ user }: { user: User }) {
   const [settings, setSettings] = useState<DefaultSettings>({
-    courtMode: "adversarial",
     litigantCount: 3,
     confidenceTarget: 80,
     responseMode: "balanced",
@@ -382,7 +380,6 @@ function PreferencesTab({ user }: { user: User }) {
     getUserProfile(user.uid).then((profile) => {
       if (profile?.defaultSettings) {
         setSettings({
-          courtMode: profile.defaultSettings.courtMode ?? "adversarial",
           litigantCount: profile.defaultSettings.litigantCount ?? 3,
           confidenceTarget: profile.defaultSettings.confidenceTarget ?? 80,
           responseMode: profile.defaultSettings.responseMode ?? "balanced",
@@ -410,19 +407,6 @@ function PreferencesTab({ user }: { user: User }) {
     <div className="space-y-8 max-w-md">
       <Section title="Default court configuration" description="Pre-filled for each new session. You can always override.">
         <div className="space-y-5">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Default court mode</Label>
-            <Select value={settings.courtMode} onValueChange={(v) => setSettings((s) => ({ ...s, courtMode: v }))}>
-              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="adversarial">⚔️ Adversarial — debate</SelectItem>
-                <SelectItem value="socratic">❓ Socratic — questioning</SelectItem>
-                <SelectItem value="analysis">🔬 Analysis — examination</SelectItem>
-                <SelectItem value="critique">🔍 Critique — review</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">
               Confidence target — {settings.confidenceTarget}%

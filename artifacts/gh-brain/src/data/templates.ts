@@ -47,7 +47,6 @@ export interface CourtConfig {
   // ── Per-seat AI assignment (V29 node inspector) ───────────────────────────
   seatMap?: SeatMapConfig;
   // ── Internal / API compat ────────────────────────────────────────────────
-  courtMode: "adversarial" | "socratic" | "analysis" | "critique";
   responseMode: "balanced" | "thorough" | "concise";
   outputFormat: "report" | "memo" | "bullets" | "verdict";
   provider?: ProviderName;
@@ -81,7 +80,6 @@ export const DEFAULT_CONFIG: CourtConfig = {
   maxCredits: 500,
   litigantCount: 4,
   // Internal
-  courtMode: "adversarial",
   responseMode: "balanced",
   outputFormat: "report",
 };
@@ -110,7 +108,7 @@ export const TEMPLATES: Template[] = [
     description: "UX, content, conversion, and technical review of any website.",
     icon: "Globe",
     estimatedCredits: 15,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "critique", litigantCount: 3 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3 },
     inputFields: [
       { id: "url", label: "Website URL", placeholder: "https://example.com", type: "url", required: true },
       { id: "goal", label: "Business goal", placeholder: "What should the site accomplish?", type: "text", required: true },
@@ -142,7 +140,7 @@ export const TEMPLATES: Template[] = [
     description: "Security, performance, maintainability, and architecture review of code or a system design.",
     icon: "Code2",
     estimatedCredits: 20,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "critique", litigantCount: 3 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3 },
     inputFields: [
       { id: "code", label: "Code or system description", placeholder: "Paste code snippet or describe your architecture", type: "textarea", required: true },
       { id: "language", label: "Language / framework", placeholder: "e.g. TypeScript, React, Node.js", type: "text", required: false },
@@ -157,7 +155,7 @@ export const TEMPLATES: Template[] = [
     description: "Identify risks, unfavorable clauses, and negotiation points in a contract.",
     icon: "FileText",
     estimatedCredits: 20,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "critique", litigantCount: 3, confidenceTarget: 85 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3, confidenceTarget: 85 },
     inputFields: [
       { id: "contract", label: "Contract text or summary", placeholder: "Paste the key clauses or summarize the agreement", type: "textarea", required: true },
       { id: "role", label: "Your role", placeholder: "Are you the buyer, seller, employee, etc.?", type: "text", required: true },
@@ -172,7 +170,7 @@ export const TEMPLATES: Template[] = [
     description: "Structured critique of writing for argument quality, clarity, structure, and impact.",
     icon: "BookOpen",
     estimatedCredits: 18,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "critique", litigantCount: 3 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3 },
     inputFields: [
       { id: "excerpt", label: "Excerpt or chapter summary", placeholder: "Paste text or describe the content", type: "textarea", required: true },
       { id: "genre", label: "Genre / type", placeholder: "Non-fiction, novel, academic, etc.", type: "text", required: false },
@@ -187,7 +185,7 @@ export const TEMPLATES: Template[] = [
     description: "Prepare informed questions and understand your situation before a medical appointment.",
     icon: "Stethoscope",
     estimatedCredits: 15,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "analysis", litigantCount: 2, confidenceTarget: 75 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 2, confidenceTarget: 75 },
     inputFields: [
       { id: "situation", label: "Medical situation", placeholder: "Describe your symptoms or diagnosis", type: "textarea", required: true },
       { id: "appointment", label: "Type of appointment", placeholder: "e.g. cardiology follow-up, GP visit", type: "text", required: false },
@@ -218,7 +216,7 @@ export const TEMPLATES: Template[] = [
     description: "Synthesize and stress-test findings from a research area, paper, or topic.",
     icon: "Search",
     estimatedCredits: 20,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "analysis", litigantCount: 3, confidenceTarget: 80 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3, confidenceTarget: 80 },
     inputFields: [
       { id: "topic", label: "Research topic or paper", placeholder: "Paste abstract or describe the topic", type: "textarea", required: true },
       { id: "question", label: "Core question", placeholder: "What are you trying to understand?", type: "text", required: true },
@@ -233,7 +231,7 @@ export const TEMPLATES: Template[] = [
     description: "Validate or invalidate a product idea with adversarial examination of assumptions.",
     icon: "FlaskConical",
     estimatedCredits: 20,
-    defaultConfig: { ...DEFAULT_CONFIG, courtMode: "adversarial", litigantCount: 4, confidenceTarget: 80 },
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 4, confidenceTarget: 80 },
     inputFields: [
       { id: "idea", label: "Product idea", placeholder: "Describe your product concept in detail", type: "textarea", required: true },
       { id: "problem", label: "Problem it solves", placeholder: "What pain point does this address?", type: "text", required: true },

@@ -9,12 +9,10 @@ import {
 import { getConscienceClause } from "./conscienceConfig.js";
 import { getAllSeatBriefs } from "./seatBriefs.js";
 
-export type CourtMode = "adversarial" | "socratic" | "analysis" | "critique";
 export type ResponseMode = "balanced" | "thorough" | "concise";
 export type OutputFormat = "report" | "memo" | "bullets" | "verdict";
 
 export interface CourtConfig {
-  courtMode: CourtMode;
   litigantCount: number;
   confidenceTarget: number;
   maxIterations: number;
@@ -48,41 +46,18 @@ export interface TokenUsage {
 }
 
 function getRoles(config: CourtConfig): RoleDefinition[] {
-  const modePersonas: Record<CourtMode, RoleDefinition[]> = {
-    adversarial: [
-      { name: "Advocate", persona: "Advocate", instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive." },
-      { name: "Skeptic", persona: "Skeptic", instruction: "Challenge and attack the proposition with the strongest counterarguments. Find weaknesses in the Advocate's reasoning. Be rigorous." },
-      { name: "Devil's Advocate", persona: "Devil's Advocate", instruction: "Take the most contrarian and uncomfortable position. Challenge both sides. Expose hidden assumptions." },
-      { name: "Empiricist", persona: "Empiricist", instruction: "Evaluate claims strictly on empirical evidence and data. Reject unsupported assertions from all sides." },
-    ],
-    socratic: [
-      { name: "Questioner", persona: "Questioner", instruction: "Ask probing Socratic questions that reveal hidden assumptions and logical gaps in the proposition." },
-      { name: "Defender", persona: "Defender", instruction: "Defend and clarify the proposition in response to Socratic questioning. Refine and strengthen arguments." },
-      { name: "Synthesizer", persona: "Synthesizer", instruction: "Identify what has been established, what remains contested, and what new understanding has emerged." },
-      { name: "Logician", persona: "Logician", instruction: "Map the logical structure of arguments. Identify valid inferences, fallacies, and unsupported leaps." },
-    ],
-    analysis: [
-      { name: "Analyst", persona: "Analyst", instruction: "Systematically analyze all dimensions of the question: historical context, current state, trends, and implications." },
-      { name: "Contrarian", persona: "Contrarian", instruction: "Identify what the conventional analysis misses. Surface non-obvious insights and underexplored angles." },
-      { name: "Realist", persona: "Realist", instruction: "Ground the analysis in practical reality. Challenge theoretical arguments with real-world constraints." },
-      { name: "Futurist", persona: "Futurist", instruction: "Project forward: what are the second and third-order effects? What does this imply long-term?" },
-    ],
-    critique: [
-      { name: "Critic", persona: "Critic", instruction: "Identify every flaw, weakness, and unsupported assumption. Be thorough and relentless." },
-      { name: "Defender", persona: "Defender", instruction: "Defend the subject against criticism. Show what the critics miss or exaggerate." },
-      { name: "Balanced Reviewer", persona: "Balanced Reviewer", instruction: "Give a fair, balanced assessment incorporating both criticisms and defenses." },
-      { name: "Standards Expert", persona: "Standards Expert", instruction: "Evaluate against professional standards and best practices in the relevant field." },
-    ],
-  };
-
-  const allRoles = modePersonas[config.courtMode];
-  return allRoles.slice(0, Math.min(config.litigantCount, allRoles.length));
+  const roles: RoleDefinition[] = [
+    { name: "Advocate", persona: "Advocate", instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive." },
+    { name: "Skeptic", persona: "Skeptic", instruction: "Challenge and attack the proposition with the strongest counterarguments. Find weaknesses in the Advocate's reasoning. Be rigorous." },
+    { name: "Devil's Advocate", persona: "Devil's Advocate", instruction: "Take the most contrarian and uncomfortable position. Challenge both sides. Expose hidden assumptions." },
+    { name: "Empiricist", persona: "Empiricist", instruction: "Evaluate claims strictly on empirical evidence and data. Reject unsupported assertions from all sides." },
+  ];
+  return roles.slice(0, Math.min(config.litigantCount, roles.length));
 }
 
 /**
  * Returns an interaction-style clause injected into every litigant's system
- * prompt. This is independent of courtMode (which sets *who* speaks) —
- * debateMode sets *how* those seats engage with each other's arguments.
+ * prompt. debateMode sets *how* those seats engage with each other's arguments.
  */
 function getDebateModeClause(debateMode?: "adversarial" | "collaborative"): string {
   if (debateMode === "collaborative") {
@@ -319,8 +294,8 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       {
         role: "user",
         content: rebuttalContext
-          ? `This is Rebuttal Round ${rebuttalContext.rebuttalRound}. The user has challenged the court's verdict with: "${rebuttalContext.challenge}". Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Acknowledge the challenge, state precisely what the court will re-examine, and route the litigants to address the specific objection.`
-          : `Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`,
+          ? `This is Rebuttal Round ${rebuttalContext.rebuttalRound}. The user has challenged the court's verdict with: "${rebuttalContext.challenge}". Litigants: ${roles.map((r) => r.name).join(", ")}. Acknowledge the challenge, state precisely what the court will re-examine, and route the litigants to address the specific objection.`
+          : `Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`,
       },
     ];
 
