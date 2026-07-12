@@ -7,7 +7,7 @@
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
 - [Cloud Run deployment](cloud-run-deployment.md) — use Docker + Cloud Build API to deploy; Firebase Functions buildpack ignores npm start/Procfile entirely.
 - [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
-- [Cloud Run env vars](cloud-run-env.md) — use `services replace` with plain-value YAML only; SM API enabled but IAM grant blocked; firebase-adminsdk SA cannot setIamPolicy.
+- [Cloud Run env vars](cloud-run-env.md) — ALWAYS use `node scripts/deploy-cloudrun.mjs`; NEVER `--env-vars-file scripts/cloud-run-env.yaml` (placeholders wipe real secrets every time).
 - [Canonical cost calibration](cost-calibration.md) — single source for session cost estimates; self-calibrates from last 50 sessions; FIXED_STAGE_PRIOR until 5 sessions accumulate.
 - [API schema drift crashes frontend](api-schema-drift.md) — live Cloud Run API may lag behind; estimateCredits and any API-driven computation must use optional chaining + fallbacks.
 - [Firebase deploy — always do it](firebase-deploy-always.md) — ALWAYS build + deploy gh-brain to Firebase after every frontend change, no exceptions.
