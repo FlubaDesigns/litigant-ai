@@ -1,12 +1,14 @@
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
-import { ChevronRight, Check, ArrowLeft, Zap, Shield, BarChart3 } from "lucide-react";
+import { ChevronRight, Check, Zap, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getToolBySlug } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { funnelTo } from "@/lib/funnel";
 import NotFoundPage from "@/pages/not-found";
 import { useState } from "react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
 function FAQ({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -78,24 +80,7 @@ export default function ToolPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <header className="h-14 border-b border-border/60 bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 gap-4">
-        <Link href="/" className="flex items-center gap-2 group">
-          <img src="/logo.png" alt="Litigant AI" className="w-6 h-6" />
-          <span className="font-bold tracking-tight">Litigant AI</span>
-        </Link>
-        <Link href="/tools" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors ml-4">
-          <ArrowLeft className="w-3.5 h-3.5" /> All tools
-        </Link>
-        <div className="ml-auto flex items-center gap-2">
-          <Link href={signInHref}>
-            <Button variant="ghost" size="sm">Sign in</Button>
-          </Link>
-          <Link href={registerHref}>
-            <Button size="sm" className="font-semibold">Try free</Button>
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Hero */}
       <section className="pt-20 pb-16 text-center">
@@ -258,10 +243,7 @@ export default function ToolPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/60 py-6 px-6 text-center text-xs text-muted-foreground">
-        <span>Litigant AI — adversarial reasoning engine. AI outputs are not legal, financial, or medical advice.</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

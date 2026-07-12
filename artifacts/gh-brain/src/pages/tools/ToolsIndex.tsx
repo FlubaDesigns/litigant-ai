@@ -6,6 +6,8 @@ import { TOOL_PAGES, TOOL_CATEGORIES } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Briefcase, Globe, TrendingUp, Code2, FileText, Scale, BookOpen, FlaskConical, Search,
@@ -48,25 +50,7 @@ export default function ToolsIndexPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <header className="h-14 border-b border-border/60 bg-background/95 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 gap-4">
-        <Link href="/" className="flex items-center gap-2 group">
-          <img src="/logo.png" alt="Litigant AI" className="w-6 h-6" />
-          <span className="font-bold tracking-tight">Litigant AI</span>
-        </Link>
-        <nav className="flex items-center gap-4 ml-6 text-sm text-muted-foreground">
-          <Link href="/tools" className="text-foreground font-medium">Tools</Link>
-          <Link href="/#pricing" className="hover:text-foreground transition-colors">Pricing</Link>
-        </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <Link href="/sign-in">
-            <Button variant="ghost" size="sm">Sign in</Button>
-          </Link>
-          <Link href="/register">
-            <Button size="sm" className="font-semibold">Try free</Button>
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* Hero */}
       <section className="pt-20 pb-12 text-center">
@@ -181,6 +165,7 @@ export default function ToolsIndexPage() {
         </Link>
         </div>
       </section>
+      <SiteFooter />
     </div>
   );
 }

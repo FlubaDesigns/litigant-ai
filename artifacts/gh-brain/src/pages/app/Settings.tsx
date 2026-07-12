@@ -764,18 +764,9 @@ export default function SettingsPage() {
   return (
     <div className="lgt-container">
       <section className="section">
-        {/* ── Page hero ── */}
-        <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
-          <div className="flex-row">
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Settings style={{ width: 22, height: 22, color: "hsl(var(--primary))" }} />
-            </div>
-            <div>
-              <p className="eyebrow">Account</p>
-              <h1 className="section-title" style={{ margin: 0 }}>Settings</h1>
-              <p className="section-body" style={{ marginTop: "0.25rem" }}>Manage your profile, notifications, and account preferences</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-8" style={{ paddingTop: "var(--sv)" }}>
+          <Settings className="w-5 h-5 text-primary" />
+          <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6">
