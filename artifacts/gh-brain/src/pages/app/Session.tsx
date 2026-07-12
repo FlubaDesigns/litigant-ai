@@ -320,7 +320,7 @@ function ConfigPanel({
 
           {/* OUTPUT STRATEGY */}
           <V29Field
-            label="Output Strategy"
+            label="Response View"
             tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
           >
             <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
