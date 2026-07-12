@@ -1115,14 +1115,9 @@ export default function SessionPage() {
         )}
       </div>
 
-      {/* ── MAIN CONTENT ── */}
-      <div className="main-inner">
-      <section className="section">
-      <div className="row">
-
       {/* ── CONVERSATION PANEL ── */}
-      <div className="session-conv">
-        <div className="session-conv-label">Conversation</div>
+      <div className="session-conv main-inner">
+        <h2 className="session-conv-label">Conversation</h2>
 
         {/* Tool page pre-load banner */}
         {toolBanner && isIdle && (
@@ -1142,21 +1137,21 @@ export default function SessionPage() {
         {/* Confidence + Credits bars — always visible */}
         <div className="session-meters">
           <div>
-            <div className="session-meter-hd">
+            <p className="session-meter-hd">
               <span>Confidence</span>
               <span className="session-meter-val" style={{ color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
                 {state.confidence}% / {state.config.confidenceTarget}%
               </span>
-            </div>
+            </p>
             <div className="session-meter-track">
               <div className="session-meter-fill" style={{ background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
             </div>
           </div>
           <div>
-            <div className="session-meter-hd">
+            <p className="session-meter-hd">
               <span>Credits Used</span>
               <span className="session-meter-val">{state.creditsUsed} / ~{estimatedCredits} est</span>
-            </div>
+            </p>
             <div className="session-meter-track">
               <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%` }} />
             </div>
@@ -1738,9 +1733,6 @@ export default function SessionPage() {
         />
       )}
 
-      </div>{/* /row */}
-      </section>
-      </div>{/* /main-inner */}
 
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
