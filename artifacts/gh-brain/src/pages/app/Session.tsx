@@ -1465,96 +1465,18 @@ export default function SessionPage() {
       ══════════════════════════════════════════════════════ */}
       {isIdle ? (
         <div className="sz-court">
-          {(() => {
-            const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
-            const namedSeats = [
-              { id: "orchestrator", icon: "🎙", purpose: "Talks to you. Delivers the final verdict." },
-              { id: "moderator",   icon: "⚖",  purpose: "Controls courtroom flow. Builds the briefing." },
-              { id: "architect",   icon: "📐", purpose: "Defines the artifact structure before building." },
-              { id: "builder",     icon: "🔨", purpose: "Builds the requested artifact or implementation." },
-              { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
-            ];
-            return (
-              <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
-                <AccordionItem value="your-court" className="border-b-0">
-                  <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
-                    <div className="flex items-center justify-between w-full mr-2">
-                      <div className="flex items-center gap-2">
-                        <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono text-muted-foreground/60">
-                          {state.config.litigantCount} · {state.config.debateMode} · ~{estimatedCredits} cr
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfigOpen(true); }}
-                          className="flex items-center gap-0.5 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
-                        >
-                          Configure <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-3 pb-3 pt-0">
-                    <div className="flex flex-wrap gap-1.5 mb-3 pt-1">
-                      <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
-                        <button onClick={handleRemoveLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount <= 2}>−</button>
-                        <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">{state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}</span>
-                        <button onClick={handleAddLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount >= maxLitigants}>+</button>
-                      </div>
-                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize">{state.config.debateMode}</span>
-                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}</span>
-                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.confidenceTarget}% target</span>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      {namedSeats.map(({ id, icon, purpose }) => {
-                        const assignment = seatMap[id];
-                        return (
-                          <div key={id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: id, litIndex: undefined })}>
-                            <span className="text-sm shrink-0">{icon}</span>
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-[11px] font-semibold text-foreground/80 capitalize">{id}</span>
-                              <span className="text-[10px] text-muted-foreground/50 truncate">{purpose}</span>
-                            </div>
-                            {assignment ? (
-                              <div className="flex items-center gap-1 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 shrink-0" />
-                                <span className="text-[10px] font-medium text-primary/70 truncate max-w-[80px]">{assignment.name ?? "Custom"}</span>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/30 shrink-0">default</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {Array.from({ length: Math.min(state.config.litigantCount, 4) }, (_, i) => {
-                        const seatId = `litigant_${i}`;
-                        const assignment = seatMap[seatId];
-                        return (
-                          <div key={seatId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId, litIndex: i })}>
-                            <span className="text-sm shrink-0">⚖</span>
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-[11px] font-semibold text-foreground/80">Litigant {i + 1}</span>
-                              <span className="text-[10px] text-muted-foreground/50 truncate">Argues one position in the courtroom.</span>
-                            </div>
-                            {assignment ? (
-                              <div className="flex items-center gap-1 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0" />
-                                <span className="text-[10px] font-medium text-amber-400/70 truncate max-w-[80px]">{assignment.name ?? "Custom"}</span>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/30 shrink-0">default</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            );
-          })()}
+          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
+            <div className="flex items-center gap-2">
+              <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
+            </div>
+            <button
+              onClick={() => setConfigOpen(true)}
+              className="flex items-center gap-0.5 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
+            >
+              Configure <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
           <div className="flex items-center gap-2 px-0.5">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
