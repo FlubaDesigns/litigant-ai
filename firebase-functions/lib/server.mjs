@@ -44951,7 +44951,7 @@ function verificationTemplate(link, displayName) {
           <td style="padding:40px 40px 32px;">
             <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Clearance Verification</p>
             <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Verify your access,<br>${name}.</h1>
-            <p style="margin:0 0 32px;font-size:15px;color:#888;line-height:1.6;">A verification request was initiated for your Litigant AI account. Confirm your identity to activate full system access.</p>
+            <p style="margin:0 0 32px;font-size:15px;color:#888;line-height:1.6;">A verification request was initiated for your Litigant AI account. Confirm your identity to activate full system access and unlock your <strong style="color:#fff;">750 free credits</strong> to get started.</p>
             <a href="${link}" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">Verify Access \u2192</a>
             <p style="margin:32px 0 0;font-size:12px;color:#555;line-height:1.6;">If you didn't create an account, you can safely ignore this message. This link expires in 24 hours.</p>
             <p style="margin:16px 0 0;font-size:11px;color:#444;">Or copy this link: <span style="color:#666;word-break:break-all;">${link}</span></p>
