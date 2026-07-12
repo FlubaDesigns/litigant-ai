@@ -237,13 +237,13 @@ export async function updateUserPlan(
 }
 
 /**
- * Idempotently grants 100 trial credits to a new user on first sign-in.
+ * Idempotently grants 750 trial credits to a new user on first sign-in.
  *
  * Uses "signup_bonus_{uid}" as the idempotency key so this fires at most
  * once per user even if the auth webhook fires multiple times.
  */
 export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean }> {
-  const result = await addCredits(uid, 100, "signup_bonus", {
+  const result = await addCredits(uid, 750, "signup_bonus", {
     source:          "signup_trial",
     idempotencyKey:  `signup_bonus_${uid}`,
   });

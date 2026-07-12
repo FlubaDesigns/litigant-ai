@@ -83,11 +83,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
 export async function signInWithGoogle(): Promise<User> {
   const credential = await signInWithPopup(auth, googleProvider);
-  const isNew =
-    credential.user.metadata.creationTime === credential.user.metadata.lastSignInTime;
-  if (isNew) {
-    await provisionUser(credential.user);
-  }
+  await provisionUser(credential.user);
   return credential.user;
 }
 
