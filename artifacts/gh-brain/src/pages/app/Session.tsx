@@ -30,7 +30,7 @@ import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
 import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
-import { saveUserConfig } from "@/services/firestoreService";
+import { saveUserConfig, type UserProfile } from "@/services/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation } from "wouter";
@@ -215,8 +215,10 @@ function ConfigPanel({
         ) as UserProfile["defaultSettings"];
         await saveUserConfig(uid, settings);
         toast.success("Court configured & saved to your profile");
-      } catch {
-        toast.error("Could not save configuration");
+      } catch (err) {
+        console.error("[Session] saveUserConfig failed:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(`Could not save configuration: ${msg}`);
       } finally {
         setSaving(false);
       }
