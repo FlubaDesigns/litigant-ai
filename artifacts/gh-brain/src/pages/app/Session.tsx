@@ -270,12 +270,23 @@ function ConfigPanel({
             tooltip="Sets the structural logic of the entire session. Adversarial: seats argue opposing positions and attack each other's reasoning — best for pressure-testing ideas and stress-testing decisions. Socratic: seats ask probing questions to expose assumptions and surface blind spots — best for deep exploration. Analysis: seats each analyze the question from a different lens (strategic, technical, risk, etc.) without direct conflict — best for multi-angle assessment. Critique: seats act as reviewers who find flaws, weaknesses, and risks in the idea as presented — best for pre-mortem and quality review."
           >
             <Select value={config.courtMode} onValueChange={(v) => handleChange({ courtMode: v as CourtConfig["courtMode"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectTrigger className={V29_SELECT}>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="adversarial">Adversarial</SelectItem>
-                <SelectItem value="socratic">Socratic</SelectItem>
-                <SelectItem value="analysis">Analysis</SelectItem>
-                <SelectItem value="critique">Critique</SelectItem>
+                {([
+                  { value: "adversarial", label: "Adversarial", desc: "Seats argue opposing positions and attack each other's reasoning. Best for pressure-testing ideas." },
+                  { value: "socratic",    label: "Socratic",    desc: "Seats ask probing questions to expose assumptions and surface blind spots. Best for deep exploration." },
+                  { value: "analysis",   label: "Analysis",    desc: "Seats each analyze from a different lens — strategic, technical, risk. Best for multi-angle assessment." },
+                  { value: "critique",   label: "Critique",    desc: "Seats act as reviewers who find flaws, weaknesses, and risks. Best for pre-mortem and quality review." },
+                ] as const).map(({ value, label, desc }) => (
+                  <SelectItem key={value} value={value} className="py-3 cursor-pointer">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-sm">{label}</span>
+                      <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal">{desc}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </V29Field>
