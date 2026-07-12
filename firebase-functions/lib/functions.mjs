@@ -24844,7 +24844,7 @@ var require_dist2 = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
 function __classPrivateFieldSet2(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -24862,14 +24862,14 @@ function __classPrivateFieldGet2(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 var init_tslib = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/tslib.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/tslib.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
 var uuid42;
 var init_uuid = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
     uuid42 = function() {
       const { crypto: crypto6 } = globalThis;
       if (crypto6?.randomUUID) {
@@ -24883,7 +24883,7 @@ var init_uuid = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/errors.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/errors.mjs
 function isAbortError2(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -24891,7 +24891,7 @@ function isAbortError2(err) {
 }
 var castToError2;
 var init_errors = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/errors.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/errors.mjs"() {
     castToError2 = (err) => {
       if (err instanceof Error)
         return err;
@@ -24919,10 +24919,10 @@ var init_errors = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/error.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/error.mjs
 var AnthropicError, APIError2, APIUserAbortError2, APIConnectionError2, APIConnectionTimeoutError2, RetryableError, BadRequestError2, AuthenticationError2, PermissionDeniedError2, NotFoundError2, ConflictError2, UnprocessableEntityError2, RateLimitError2, InternalServerError2;
 var init_error = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/error.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/error.mjs"() {
     init_errors();
     AnthropicError = class extends Error {
     };
@@ -25024,7 +25024,7 @@ var init_error = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
 function maybeObj2(x) {
   if (typeof x !== "object") {
     return {};
@@ -25043,7 +25043,7 @@ function hasOwn2(obj, key) {
 }
 var startsWithSchemeRegexp2, isAbsoluteURL2, isArray2, isReadonlyArray2, validatePositiveInteger2, safeJSON2;
 var init_values = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs"() {
     init_error();
     startsWithSchemeRegexp2 = /^[a-z][a-z0-9+.-]*:/i;
     isAbsoluteURL2 = (url) => {
@@ -25070,10 +25070,10 @@ var init_values = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
 var sleep2;
 var init_sleep = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs"() {
     sleep2 = (ms, signal) => new Promise((resolve4) => {
       if (signal?.aborted)
         return resolve4();
@@ -25090,15 +25090,15 @@ var init_sleep = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/version.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/version.mjs
 var VERSION2;
 var init_version = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/version.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/version.mjs"() {
     VERSION2 = "0.104.2";
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
 function getDetectedPlatform2() {
   if (typeof Deno !== "undefined" && Deno.build != null) {
     return "deno";
@@ -25136,7 +25136,7 @@ function getBrowserInfo2() {
 }
 var isRunningInBrowser2, getPlatformProperties2, normalizeArch2, normalizePlatform2, _platformHeaders2, getPlatformHeaders2;
 var init_detect_platform = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs"() {
     init_version();
     isRunningInBrowser2 = () => {
       return (
@@ -25237,7 +25237,7 @@ var init_detect_platform = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/shims.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/shims.mjs
 function getDefaultFetch2() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -25309,14 +25309,14 @@ async function CancelReadableStream2(stream) {
   await cancelPromise;
 }
 var init_shims = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/shims.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/shims.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
 var FallbackEncoder2;
 var init_request_options = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/request-options.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/request-options.mjs"() {
     FallbackEncoder2 = ({ headers, body }) => {
       return {
         bodyHeaders: {
@@ -25328,10 +25328,10 @@ var init_request_options = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs
 var default_format2, default_formatter2, formatters2, RFC17382;
 var init_formats = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/formats.mjs"() {
     default_format2 = "RFC3986";
     default_formatter2 = (v) => String(v);
     formatters2 = {
@@ -25342,7 +25342,7 @@ var init_formats = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs
 function is_buffer2(obj) {
   if (!obj || typeof obj !== "object") {
     return false;
@@ -25361,7 +25361,7 @@ function maybe_map2(val, fn) {
 }
 var has2, hex_table2, limit2, encode2;
 var init_utils = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/utils.mjs"() {
     init_formats();
     init_values();
     has2 = (obj, key) => (has2 = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has2(obj, key));
@@ -25428,7 +25428,7 @@ var init_utils = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs
 function is_non_nullish_primitive2(v) {
   return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
 }
@@ -25668,7 +25668,7 @@ function stringify2(object, opts = {}) {
 }
 var array_prefix_generators2, push_to_array2, toISOString2, defaults2, sentinel2;
 var init_stringify = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/qs/stringify.mjs"() {
     init_utils();
     init_formats();
     init_values();
@@ -25713,17 +25713,17 @@ var init_stringify = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs
 function stringifyQuery2(query) {
   return stringify2(query, { arrayFormat: "brackets" });
 }
 var init_query = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/query.mjs"() {
     init_stringify();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs
 function requireSecureTokenEndpoint(baseURL) {
   if (!baseURL)
     return;
@@ -25870,7 +25870,7 @@ async function readLimitedText(resp) {
 }
 var GRANT_TYPE_JWT_BEARER, GRANT_TYPE_REFRESH_TOKEN, TOKEN_ENDPOINT, OAUTH_API_BETA_HEADER, FEDERATION_BETA_HEADER, ADVISORY_REFRESH_THRESHOLD_IN_SECONDS, MANDATORY_REFRESH_THRESHOLD_IN_SECONDS, ADVISORY_REFRESH_BACKOFF_IN_SECONDS, MAX_TOKEN_RESPONSE_BYTES, MAX_ERROR_BODY_CHARS, SAFE_ERROR_KEYS, WorkloadIdentityError;
 var init_types = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/types.mjs"() {
     init_error();
     GRANT_TYPE_JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
     GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
@@ -25894,19 +25894,19 @@ var init_types = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs
 function nowAsSeconds() {
   return Math.floor(Date.now() / 1e3);
 }
 var init_time = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/time.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs
 var TokenCache;
 var init_token_cache = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/token-cache.mjs"() {
     init_types();
     init_time();
     TokenCache = class {
@@ -25999,10 +25999,10 @@ var init_token_cache = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
 var readEnv2;
 var init_env = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs"() {
     readEnv2 = (env) => {
       if (typeof globalThis.process !== "undefined") {
         return globalThis.process.env?.[env]?.trim() || void 0;
@@ -26015,7 +26015,7 @@ var init_env = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
 function concatBytes2(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -26039,19 +26039,19 @@ function decodeUTF82(bytes) {
 }
 var encodeUTF8_2, decodeUTF8_2;
 var init_bytes = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs
 var init_base64 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/base64.mjs"() {
     init_error();
     init_bytes();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
 function noop2() {
 }
 function makeLogFn2(fnLevel, logger2, logLevel) {
@@ -26093,7 +26093,7 @@ function defaultLogger() {
 }
 var defaultLogLevel, levelNumbers2, parseLogLevel2, noopLogger2, cachedLoggers2, lastEnvLevel, cachedDefaultLogger, formatRequestDetails2;
 var init_log = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs"() {
     init_values();
     init_env();
     defaultLogLevel = "warn";
@@ -26143,9 +26143,9 @@ var init_log = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils.mjs
 var init_utils2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils.mjs"() {
     init_values();
     init_base64();
     init_env();
@@ -26156,7 +26156,7 @@ var init_utils2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/credentials.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/credentials.mjs
 function validateProfileName(name) {
   if (!name) {
     throw new Error("profile name is empty");
@@ -26173,7 +26173,7 @@ function validateProfileName(name) {
 }
 var CREDENTIALS_FILE_VERSION, PROFILE_NAME_PATTERN, loadConfigWithSource, getCredentialsPath, getRootConfigPath, supportsLocalConfigFiles, getActiveProfileName;
 var init_credentials = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/credentials.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/credentials.mjs"() {
     init_detect_platform();
     init_utils2();
     CREDENTIALS_FILE_VERSION = "1.0";
@@ -26337,7 +26337,7 @@ var init_credentials = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs
 function identityTokenFromFile(path6) {
   if (!path6) {
     throw new AnthropicError("Identity token file path is empty");
@@ -26364,12 +26364,12 @@ function identityTokenFromValue(token) {
   return () => token;
 }
 var init_identity_token = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/identity-token.mjs"() {
     init_error();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs
 function oidcFederationProvider(config) {
   return async () => {
     requireSecureTokenEndpoint(config.baseURL);
@@ -26427,14 +26427,14 @@ function oidcFederationProvider(config) {
   };
 }
 var init_oidc_federation = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/oidc-federation.mjs"() {
     init_types();
     init_time();
     init_version();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs
 function userOAuthProvider(config) {
   return async (opts) => {
     const fs4 = await import("node:fs");
@@ -26508,7 +26508,7 @@ function userOAuthProvider(config) {
   };
 }
 var init_user_oauth = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs"() {
     init_credentials();
     init_types();
     init_time();
@@ -26516,7 +26516,7 @@ var init_user_oauth = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs
 function resolveCredentialsFromConfig(config, options) {
   const credentialsPath = config.authentication.credentials_path ?? null;
   const effectiveBaseURL = (config.base_url || options.baseURL).replace(/\/+$/, "");
@@ -26648,7 +26648,7 @@ function cachedExchangeProvider(exchange, credentialsPath, onCacheWriteError, on
   };
 }
 var init_credential_chain = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/credentials/credential-chain.mjs"() {
     init_env();
     init_credentials();
     init_types();
@@ -26659,7 +26659,7 @@ var init_credential_chain = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
 function findNewlineIndex2(buffer, startIndex) {
   const newline = 10;
   const carriage = 13;
@@ -26691,7 +26691,7 @@ function findDoubleNewlineIndex2(buffer) {
 }
 var _LineDecoder_buffer2, _LineDecoder_carriageReturnIndex2, LineDecoder2;
 var init_line = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs"() {
     init_tslib();
     init_bytes();
     LineDecoder2 = class {
@@ -26741,7 +26741,7 @@ var init_line = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/streaming.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/streaming.mjs
 async function* _iterSSEMessages2(response, controller) {
   if (!response.body) {
     controller.abort();
@@ -26796,7 +26796,7 @@ function partition2(str2, delimiter2) {
 }
 var _Stream_client2, Stream2, SSEDecoder2;
 var init_streaming = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/streaming.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/streaming.mjs"() {
     init_tslib();
     init_error();
     init_shims();
@@ -27017,7 +27017,7 @@ var init_streaming = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/parse.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/parse.mjs
 async function defaultParseResponse2(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -27064,13 +27064,13 @@ function addRequestID2(value, response) {
   });
 }
 var init_parse = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/parse.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/parse.mjs"() {
     init_streaming();
     init_log();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/middleware.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/middleware.mjs
 function isFetchOriginError(err) {
   return typeof err === "object" && err !== null && fetchOriginErrors.has(err);
 }
@@ -27166,7 +27166,7 @@ function applyMiddleware(fetchFn, middleware, options, client) {
 }
 var fetchOriginErrors;
 var init_middleware = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/middleware.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/middleware.mjs"() {
     init_errors();
     init_parse();
     init_log();
@@ -27176,10 +27176,10 @@ var init_middleware = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
 var _APIPromise_client2, APIPromise2;
 var init_api_promise = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/api-promise.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/api-promise.mjs"() {
     init_tslib();
     init_parse();
     APIPromise2 = class _APIPromise extends Promise {
@@ -27245,10 +27245,10 @@ var init_api_promise = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/pagination.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/pagination.mjs
 var _AbstractPage_client2, AbstractPage2, PagePromise2, Page2, PageCursor;
 var init_pagination = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/pagination.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/pagination.mjs"() {
     init_tslib();
     init_error();
     init_parse();
@@ -27379,7 +27379,7 @@ var init_pagination = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
 function makeFile2(fileBits, fileName, options) {
   checkFileSupport2();
   return new File(fileBits, fileName ?? "unknown_file", options);
@@ -27410,7 +27410,7 @@ function supportsFormData2(fetchObject) {
 }
 var checkFileSupport2, isAsyncIterable2, multipartFormRequestOptions2, supportsFormDataMap2, createForm2, isNamedBlob2, addFormValue2;
 var init_uploads = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/uploads.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/uploads.mjs"() {
     init_shims();
     checkFileSupport2 = () => {
       if (typeof File === "undefined") {
@@ -27463,7 +27463,7 @@ var init_uploads = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
 async function toFile2(value, name, options) {
   checkFileSupport2();
   value = await value;
@@ -27517,7 +27517,7 @@ function propsForError2(value) {
 }
 var isBlobLike2, isFileLike2, isResponseLike2;
 var init_to_file = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/to-file.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/to-file.mjs"() {
     init_uploads();
     init_uploads();
     isBlobLike2 = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
@@ -27526,23 +27526,23 @@ var init_to_file = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/uploads.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/uploads.mjs
 var init_uploads2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/uploads.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/uploads.mjs"() {
     init_to_file();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/shared.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/shared.mjs
 var init_shared = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/shared.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/shared.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/resource.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/resource.mjs
 var APIResource2;
 var init_resource = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/core/resource.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/core/resource.mjs"() {
     APIResource2 = class {
       constructor(client) {
         this._client = client;
@@ -27551,7 +27551,7 @@ var init_resource = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/headers.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/headers.mjs
 function* iterateHeaders2(headers) {
   if (!headers)
     return;
@@ -27592,7 +27592,7 @@ function* iterateHeaders2(headers) {
 }
 var brand_privateNullableHeaders2, buildHeaders2;
 var init_headers = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/headers.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/headers.mjs"() {
     init_values();
     brand_privateNullableHeaders2 = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
     buildHeaders2 = (newHeaders) => {
@@ -27620,13 +27620,13 @@ var init_headers = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
 function encodeURIPath2(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
 var EMPTY2, createPathTagFunction2, path2;
 var init_path = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs"() {
     init_error();
     EMPTY2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
     createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path6(statics, ...params) {
@@ -27681,10 +27681,10 @@ ${underline}`);
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs
 var DeploymentRuns;
 var init_deployment_runs = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployment-runs.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -27737,10 +27737,10 @@ var init_deployment_runs = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs
 var Deployments;
 var init_deployments = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/deployments.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -27922,7 +27922,7 @@ var init_deployments = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs
 function wasCreatedByStainlessHelper(value) {
   return typeof value === "object" && value !== null && SDK_HELPER_SYMBOL in value;
 }
@@ -27965,15 +27965,15 @@ function stainlessHelperHeaderFromFile(file) {
 }
 var SDK_HELPER_SYMBOL;
 var init_stainless_helper_header = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/stainless-helper-header.mjs"() {
     SDK_HELPER_SYMBOL = /* @__PURE__ */ Symbol("anthropic.sdk.stainlessHelper");
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs
 var Files4;
 var init_files = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28095,10 +28095,10 @@ var init_files = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs
 var Models2;
 var init_models = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28156,10 +28156,10 @@ var init_models = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs
 var UserProfiles;
 var init_user_profiles = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/user-profiles.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28275,10 +28275,10 @@ var init_user_profiles = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs
 var import_standardwebhooks2, Webhooks3;
 var init_webhooks = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/webhooks.mjs"() {
     init_resource();
     import_standardwebhooks2 = __toESM(require_dist2(), 1);
     Webhooks3 = class extends APIResource2 {
@@ -28296,10 +28296,10 @@ var init_webhooks = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs
 var Versions2;
 var init_versions = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/versions.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -28333,10 +28333,10 @@ var init_versions = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs
 var Agents;
 var init_agents = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/agents/agents.mjs"() {
     init_resource();
     init_versions();
     init_versions();
@@ -28464,7 +28464,7 @@ var init_agents = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs
 function linkAbort(external, controller) {
   if (!external)
     return () => {
@@ -28479,11 +28479,11 @@ function linkAbort(external, controller) {
   return () => external.removeEventListener("abort", onAbort);
 }
 var init_abort = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/abort.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs
 function isStatus(e, code) {
   return e instanceof APIError2 && e.status === code;
 }
@@ -28503,12 +28503,12 @@ function applyJitter(ms) {
   return ms * (1 - Math.random() * 0.25);
 }
 var init_backoff = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/backoff.mjs"() {
     init_error();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs
 function copyClientForHelper(client, { authToken, helper }) {
   if (!authToken) {
     throw new AnthropicError(`copyClientForHelper: expected a non-empty authToken but received ${JSON.stringify(authToken)}`);
@@ -28534,13 +28534,13 @@ function copyClientForHelper(client, { authToken, helper }) {
   });
 }
 var init_helper_client = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/helper-client.mjs"() {
     init_error();
     init_headers();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs
 function backoff2(attempt) {
   return backoff(attempt, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS);
 }
@@ -28551,7 +28551,7 @@ function defaultWorkerId() {
 }
 var _WorkPoller_runnerClient, _WorkPoller_consumed, _WorkPoller_controller, _WorkPoller_detachExternal, _WorkPoller_autoStop, _WorkPoller_drain, _WorkPoller_blockMs, _WorkPoller_reclaimOlderThanMs, _WorkPoller_requestOpts, POLL_BLOCK_MS, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS, WorkPoller;
 var init_poller = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/poller.mjs"() {
     init_tslib();
     init_error();
     init_log();
@@ -28673,10 +28673,10 @@ var init_poller = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs
 var _AsyncQueue_items, _AsyncQueue_waiters, _AsyncQueue_closed, AsyncQueue;
 var init_async_queue = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/async-queue.mjs"() {
     init_tslib();
     AsyncQueue = class {
       constructor() {
@@ -28742,10 +28742,10 @@ var init_async_queue = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs
 var ToolError;
 var init_ToolError = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/ToolError.mjs"() {
     ToolError = class extends Error {
       constructor(content) {
         const message = typeof content === "string" ? content : content.map((block) => {
@@ -28761,7 +28761,7 @@ var init_ToolError = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs
 function toolName(tool) {
   return "name" in tool ? tool.name : tool.mcp_server_name;
 }
@@ -28778,12 +28778,12 @@ async function runRunnableTool(tool, rawInput, context) {
   }
 }
 var init_BetaRunnableTool = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaRunnableTool.mjs"() {
     init_ToolError();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs
 function isEndTurnIdle(ev) {
   return ev.type === "session.status_idle" && ev.stop_reason?.type === "end_turn";
 }
@@ -28816,7 +28816,7 @@ function toSessionContent(content) {
 }
 var _SessionToolRunner_instances, _SessionToolRunner_consumed, _SessionToolRunner_controller, _SessionToolRunner_detachExternal, _SessionToolRunner_requestOpts, _SessionToolRunner_toolByName, _SessionToolRunner_logger, _SessionToolRunner_seen, _SessionToolRunner_answered, _SessionToolRunner_results, _SessionToolRunner_inFlightCount, _SessionToolRunner_onIdle, _SessionToolRunner_idleTimer, _SessionToolRunner_requestOptions, _SessionToolRunner_streamLoop, _SessionToolRunner_reconcile, _SessionToolRunner_ingestHistory, _SessionToolRunner_handleStreamEvent, _SessionToolRunner_armIdleTimer, _SessionToolRunner_disarmIdleTimer, _SessionToolRunner_execute, _SessionToolRunner_sendResult, _SessionToolRunner_drain, HELPER_NAME, STREAM_BACKOFF_START_MS, STREAM_BACKOFF_CAP_MS, TOOL_TIMEOUT_MS, DRAIN_TIMEOUT_MS, SEND_RETRIES, DEFAULT_MAX_IDLE_MS, SessionToolRunner;
 var init_SessionToolRunner = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/SessionToolRunner.mjs"() {
     init_tslib();
     init_error();
     init_log();
@@ -29126,14 +29126,14 @@ var init_SessionToolRunner = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs
 var init_transform_json_schema = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs"() {
     init_utils2();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs
 function betaTool(options) {
   if (options.inputSchema.type !== "object") {
     throw new Error(`JSON schema for tool "${options.name}" must be an object, but got ${options.inputSchema.type}`);
@@ -29149,13 +29149,13 @@ function betaTool(options) {
   };
 }
 var init_json_schema = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/helpers/beta/json-schema.mjs"() {
     init_sdk();
     init_transform_json_schema();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs
 function promiseWithResolvers() {
   let resolve4;
   let reject;
@@ -29166,11 +29166,11 @@ function promiseWithResolvers() {
   return { promise, resolve: resolve4, reject };
 }
 var init_promise = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs"() {
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs
 import * as fs from "node:fs/promises";
 import * as path3 from "node:path";
 import { randomUUID } from "node:crypto";
@@ -29274,14 +29274,14 @@ function fsErrorMessage(err, file) {
 }
 var DIR_CREATE_MODE, FILE_CREATE_MODE;
 var init_fs_util = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/fs-util.mjs"() {
     init_ToolError();
     DIR_CREATE_MODE = 493;
     FILE_CREATE_MODE = 420;
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs
 import * as fs2 from "node:fs/promises";
 import * as fssync from "node:fs";
 import * as path4 from "node:path";
@@ -29438,7 +29438,7 @@ async function readHead(file, n) {
 }
 var execFileAsync;
 var init_skills = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/skills.mjs"() {
     init_error();
     init_log();
     init_fs_util();
@@ -29446,7 +29446,7 @@ var init_skills = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs
 var node_exports = {};
 __export(node_exports, {
   BashSession: () => BashSession,
@@ -29892,7 +29892,7 @@ async function findRg() {
 }
 var _BashSession_instances, _BashSession_proc, _BashSession_buf, _BashSession_truncated, _BashSession_closed, _BashSession_waiting, _BashSession_append, BASH_OUTPUT_LIMIT, BASH_DEFAULT_TIMEOUT_MS, DEFAULT_MAX_FILE_BYTES, GREP_OUTPUT_LIMIT, GREP_MAX_LINE_LENGTH, GLOB_RESULT_LIMIT, ANSI_RE, fsGlob, BashSession, WALK_MAX_DEPTH, WALK_MAX_ENTRIES;
 var init_node = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/tools/agent-toolset/node.mjs"() {
     init_tslib();
     init_error();
     init_ToolError();
@@ -30034,7 +30034,7 @@ ${out}`;
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs
 async function forceStop(client, work, log, requestOptions) {
   try {
     await client.beta.environments.work.stop(
@@ -30088,7 +30088,7 @@ async function heartbeatLoop(client, work, ctrl, logger2, requestOptions) {
 }
 var _EnvironmentWorker_instances, _EnvironmentWorker_signal, _EnvironmentWorker_handleItem, HEARTBEAT_DEFAULT_MS, NO_HEARTBEAT_SENTINEL, EnvironmentWorker;
 var init_worker = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/environments/worker.mjs"() {
     init_tslib();
     init_error();
     init_log();
@@ -30246,10 +30246,10 @@ var init_worker = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs
 var Work;
 var init_work = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/work.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -30519,10 +30519,10 @@ var init_work = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs
 var Environments;
 var init_environments = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/environments/environments.mjs"() {
     init_resource();
     init_work();
     init_work();
@@ -30669,10 +30669,10 @@ var init_environments = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs
 var Memories;
 var init_memories = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memories.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -30800,10 +30800,10 @@ var init_memories = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs
 var MemoryVersions;
 var init_memory_versions = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-versions.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -30882,10 +30882,10 @@ var init_memory_versions = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs
 var MemoryStores;
 var init_memory_stores = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/memory-stores/memory-stores.mjs"() {
     init_resource();
     init_memories();
     init_memories();
@@ -31027,17 +31027,17 @@ var init_memory_stores = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/error.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/error.mjs
 var init_error2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/error.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/error.mjs"() {
     init_error();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
 var JSONLDecoder;
 var init_jsonl = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs"() {
     init_error();
     init_shims();
     init_line();
@@ -31074,10 +31074,10 @@ var init_jsonl = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs
 var Batches2;
 var init_batches = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -31277,10 +31277,10 @@ var init_batches = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/constants.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/constants.mjs
 var MODEL_NONSTREAMING_TOKENS;
 var init_constants = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/internal/constants.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/internal/constants.mjs"() {
     MODEL_NONSTREAMING_TOKENS = {
       "claude-opus-4-20250514": 8192,
       "claude-opus-4-0": 8192,
@@ -31294,7 +31294,7 @@ var init_constants = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs
 function getOutputFormat(params) {
   return params?.output_format ?? params?.output_config?.format;
 }
@@ -31367,15 +31367,15 @@ function parseBetaOutputFormat(params, content) {
   }
 }
 var init_beta_parser = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs"() {
     init_error();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
 var tokenize, strip, unstrip, generate, partialParse2;
 var init_parser = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs"() {
     tokenize = (input) => {
       let current = 0;
       let tokens = [];
@@ -31599,14 +31599,14 @@ var init_parser = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/streaming.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/streaming.mjs
 var init_streaming2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/streaming.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/streaming.mjs"() {
     init_streaming();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs
 function tracksToolInput(content) {
   return content.type === "tool_use" || content.type === "server_tool_use" || content.type === "mcp_tool_use";
 }
@@ -31614,7 +31614,7 @@ function checkNever(x) {
 }
 var _BetaMessageStream_instances, _BetaMessageStream_currentMessageSnapshot, _BetaMessageStream_params, _BetaMessageStream_connectedPromise, _BetaMessageStream_resolveConnectedPromise, _BetaMessageStream_rejectConnectedPromise, _BetaMessageStream_endPromise, _BetaMessageStream_resolveEndPromise, _BetaMessageStream_rejectEndPromise, _BetaMessageStream_listeners, _BetaMessageStream_ended, _BetaMessageStream_errored, _BetaMessageStream_aborted, _BetaMessageStream_catchingPromiseCreated, _BetaMessageStream_response, _BetaMessageStream_request_id, _BetaMessageStream_logger, _BetaMessageStream_getFinalMessage, _BetaMessageStream_getFinalText, _BetaMessageStream_handleError, _BetaMessageStream_beginRequest, _BetaMessageStream_addStreamEvent, _BetaMessageStream_endRequest, _BetaMessageStream_accumulateMessage, JSON_BUF_PROPERTY, BetaMessageStream;
 var init_BetaMessageStream = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs"() {
     init_tslib();
     init_parser();
     init_error2();
@@ -32215,10 +32215,10 @@ var init_BetaMessageStream = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs
 var DEFAULT_TOKEN_THRESHOLD, DEFAULT_SUMMARY_PROMPT;
 var init_CompactionControl = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs"() {
     DEFAULT_TOKEN_THRESHOLD = 1e5;
     DEFAULT_SUMMARY_PROMPT = `You have been working on the task described above but have not yet completed it. Write a continuation summary that will allow you (or another instance of yourself) to resume work efficiently in a future context window where the conversation history will be replaced with this summary. Your summary should be structured, concise, and actionable. Include:
 1. Task Overview
@@ -32246,7 +32246,7 @@ Wrap your summary in <summary></summary> tags.`;
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs
 async function generateToolResponse(params, lastMessage = params.messages.at(-1), requestOptions) {
   if (!lastMessage || lastMessage.role !== "assistant" || !lastMessage.content || typeof lastMessage.content === "string") {
     return null;
@@ -32296,7 +32296,7 @@ async function generateToolResponse(params, lastMessage = params.messages.at(-1)
 }
 var _BetaToolRunner_instances, _BetaToolRunner_consumed, _BetaToolRunner_mutated, _BetaToolRunner_state, _BetaToolRunner_options, _BetaToolRunner_message, _BetaToolRunner_toolResponse, _BetaToolRunner_completion, _BetaToolRunner_iterationCount, _BetaToolRunner_checkAndCompact, _BetaToolRunner_generateToolResponse, BetaToolRunner;
 var init_BetaToolRunner = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs"() {
     init_tslib();
     init_ToolError();
     init_error();
@@ -32594,7 +32594,7 @@ var init_BetaToolRunner = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs
 function transformOutputFormat(params) {
   if (!params.output_format) {
     return params;
@@ -32613,7 +32613,7 @@ function transformOutputFormat(params) {
 }
 var DEPRECATED_MODELS, MODELS_TO_WARN_WITH_THINKING_ENABLED, Messages3;
 var init_messages = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs"() {
     init_error2();
     init_batches();
     init_resource();
@@ -32755,10 +32755,10 @@ Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resour
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs
 var Events2;
 var init_events = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/events.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -32874,10 +32874,10 @@ var init_events = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs
 var Resources;
 var init_resources = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/resources.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33007,10 +33007,10 @@ var init_resources = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs
 var Events3;
 var init_events2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/events.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33068,10 +33068,10 @@ var init_events2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs
 var Threads3;
 var init_threads = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/threads/threads.mjs"() {
     init_resource();
     init_events2();
     init_events2();
@@ -33156,10 +33156,10 @@ var init_threads = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs
 var Sessions3;
 var init_sessions = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/sessions/sessions.mjs"() {
     init_resource();
     init_events();
     init_events();
@@ -33314,10 +33314,10 @@ var init_sessions = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs
 var Versions3;
 var init_versions2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33443,10 +33443,10 @@ var init_versions2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs
 var Skills2;
 var init_skills2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs"() {
     init_resource();
     init_versions2();
     init_versions2();
@@ -33541,10 +33541,10 @@ var init_skills2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs
 var Credentials;
 var init_credentials2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/credentials.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -33719,10 +33719,10 @@ var init_credentials2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs
 var Vaults;
 var init_vaults = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/vaults/vaults.mjs"() {
     init_resource();
     init_credentials2();
     init_credentials2();
@@ -33868,10 +33868,10 @@ var init_vaults = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
 var Beta2;
 var init_beta = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs"() {
     init_resource();
     init_deployment_runs();
     init_deployment_runs();
@@ -33933,10 +33933,10 @@ var init_beta = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/completions.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/completions.mjs
 var Completions3;
 var init_completions = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/completions.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/completions.mjs"() {
     init_resource();
     init_headers();
     Completions3 = class extends APIResource2 {
@@ -33957,7 +33957,7 @@ var init_completions = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/parser.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/parser.mjs
 function getOutputFormat2(params) {
   return params?.output_config?.format;
 }
@@ -34018,12 +34018,12 @@ function parseOutputFormat(params, content) {
   }
 }
 var init_parser2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/parser.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/parser.mjs"() {
     init_error();
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
 function tracksToolInput2(content) {
   return content.type === "tool_use" || content.type === "server_tool_use";
 }
@@ -34031,7 +34031,7 @@ function checkNever2(x) {
 }
 var _MessageStream_instances, _MessageStream_currentMessageSnapshot, _MessageStream_params, _MessageStream_connectedPromise, _MessageStream_resolveConnectedPromise, _MessageStream_rejectConnectedPromise, _MessageStream_endPromise, _MessageStream_resolveEndPromise, _MessageStream_rejectEndPromise, _MessageStream_listeners, _MessageStream_ended, _MessageStream_errored, _MessageStream_aborted, _MessageStream_catchingPromiseCreated, _MessageStream_response, _MessageStream_request_id, _MessageStream_logger, _MessageStream_getFinalMessage, _MessageStream_getFinalText, _MessageStream_handleError, _MessageStream_beginRequest, _MessageStream_addStreamEvent, _MessageStream_endRequest, _MessageStream_accumulateMessage, JSON_BUF_PROPERTY2, MessageStream;
 var init_MessageStream = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs"() {
     init_tslib();
     init_errors();
     init_error2();
@@ -34603,10 +34603,10 @@ var init_MessageStream = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
 var Batches3;
 var init_batches2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -34755,10 +34755,10 @@ var init_batches2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
 var Messages4, DEPRECATED_MODELS2, MODELS_TO_WARN_WITH_THINKING_ENABLED2;
 var init_messages2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs"() {
     init_resource();
     init_headers();
     init_stainless_helper_header();
@@ -34888,10 +34888,10 @@ Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resour
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/models.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/models.mjs
 var Models3;
 var init_models2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/models.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/models.mjs"() {
     init_resource();
     init_pagination();
     init_headers();
@@ -34934,9 +34934,9 @@ var init_models2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/index.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/index.mjs
 var init_resources2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/resources/index.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/resources/index.mjs"() {
     init_shared();
     init_beta();
     init_completions();
@@ -34945,10 +34945,10 @@ var init_resources2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/client.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/client.mjs
 var _BaseAnthropic_instances, _a3, _BaseAnthropic_encoder, _BaseAnthropic_baseURLOverridden, HUMAN_PROMPT, AI_PROMPT, BaseAnthropic, Anthropic;
 var init_client = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/client.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/client.mjs"() {
     init_tslib();
     init_uuid();
     init_values();
@@ -35720,10 +35720,10 @@ var init_client = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/middleware.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/middleware.mjs
 var encoder;
 var init_middleware2 = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/lib/middleware.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/lib/middleware.mjs"() {
     init_error();
     init_streaming();
     init_errors();
@@ -35733,9 +35733,9 @@ var init_middleware2 = __esm({
   }
 });
 
-// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/index.mjs
+// node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/index.mjs
 var init_sdk = __esm({
-  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2/node_modules/@anthropic-ai/sdk/index.mjs"() {
+  "node_modules/.pnpm/@anthropic-ai+sdk@0.104.2_zod@3.25.76/node_modules/@anthropic-ai/sdk/index.mjs"() {
     init_client();
     init_uploads2();
     init_api_promise();
@@ -39864,7 +39864,7 @@ async function getTransactions(uid, limit3 = 50, cursor) {
   }
 }
 async function grantSignupBonus(uid) {
-  const result = await addCredits(uid, 100, "signup_bonus", {
+  const result = await addCredits(uid, 750, "signup_bonus", {
     source: "signup_trial",
     idempotencyKey: `signup_bonus_${uid}`
   });
@@ -45113,7 +45113,6 @@ router2.post("/auth/provision", async (req, res) => {
         createdAt: FieldValue3.serverTimestamp(),
         updatedAt: FieldValue3.serverTimestamp(),
         defaultSettings: {
-          courtMode: "adversarial",
           litigantCount: 3,
           confidenceTarget: 80,
           responseMode: "balanced",
@@ -45140,7 +45139,6 @@ router2.patch("/auth/preferences", async (req, res) => {
   if (!isFirebaseConfigured()) return res.json({ saved: false, reason: "firebase_not_configured" });
   const db = getFirestoreDb();
   if (!db) return res.json({ saved: false, reason: "firestore_unavailable" });
-  const VALID_COURT_MODES = /* @__PURE__ */ new Set(["adversarial", "socratic", "analysis", "critique"]);
   const VALID_RESP_MODES = /* @__PURE__ */ new Set(["balanced", "thorough", "concise"]);
   const VALID_OUT_FORMATS = /* @__PURE__ */ new Set(["report", "memo", "bullets", "verdict"]);
   const VALID_PROVIDERS = /* @__PURE__ */ new Set(["openai", "anthropic", "grok", "gemini"]);
@@ -45148,8 +45146,6 @@ router2.patch("/auth/preferences", async (req, res) => {
   const ds = body.defaultSettings ?? {};
   const patch = { updatedAt: FieldValue3.serverTimestamp() };
   if (body.onboardingComplete === true) patch["onboardingComplete"] = true;
-  if (ds.courtMode && VALID_COURT_MODES.has(ds.courtMode))
-    patch["defaultSettings.courtMode"] = ds.courtMode;
   if (typeof ds.litigantCount === "number" && Number.isInteger(ds.litigantCount) && ds.litigantCount >= 2 && ds.litigantCount <= 10)
     patch["defaultSettings.litigantCount"] = ds.litigantCount;
   if (typeof ds.confidenceTarget === "number" && Number.isInteger(ds.confidenceTarget) && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
@@ -45209,7 +45205,7 @@ import crypto3 from "crypto";
 
 // artifacts/api-server/src/lib/providers/types.ts
 var DEFAULT_MODELS = {
-  openai: "gpt-4o",
+  openai: "gpt-5",
   anthropic: "claude-opus-4-5",
   grok: "grok-3",
   gemini: "gemini-2.5-pro"
@@ -45222,6 +45218,7 @@ var PROVIDER_DISPLAY_NAMES = {
 };
 var PROVIDER_MODELS = {
   openai: [
+    { id: "gpt-5", label: "GPT-5" },
     { id: "gpt-4o", label: "GPT-4o" },
     { id: "gpt-4o-mini", label: "GPT-4o Mini" },
     { id: "o3", label: "o3 (reasoning)" },
@@ -45244,7 +45241,7 @@ var PROVIDER_MODELS = {
   ]
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/tslib.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -45262,7 +45259,7 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/uuid.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
   const { crypto: crypto6 } = globalThis;
   if (crypto6?.randomUUID) {
@@ -45274,7 +45271,7 @@ var uuid4 = function() {
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/errors.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/errors.mjs
 function isAbortError(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -45305,7 +45302,7 @@ var castToError = (err) => {
   return new Error(err);
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/error.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/core/error.mjs
 var OpenAIError = class extends Error {
 };
 var APIError = class _APIError extends OpenAIError {
@@ -45439,7 +45436,7 @@ var SubjectTokenProviderError = class extends OpenAIError {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/values.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/values.mjs
 var startsWithSchemeRegexp = /^[a-z][a-z0-9+.-]*:/i;
 var isAbsoluteURL = (url) => {
   return startsWithSchemeRegexp.test(url);
@@ -45482,13 +45479,13 @@ var safeJSON = (text) => {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/sleep.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/sleep.mjs
 var sleep = (ms) => new Promise((resolve4) => setTimeout(resolve4, ms));
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/version.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/version.mjs
 var VERSION = "6.42.0";
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/detect-platform.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/detect-platform.mjs
 var isRunningInBrowser = () => {
   return (
     // @ts-ignore
@@ -45622,7 +45619,7 @@ var getPlatformHeaders = () => {
   return _platformHeaders ?? (_platformHeaders = getPlatformProperties());
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/shims.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/shims.mjs
 function getDefaultFetch() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -45694,7 +45691,7 @@ async function CancelReadableStream(stream) {
   await cancelPromise;
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/request-options.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/request-options.mjs
 var FallbackEncoder = ({ headers, body }) => {
   return {
     bodyHeaders: {
@@ -45704,7 +45701,7 @@ var FallbackEncoder = ({ headers, body }) => {
   };
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/qs/formats.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/qs/formats.mjs
 var default_format = "RFC3986";
 var default_formatter = (v) => String(v);
 var formatters = {
@@ -45713,7 +45710,7 @@ var formatters = {
 };
 var RFC1738 = "RFC1738";
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/qs/utils.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/qs/utils.mjs
 var has = (obj, key) => (has = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has(obj, key));
 var hex_table = /* @__PURE__ */ (() => {
   const array = [];
@@ -45792,7 +45789,7 @@ function maybe_map(val, fn) {
   return fn(val);
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/qs/stringify.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/qs/stringify.mjs
 var array_prefix_generators = {
   brackets(prefix) {
     return String(prefix) + "[]";
@@ -46070,12 +46067,12 @@ function stringify(object, opts = {}) {
   return joined.length > 0 ? prefix + joined : "";
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/query.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/query.mjs
 function stringifyQuery(query) {
   return stringify(query, { arrayFormat: "brackets" });
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/bytes.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/bytes.mjs
 function concatBytes(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -46100,7 +46097,7 @@ function decodeUTF8(bytes) {
   return (decodeUTF8_ ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_ = decoder.decode.bind(decoder)))(bytes);
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/decoders/line.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/decoders/line.mjs
 var _LineDecoder_buffer;
 var _LineDecoder_carriageReturnIndex;
 var LineDecoder = class {
@@ -46177,7 +46174,7 @@ function findDoubleNewlineIndex(buffer) {
   return -1;
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/log.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/log.mjs
 var levelNumbers = {
   off: 0,
   error: 200,
@@ -46250,7 +46247,7 @@ var formatRequestDetails = (details) => {
   return details;
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/streaming.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/core/streaming.mjs
 var _Stream_client;
 var Stream = class _Stream {
   constructor(iterator, controller, client) {
@@ -46508,7 +46505,7 @@ function partition(str2, delimiter2) {
   return [str2, "", ""];
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/parse.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/parse.mjs
 async function defaultParseResponse(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -46558,7 +46555,7 @@ function addRequestID(value, response) {
   });
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/api-promise.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/core/api-promise.mjs
 var _APIPromise_client;
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
@@ -46621,7 +46618,7 @@ var APIPromise = class _APIPromise extends Promise {
 };
 _APIPromise_client = /* @__PURE__ */ new WeakMap();
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/pagination.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/core/pagination.mjs
 var _AbstractPage_client;
 var AbstractPage = class {
   constructor(client, response, body, options) {
@@ -46782,7 +46779,7 @@ var NextCursorPage = class extends AbstractPage {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/auth/workload-identity-auth.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/auth/workload-identity-auth.mjs
 var SUBJECT_TOKEN_TYPES = {
   jwt: "urn:ietf:params:oauth:token-type:jwt",
   id: "urn:ietf:params:oauth:token-type:id_token"
@@ -46870,7 +46867,7 @@ var WorkloadIdentityAuth = class {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/uploads.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/uploads.mjs
 var checkFileSupport = () => {
   if (typeof File === "undefined") {
     const { process: process2 } = globalThis;
@@ -46961,7 +46958,7 @@ var addFormValue = async (form, key, value) => {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/to-file.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/to-file.mjs
 var isBlobLike = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
 var isFileLike = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike(value);
 var isResponseLike = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
@@ -47013,14 +47010,14 @@ function propsForError(value) {
   return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/core/resource.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/core/resource.mjs
 var APIResource = class {
   constructor(client) {
     this._client = client;
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/path.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/path.mjs
 function encodeURIPath(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
@@ -47075,7 +47072,7 @@ ${underline}`);
 };
 var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/chat/completions/messages.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/chat/completions/messages.mjs
 var Messages = class extends APIResource {
   /**
    * Get the messages in a stored chat completion. Only Chat Completions that have
@@ -47096,7 +47093,7 @@ var Messages = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/parser.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/parser.mjs
 function isChatCompletionFunctionTool(tool) {
   return tool !== void 0 && "function" in tool && tool.function !== void 0;
 }
@@ -47203,7 +47200,7 @@ function validateInputTools(tools) {
   }
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/chatCompletionUtils.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/chatCompletionUtils.mjs
 var isAssistantMessage = (message) => {
   return message?.role === "assistant";
 };
@@ -47211,7 +47208,7 @@ var isToolMessage = (message) => {
   return message?.role === "tool";
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/EventStream.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/EventStream.mjs
 var _EventStream_instances;
 var _EventStream_connectedPromise;
 var _EventStream_resolveConnectedPromise;
@@ -47400,12 +47397,12 @@ _EventStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_reso
   return this._emit("error", new OpenAIError(String(error)));
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/RunnableFunction.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/RunnableFunction.mjs
 function isRunnableFunctionWithParse(fn) {
   return typeof fn.parse === "function";
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
 var _AbstractChatCompletionRunner_instances;
 var _AbstractChatCompletionRunner_getFinalContent;
 var _AbstractChatCompletionRunner_getFinalMessage;
@@ -47675,7 +47672,7 @@ _AbstractChatCompletionRunner_instances = /* @__PURE__ */ new WeakSet(), _Abstra
   return typeof rawContent === "string" ? rawContent : rawContent === void 0 ? "undefined" : JSON.stringify(rawContent);
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ChatCompletionRunner.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/ChatCompletionRunner.mjs
 var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompletionRunner {
   static runTools(client, params, options) {
     const runner = new _ChatCompletionRunner();
@@ -47694,7 +47691,7 @@ var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompl
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/_vendor/partial-json-parser/parser.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/_vendor/partial-json-parser/parser.mjs
 var STR = 1;
 var NUM = 2;
 var ARR = 4;
@@ -47906,7 +47903,7 @@ var _parseJSON = (jsonString, allow) => {
 };
 var partialParse = (input) => parseJSON(input, Allow.ALL ^ Allow.NUM);
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ChatCompletionStream.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/ChatCompletionStream.mjs
 var _ChatCompletionStream_instances;
 var _ChatCompletionStream_params;
 var _ChatCompletionStream_choiceEventStates;
@@ -48386,7 +48383,7 @@ function assertIsEmpty(obj) {
 function assertNever(_x) {
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
 var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends ChatCompletionStream {
   static fromReadableStream(stream) {
     const runner = new _ChatCompletionStreamingRunner(null);
@@ -48407,7 +48404,7 @@ var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/chat/completions/completions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/chat/completions/completions.mjs
 var Completions = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -48517,7 +48514,7 @@ var Completions = class extends APIResource {
 };
 Completions.Messages = Messages;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/chat/chat.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/chat/chat.mjs
 var Chat = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -48526,7 +48523,7 @@ var Chat = class extends APIResource {
 };
 Chat.Completions = Completions;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
 var AdminAPIKeys = class extends APIResource {
   /**
    * Create an organization admin API key
@@ -48600,7 +48597,7 @@ var AdminAPIKeys = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/audit-logs.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/audit-logs.mjs
 var AuditLogs = class extends APIResource {
   /**
    * List user actions and configuration changes within this organization.
@@ -48622,7 +48619,7 @@ var AuditLogs = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/certificates.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/certificates.mjs
 var Certificates = class extends APIResource {
   /**
    * Upload a certificate to the organization. This does **not** automatically
@@ -48759,7 +48756,7 @@ var Certificates = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/data-retention.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/data-retention.mjs
 var DataRetention = class extends APIResource {
   /**
    * Retrieves organization data retention controls.
@@ -48796,7 +48793,7 @@ var DataRetention = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/invites.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/invites.mjs
 var Invites = class extends APIResource {
   /**
    * Create an invite for a user to the organization. The invite must be accepted by
@@ -48872,7 +48869,7 @@ var Invites = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/roles.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/roles.mjs
 var Roles = class extends APIResource {
   /**
    * Creates a custom role for the organization.
@@ -48961,7 +48958,7 @@ var Roles = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/spend-alerts.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/spend-alerts.mjs
 var SpendAlerts = class extends APIResource {
   /**
    * Creates an organization spend alert.
@@ -49047,7 +49044,7 @@ var SpendAlerts = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/usage.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/usage.mjs
 var Usage = class extends APIResource {
   /**
    * Get audio speeches usage details for the organization.
@@ -49249,7 +49246,7 @@ var Usage = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/groups/roles.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/groups/roles.mjs
 var Roles2 = class extends APIResource {
   /**
    * Assigns an organization role to a group within the organization.
@@ -49326,7 +49323,7 @@ var Roles2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/groups/users.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/groups/users.mjs
 var Users = class extends APIResource {
   /**
    * Adds a user to a group.
@@ -49403,7 +49400,7 @@ var Users = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/groups/groups.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/groups/groups.mjs
 var Groups = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -49500,7 +49497,7 @@ var Groups = class extends APIResource {
 Groups.Users = Users;
 Groups.Roles = Roles2;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
 var APIKeys = class extends APIResource {
   /**
    * Retrieves an API key in the project.
@@ -49561,7 +49558,7 @@ var APIKeys = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/certificates.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/certificates.mjs
 var Certificates2 = class extends APIResource {
   /**
    * List certificates for this project.
@@ -49618,7 +49615,7 @@ var Certificates2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/data-retention.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/data-retention.mjs
 var DataRetention2 = class extends APIResource {
   /**
    * Retrieves project data retention controls.
@@ -49658,7 +49655,7 @@ var DataRetention2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/hosted-tool-permissions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/hosted-tool-permissions.mjs
 var HostedToolPermissions = class extends APIResource {
   /**
    * Returns hosted tool permissions for a project.
@@ -49697,7 +49694,7 @@ var HostedToolPermissions = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/model-permissions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/model-permissions.mjs
 var ModelPermissions = class extends APIResource {
   /**
    * Returns model permissions for a project.
@@ -49754,7 +49751,7 @@ var ModelPermissions = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
 var RateLimits = class extends APIResource {
   /**
    * Returns the rate limits per model for a project.
@@ -49794,7 +49791,7 @@ var RateLimits = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/roles.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/roles.mjs
 var Roles3 = class extends APIResource {
   /**
    * Creates a custom role for a project.
@@ -49895,7 +49892,7 @@ var Roles3 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
 var ServiceAccounts = class extends APIResource {
   /**
    * Creates a new service account in the project. This also returns an unredacted
@@ -49989,7 +49986,7 @@ var ServiceAccounts = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/spend-alerts.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/spend-alerts.mjs
 var SpendAlerts2 = class extends APIResource {
   /**
    * Creates a project spend alert.
@@ -50084,7 +50081,7 @@ var SpendAlerts2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
 var Roles4 = class extends APIResource {
   /**
    * Assigns a project role to a group within a project.
@@ -50164,7 +50161,7 @@ var Roles4 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
 var Groups2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50247,7 +50244,7 @@ var Groups2 = class extends APIResource {
 };
 Groups2.Roles = Roles4;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
 var Roles5 = class extends APIResource {
   /**
    * Assigns a project role to a user within a project.
@@ -50327,7 +50324,7 @@ var Roles5 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/users/users.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/users/users.mjs
 var Users2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50433,7 +50430,7 @@ var Users2 = class extends APIResource {
 };
 Users2.Roles = Roles5;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/projects/projects.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/projects/projects.mjs
 var Projects = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50552,7 +50549,7 @@ Projects.DataRetention = DataRetention2;
 Projects.SpendAlerts = SpendAlerts2;
 Projects.Certificates = Certificates2;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/users/roles.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/users/roles.mjs
 var Roles6 = class extends APIResource {
   /**
    * Assigns an organization role to a user within the organization.
@@ -50629,7 +50626,7 @@ var Roles6 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/users/users.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/users/users.mjs
 var Users3 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50703,7 +50700,7 @@ var Users3 = class extends APIResource {
 };
 Users3.Roles = Roles6;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/organization/organization.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/organization/organization.mjs
 var Organization = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50732,7 +50729,7 @@ Organization.SpendAlerts = SpendAlerts;
 Organization.Certificates = Certificates;
 Organization.Projects = Projects;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/admin/admin.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/admin/admin.mjs
 var Admin = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50741,7 +50738,7 @@ var Admin = class extends APIResource {
 };
 Admin.Organization = Organization;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/headers.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/headers.mjs
 var brand_privateNullableHeaders = /* @__PURE__ */ Symbol("brand.privateNullableHeaders");
 function* iterateHeaders(headers) {
   if (!headers)
@@ -50804,7 +50801,7 @@ var buildHeaders = (newHeaders) => {
   return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/speech.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/audio/speech.mjs
 var Speech = class extends APIResource {
   /**
    * Generates audio from the input text.
@@ -50834,7 +50831,7 @@ var Speech = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/transcriptions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/audio/transcriptions.mjs
 var Transcriptions = class extends APIResource {
   create(body, options) {
     return this._client.post("/audio/transcriptions", multipartFormRequestOptions({
@@ -50847,14 +50844,14 @@ var Transcriptions = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/translations.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/audio/translations.mjs
 var Translations = class extends APIResource {
   create(body, options) {
     return this._client.post("/audio/translations", multipartFormRequestOptions({ body, ...options, __metadata: { model: body.model }, __security: { bearerAuth: true } }, this._client));
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/audio/audio.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/audio/audio.mjs
 var Audio = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -50867,7 +50864,7 @@ Audio.Transcriptions = Transcriptions;
 Audio.Translations = Translations;
 Audio.Speech = Speech;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/batches.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/batches.mjs
 var Batches = class extends APIResource {
   /**
    * Creates and executes a batch from an uploaded file of requests
@@ -50904,7 +50901,7 @@ var Batches = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/assistants.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/assistants.mjs
 var Assistants = class extends APIResource {
   /**
    * Create an assistant with a model and instructions.
@@ -50971,7 +50968,7 @@ var Assistants = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/realtime/sessions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/realtime/sessions.mjs
 var Sessions = class extends APIResource {
   /**
    * Create an ephemeral API token for use in client-side applications with the
@@ -50998,7 +50995,7 @@ var Sessions = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
 var TranscriptionSessions = class extends APIResource {
   /**
    * Create an ephemeral API token for use in client-side applications with the
@@ -51025,7 +51022,7 @@ var TranscriptionSessions = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/realtime/realtime.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/realtime/realtime.mjs
 var Realtime = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -51036,7 +51033,7 @@ var Realtime = class extends APIResource {
 Realtime.Sessions = Sessions;
 Realtime.TranscriptionSessions = TranscriptionSessions;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/chatkit/sessions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/chatkit/sessions.mjs
 var Sessions2 = class extends APIResource {
   /**
    * Create a ChatKit session.
@@ -51078,7 +51075,7 @@ var Sessions2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/chatkit/threads.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/chatkit/threads.mjs
 var Threads = class extends APIResource {
   /**
    * Retrieve a ChatKit thread by its identifier.
@@ -51155,7 +51152,7 @@ var Threads = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/chatkit/chatkit.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/chatkit/chatkit.mjs
 var ChatKit = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -51166,7 +51163,7 @@ var ChatKit = class extends APIResource {
 ChatKit.Sessions = Sessions2;
 ChatKit.Threads = Threads;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/messages.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/threads/messages.mjs
 var Messages2 = class extends APIResource {
   /**
    * Create a message.
@@ -51236,7 +51233,7 @@ var Messages2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/runs/steps.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/threads/runs/steps.mjs
 var Steps = class extends APIResource {
   /**
    * Retrieves a run step.
@@ -51268,7 +51265,7 @@ var Steps = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/base64.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/base64.mjs
 var toFloat32Array = (base64Str) => {
   if (typeof Buffer !== "undefined") {
     const buf = Buffer.from(base64Str, "base64");
@@ -51284,7 +51281,7 @@ var toFloat32Array = (base64Str) => {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/internal/utils/env.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/internal/utils/env.mjs
 var readEnv = (env) => {
   if (typeof globalThis.process !== "undefined") {
     return globalThis.process.env?.[env]?.trim() || void 0;
@@ -51295,7 +51292,7 @@ var readEnv = (env) => {
   return void 0;
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/AssistantStream.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/AssistantStream.mjs
 var _AssistantStream_instances;
 var _a;
 var _AssistantStream_events;
@@ -51834,7 +51831,7 @@ _a = AssistantStream, _AssistantStream_addEvent = function _AssistantStream_addE
 function assertNever2(_x) {
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/runs/runs.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/threads/runs/runs.mjs
 var Runs = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52007,7 +52004,7 @@ var Runs = class extends APIResource {
 };
 Runs.Steps = Steps;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/threads/threads.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/threads/threads.mjs
 var Threads2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52093,7 +52090,7 @@ var Threads2 = class extends APIResource {
 Threads2.Runs = Runs;
 Threads2.Messages = Messages2;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/beta/beta.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/beta/beta.mjs
 var Beta = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52108,7 +52105,7 @@ Beta.ChatKit = ChatKit;
 Beta.Assistants = Assistants;
 Beta.Threads = Threads2;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/completions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/completions.mjs
 var Completions2 = class extends APIResource {
   create(body, options) {
     return this._client.post("/completions", {
@@ -52120,7 +52117,7 @@ var Completions2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/containers/files/content.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/containers/files/content.mjs
 var Content = class extends APIResource {
   /**
    * Retrieve Container File Content
@@ -52136,7 +52133,7 @@ var Content = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/containers/files/files.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/containers/files/files.mjs
 var Files = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52185,7 +52182,7 @@ var Files = class extends APIResource {
 };
 Files.Content = Content;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/containers/containers.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/containers/containers.mjs
 var Containers = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52229,7 +52226,7 @@ var Containers = class extends APIResource {
 };
 Containers.Files = Files;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/conversations/items.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/conversations/items.mjs
 var Items = class extends APIResource {
   /**
    * Create items in a conversation with the given ID.
@@ -52272,7 +52269,7 @@ var Items = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/conversations/conversations.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/conversations/conversations.mjs
 var Conversations = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52315,7 +52312,7 @@ var Conversations = class extends APIResource {
 };
 Conversations.Items = Items;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/embeddings.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/embeddings.mjs
 var Embeddings = class extends APIResource {
   /**
    * Creates an embedding vector representing the input text.
@@ -52359,7 +52356,7 @@ var Embeddings = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/evals/runs/output-items.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/evals/runs/output-items.mjs
 var OutputItems = class extends APIResource {
   /**
    * Get an evaluation run output item by ID.
@@ -52380,7 +52377,7 @@ var OutputItems = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/evals/runs/runs.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/evals/runs/runs.mjs
 var Runs2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52441,7 +52438,7 @@ var Runs2 = class extends APIResource {
 };
 Runs2.OutputItems = OutputItems;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/evals/evals.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/evals/evals.mjs
 var Evals = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52489,7 +52486,7 @@ var Evals = class extends APIResource {
 };
 Evals.Runs = Runs2;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/files.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/files.mjs
 var Files2 = class extends APIResource {
   /**
    * Upload a file that can be used across various endpoints. Individual files can be
@@ -52576,11 +52573,11 @@ var Files2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/methods.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/methods.mjs
 var Methods = class extends APIResource {
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
 var Graders = class extends APIResource {
   /**
    * Run a grader.
@@ -52632,7 +52629,7 @@ var Graders = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
 var Alpha = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52641,7 +52638,7 @@ var Alpha = class extends APIResource {
 };
 Alpha.Graders = Graders;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
 var Permissions = class extends APIResource {
   /**
    * **NOTE:** Calling this endpoint requires an [admin API key](../admin-api-keys).
@@ -52721,7 +52718,7 @@ var Permissions = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
 var Checkpoints = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52730,7 +52727,7 @@ var Checkpoints = class extends APIResource {
 };
 Checkpoints.Permissions = Permissions;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
 var Checkpoints2 = class extends APIResource {
   /**
    * List checkpoints for a fine-tuning job.
@@ -52750,7 +52747,7 @@ var Checkpoints2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
 var Jobs = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52879,7 +52876,7 @@ var Jobs = class extends APIResource {
 };
 Jobs.Checkpoints = Checkpoints2;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
 var FineTuning = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52894,11 +52891,11 @@ FineTuning.Jobs = Jobs;
 FineTuning.Checkpoints = Checkpoints;
 FineTuning.Alpha = Alpha;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/graders/grader-models.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/graders/grader-models.mjs
 var GraderModels = class extends APIResource {
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/graders/graders.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/graders/graders.mjs
 var Graders2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -52907,7 +52904,7 @@ var Graders2 = class extends APIResource {
 };
 Graders2.GraderModels = GraderModels;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/images.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/images.mjs
 var Images = class extends APIResource {
   /**
    * Creates a variation of a given image. This endpoint only supports `dall-e-2`.
@@ -52935,7 +52932,7 @@ var Images = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/models.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/models.mjs
 var Models = class extends APIResource {
   /**
    * Retrieves a model instance, providing basic information about the model such as
@@ -52960,7 +52957,7 @@ var Models = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/moderations.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/moderations.mjs
 var Moderations = class extends APIResource {
   /**
    * Classifies if text and/or image inputs are potentially harmful. Learn more in
@@ -52971,7 +52968,7 @@ var Moderations = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/realtime/calls.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/realtime/calls.mjs
 var Calls = class extends APIResource {
   /**
    * Accept an incoming SIP call and configure the realtime session that will handle
@@ -53043,7 +53040,7 @@ var Calls = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/realtime/client-secrets.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/realtime/client-secrets.mjs
 var ClientSecrets = class extends APIResource {
   /**
    * Create a Realtime client secret with an associated session configuration.
@@ -53077,7 +53074,7 @@ var ClientSecrets = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/realtime/realtime.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/realtime/realtime.mjs
 var Realtime2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -53088,7 +53085,7 @@ var Realtime2 = class extends APIResource {
 Realtime2.ClientSecrets = ClientSecrets;
 Realtime2.Calls = Calls;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/ResponsesParser.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/ResponsesParser.mjs
 function maybeParseResponse(response, params) {
   if (!params || !hasAutoParseableInput2(params)) {
     return {
@@ -53209,7 +53206,7 @@ function addOutputText(rsp) {
   rsp.output_text = texts.join("");
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/responses/ResponseStream.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/responses/ResponseStream.mjs
 var _ResponseStream_instances;
 var _ResponseStream_params;
 var _ResponseStream_currentResponseSnapshot;
@@ -53471,7 +53468,7 @@ function finalizeResponse(snapshot, params) {
   return maybeParseResponse(snapshot, params);
 }
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/responses/input-items.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/responses/input-items.mjs
 var InputItems = class extends APIResource {
   /**
    * Returns a list of input items for a given response.
@@ -53491,7 +53488,7 @@ var InputItems = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/responses/input-tokens.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/responses/input-tokens.mjs
 var InputTokens = class extends APIResource {
   /**
    * Returns input token counts of the request.
@@ -53513,7 +53510,7 @@ var InputTokens = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/responses/responses.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/responses/responses.mjs
 var Responses = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -53612,7 +53609,7 @@ var Responses = class extends APIResource {
 Responses.InputItems = InputItems;
 Responses.InputTokens = InputTokens;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/content.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/skills/content.mjs
 var Content2 = class extends APIResource {
   /**
    * Download a skill zip bundle by its ID.
@@ -53627,7 +53624,7 @@ var Content2 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/versions/content.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/skills/versions/content.mjs
 var Content3 = class extends APIResource {
   /**
    * Download a skill version zip bundle.
@@ -53643,7 +53640,7 @@ var Content3 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/versions/versions.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/skills/versions/versions.mjs
 var Versions = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -53688,7 +53685,7 @@ var Versions = class extends APIResource {
 };
 Versions.Content = Content3;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/skills/skills.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/skills/skills.mjs
 var Skills = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -53737,7 +53734,7 @@ var Skills = class extends APIResource {
 Skills.Content = Content2;
 Skills.Versions = Versions;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/uploads/parts.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/uploads/parts.mjs
 var Parts = class extends APIResource {
   /**
    * Adds a
@@ -53757,7 +53754,7 @@ var Parts = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/uploads/uploads.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/uploads/uploads.mjs
 var Uploads = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -53827,7 +53824,7 @@ var Uploads = class extends APIResource {
 };
 Uploads.Parts = Parts;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/lib/Util.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/lib/Util.mjs
 var allSettledWithThrow = async (promises) => {
   const results = await Promise.allSettled(promises);
   const rejected = results.filter((result) => result.status === "rejected");
@@ -53846,7 +53843,7 @@ var allSettledWithThrow = async (promises) => {
   return values;
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/vector-stores/file-batches.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/vector-stores/file-batches.mjs
 var FileBatches = class extends APIResource {
   /**
    * Create a vector store file batch.
@@ -53971,7 +53968,7 @@ var FileBatches = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/vector-stores/files.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/vector-stores/files.mjs
 var Files3 = class extends APIResource {
   /**
    * Create a vector store file by attaching a
@@ -54112,7 +54109,7 @@ var Files3 = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/vector-stores/vector-stores.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/vector-stores/vector-stores.mjs
 var VectorStores = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -54189,7 +54186,7 @@ var VectorStores = class extends APIResource {
 VectorStores.Files = Files3;
 VectorStores.FileBatches = FileBatches;
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/videos.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/videos.mjs
 var Videos = class extends APIResource {
   /**
    * Create a new video generation job from a prompt and optional reference assets.
@@ -54269,7 +54266,7 @@ var Videos = class extends APIResource {
   }
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/resources/webhooks/webhooks.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/resources/webhooks/webhooks.mjs
 var _Webhooks_instances;
 var _Webhooks_validateSecret;
 var _Webhooks_getRequiredHeader;
@@ -54348,7 +54345,7 @@ _Webhooks_instances = /* @__PURE__ */ new WeakSet(), _Webhooks_validateSecret = 
   return value;
 };
 
-// node_modules/.pnpm/openai@6.42.0/node_modules/openai/client.mjs
+// node_modules/.pnpm/openai@6.42.0_zod@3.25.76/node_modules/openai/client.mjs
 var _OpenAI_instances;
 var _a2;
 var _OpenAI_encoder;
@@ -54966,7 +54963,7 @@ var OpenAIProvider = class {
   model;
   client;
   _lastUsage = null;
-  constructor(model = "gpt-4o", credentials) {
+  constructor(model = "gpt-5", credentials) {
     this.model = model;
     if (credentials) {
       this.client = new OpenAI({
@@ -55335,7 +55332,7 @@ async function createProviderAsync(id, model, labelHint) {
       `Provider "${id}" is not configured. Add its API key in Admin \u2192 API Keys.`
     );
   }
-  const resolvedModel = model ?? DEFAULT_MODELS[id] ?? "gpt-4o";
+  const resolvedModel = model ?? DEFAULT_MODELS[id] ?? "gpt-5";
   switch (id) {
     case "openai":
       return new OpenAIProvider(resolvedModel, creds);
@@ -55366,6 +55363,8 @@ async function getConfiguredProvidersAsync() {
 var CREDIT_VALUE_USD = 0.01;
 var MODEL_RATES = {
   // ── OpenAI ──────────────────────────────────────────────────────────────────
+  "gpt-5": { input: 3e-3, output: 0.015 },
+  // flagship — $3/$15 per 1M
   "gpt-4o": { input: 25e-4, output: 0.01 },
   "gpt-4o-mini": { input: 15e-5, output: 6e-4 },
   "o3": { input: 0.01, output: 0.04 },
@@ -55391,6 +55390,7 @@ var MODEL_RATES = {
 };
 var MODEL_MULTIPLIERS = {
   // OpenAI
+  "gpt-5": 5,
   "gpt-4o": 5,
   "gpt-4o-mini": 8,
   "o3": 4,
@@ -55431,7 +55431,15 @@ function calculateActualCredits(model, inputTokens, outputTokens) {
 function charsToTokens(chars) {
   return Math.ceil(chars / 4);
 }
-var FIXED_STAGE_PRIOR = { input: 12500, output: 3780 };
+var HISTORY_FILL_RATE = 0.85;
+var ORCHESTRATOR_OUTPUT_TOKENS = 400;
+var SYSTEM_PROMPT_INPUT_TOKENS = 600;
+var TOKENS_PER_TURN_BY_MODE = {
+  concise: 300,
+  balanced: 600,
+  thorough: 1200
+};
+var FIXED_STAGE_PRIOR = { input: 12500, output: 4590 };
 var CALIBRATION_MIN_SESSIONS = 5;
 var CALIBRATION_CACHE_TTL_MS = 5 * 60 * 1e3;
 var _calCache = null;
@@ -55458,18 +55466,13 @@ async function getCalibratedFixedStageTokens() {
   }
 }
 function variableTokens(config) {
-  const outputTokensPerTurn = {
-    concise: 300,
-    balanced: 600,
-    thorough: 1200
-  };
-  const tokensPerTurn = outputTokensPerTurn[config.responseMode];
+  const tokensPerTurn = TOKENS_PER_TURN_BY_MODE[config.responseMode];
   const rounds = config.maxIterations;
   const litigants = Math.min(config.litigantCount, 10);
-  const historyPerRound = tokensPerTurn * litigants * 0.8;
-  const avgInputPerTurn = 600 + historyPerRound * (rounds / 2);
+  const historyPerRound = tokensPerTurn * litigants * HISTORY_FILL_RATE;
+  const avgInputPerTurn = SYSTEM_PROMPT_INPUT_TOKENS + historyPerRound * (rounds / 2);
   return {
-    output: 400 + litigants * rounds * tokensPerTurn,
+    output: ORCHESTRATOR_OUTPUT_TOKENS + litigants * rounds * tokensPerTurn,
     input: litigants * rounds * avgInputPerTurn
   };
 }
@@ -55477,7 +55480,7 @@ function estimateSessionCredits(config) {
   const v = variableTokens(config);
   const outputTokens = v.output + FIXED_STAGE_PRIOR.output;
   const inputTokens = v.input + FIXED_STAGE_PRIOR.input;
-  const model = config.model ?? "gpt-4o";
+  const model = config.model ?? "gpt-5";
   return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
 }
 async function estimateSessionCreditsCalibrated(config) {
@@ -55485,7 +55488,7 @@ async function estimateSessionCreditsCalibrated(config) {
   const v = variableTokens(config);
   const outputTokens = v.output + fixed.output;
   const inputTokens = v.input + fixed.input;
-  const model = config.model ?? "gpt-4o";
+  const model = config.model ?? "gpt-5";
   return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
 }
 function getModelCreditInfo(model) {
@@ -55501,7 +55504,13 @@ function getModelCreditInfo(model) {
       maxIterations: 2,
       responseMode: "balanced",
       model
-    })
+    }),
+    // Formula constants — single source of truth
+    fixedStagePrior: { ...FIXED_STAGE_PRIOR },
+    historyFillRate: HISTORY_FILL_RATE,
+    tokensPerTurnByMode: { ...TOKENS_PER_TURN_BY_MODE },
+    orchestratorOutputTokens: ORCHESTRATOR_OUTPUT_TOKENS,
+    systemPromptInputTokens: SYSTEM_PROMPT_INPUT_TOKENS
   };
 }
 
@@ -55611,34 +55620,13 @@ function getSeatBriefFileDefault(seatId) {
 
 // artifacts/api-server/src/lib/brainEngine.ts
 function getRoles(config) {
-  const modePersonas = {
-    adversarial: [
-      { name: "Advocate", persona: "Advocate", instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive." },
-      { name: "Skeptic", persona: "Skeptic", instruction: "Challenge and attack the proposition with the strongest counterarguments. Find weaknesses in the Advocate's reasoning. Be rigorous." },
-      { name: "Devil's Advocate", persona: "Devil's Advocate", instruction: "Take the most contrarian and uncomfortable position. Challenge both sides. Expose hidden assumptions." },
-      { name: "Empiricist", persona: "Empiricist", instruction: "Evaluate claims strictly on empirical evidence and data. Reject unsupported assertions from all sides." }
-    ],
-    socratic: [
-      { name: "Questioner", persona: "Questioner", instruction: "Ask probing Socratic questions that reveal hidden assumptions and logical gaps in the proposition." },
-      { name: "Defender", persona: "Defender", instruction: "Defend and clarify the proposition in response to Socratic questioning. Refine and strengthen arguments." },
-      { name: "Synthesizer", persona: "Synthesizer", instruction: "Identify what has been established, what remains contested, and what new understanding has emerged." },
-      { name: "Logician", persona: "Logician", instruction: "Map the logical structure of arguments. Identify valid inferences, fallacies, and unsupported leaps." }
-    ],
-    analysis: [
-      { name: "Analyst", persona: "Analyst", instruction: "Systematically analyze all dimensions of the question: historical context, current state, trends, and implications." },
-      { name: "Contrarian", persona: "Contrarian", instruction: "Identify what the conventional analysis misses. Surface non-obvious insights and underexplored angles." },
-      { name: "Realist", persona: "Realist", instruction: "Ground the analysis in practical reality. Challenge theoretical arguments with real-world constraints." },
-      { name: "Futurist", persona: "Futurist", instruction: "Project forward: what are the second and third-order effects? What does this imply long-term?" }
-    ],
-    critique: [
-      { name: "Critic", persona: "Critic", instruction: "Identify every flaw, weakness, and unsupported assumption. Be thorough and relentless." },
-      { name: "Defender", persona: "Defender", instruction: "Defend the subject against criticism. Show what the critics miss or exaggerate." },
-      { name: "Balanced Reviewer", persona: "Balanced Reviewer", instruction: "Give a fair, balanced assessment incorporating both criticisms and defenses." },
-      { name: "Standards Expert", persona: "Standards Expert", instruction: "Evaluate against professional standards and best practices in the relevant field." }
-    ]
-  };
-  const allRoles = modePersonas[config.courtMode];
-  return allRoles.slice(0, Math.min(config.litigantCount, allRoles.length));
+  const roles = [
+    { name: "Advocate", persona: "Advocate", instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive." },
+    { name: "Skeptic", persona: "Skeptic", instruction: "Challenge and attack the proposition with the strongest counterarguments. Find weaknesses in the Advocate's reasoning. Be rigorous." },
+    { name: "Devil's Advocate", persona: "Devil's Advocate", instruction: "Take the most contrarian and uncomfortable position. Challenge both sides. Expose hidden assumptions." },
+    { name: "Empiricist", persona: "Empiricist", instruction: "Evaluate claims strictly on empirical evidence and data. Reject unsupported assertions from all sides." }
+  ];
+  return roles.slice(0, Math.min(config.litigantCount, roles.length));
 }
 function getDebateModeClause(debateMode) {
   if (debateMode === "collaborative") {
@@ -55781,7 +55769,7 @@ Context: ${baseContext}${conscienceClause}`
       },
       {
         role: "user",
-        content: rebuttalContext ? `This is Rebuttal Round ${rebuttalContext.rebuttalRound}. The user has challenged the court's verdict with: "${rebuttalContext.challenge}". Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Acknowledge the challenge, state precisely what the court will re-examine, and route the litigants to address the specific objection.` : `Court mode: ${config.courtMode}. Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`
+        content: rebuttalContext ? `This is Rebuttal Round ${rebuttalContext.rebuttalRound}. The user has challenged the court's verdict with: "${rebuttalContext.challenge}". Litigants: ${roles.map((r) => r.name).join(", ")}. Acknowledge the challenge, state precisely what the court will re-examine, and route the litigants to address the specific objection.` : `Litigants: ${roles.map((r) => r.name).join(", ")}. Frame the session and route to the Moderator.`
       }
     ];
     const orchestratorFrame = await streamRole(
@@ -55857,7 +55845,7 @@ ${roleOutput}`);
         config.confidenceTarget,
         20 + (round * roles.length + i + 1) * Math.floor((config.confidenceTarget - 20) / (config.maxIterations * roles.length))
       );
-      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-4o", usage.inputTokens, usage.outputTokens);
+      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
       sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
       if (creditsUsedSoFar >= creditCap) {
         creditCapHit = true;
@@ -55933,9 +55921,10 @@ ${config.artifactType && config.artifactType !== "auto" ? `REQUIRED ARTIFACT TYP
   transcript.push(`**Architect (Blueprint):** ${architectBlueprint}`);
   turns.push({ role: "Architect", round: 99, content: architectBlueprint });
   sendSSE(res, { type: "role_end", role: "Architect", fullContent: architectBlueprint });
+  const MAX_AUDITOR_RETRIES = 2;
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider2.name });
-  const builderMessages = [
+  sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider2.name, attempt: 1 });
+  const initialBuilderMessages = [
     {
       role: "system",
       content: `${seatBriefs.builder}
@@ -55955,9 +55944,9 @@ ${moderatorSummary}
 Build the artifact exactly to spec. Deliver the complete, production-ready document.`
     }
   ];
-  const builtArtifact = await streamRole(
+  let builtArtifact = await streamRole(
     buildProvider2,
-    builderMessages,
+    initialBuilderMessages,
     1800,
     (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
     usage,
@@ -55965,19 +55954,13 @@ Build the artifact exactly to spec. Deliver the complete, production-ready docum
   );
   transcript.push(`**Builder (Artifact):** ${builtArtifact}`);
   turns.push({ role: "Builder", round: 99, content: builtArtifact });
-  sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact });
-  throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Auditor", roleIndex: -5, round: 99, provider: auditProvider.name });
-  const auditorMessages = [
-    {
-      role: "system",
-      content: `${seatBriefs.auditor}
-
-${baseContext}${conscienceClause}`
-    },
-    {
-      role: "user",
-      content: `Architect's blueprint:
+  sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact, attempt: 1 });
+  let auditorOutput = "";
+  let finalArtifact = builtArtifact;
+  for (let attempt = 1; attempt <= 1 + MAX_AUDITOR_RETRIES; attempt++) {
+    throwIfAborted(abortSignal);
+    sendSSE(res, { type: "role_start", role: "Auditor", roleIndex: -5, round: 99, provider: auditProvider.name, attempt });
+    const auditorUserPrompt = attempt === 1 ? `Architect's blueprint:
 
 ${architectBlueprint}
 
@@ -55989,22 +55972,87 @@ Moderator's deliberation summary (for fact-checking):
 
 ${moderatorSummary}
 
-Review the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed. Output: your release decision (APPROVED or RETURNED) followed by the final artifact text (approved as-is, or corrected version if you found issues).`
-    }
-  ];
-  const auditorOutput = await streamRole(
-    auditProvider,
-    auditorMessages,
-    1200,
-    (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
-    usage,
-    abortSignal
-  );
-  transcript.push(`**Auditor (Release):** ${auditorOutput}`);
-  turns.push({ role: "Auditor", round: 99, content: auditorOutput });
-  sendSSE(res, { type: "role_end", role: "Auditor", fullContent: auditorOutput });
-  const approvedArtifactMatch = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+([\s\S]+)/i);
-  const finalArtifact = approvedArtifactMatch ? approvedArtifactMatch[1].trim() : builtArtifact;
+Review the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed.
+
+Output format:
+1. Start with your release decision on its own line: APPROVED or RETURNED
+2. If RETURNED, follow immediately with a ## Revision Notes section listing the specific issues the Builder must fix
+3. Then output the complete artifact text (approved as-is, or your corrected version if you found issues)` : `Architect's blueprint:
+
+${architectBlueprint}
+
+Builder's revised artifact (revision ${attempt - 1} of ${MAX_AUDITOR_RETRIES}):
+
+${builtArtifact}
+
+Moderator's deliberation summary (for fact-checking):
+
+${moderatorSummary}
+
+Re-review the revised artifact. Have the Builder's corrections addressed your earlier concerns?
+
+Output format:
+1. Start with your release decision on its own line: APPROVED or RETURNED
+2. If RETURNED, follow immediately with a ## Revision Notes section listing any remaining issues
+3. Then output the complete artifact text`;
+    const auditorMessages = [
+      { role: "system", content: `${seatBriefs.auditor}
+
+${baseContext}${conscienceClause}` },
+      { role: "user", content: auditorUserPrompt }
+    ];
+    auditorOutput = await streamRole(
+      auditProvider,
+      auditorMessages,
+      1200,
+      (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
+      usage,
+      abortSignal
+    );
+    const auditLabel = attempt === 1 ? "Auditor (Release)" : `Auditor (Re-review ${attempt - 1})`;
+    transcript.push(`**${auditLabel}:** ${auditorOutput}`);
+    turns.push({ role: "Auditor", round: 99, content: auditorOutput });
+    sendSSE(res, { type: "role_end", role: "Auditor", fullContent: auditorOutput, attempt });
+    const decision = auditorOutput.match(/^(APPROVED|RETURNED)\b/im)?.[1]?.toUpperCase() ?? "APPROVED";
+    const artifactMatch = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+(?:##\s+Revision Notes[\s\S]*?\n\n)?([\s\S]+)/i);
+    finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
+    if (decision === "APPROVED" || attempt === 1 + MAX_AUDITOR_RETRIES) break;
+    throwIfAborted(abortSignal);
+    const revisionAttempt = attempt + 1;
+    sendSSE(res, { type: "role_start", role: "Builder", roleIndex: -4, round: 99, provider: buildProvider2.name, attempt: revisionAttempt });
+    const revisionNotes = auditorOutput.match(/##\s+Revision Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim() ?? auditorOutput;
+    const revisionMessages = [
+      { role: "system", content: `${seatBriefs.builder}
+
+${baseContext}${conscienceClause}` },
+      {
+        role: "user",
+        content: `The Auditor has reviewed your artifact and returned it for revision (pass ${attempt} of ${MAX_AUDITOR_RETRIES}).
+
+## Auditor's Revision Notes
+${revisionNotes}
+
+## Architect's Blueprint
+${architectBlueprint}
+
+## Your Previous Artifact
+${builtArtifact}
+
+Address every point in the Revision Notes. Deliver the complete, corrected, production-ready document.`
+      }
+    ];
+    builtArtifact = await streamRole(
+      buildProvider2,
+      revisionMessages,
+      1800,
+      (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
+      usage,
+      abortSignal
+    );
+    transcript.push(`**Builder (Revision ${attempt}):** ${builtArtifact}`);
+    turns.push({ role: "Builder", round: 99, content: builtArtifact });
+    sendSSE(res, { type: "role_end", role: "Builder", fullContent: builtArtifact, attempt: revisionAttempt });
+  }
   throwIfAborted(abortSignal);
   sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: orchProvider.name });
   const orchestratorCloseMessages = [
@@ -56040,7 +56088,7 @@ Deliver the verdict to the user: lead with a direct answer, summarise the key re
   confidence = Math.min(95, confidence + 5);
   turns.push({ role: "Verdict", round: 99, content: finalAnswer });
   const creditsUsed = calculateActualCredits(
-    modelName || "gpt-4o",
+    modelName || "gpt-5",
     usage.inputTokens,
     usage.outputTokens
   );
@@ -56125,6 +56173,7 @@ async function calculateLiveCredits(model, inputTokens, outputTokens) {
   return Math.max(1, Math.ceil(costUSD * multiplier / CREDIT_VALUE_USD));
 }
 var MODEL_META = {
+  "gpt-5": { provider: "openai", label: "GPT-5" },
   "gpt-4o": { provider: "openai", label: "GPT-4o" },
   "gpt-4o-mini": { provider: "openai", label: "GPT-4o Mini" },
   "o3": { provider: "openai", label: "o3 (reasoning)" },
@@ -56144,7 +56193,7 @@ async function getAdminPricingTable() {
   const EXAMPLE_LITIGANTS = 3, EXAMPLE_ROUNDS = 2, TOKENS_PER_TURN = 600;
   const variableOutput = 400 + EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * TOKENS_PER_TURN;
   const variableInput = Math.ceil(
-    EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * 0.8 * (EXAMPLE_ROUNDS / 2))
+    EXAMPLE_LITIGANTS * EXAMPLE_ROUNDS * (600 + TOKENS_PER_TURN * EXAMPLE_LITIGANTS * HISTORY_FILL_RATE * (EXAMPLE_ROUNDS / 2))
   );
   const exampleFixed = await getCalibratedFixedStageTokens();
   const EXAMPLE_INPUT = variableInput + exampleFixed.input;
@@ -56361,7 +56410,6 @@ router3.post("/run-brain", async (req, res) => {
   }
   const sessionId = clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const effectiveConfig = config ?? {
-    courtMode: "adversarial",
     litigantCount: 3,
     confidenceTarget: 80,
     maxIterations: 2,
@@ -56383,6 +56431,7 @@ router3.post("/run-brain", async (req, res) => {
   }
   const estimatedCost = await estimateSessionCreditsCalibrated(effectiveConfig);
   let uid = null;
+  let isAdminRun = false;
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
   if (authHeader?.startsWith("Bearer ")) {
@@ -56397,24 +56446,27 @@ router3.post("/run-brain", async (req, res) => {
       return;
     }
     uid = decoded.uid;
-    try {
-      const reserved = await reserveCredits(uid, estimatedCost, sessionId);
-      if (!reserved) {
-        res.status(402).json({
-          message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`
-        });
+    isAdminRun = decoded.admin === true;
+    if (!isAdminRun) {
+      try {
+        const reserved = await reserveCredits(uid, estimatedCost, sessionId);
+        if (!reserved) {
+          res.status(402).json({
+            message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`
+          });
+          return;
+        }
+      } catch (err) {
+        console.error("[brain] Credit reservation failed:", err);
+        res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
         return;
       }
-    } catch (err) {
-      console.error("[brain] Credit reservation failed:", err);
-      res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
-      return;
     }
   } else {
     const ip = getClientIp(req);
     if (await hasGuestUsed(ip)) {
       res.status(402).json({
-        message: "Guest sessions are limited to one free trial. Create a free account to continue \u2014 you'll receive 100 credits.",
+        message: "Guest sessions are limited to one free trial. Create a free account to continue \u2014 you'll receive 750 credits.",
         guestLimitReached: true
       });
       return;
@@ -56479,16 +56531,18 @@ router3.post("/run-brain", async (req, res) => {
           createdAt: FieldValue6.serverTimestamp(),
           updatedAt: FieldValue6.serverTimestamp()
         });
-        actualCost = await calculateLiveCredits(
-          result.model || "gpt-4o",
-          result.tokenUsage.inputTokens,
-          result.tokenUsage.outputTokens
-        );
-        const refund = Math.max(0, estimatedCost - actualCost);
-        if (refund > 0) {
-          await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+        if (!isAdminRun) {
+          actualCost = await calculateLiveCredits(
+            result.model || "gpt-5",
+            result.tokenUsage.inputTokens,
+            result.tokenUsage.outputTokens
+          );
+          const refund = Math.max(0, estimatedCost - actualCost);
+          if (refund > 0) {
+            await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+          }
         }
-        if (actualCost > estimatedCost && uid) {
+        if (!isAdminRun && actualCost > estimatedCost && uid) {
           const overage = actualCost - estimatedCost;
           const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage").catch(() => false);
           if (!overageCollected) {
@@ -56541,7 +56595,7 @@ router3.post("/run-brain", async (req, res) => {
       );
     }
   } finally {
-    if (!runSucceeded && uid && db) {
+    if (!runSucceeded && !isAdminRun && uid && db) {
       await reconcileCredits(uid, estimatedCost, sessionId, "brain_failure_refund");
     }
     clearTimeout(sessionTimer);
