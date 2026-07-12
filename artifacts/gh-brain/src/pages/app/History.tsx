@@ -456,31 +456,36 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <>
+      <div className="lgt-container">
+      <section className="section">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <History className="w-5 h-5 text-primary" />
-              <h1 className="text-2xl font-bold tracking-tight">Session History</h1>
+        {/* ── Page hero ── */}
+        <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
+          <div className="flex-row">
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <History style={{ width: 22, height: 22, color: "hsl(var(--primary))" }} />
             </div>
-            <p className="text-muted-foreground text-sm">
-              {sessions.filter((s) => !s.archived).length} session{sessions.filter((s) => !s.archived).length !== 1 ? "s" : ""}
-              {hasMore ? "+" : ""} saved
-            </p>
+            <div>
+              <p className="eyebrow">Sessions</p>
+              <h1 className="section-title" style={{ margin: 0 }}>Session History</h1>
+              <p className="section-body" style={{ marginTop: "0.25rem" }}>
+                {sessions.filter((s) => !s.archived).length} session{sessions.filter((s) => !s.archived).length !== 1 ? "s" : ""}
+                {hasMore ? "+" : ""} saved
+              </p>
+            </div>
           </div>
           <Button
             onClick={() => setLocation("/session")}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shrink-0"
           >
             New session
           </Button>
         </div>
 
         {/* Tabs + search */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="row flex-wrap" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.25rem" }}
+             data-sm-row="true">
           <div className="flex items-center gap-1 bg-card/60 border border-border/60 rounded-lg p-1">
             {(["all", "starred", "archived"] as TabView[]).map((t) => (
               <button
@@ -599,6 +604,7 @@ export default function HistoryPage() {
             )}
           </>
         )}
+      </section>
       </div>
 
       {/* Session detail sheet */}
@@ -626,6 +632,6 @@ export default function HistoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

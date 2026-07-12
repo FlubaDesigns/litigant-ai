@@ -1116,7 +1116,8 @@ export default function SessionPage() {
       </div>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="main-inner flex flex-col gap-2 py-3">
+      <div className="lgt-container">
+      <section className="section">
 
       {/* ── CONVERSATION PANEL ── */}
       <div className="session-conv">
@@ -1736,7 +1737,8 @@ export default function SessionPage() {
         />
       )}
 
-      </div>{/* /main-inner */}
+      </section>
+      </div>{/* /lgt-container */}
 
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">

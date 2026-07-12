@@ -607,13 +607,19 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-1">Billing & Credits</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage your credit balance.
-          </p>
+    <div className="lgt-container">
+      <section className="section">
+        <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
+          <div className="flex-row">
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <CreditCard style={{ width: 22, height: 22, color: "hsl(var(--primary))" }} />
+            </div>
+            <div>
+              <p className="eyebrow">Account</p>
+              <h1 className="section-title" style={{ margin: 0 }}>Billing &amp; Credits</h1>
+              <p className="section-body" style={{ marginTop: "0.25rem" }}>Manage your credit balance and purchase history.</p>
+            </div>
+          </div>
         </div>
 
         {isLowBalance && (
@@ -970,7 +976,7 @@ export default function BillingPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
