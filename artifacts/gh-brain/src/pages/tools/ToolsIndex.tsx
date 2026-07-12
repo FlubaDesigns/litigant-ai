@@ -69,7 +69,8 @@ export default function ToolsIndexPage() {
       </header>
 
       {/* Hero */}
-      <section className="px-6 pt-20 pb-12 max-w-4xl mx-auto text-center">
+      <section className="pt-20 pb-12 text-center">
+        <div className="lgt-container">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
             10 Free AI Analysis Tools
@@ -81,10 +82,11 @@ export default function ToolsIndexPage() {
             Each tool deploys a panel of AI models that argue, critique, and cross-examine your question from competing perspectives — delivering a confidence-scored verdict instead of a guess.
           </p>
         </motion.div>
+        </div>
       </section>
 
       {/* Category filter */}
-      <div className="px-6 max-w-5xl mx-auto mb-8">
+      <div className="lgt-container mb-8">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveCategory("all")}
@@ -115,7 +117,8 @@ export default function ToolsIndexPage() {
       </div>
 
       {/* Tool grid */}
-      <section className="px-6 pb-20 max-w-5xl mx-auto">
+      <section className="pb-20">
+        <div className="lgt-container">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((tool, i) => {
             const Icon = ICON_MAP[tool.icon] ?? Briefcase;
@@ -161,10 +164,12 @@ export default function ToolsIndexPage() {
             );
           })}
         </div>
+        </div>
       </section>
 
       {/* Bottom CTA */}
-      <section className="border-t border-border/60 bg-card/20 px-6 py-16 text-center">
+      <section className="border-t border-border/60 bg-card/20 py-16 text-center">
+        <div className="lgt-container">
         <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
           100 free credits on signup. No credit card required.
@@ -174,6 +179,7 @@ export default function ToolsIndexPage() {
             Create free account <ChevronRight className="w-4 h-4" />
           </Button>
         </Link>
+        </div>
       </section>
     </div>
   );

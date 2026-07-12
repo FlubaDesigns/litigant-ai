@@ -98,7 +98,8 @@ export default function ToolPage() {
       </header>
 
       {/* Hero */}
-      <section className="px-6 pt-20 pb-16 max-w-3xl mx-auto text-center">
+      <section className="pt-20 pb-16 text-center">
+        <div className="lgt-container">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
           <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
             {tool.badge}
@@ -122,10 +123,11 @@ export default function ToolPage() {
             </Link>
           </div>
         </motion.div>
+        </div>
       </section>
 
       {/* Hero image */}
-      <div className="relative w-full max-w-4xl mx-auto px-6 pb-4">
+      <div className="lgt-container pb-4 relative">
         <div className="rounded-2xl overflow-hidden border border-border/40 shadow-2xl shadow-black/40 aspect-video">
           <img
             src={tool.image}
@@ -137,8 +139,8 @@ export default function ToolPage() {
       </div>
 
       {/* Credibility strip */}
-      <div className="border-y border-border/40 bg-card/20 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
+      <div className="border-y border-border/40 bg-card/20 py-4">
+        <div className="lgt-container flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
           {[
             { icon: Zap, label: "GPT-4, Claude, Gemini & Grok" },
             { icon: Shield, label: "Multi-model adversarial debate" },
@@ -153,7 +155,8 @@ export default function ToolPage() {
       </div>
 
       {/* How it works */}
-      <section className="px-6 py-16 max-w-3xl mx-auto">
+      <section className="py-16">
+        <div className="lgt-container">
         <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
         <div className="space-y-6">
           {tool.howItWorks.map((step, i) => (
@@ -175,11 +178,12 @@ export default function ToolPage() {
             </motion.div>
           ))}
         </div>
+        </div>
       </section>
 
       {/* Benefits */}
-      <section className="px-6 py-16 bg-card/20 border-y border-border/40">
-        <div className="max-w-3xl mx-auto">
+      <section className="py-16 bg-card/20 border-y border-border/40">
+        <div className="lgt-container">
           <h2 className="text-2xl font-bold text-center mb-10">What you get</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {tool.benefits.map((b, i) => (
@@ -207,18 +211,20 @@ export default function ToolPage() {
       </section>
 
       {/* Output summary */}
-      <section className="px-6 py-16 max-w-3xl mx-auto">
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
-          <h2 className="text-lg font-bold mb-3">What the output looks like</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            {tool.outputSummary}
-          </p>
+      <section className="py-16">
+        <div className="lgt-container">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+            <h2 className="text-lg font-bold mb-3">What the output looks like</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
+              {tool.outputSummary}
+            </p>
+          </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="px-6 py-16 bg-card/20 border-y border-border/40">
-        <div className="max-w-2xl mx-auto">
+      <section className="py-16 bg-card/20 border-y border-border/40">
+        <div className="lgt-container">
           <h2 className="text-2xl font-bold text-center mb-8">Questions</h2>
           <div className="space-y-3">
             {tool.faqs.map((faq) => (
@@ -229,7 +235,8 @@ export default function ToolPage() {
       </section>
 
       {/* CTA */}
-      <section className="px-6 py-20 text-center max-w-2xl mx-auto">
+      <section className="py-20 text-center">
+        <div className="lgt-container">
         <h2 className="text-3xl font-bold mb-3">
           Ready to analyze your {tool.subject}?
         </h2>
@@ -247,6 +254,7 @@ export default function ToolPage() {
               Browse all tools
             </Button>
           </Link>
+        </div>
         </div>
       </section>
 
