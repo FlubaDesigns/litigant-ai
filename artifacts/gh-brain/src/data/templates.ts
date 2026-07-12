@@ -37,7 +37,7 @@ export interface CourtConfig {
     | "transcript"
     | "artifact";
   outputPreference: "chat" | "download" | "both";
-  format: "text" | "markdown" | "json";
+  format: "text" | "markdown" | "json" | "docx" | "pdf";
   artifactType: ArtifactType;
   confidenceTarget: number;  // 80 | 90 | 95 | 99
   maxIterations: number;     // 1 | 3 | 5 | 10
