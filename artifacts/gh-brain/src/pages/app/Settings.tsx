@@ -427,14 +427,14 @@ function PreferencesTab({ user }: { user: User }) {
             <Select value={settings.responseMode} onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v }))}>
               <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="concise">
-                  <div><div className="font-medium">Concise</div><div className="text-xs text-muted-foreground">Key insights, no filler</div></div>
+                <SelectItem value="concise" label="Concise">
+                  <span className="text-xs text-muted-foreground">Key insights, no filler</span>
                 </SelectItem>
-                <SelectItem value="balanced">
-                  <div><div className="font-medium">Balanced</div><div className="text-xs text-muted-foreground">Clear reasoning, right mix</div></div>
+                <SelectItem value="balanced" label="Balanced">
+                  <span className="text-xs text-muted-foreground">Clear reasoning, right mix</span>
                 </SelectItem>
-                <SelectItem value="thorough">
-                  <div><div className="font-medium">Thorough</div><div className="text-xs text-muted-foreground">Deep dive for high-stakes calls</div></div>
+                <SelectItem value="thorough" label="Thorough">
+                  <span className="text-xs text-muted-foreground">Deep dive for high-stakes calls</span>
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -445,17 +445,17 @@ function PreferencesTab({ user }: { user: User }) {
             <Select value={settings.outputFormat} onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v }))}>
               <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="report">
-                  <div><div className="font-medium">Full Report</div><div className="text-xs text-muted-foreground">Structured document with findings</div></div>
+                <SelectItem value="report" label="Full Report">
+                  <span className="text-xs text-muted-foreground">Structured document with findings</span>
                 </SelectItem>
-                <SelectItem value="memo">
-                  <div><div className="font-medium">Executive Memo</div><div className="text-xs text-muted-foreground">Key points and action items only</div></div>
+                <SelectItem value="memo" label="Executive Memo">
+                  <span className="text-xs text-muted-foreground">Key points and action items only</span>
                 </SelectItem>
-                <SelectItem value="bullets">
-                  <div><div className="font-medium">Bullet Points</div><div className="text-xs text-muted-foreground">Scannable list, fast to read</div></div>
+                <SelectItem value="bullets" label="Bullet Points">
+                  <span className="text-xs text-muted-foreground">Scannable list, fast to read</span>
                 </SelectItem>
-                <SelectItem value="verdict">
-                  <div><div className="font-medium">Direct Verdict</div><div className="text-xs text-muted-foreground">One clear answer with confidence score</div></div>
+                <SelectItem value="verdict" label="Direct Verdict">
+                  <span className="text-xs text-muted-foreground">One clear answer with confidence score</span>
                 </SelectItem>
               </SelectContent>
             </Select>

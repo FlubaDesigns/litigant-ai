@@ -15,7 +15,7 @@ paths = [ "/" ]
 localPort = 18396
 
 [services.development]
-run = "pnpm --filter @workspace/gh-brain run dev"
+run = "echo 'Dev server disabled'"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/gh-brain", "run", "build" ]
