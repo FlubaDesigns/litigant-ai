@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -113,8 +114,8 @@ function V29Field({
       <div className="flex items-center gap-1.5">
         <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">{label}</div>
         {tooltip && (
-          <Tooltip delayDuration={150}>
-            <TooltipTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <button
                 type="button"
                 tabIndex={-1}
@@ -123,11 +124,11 @@ function V29Field({
               >
                 <HelpCircle className="w-3 h-3" />
               </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed">
+            </PopoverTrigger>
+            <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
               {tooltip}
-            </TooltipContent>
-          </Tooltip>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
       {children}
