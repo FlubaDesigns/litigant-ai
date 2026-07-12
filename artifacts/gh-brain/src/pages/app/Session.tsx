@@ -350,6 +350,12 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
+          {/* DELIVERABLE SECTION */}
+          <div className="flex items-center gap-2 pt-1">
+            <div className="text-[9px] font-bold tracking-widest uppercase text-primary/40">Deliverable</div>
+            <div className="flex-1 border-t border-primary/10" />
+          </div>
+
           {/* ARTIFACT TYPE */}
           <V29Field
             label="Artifact Type"
