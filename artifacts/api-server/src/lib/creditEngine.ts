@@ -53,6 +53,7 @@ export interface ModelRate {
  */
 export const MODEL_RATES: Record<string, ModelRate> = {
   // ── OpenAI ──────────────────────────────────────────────────────────────────
+  "gpt-5":             { input: 0.0030,  output: 0.0150 },  // flagship — $3/$15 per 1M
   "gpt-4o":            { input: 0.0025,  output: 0.0100 },
   "gpt-4o-mini":       { input: 0.00015, output: 0.0006 },
   "o3":                { input: 0.0100,  output: 0.0400 },  // reasoning — expensive
@@ -87,6 +88,7 @@ export const MODEL_RATES: Record<string, ModelRate> = {
  */
 export const MODEL_MULTIPLIERS: Record<string, number> = {
   // OpenAI
+  "gpt-5":             5,
   "gpt-4o":            5,
   "gpt-4o-mini":       8,
   "o3":                4,   // expensive — lower margin to stay competitive
@@ -198,7 +200,7 @@ export interface SessionEstimateConfig {
   litigantCount: number;
   maxIterations: number;
   responseMode: ResponseMode;
-  /** Defaults to "gpt-4o" if omitted. */
+  /** Defaults to "gpt-5" if omitted. */
   model?: string;
 }
 
@@ -309,7 +311,7 @@ export function estimateSessionCredits(config: SessionEstimateConfig): number {
   const v = variableTokens(config);
   const outputTokens = v.output + FIXED_STAGE_PRIOR.output;
   const inputTokens  = v.input  + FIXED_STAGE_PRIOR.input;
-  const model = config.model ?? "gpt-4o";
+  const model = config.model ?? "gpt-5";
   return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
 }
 
@@ -328,7 +330,7 @@ export async function estimateSessionCreditsCalibrated(
   const v = variableTokens(config);
   const outputTokens = v.output + fixed.output;
   const inputTokens  = v.input  + fixed.input;
-  const model = config.model ?? "gpt-4o";
+  const model = config.model ?? "gpt-5";
   return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
 }
 

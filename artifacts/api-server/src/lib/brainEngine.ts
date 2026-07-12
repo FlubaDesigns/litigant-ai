@@ -403,7 +403,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       );
 
       // Stream live credit update based on actual tokens so far
-      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-4o", usage.inputTokens, usage.outputTokens);
+      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
       sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
 
       // Credit cap — stop debate early and fall through to partial verdict
@@ -619,7 +619,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
   // Final actual credit calculation from real token counts
   const creditsUsed = calculateActualCredits(
-    modelName || "gpt-4o",
+    modelName || "gpt-5",
     usage.inputTokens,
     usage.outputTokens
   );

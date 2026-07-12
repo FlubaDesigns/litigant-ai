@@ -126,6 +126,7 @@ export async function calculateLiveCredits(
  * engine with display-only data.
  */
 const MODEL_META: Record<string, { provider: string; label: string }> = {
+  "gpt-5":             { provider: "openai",    label: "GPT-5" },
   "gpt-4o":            { provider: "openai",    label: "GPT-4o" },
   "gpt-4o-mini":       { provider: "openai",    label: "GPT-4o Mini" },
   "o3":                { provider: "openai",    label: "o3 (reasoning)" },

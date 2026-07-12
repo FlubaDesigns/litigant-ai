@@ -8,7 +8,7 @@ export class OpenAIProvider implements AIProvider {
   private client: OpenAI;
   private _lastUsage: TokenUsageSnapshot | null = null;
 
-  constructor(model = "gpt-4o", credentials?: { key: string; baseUrl?: string }) {
+  constructor(model = "gpt-5", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
     if (credentials) {
       this.client = new OpenAI({

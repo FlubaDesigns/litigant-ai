@@ -95,7 +95,7 @@ export function SeatInspector({
     if (!seatId) { handleClose(); return; }
     const defaultModels: Record<string, string> = {
       anthropic: "claude-opus-4-5",
-      openai:    "gpt-4o",
+      openai:    "gpt-5",
       grok:      "grok-3",
       gemini:    "gemini-2.5-pro",
     };

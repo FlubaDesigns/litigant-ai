@@ -28,7 +28,7 @@ export interface ProviderConfig {
 }
 
 export const DEFAULT_MODELS: Record<ProviderName, string> = {
-  openai: "gpt-4o",
+  openai: "gpt-5",
   anthropic: "claude-opus-4-5",
   grok: "grok-3",
   gemini: "gemini-2.5-pro",
@@ -43,10 +43,11 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderName, string> = {
 
 export const PROVIDER_MODELS: Record<ProviderName, { id: string; label: string }[]> = {
   openai: [
-    { id: "gpt-4o", label: "GPT-4o" },
+    { id: "gpt-5",      label: "GPT-5" },
+    { id: "gpt-4o",     label: "GPT-4o" },
     { id: "gpt-4o-mini", label: "GPT-4o Mini" },
-    { id: "o3", label: "o3 (reasoning)" },
-    { id: "o4-mini", label: "o4-mini (reasoning)" },
+    { id: "o3",         label: "o3 (reasoning)" },
+    { id: "o4-mini",    label: "o4-mini (reasoning)" },
   ],
   anthropic: [
     { id: "claude-opus-4-5", label: "Claude Opus 4.5" },
