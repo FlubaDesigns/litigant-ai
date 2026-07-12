@@ -1377,7 +1377,7 @@ export default function SessionPage() {
         <button onClick={() => setConfigOpen(true)} className="session-nav-btn">
           ⚙ Configure
         </button>
-        <button onClick={() => navigate("/sessions")} className="session-nav-btn">
+        <button onClick={() => navigate("/history")} className="session-nav-btn">
           📂 Sessions
         </button>
         {isRunning && (

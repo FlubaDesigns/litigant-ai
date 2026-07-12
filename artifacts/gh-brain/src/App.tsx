@@ -101,6 +101,7 @@ function AppRoutes() {
           <HistoryPage />
         </ProtectedRoute>
       </Route>
+
       <Route path="/billing">
         <ProtectedRoute>
           <BillingPage />
