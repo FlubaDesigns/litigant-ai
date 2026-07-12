@@ -1798,27 +1798,10 @@ export default function SessionPage() {
               );
             })()}
 
-            {/* Court status + credit pill */}
-            <div className="flex items-center justify-between px-0.5">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
-              </div>
-              <button
-                onClick={insufficientCredits ? () => navigate("/billing") : undefined}
-                className={cn(
-                  "flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border transition-colors",
-                  creditsCritical
-                    ? "border-red-500/40 text-red-400 bg-red-500/5 hover:bg-red-500/10 cursor-pointer"
-                    : creditsLow
-                    ? "border-yellow-500/40 text-yellow-400 bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer"
-                    : "border-primary/25 text-primary/70 bg-primary/5 cursor-default"
-                )}
-              >
-                <Zap className="w-3 h-3" />
-                {credits} cr · {plan}
-                {insufficientCredits && <span className="ml-1 underline">top up</span>}
-              </button>
+            {/* Court status */}
+            <div className="flex items-center gap-2 px-0.5">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
             </div>
 
             {/* Suggested prompts + template, collapsed into an accordion */}
@@ -1991,15 +1974,6 @@ export default function SessionPage() {
             Revolution {state.currentRound} / {state.config.maxIterations}
           </div>
         )}
-        <div className={cn(
-          "absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 border text-[10px] font-mono pointer-events-none",
-          creditsCritical ? "border-red-500/40 text-red-400"
-          : creditsLow ? "border-yellow-500/40 text-yellow-400"
-          : "border-primary/25 text-primary/70"
-        )}>
-          <Zap className="w-2.5 h-2.5" />
-          {credits} cr
-        </div>
       </div>
 
       {/* ── SEAT INSPECTOR ── */}
