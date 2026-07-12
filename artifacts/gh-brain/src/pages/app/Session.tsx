@@ -1084,7 +1084,7 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="session-bg flex flex-col">
+    <>
       <ConfigPanel
         open={configOpen}
         onClose={() => setConfigOpen(false)}
@@ -1790,6 +1790,6 @@ export default function SessionPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }
