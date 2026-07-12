@@ -1084,7 +1084,7 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="main session-bg flex flex-col overflow-y-auto">
+    <div className="session-bg flex flex-col">
       <ConfigPanel
         open={configOpen}
         onClose={() => setConfigOpen(false)}
