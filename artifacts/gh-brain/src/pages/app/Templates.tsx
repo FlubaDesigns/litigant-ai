@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
   Stethoscope, Scale, Search, FlaskConical, Zap, ChevronRight,
-  LayoutTemplate,
+  LayoutTemplate, SearchX,
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
+import { TEMPLATES as STATIC_TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
+
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -32,6 +33,26 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 function categoryLabel(cat: string) {
   return TEMPLATE_CATEGORIES.find((c) => c.id === cat)?.label ?? cat;
+}
+
+const RESPONSE_MODE_LABELS: Record<string, string> = {
+  balanced:  "Balanced",
+  thorough:  "Thorough",
+  concise:   "Concise",
+};
+
+// ── Fetch helpers ─────────────────────────────────────────────────────────────
+async function fetchTemplates(): Promise<Template[]> {
+  try {
+    const res = await fetch(`${API_BASE}/templates`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const list: Template[] = Array.isArray(data) ? data : data.templates ?? [];
+    if (list.length === 0) throw new Error("empty");
+    return list;
+  } catch {
+    return STATIC_TEMPLATES;
+  }
 }
 
 // ── Template card ─────────────────────────────────────────────────────────────
@@ -83,10 +104,11 @@ function TemplateDetail({ template, onClose, onLaunch }: {
 
   const configPills = [
     `${cfg.litigantCount} litigants`,
-    `${cfg.confidenceTarget}% target`,
+    `${cfg.confidenceTarget ?? 80}% target`,
     cfg.debateMode,
     cfg.courtMode,
-  ];
+    RESPONSE_MODE_LABELS[cfg.responseMode ?? "balanced"] ?? cfg.responseMode,
+  ].filter(Boolean);
 
   return (
     <div className="flex flex-col h-full">
@@ -192,13 +214,42 @@ function TemplateDetail({ template, onClose, onLaunch }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function TemplatesPage() {
   const [, navigate] = useLocation();
+  const [templates, setTemplates] = useState<Template[]>(STATIC_TEMPLATES);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<Template | null>(null);
 
-  const filtered =
-    activeCategory === "all"
-      ? TEMPLATES
-      : TEMPLATES.filter((t) => t.category === activeCategory);
+  // Fetch from API (falls back to static if unavailable)
+  useEffect(() => {
+    fetchTemplates().then(setTemplates).catch(() => {});
+  }, []);
+
+  // Filter: category + keyword search
+  const filtered = useMemo(() => {
+    let list = activeCategory === "all"
+      ? templates
+      : templates.filter((t) => t.category === activeCategory);
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q) ||
+          categoryLabel(t.category).toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [templates, activeCategory, searchQuery]);
+
+  // Count per category (from full list, not filtered)
+  const countByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const t of templates) {
+      map[t.category] = (map[t.category] ?? 0) + 1;
+    }
+    return map;
+  }, [templates]);
 
   function handleLaunch() {
     if (!selected) return;
@@ -227,8 +278,28 @@ export default function TemplatesPage() {
               </div>
             </div>
 
-            {/* ── Category filter ── */}
+            {/* ── Search + category filters ── */}
             <div className="row" style={{ paddingBottom: "1.25rem" }}>
+              {/* Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Search templates…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-9 text-sm bg-card/40 border-border/60 focus:border-primary/50"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {/* Category pills */}
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setActiveCategory("all")}
@@ -239,47 +310,63 @@ export default function TemplatesPage() {
                       : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
-                  All ({TEMPLATES.length})
+                  All ({templates.length})
                 </button>
-                {TEMPLATE_CATEGORIES.map((cat) => {
-                  const count = TEMPLATES.filter((t) => t.category === cat.id).length;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors",
-                        activeCategory === cat.id
-                          ? "border-primary bg-primary/15 text-primary"
-                          : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
-                      )}
-                    >
-                      {cat.label} ({count})
-                    </button>
-                  );
-                })}
+                {TEMPLATE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors",
+                      activeCategory === cat.id
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                    )}
+                  >
+                    {cat.label} ({countByCategory[cat.id] ?? 0})
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* ── Template grid ── */}
             <div className="row" style={{ paddingBottom: "var(--sv)" }}>
               <AnimatePresence mode="popLayout">
-                <motion.div
-                  key={activeCategory}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                >
-                  {filtered.map((template) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      onClick={() => setSelected(template)}
-                    />
-                  ))}
-                </motion.div>
+                {filtered.length === 0 ? (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground"
+                  >
+                    <SearchX className="w-8 h-8 opacity-40" />
+                    <p className="text-sm">No templates match your search.</p>
+                    <button
+                      onClick={() => { setSearchQuery(""); setActiveCategory("all"); }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Clear filters
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={`${activeCategory}-${searchQuery}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                  >
+                    {filtered.map((template) => (
+                      <TemplateCard
+                        key={template.id}
+                        template={template}
+                        onClick={() => setSelected(template)}
+                      />
+                    ))}
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
 
