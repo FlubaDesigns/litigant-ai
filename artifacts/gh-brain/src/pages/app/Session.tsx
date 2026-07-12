@@ -192,7 +192,7 @@ function ConfigPanel({
       hasChanges.current = false;
       setSaving(true);
       try {
-        await saveUserConfig(uid, {
+        const rawSettings = {
           conscience: config.conscience,
           outputScope: config.outputScope,
           debateMode: config.debateMode,
@@ -209,7 +209,11 @@ function ConfigPanel({
           outputFormat: config.outputFormat,
           provider: config.provider,
           model: config.model,
-        });
+        };
+        const settings = Object.fromEntries(
+          Object.entries(rawSettings).filter(([, v]) => v !== undefined)
+        ) as UserProfile["defaultSettings"];
+        await saveUserConfig(uid, settings);
         toast.success("Court configured & saved to your profile");
       } catch {
         toast.error("Could not save configuration");
