@@ -318,38 +318,6 @@ function ConfigPanel({
             </div>
           </V29Field>
 
-          {/* OUTPUT STRATEGY */}
-          <V29Field
-            label="Response View"
-            tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
-          >
-            <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
-                <SelectItem value="individual">Individual Responses</SelectItem>
-                <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* FORMAT */}
-          <V29Field
-            label="Format"
-            tooltip="The file format used when your output is downloaded or exported. Text: plain .txt. Markdown: headings and bullets preserved (.md). JSON: structured data for piping into other tools. Word: download as a .docx Word document. PDF: download as a real PDF file."
-          >
-            <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="markdown">Markdown</SelectItem>
-                <SelectItem value="json">JSON</SelectItem>
-                <SelectItem value="docx">Word (.docx)</SelectItem>
-                <SelectItem value="pdf">PDF</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
           {/* DELIVERABLE SECTION */}
           <div className="flex items-center gap-2 pt-1">
             <div className="text-[9px] font-bold tracking-widest uppercase text-primary/40">Deliverable</div>
@@ -401,6 +369,38 @@ function ConfigPanel({
                 );
               })}
             </div>
+          </V29Field>
+
+          {/* OUTPUT STRATEGY */}
+          <V29Field
+            label="Response View"
+            tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
+          >
+            <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
+                <SelectItem value="individual">Individual Responses</SelectItem>
+                <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
+          {/* FORMAT */}
+          <V29Field
+            label="Format"
+            tooltip="The file format used when your output is downloaded or exported. Text: plain .txt. Markdown: headings and bullets preserved (.md). JSON: structured data for piping into other tools. Word: download as a .docx Word document. PDF: download as a real PDF file."
+          >
+            <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="markdown">Markdown</SelectItem>
+                <SelectItem value="json">JSON</SelectItem>
+                <SelectItem value="docx">Word (.docx)</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
+              </SelectContent>
+            </Select>
           </V29Field>
 
           {/* CONFIDENCE TARGET */}
