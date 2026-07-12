@@ -24,13 +24,16 @@ router.get("/sessions", async (req, res) => {
 
   const limit = Math.min(Number(req.query["limit"]) || 20, 100);
   const cursor = (req.query["cursor"] as string) || null;
+  const starredOnly = req.query["starred"] === "true";
+  const archivedOnly = req.query["archived"] === "true";
 
   try {
-    let query = db
+    let query: FirebaseFirestore.Query = db
       .collection("sessions")
-      .where("userId", "==", decoded.uid)
-      .orderBy("updatedAt", "desc")
-      .limit(limit + 1);
+      .where("userId", "==", decoded.uid);
+    if (starredOnly) query = query.where("starred", "==", true);
+    else if (archivedOnly) query = query.where("archived", "==", true);
+    query = query.orderBy("updatedAt", "desc").limit(limit + 1);
 
     if (cursor) {
       const cursorDoc = await db.collection("sessions").doc(cursor).get();

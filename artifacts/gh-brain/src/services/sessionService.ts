@@ -172,13 +172,15 @@ export interface SessionsPage {
 
 export async function getSessions(
   idToken?: string,
-  opts: { limit?: number; cursor?: string | null } = {}
+  opts: { limit?: number; cursor?: string | null; starred?: boolean; archived?: boolean } = {}
 ): Promise<SessionsPage> {
   const headers: Record<string, string> = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const params = new URLSearchParams();
   if (opts.limit) params.set("limit", String(opts.limit));
   if (opts.cursor) params.set("cursor", opts.cursor);
+  if (opts.starred) params.set("starred", "true");
+  if (opts.archived) params.set("archived", "true");
   const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(getApiUrl(`/sessions${qs}`), { headers });
   if (!res.ok) throw new Error("Failed to fetch sessions");

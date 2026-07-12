@@ -241,12 +241,13 @@ router.post("/run-brain", async (req, res) => {
   const sessionId =
     clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-  const effectiveConfig: CourtConfig = config ?? {
+  const effectiveConfig: CourtConfig = {
     litigantCount: 3,
     confidenceTarget: 80,
     maxIterations: 2,
     responseMode: "balanced",
     outputFormat: "report",
+    ...config,
   };
 
   // Enforce the admin-configured max litigant count before cost estimation so
@@ -372,16 +373,22 @@ router.post("/run-brain", async (req, res) => {
             : question.slice(0, 80),
           question,
           templateId: templateId ?? null,
-          confidence: result.confidence,
+          confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: actualCost,
           fixedStageTokens: result.fixedStageTokens,
           status: "complete",
           finalAnswer: result.finalAnswer,
           debateNotes: result.debateNotes,
-          transcript: result.debateNotes ? result.transcript.join("\n\n---\n\n") : "",
+          transcript: result.debateNotes
+            ? (Array.isArray(result.transcript)
+                ? result.transcript.join("\n\n---\n\n")
+                : (result.transcript ?? ""))
+            : "",
           caveats: result.caveats,
           artifacts: result.artifacts,
           conscienceVersion: result.conscienceVersion,
+          starred: false,
+          archived: false,
           shared: false,
           shareId: null,
           // Rebuttal metadata — present only on challenge runs

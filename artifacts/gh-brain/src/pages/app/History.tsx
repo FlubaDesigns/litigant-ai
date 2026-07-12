@@ -288,12 +288,17 @@ export default function HistoryPage() {
   const [detailSession, setDetailSession] = useState<SavedSession | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const loadSessions = useCallback(async (cursor: string | null = null, append = false) => {
+  const loadSessions = useCallback(async (cursor: string | null = null, append = false, tab: TabView = tabView) => {
     if (!user) return;
     cursor ? setLoadingMore(true) : setLoading(true);
     try {
       const idToken = await user.getIdToken();
-      const page = await getSessions(idToken, { limit: PAGE_SIZE, cursor });
+      const page = await getSessions(idToken, {
+        limit: PAGE_SIZE,
+        cursor,
+        starred: tab === "starred",
+        archived: tab === "archived",
+      });
       setSessions((prev) => append ? [...prev, ...page.sessions] : page.sessions);
       setHasMore(page.hasMore);
       setNextCursor(page.nextCursor);
@@ -303,11 +308,11 @@ export default function HistoryPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user]);
+  }, [user, tabView]);
 
   useEffect(() => {
-    loadSessions(null, false);
-  }, [loadSessions]);
+    loadSessions(null, false, tabView);
+  }, [user, tabView]);
 
   async function openDetail(session: SavedSession) {
     if (!user) return;
