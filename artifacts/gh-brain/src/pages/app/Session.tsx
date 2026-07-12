@@ -308,7 +308,7 @@ function ConfigPanel({
             </SheetTitle>
           </SheetHeader>
 
-          {/* CONSCIENCE */}
+          {/* 1. CONSCIENCE */}
           <V29Field
             label="Conscience"
             tooltip="Conscience is a governing mandate — a fixed block of instructions appended directly to every seat's system prompt, not a separate filter that reviews output afterward. Its current version (Canon v2, Execution-Honest) tells every AI, before it writes a single word: state what the evidence actually shows even if uncomfortable; never assert something it can't substantiate, and admit it doesn't know when that's true; never give a diplomatic non-answer to dodge conflict; explicitly name what information is missing; and report honestly if its own reasoning led somewhere unexpected, rather than reverse-engineering an argument to fit a conclusion. So it shapes how each seat reasons from the first token, not just what gets shown after. It costs a small credit surcharge (+1 Cr) because it adds to every prompt. When OFF, seats get no such mandate and respond however the base model naturally would — which can be more evasive, hedged, or unwilling to state hard conclusions plainly. An admin can update the exact wording of this mandate at any time without a code deploy."
@@ -326,25 +326,7 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
-          {/* RESPONSE MODE */}
-          <V29Field
-            label="Response Mode"
-            tooltip="Controls how much of the debate you actually see. Consensus Only hides the individual seats and shows just the final synthesized answer — cleanest for quick decisions. All Voices shows every seat's full response alongside the synthesis, so you can see exactly how each AI reasoned and where they agreed or disagreed."
-          >
-            <Select value={config.outputScope} onValueChange={(v) => handleChange({ outputScope: v as CourtConfig["outputScope"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="consensus" label="Consensus Only">
-                  <span className="text-xs text-muted-foreground">One clean synthesized answer — individual responses hidden.</span>
-                </SelectItem>
-                <SelectItem value="all-voices" label="All Voices">
-                  <span className="text-xs text-muted-foreground">Every seat's full response shown alongside the synthesis.</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* DEBATE MODE */}
+          {/* 2. DEBATE MODE */}
           <V29Field
             label="Debate Mode"
             tooltip="Sets how the seats treat each other's arguments. Adversarial: each seat actively challenges others, hunts for contradictions, and attacks weak reasoning — good for pressure-testing an idea. Collaborative: seats build on each other's points and work toward synthesis rather than confrontation — good for exploring or refining an idea together."
@@ -362,7 +344,7 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
-          {/* AI REASONING */}
+          {/* 3. AI REASONING */}
           <V29Field
             label="AI Reasoning"
             tooltip="Controls whether seats hear each other. Independent: each AI only sees its own prior turns, never the other seats' responses — faster and cheaper, good for gathering distinct unbiased takes. Chain: each AI reads the entire transcript so far before responding, enabling real cross-examination and rebuttal — richer, but costs significantly more credits since every seat re-reads a growing transcript every round."
@@ -401,7 +383,7 @@ function ConfigPanel({
             })}
           </div>
 
-          {/* OUTPUT STRATEGY — always visible */}
+          {/* 4. RESPONSE VIEW — primary output structure pick */}
           <V29Field
             label="Response View"
             tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
@@ -421,6 +403,26 @@ function ConfigPanel({
               </SelectContent>
             </Select>
           </V29Field>
+
+          {/* 5. RESPONSE MODE — only relevant when Moderator Consensus is chosen */}
+          {config.outputStrategy === "moderator-consensus" && (
+            <V29Field
+              label="Response Mode"
+              tooltip="When using Moderator Consensus, choose whether to also show each seat's individual response alongside the synthesis, or show the synthesis only."
+            >
+              <Select value={config.outputScope} onValueChange={(v) => handleChange({ outputScope: v as CourtConfig["outputScope"] })}>
+                <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="consensus" label="Consensus Only">
+                    <span className="text-xs text-muted-foreground">Show the synthesized answer only — individual seat responses hidden.</span>
+                  </SelectItem>
+                  <SelectItem value="all-voices" label="All Voices">
+                    <span className="text-xs text-muted-foreground">Show the synthesis plus every seat's full reasoning alongside it.</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </V29Field>
+          )}
 
           {/* FORMAT + ARTIFACT TYPE — only when Screen + Artifact */}
           {config.artifactType !== "none" && (
