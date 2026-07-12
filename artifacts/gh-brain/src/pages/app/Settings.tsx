@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import {
   Settings, User as UserIcon, Sliders, AlertTriangle, Save,
   Eye, EyeOff, Download, Loader2, Shield, Check, Bell,
+  Zap, Search, FileText, AlignLeft, List, Gavel, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -359,6 +360,49 @@ function ProfileTab({ user }: { user: User }) {
   );
 }
 
+function SettingsOptionCard({
+  selected, onClick, icon: Icon, label, description, tag,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  tag?: string | null;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "relative w-full text-left rounded-xl border p-4 transition-all duration-150",
+        "hover:border-primary/60 hover:bg-primary/5",
+        selected
+          ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+          : "border-border/60 bg-card/40"
+      )}
+    >
+      {tag && (
+        <span className="absolute top-3 right-3 text-[10px] font-semibold bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+          {tag}
+        </span>
+      )}
+      <div className="flex items-start gap-3">
+        <div className={cn("mt-0.5 shrink-0 rounded-lg p-2", selected ? "bg-primary/20" : "bg-muted/50")}>
+          <Icon className={cn("w-4 h-4", selected ? "text-primary" : "text-muted-foreground")} />
+        </div>
+        <div className={cn("min-w-0", tag ? "pr-14" : "pr-1")}>
+          <div className="font-semibold text-sm flex items-center gap-1.5">
+            {label}
+            {selected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 interface DefaultSettings {
   litigantCount: number;
   confidenceTarget: number;
@@ -421,29 +465,66 @@ function PreferencesTab({ user }: { user: User }) {
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Response depth</Label>
-            <Select value={settings.responseMode} onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v }))}>
-              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="concise">Concise</SelectItem>
-                <SelectItem value="balanced">Balanced</SelectItem>
-                <SelectItem value="thorough">Thorough</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <SettingsOptionCard
+                selected={settings.responseMode === "concise"}
+                onClick={() => setSettings((s) => ({ ...s, responseMode: "concise" }))}
+                icon={Zap}
+                label="Concise"
+                description="Shorter, faster responses. Key insights without detailed reasoning — good for quick calls."
+              />
+              <SettingsOptionCard
+                selected={settings.responseMode === "balanced"}
+                onClick={() => setSettings((s) => ({ ...s, responseMode: "balanced" }))}
+                icon={Sliders}
+                label="Balanced"
+                description="Moderate depth with clear reasoning. The right mix for most sessions."
+                tag="Default"
+              />
+              <SettingsOptionCard
+                selected={settings.responseMode === "thorough"}
+                onClick={() => setSettings((s) => ({ ...s, responseMode: "thorough" }))}
+                icon={BookOpen}
+                label="Thorough"
+                description="Deep reasoning and detailed argumentation. Best for high-stakes or complex decisions."
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Output format</Label>
-            <Select value={settings.outputFormat} onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v }))}>
-              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="report">Full Report</SelectItem>
-                <SelectItem value="memo">Executive Memo</SelectItem>
-                <SelectItem value="bullets">Bullet Points</SelectItem>
-                <SelectItem value="verdict">Direct Verdict</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <SettingsOptionCard
+                selected={settings.outputFormat === "report"}
+                onClick={() => setSettings((s) => ({ ...s, outputFormat: "report" }))}
+                icon={FileText}
+                label="Full Report"
+                description="Structured document with sections, findings, and recommendations."
+              />
+              <SettingsOptionCard
+                selected={settings.outputFormat === "memo"}
+                onClick={() => setSettings((s) => ({ ...s, outputFormat: "memo" }))}
+                icon={AlignLeft}
+                label="Executive Memo"
+                description="Concise format for busy decision-makers. Key points and action items only."
+              />
+              <SettingsOptionCard
+                selected={settings.outputFormat === "bullets"}
+                onClick={() => setSettings((s) => ({ ...s, outputFormat: "bullets" }))}
+                icon={List}
+                label="Bullet Points"
+                description="Scannable list format. Fast to read and easy to share."
+              />
+              <SettingsOptionCard
+                selected={settings.outputFormat === "verdict"}
+                onClick={() => setSettings((s) => ({ ...s, outputFormat: "verdict" }))}
+                icon={Gavel}
+                label="Direct Verdict"
+                description="A single clear answer with a confidence score. No filler."
+              />
+            </div>
           </div>
         </div>
       </Section>
