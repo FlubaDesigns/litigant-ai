@@ -1084,9 +1084,7 @@ export default function SessionPage() {
   }
 
   return (
-    <div
-      className="session-bg flex flex-col overflow-y-auto min-h-[calc(100vh-3.5rem)]"
-    >
+    <div className="main session-bg flex flex-col overflow-y-auto">
       <ConfigPanel
         open={configOpen}
         onClose={() => setConfigOpen(false)}
@@ -1116,6 +1114,9 @@ export default function SessionPage() {
           </button>
         )}
       </div>
+
+      {/* ── MAIN CONTENT ── */}
+      <div className="main-inner flex flex-col gap-2 py-3">
 
       {/* ── CONVERSATION PANEL ── */}
       <div className="session-conv">
@@ -1673,7 +1674,7 @@ export default function SessionPage() {
 
       {/* ── RUNTIME CONTROL PANEL ── */}
       {!isIdle && (
-        <div style={{ border: "1px solid #1d331d", borderRadius: 12, margin: "0 8px 8px", padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.92),rgba(7,16,7,.92))", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ border: "1px solid #1d331d", borderRadius: 12, padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.92),rgba(7,16,7,.92))", display: "flex", flexDirection: "column", gap: 6 }}>
           <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800, marginBottom: 2 }}>Runtime Control</div>
           <RuntimeControl
             starting={credits + state.creditsUsed}
@@ -1687,6 +1688,8 @@ export default function SessionPage() {
           <ActivityLogSection />
         </div>
       )}
+
+      </div>{/* /main-inner */}
 
       {/* ── COURT DIAGRAM — at the bottom ── */}
       <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>

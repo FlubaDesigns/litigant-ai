@@ -458,7 +458,7 @@
    boxes, dialog lines, activity log, nav strip, meters, status cards.
    ─────────────────────────────────────────────────────────────────── */
 
-/* Page root */
+/* Page root — .main handles padding-top for fixed header */
 .session-bg {
   background: #000;
 }
@@ -468,7 +468,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  padding: 7px 8px;
+  padding: 7px var(--gutter);
   border-bottom: 1px solid #27272a;
   background: rgba(8, 8, 8, 0.96);
   flex-shrink: 0;
@@ -489,11 +489,10 @@
 .session-nav-btn--stop  { background: rgba(200, 64, 64, 0.12); color: #ff6b6b; border-color: rgba(200, 64, 64, 0.33); }
 .session-nav-btn--reset { background: rgba(245, 158, 11, 0.08); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
 
-/* Conversation panel */
+/* Conversation panel — margin handled by main-inner gutter */
 .session-conv {
   border: 1px solid #27272a;
   border-radius: 12px;
-  margin: 8px;
   padding: 8px;
   background: linear-gradient(160deg, rgba(18, 14, 8, 0.95), rgba(10, 10, 10, 0.95));
   display: flex;
