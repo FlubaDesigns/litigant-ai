@@ -1,5 +1,6 @@
 - [Firebase Admin imports](firebase-admin-imports.md) — must use modular imports (`firebase-admin/app` etc.), NOT default `import admin from "firebase-admin"`
-- [API URL from frontend](api-url-routing.md) — API server is at `/api-server/api` (Replit path routing, same domain)
+- [API URL from frontend](api-url-routing.md) — production uses VITE_API_URL=direct Cloud Run URL (Firebase Hosting drops SSE); dev uses /api-server/api
+- [Firebase Hosting drops SSE](firebase-hosting-sse.md) — Firebase Hosting proxy cannot forward Server-Sent Events; returns empty ~1s; must call Cloud Run directly
 - [ProtectedRoute guest mode](protected-route-guest.md) — when `firebaseReady` is false (Firebase unconfigured), ProtectedRoute allows all access
 - [Brain engine SSE pattern](brain-engine-sse.md) — sequential multi-role calls, each role streams to SSE; roles vary by courtMode; gpt-5.4 with `max_completion_tokens`
 - [Seat briefs system](seat-briefs.md) — per-seat MD files in api-server/src/seats/; loaded by seatBriefs.ts with Firestore override + 5-min cache; admin routes GET/PATCH/DELETE /admin/seat-briefs/:seatId
