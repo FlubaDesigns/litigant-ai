@@ -762,8 +762,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="lgt-container">
+    <div className="main-inner">
       <section className="section">
+      <div className="row">
         <div className="flex items-center gap-2 mb-8" style={{ paddingTop: "var(--sv)" }}>
           <Settings className="w-5 h-5 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
@@ -812,6 +813,7 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>{/* /row */}
       </section>
     </div>
   );

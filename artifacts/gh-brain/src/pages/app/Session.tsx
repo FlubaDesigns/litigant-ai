@@ -1116,8 +1116,8 @@ export default function SessionPage() {
       </div>
 
       {/* ── MAIN CONTENT ── */}
+      <div className="main-inner">
       <section className="section">
-      <div className="lgt-container">
       <div className="row">
 
       {/* ── CONVERSATION PANEL ── */}
@@ -1739,8 +1739,8 @@ export default function SessionPage() {
       )}
 
       </div>{/* /row */}
-      </div>{/* /lgt-container */}
       </section>
+      </div>{/* /main-inner */}
 
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">

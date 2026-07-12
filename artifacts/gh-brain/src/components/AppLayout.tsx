@@ -24,7 +24,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {showWizard && <OnboardingWizard onComplete={() => setWizardDismissed(true)} />}
 
       {/* Page content */}
-      <main className="main">{children}</main>
+      <main className="flex-1">{children}</main>
 
       {/* Shared footer — edit SiteFooter.tsx to update everywhere */}
       <SiteFooter variant="app" />

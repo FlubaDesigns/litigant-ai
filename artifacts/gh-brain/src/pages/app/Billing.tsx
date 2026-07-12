@@ -607,7 +607,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="lgt-container">
+    <div className="main-inner">
       <section className="section">
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
           <div className="flex-row">

@@ -457,7 +457,7 @@ export default function HistoryPage() {
 
   return (
     <>
-      <div className="lgt-container">
+      <div className="main-inner">
       <section className="section">
 
         {/* ── Page hero ── */}
