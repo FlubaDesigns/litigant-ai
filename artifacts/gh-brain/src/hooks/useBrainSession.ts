@@ -100,7 +100,21 @@ type Action =
     }
   | { type: "ERROR"; message: string }
   | { type: "RESET" }
-  | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string };
+  | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string }
+  | {
+      type: "PREFILL_PAUSED";
+      question: string;
+      config: Partial<CourtConfig>;
+      sessionId: string;
+      confidence: number;
+      creditsUsed: number;
+      finalAnswer: string;
+      debateNotes: string;
+      transcript: string;
+      caveats: string;
+      artifacts: string;
+      pauseTranscript: string[];
+    };
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
   const litigantCount = initialConfig?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
@@ -354,6 +368,27 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "RESET":
       return makeInitialState();
 
+    case "PREFILL_PAUSED": {
+      const newConfig = { ...state.config, ...action.config };
+      return {
+        ...makeInitialState(newConfig),
+        phase: "paused" as const,
+        question: action.question,
+        config: newConfig,
+        sessionId: action.sessionId,
+        confidence: action.confidence,
+        creditsUsed: action.creditsUsed,
+        finalAnswer: action.finalAnswer,
+        debateNotes: action.debateNotes,
+        transcript: action.transcript,
+        caveats: action.caveats,
+        artifacts: action.artifacts,
+        pauseReason: "credit_cap" as const,
+        pauseTranscript: action.pauseTranscript,
+        courtHappened: true,
+      };
+    }
+
     default:
       return state;
   }
@@ -490,6 +525,28 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     }
   }, [user, handleSSEEvent]);
 
+  const loadPausedSession = useCallback((s: {
+    question: string;
+    config: Partial<CourtConfig>;
+    sessionId: string;
+    confidence: number;
+    creditsUsed: number;
+    finalAnswer: string;
+    debateNotes: string;
+    transcript: string;
+    caveats: string;
+    artifacts: string;
+  }) => {
+    const pauseTranscript = s.transcript
+      ? s.transcript.split("\n\n---\n\n").filter(Boolean)
+      : [];
+    dispatch({
+      type: "PREFILL_PAUSED",
+      ...s,
+      pauseTranscript,
+    });
+  }, []);
+
   const setQuestion = useCallback((q: string) => dispatch({ type: "SET_QUESTION", question: q }), []);
   const setTemplate = useCallback((t: Template | null) => dispatch({ type: "SET_TEMPLATE", template: t }), []);
   const setConfig = useCallback((c: Partial<CourtConfig>) => dispatch({ type: "SET_CONFIG", config: c }), []);
@@ -555,6 +612,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     reset,
     acceptPartial,
     continueSession: continueSessionFn,
+    loadPausedSession,
     submitRebuttal,
     setQuestion,
     setTemplate,

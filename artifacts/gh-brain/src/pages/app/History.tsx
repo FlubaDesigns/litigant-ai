@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   History, Search, Star, Archive, Trash2, Share2, Download,
   Edit3, Check, X, ChevronRight, Clock, Zap, Target,
-  MoreHorizontal, Filter, Loader2,
+  MoreHorizontal, Filter, Loader2, RotateCcw, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,12 @@ function getTemplateName(templateId: string | null): string {
   return TEMPLATES.find((t) => t.id === templateId)?.title ?? templateId;
 }
 
-function SessionDetail({ session, onClose }: { session: SavedSession; onClose: () => void }) {
+function SessionDetail({ session, onClose, onRerun, onResume }: {
+  session: SavedSession;
+  onClose: () => void;
+  onRerun: () => void;
+  onResume?: () => void;
+}) {
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl bg-card border-l border-border overflow-y-auto">
@@ -84,6 +89,27 @@ function SessionDetail({ session, onClose }: { session: SavedSession; onClose: (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Zap className="w-3 h-3" />{session.creditsUsed} credits
               </span>
+            )}
+          </div>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+              onClick={onRerun}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />Re-run
+            </Button>
+            {onResume && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs border-amber-500/40 text-amber-400 hover:bg-amber-400/10 hover:text-amber-400"
+                onClick={onResume}
+              >
+                <Play className="w-3.5 h-3.5" />Resume
+              </Button>
             )}
           </div>
         </SheetHeader>
@@ -149,10 +175,11 @@ interface SessionRowProps {
   onDelete: () => void;
   onExport: () => void;
   onShare: () => void;
+  onRerun: () => void;
 }
 
 function SessionRow({
-  session, onOpen, onRename, onToggleStar, onToggleArchive, onDelete, onExport, onShare,
+  session, onOpen, onRename, onToggleStar, onToggleArchive, onDelete, onExport, onShare, onRerun,
 }: SessionRowProps) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(session.title);
@@ -253,6 +280,10 @@ function SessionRow({
           <DropdownMenuItem onClick={onToggleArchive}>
             <Archive className="w-3.5 h-3.5 mr-2" />
             {session.archived ? "Unarchive" : "Archive"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onRerun}>
+            <RotateCcw className="w-3.5 h-3.5 mr-2" />Re-run
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onShare}>
@@ -425,6 +456,39 @@ export default function HistoryPage() {
     }
   }
 
+  function handleRerun(session: SavedSession) {
+    sessionStorage.setItem("litigant_prefill", JSON.stringify({
+      mode: "rerun",
+      question: session.question,
+      templateId: session.templateId,
+    }));
+    setLocation("/session");
+  }
+
+  async function handleResume(session: SavedSession) {
+    let full = session;
+    if (!full.transcript && user) {
+      try {
+        const idToken = await user.getIdToken();
+        full = await getSession(session.id, idToken);
+      } catch { /* fall back to partial data */ }
+    }
+    sessionStorage.setItem("litigant_prefill", JSON.stringify({
+      mode: "resume",
+      question: full.question,
+      templateId: full.templateId,
+      sessionId: full.id,
+      confidence: full.confidence ?? 0,
+      creditsUsed: full.creditsUsed ?? 0,
+      finalAnswer: full.finalAnswer ?? "",
+      debateNotes: full.debateNotes ?? "",
+      transcript: full.transcript ?? "",
+      caveats: full.caveats ?? "",
+      artifacts: full.artifacts ?? "",
+    }));
+    setLocation("/session");
+  }
+
   // Unique templates present in loaded sessions
   const uniqueTemplateIds = [...new Set(sessions.map((s) => s.templateId))];
   const hasCustom = uniqueTemplateIds.includes(null);
@@ -592,6 +656,7 @@ export default function HistoryPage() {
                     onDelete={() => setDeleteTarget(session.id)}
                     onExport={() => handleExport(session)}
                     onShare={() => handleShare(session)}
+                    onRerun={() => handleRerun(session)}
                   />
                 ))}
               </div>
@@ -618,7 +683,12 @@ export default function HistoryPage() {
 
       {/* Session detail sheet */}
       {detailSession && (
-        <SessionDetail session={detailSession} onClose={() => setDetailSession(null)} />
+        <SessionDetail
+          session={detailSession}
+          onClose={() => setDetailSession(null)}
+          onRerun={() => handleRerun(detailSession)}
+          onResume={detailSession.status === "incomplete" ? () => handleResume(detailSession) : undefined}
+        />
       )}
 
       {/* Delete confirm */}

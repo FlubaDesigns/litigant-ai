@@ -1059,7 +1059,7 @@ export default function SessionPage() {
       }
     : undefined;
   const brainSession = useBrainSession(savedConfig);
-  const { state, run, stop, reset, acceptPartial, continueSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = brainSession;
+  const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = brainSession;
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -1127,6 +1127,49 @@ export default function SessionPage() {
         setToolBanner(template.title);
       }
     }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Prefill from history Re-run / Resume (written to sessionStorage by History page)
+  useEffect(() => {
+    if (state.phase !== "idle") return;
+    const raw = sessionStorage.getItem("litigant_prefill");
+    if (!raw) return;
+    sessionStorage.removeItem("litigant_prefill");
+    try {
+      const prefill = JSON.parse(raw) as {
+        mode: "rerun" | "resume";
+        question: string;
+        templateId: string | null;
+        sessionId?: string;
+        confidence?: number;
+        creditsUsed?: number;
+        finalAnswer?: string;
+        debateNotes?: string;
+        transcript?: string;
+        caveats?: string;
+        artifacts?: string;
+      };
+      if (prefill.templateId) {
+        const tmpl = TEMPLATES.find((t) => t.id === prefill.templateId);
+        if (tmpl) { setTemplate(tmpl); setConfig(tmpl.defaultConfig); }
+      }
+      if (prefill.mode === "rerun") {
+        setQuestion(prefill.question);
+      } else if (prefill.mode === "resume" && prefill.sessionId) {
+        loadPausedSession({
+          question: prefill.question,
+          config: {},
+          sessionId: prefill.sessionId,
+          confidence: prefill.confidence ?? 0,
+          creditsUsed: prefill.creditsUsed ?? 0,
+          finalAnswer: prefill.finalAnswer ?? "",
+          debateNotes: prefill.debateNotes ?? "",
+          transcript: prefill.transcript ?? "",
+          caveats: prefill.caveats ?? "",
+          artifacts: prefill.artifacts ?? "",
+        });
+      }
+    } catch { /* ignore malformed payload */ }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll runtime feed
