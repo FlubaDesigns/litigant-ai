@@ -365,18 +365,27 @@ function ConfigPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto — Architect decides</SelectItem>
-                <SelectItem value="report">Report</SelectItem>
-                <SelectItem value="memo">Decision Memo</SelectItem>
-                <SelectItem value="business-plan">Business Plan</SelectItem>
-                <SelectItem value="risk-matrix">Risk Matrix</SelectItem>
-                <SelectItem value="contract-review">Contract Review</SelectItem>
-                <SelectItem value="technical-spec">Technical Spec</SelectItem>
-                <SelectItem value="pitch-deck">Pitch Deck</SelectItem>
-                <SelectItem value="legal-brief">Legal Brief</SelectItem>
-                <SelectItem value="blog-post">Blog Post</SelectItem>
-                <SelectItem value="code">Code</SelectItem>
-                <SelectItem value="landing-page">Landing Page</SelectItem>
+                {[
+                  { value: "auto", label: "Auto — Architect decides", desc: "Architect infers the best deliverable format from your question." },
+                  { value: "report", label: "Report", desc: "Structured document with sections, findings, and recommendations." },
+                  { value: "memo", label: "Decision Memo", desc: "Concise format for capturing a decision and its rationale." },
+                  { value: "business-plan", label: "Business Plan", desc: "Full plan with executive summary, market analysis, and financials." },
+                  { value: "risk-matrix", label: "Risk Matrix", desc: "Identifies risks by likelihood, impact, and mitigation strategy." },
+                  { value: "contract-review", label: "Contract Review", desc: "Flags key clauses, obligations, and risks in legal agreements." },
+                  { value: "technical-spec", label: "Technical Spec", desc: "Engineering spec with requirements, architecture, and design." },
+                  { value: "pitch-deck", label: "Pitch Deck", desc: "Slide-ready narrative with problem, solution, and ask." },
+                  { value: "legal-brief", label: "Legal Brief", desc: "Argument structure with citations, reasoning, and conclusion." },
+                  { value: "blog-post", label: "Blog Post", desc: "Engaging long-form content with intro, body, and call to action." },
+                  { value: "code", label: "Code", desc: "Working code with inline comments and usage examples." },
+                  { value: "landing-page", label: "Landing Page", desc: "Conversion-focused copy with headline, benefits, and CTA." },
+                ].map(({ value, label, desc }) => (
+                  <SelectItem key={value} value={value}>
+                    <div className="flex flex-col py-0.5">
+                      <span>{label}</span>
+                      <span className="text-[10px] text-muted-foreground leading-snug">{desc}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </V29Field>
