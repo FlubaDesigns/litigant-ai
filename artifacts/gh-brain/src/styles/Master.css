@@ -505,6 +505,62 @@
 .session-nav-btn--stop  { background: rgba(200, 64, 64, 0.12); color: #ff6b6b; border-color: rgba(200, 64, 64, 0.33); }
 .session-nav-btn--reset { background: rgba(245, 158, 11, 0.08); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
 
+/* Stats bar */
+.session-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 5px var(--gutter);
+  border-bottom: 1px solid #1a1a1a;
+  background: rgba(4, 8, 4, 0.96);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.session-stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 3px 12px 3px 0;
+  flex-shrink: 0;
+}
+.session-stats-key {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #3a5a3a;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.session-stats-val {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: monospace;
+  color: #7ab87a;
+  line-height: 1;
+}
+.session-stats-val--critical { color: #ff6b6b; }
+.session-stats-val--low      { color: #f59e0b; }
+.session-stats-sep {
+  width: 1px;
+  height: 24px;
+  background: #1d1d1d;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+.session-stats-topup {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ff6b6b;
+  background: rgba(200, 64, 64, 0.1);
+  border: 1px solid rgba(200, 64, 64, 0.3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* Conversation panel — margin handled by main-inner gutter */
 .session-conv {
   border: 1px solid #27272a;

@@ -1392,6 +1392,36 @@ export default function SessionPage() {
         )}
       </div>
 
+      {/* ── STATS BAR ── */}
+      <div className="session-stats-bar">
+        <span className="session-stats-item">
+          <span className="session-stats-key">Balance</span>
+          <span className={cn("session-stats-val", creditsCritical && "session-stats-val--critical", creditsLow && "session-stats-val--low")}>
+            {credits.toLocaleString()} cr
+          </span>
+        </span>
+        <span className="session-stats-sep" />
+        <span className="session-stats-item">
+          <span className="session-stats-key">Used</span>
+          <span className="session-stats-val">{state.creditsUsed}</span>
+        </span>
+        <span className="session-stats-sep" />
+        <span className="session-stats-item">
+          <span className="session-stats-key">Est</span>
+          <span className="session-stats-val">~{estimatedCredits}</span>
+        </span>
+        <span className="session-stats-sep" />
+        <span className="session-stats-item">
+          <span className="session-stats-key">Litigants</span>
+          <span className="session-stats-val">{state.config.litigantCount}</span>
+        </span>
+        {insufficientCredits && (
+          <button onClick={() => navigate("/billing")} className="session-stats-topup">
+            Top up →
+          </button>
+        )}
+      </div>
+
       {/* ── CONVERSATION PANEL ── */}
       <section className="main-inner">
       <div className="session-conv">
