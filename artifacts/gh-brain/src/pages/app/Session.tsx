@@ -321,7 +321,7 @@ function ConfigPanel({
           {/* OUTPUT STRATEGY */}
           <V29Field
             label="Output Strategy"
-            tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response. Court Transcript: the full raw turn-by-turn debate log. Artifact Only: skips narrative output entirely and produces just the generated artifact (doc, code, etc.) set by Artifact Type."
+            tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
           >
             <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
@@ -329,8 +329,6 @@ function ConfigPanel({
                 <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
                 <SelectItem value="individual">Individual Responses</SelectItem>
                 <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
-                <SelectItem value="transcript">Court Transcript</SelectItem>
-                <SelectItem value="artifact">Artifact Only</SelectItem>
               </SelectContent>
             </Select>
           </V29Field>
