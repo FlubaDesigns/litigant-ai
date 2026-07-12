@@ -154,6 +154,8 @@ function ConfigPanel({
 }) {
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [atBottom, setAtBottom] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const hasChanges = useRef(false);
   // Always-current config: updated synchronously on every handleChange call
   // (can't rely on useEffect for configRef because React flushes async)
@@ -170,8 +172,8 @@ function ConfigPanel({
     }
   }, [open]);
 
-  async function doSave(showToast = false) {
-    if (!uid || !onboardingComplete) return;
+  async function doSave(showToast = false): Promise<boolean> {
+    if (!uid || !onboardingComplete) return false;
     setSaveState("saving");
     try {
       const c = latestConfigRef.current;
@@ -193,12 +195,20 @@ function ConfigPanel({
       setSaveState("saved");
       if (showToast) toast.success("Settings saved to your profile");
       setTimeout(() => setSaveState("idle"), 2000);
+      return true;
     } catch (err) {
       console.error("[Session] saveUserConfig failed:", err);
       setSaveState("idle");
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(`Could not save: ${msg}`);
+      return false;
     }
+  }
+
+  function handleSheetScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 24);
   }
 
   // Wrap onChange — sync ref immediately so doSave always reads latest values
@@ -238,8 +248,13 @@ function ConfigPanel({
     <Sheet open={open} onOpenChange={(o) => !o && handleClose()}>
       <SheetContent
         side="right"
-        className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 overflow-y-auto p-0"
+        className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 p-0 flex flex-col"
       >
+        <div
+          ref={scrollRef}
+          onScroll={handleSheetScroll}
+          className="overflow-y-auto flex-1"
+        >
         <TooltipProvider delayDuration={150}>
         <div className="px-5 py-5 space-y-5">
           {/* Header */}
@@ -567,7 +582,7 @@ function ConfigPanel({
           {/* FOOTER */}
           <div className="flex flex-col gap-2 pb-2">
             <Button
-              onClick={async () => { await doSave(true); setTimeout(onClose, 700); }}
+              onClick={async () => { const saved = await doSave(true); if (saved) setTimeout(onClose, 700); }}
               disabled={saveState === "saving"}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
             >
@@ -580,6 +595,10 @@ function ConfigPanel({
           </div>
         </div>
         </TooltipProvider>
+        </div>{/* end scroll wrapper */}
+        {!atBottom && (
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#060e06] to-transparent" />
+        )}
       </SheetContent>
     </Sheet>
   );
