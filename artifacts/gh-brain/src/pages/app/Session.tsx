@@ -264,6 +264,22 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
+          {/* COURT MODE */}
+          <V29Field
+            label="Court Mode"
+            tooltip="Sets the structural logic of the entire session. Adversarial: seats argue opposing positions and attack each other's reasoning — best for pressure-testing ideas and stress-testing decisions. Socratic: seats ask probing questions to expose assumptions and surface blind spots — best for deep exploration. Analysis: seats each analyze the question from a different lens (strategic, technical, risk, etc.) without direct conflict — best for multi-angle assessment. Critique: seats act as reviewers who find flaws, weaknesses, and risks in the idea as presented — best for pre-mortem and quality review."
+          >
+            <Select value={config.courtMode} onValueChange={(v) => handleChange({ courtMode: v as CourtConfig["courtMode"] })}>
+              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="adversarial">Adversarial</SelectItem>
+                <SelectItem value="socratic">Socratic</SelectItem>
+                <SelectItem value="analysis">Analysis</SelectItem>
+                <SelectItem value="critique">Critique</SelectItem>
+              </SelectContent>
+            </Select>
+          </V29Field>
+
           {/* RESPONSE MODE */}
           <V29Field
             label="Response Mode"
