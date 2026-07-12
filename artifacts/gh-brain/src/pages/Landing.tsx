@@ -343,14 +343,6 @@ export default function LandingPage() {
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
-                <a href="#how-it-works">
-                  <button
-                    className="h-11 px-7 text-sm font-medium transition-colors border"
-                    style={{borderColor:'hsl(108 94% 50% / 0.35)', color:'hsl(108 94% 50%)'}}
-                  >
-                    Read the Protocol
-                  </button>
-                </a>
               </div>
             </motion.div>
             </div>{/* /hero-text */}
