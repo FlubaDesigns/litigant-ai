@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 
 const APP_NAV = [
-  { href: "/session", label: "New Session", icon: Brain },
-  { href: "/tools",   label: "Tools",       icon: LayoutTemplate },
-  { href: "/history", label: "History",     icon: History },
-  { href: "/billing", label: "Credits",     icon: CreditCard },
-  { href: "/settings",label: "Settings",    icon: Settings },
+  { href: "/session",   label: "New Session", icon: Brain },
+  { href: "/templates", label: "Templates",   icon: LayoutTemplate },
+  { href: "/history",   label: "History",     icon: History },
+  { href: "/billing",   label: "Credits",     icon: CreditCard },
+  { href: "/settings",  label: "Settings",    icon: Settings },
 ];
 
 export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app" }) {

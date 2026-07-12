@@ -16,6 +16,7 @@ import ToolPage from "@/pages/tools/ToolPage";
 
 // App pages (protected)
 import SessionPage from "@/pages/app/Session";
+import TemplatesPage from "@/pages/app/Templates";
 import HistoryPage from "@/pages/app/History";
 import BillingPage from "@/pages/app/Billing";
 import SettingsPage from "@/pages/app/Settings";
@@ -90,6 +91,11 @@ function AppRoutes() {
       {/* Public SEO tool pages */}
       <Route path="/tools" component={ToolsIndexPage} />
       <Route path="/tools/:slug" component={ToolPage} />
+      <Route path="/templates">
+        <ProtectedRoute>
+          <TemplatesPage />
+        </ProtectedRoute>
+      </Route>
       <Route path="/history">
         <ProtectedRoute>
           <HistoryPage />
