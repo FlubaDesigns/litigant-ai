@@ -9,6 +9,7 @@ import {
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
   Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Shuffle,
   ChevronRight, Gavel, HelpCircle,
+  Check, Shield, ShieldOff, Users, Swords, Link2, User, Layers, List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -138,6 +139,49 @@ function V29Field({
   );
 }
 
+function V29OptionCard({
+  selected, onClick, icon: Icon, label, description, tag,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  tag?: string | null;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "relative w-full text-left rounded-lg border p-3 transition-all duration-150",
+        "hover:border-primary/60 hover:bg-primary/5",
+        selected
+          ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+          : "border-border/60 bg-card/40"
+      )}
+    >
+      {tag && (
+        <span className="absolute top-2 right-2 text-[9px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+          {tag}
+        </span>
+      )}
+      <div className="flex items-start gap-2.5">
+        <div className={cn("mt-0.5 shrink-0 rounded-md p-1.5", selected ? "bg-primary/20" : "bg-muted/50")}>
+          <Icon className={cn("w-3.5 h-3.5", selected ? "text-primary" : "text-muted-foreground")} />
+        </div>
+        <div className={cn("min-w-0", tag ? "pr-12" : "pr-1")}>
+          <div className="font-semibold text-xs flex items-center gap-1.5">
+            {label}
+            {selected && <Check className="w-3 h-3 text-primary shrink-0" />}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{description}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 const V29_SELECT = "bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 focus:border-primary h-10";
 
 // ── ConfigPanel ───────────────────────────────────────────────────────────────
@@ -264,49 +308,75 @@ function ConfigPanel({
             </SheetTitle>
           </SheetHeader>
 
-          {/* SAFETY FILTER */}
+          {/* CONSCIENCE */}
           <V29Field
             label="Conscience"
-            desc="ON: self-checks for bias, harm, and gaps. OFF: raw output."
             tooltip="Conscience is a governing mandate — a fixed block of instructions appended directly to every seat's system prompt, not a separate filter that reviews output afterward. Its current version (Canon v2, Execution-Honest) tells every AI, before it writes a single word: state what the evidence actually shows even if uncomfortable; never assert something it can't substantiate, and admit it doesn't know when that's true; never give a diplomatic non-answer to dodge conflict; explicitly name what information is missing; and report honestly if its own reasoning led somewhere unexpected, rather than reverse-engineering an argument to fit a conclusion. So it shapes how each seat reasons from the first token, not just what gets shown after. It costs a small credit surcharge (+1 Cr) because it adds to every prompt. When OFF, seats get no such mandate and respond however the base model naturally would — which can be more evasive, hedged, or unwilling to state hard conclusions plainly. An admin can update the exact wording of this mandate at any time without a code deploy."
           >
-            <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => handleChange({ conscience: v === "on" })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="on">Conscience ON</SelectItem>
-                <SelectItem value="off">Conscience OFF</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <V29OptionCard
+                selected={config.conscience}
+                onClick={() => handleChange({ conscience: true })}
+                icon={Shield}
+                label="Conscience ON"
+                description="Every seat is mandated to state evidence honestly, admit uncertainty, and never give a diplomatic non-answer. +1 Cr."
+                tag="Recommended"
+              />
+              <V29OptionCard
+                selected={!config.conscience}
+                onClick={() => handleChange({ conscience: false })}
+                icon={ShieldOff}
+                label="Conscience OFF"
+                description="No governing mandate. Seats respond however the base model naturally would — may be more evasive or hedged."
+              />
+            </div>
           </V29Field>
 
           {/* RESPONSE MODE */}
           <V29Field
             label="Response Mode"
-            desc="Consensus Only: one clean answer. All Voices: each AI's response shown."
             tooltip="Controls how much of the debate you actually see. Consensus Only hides the individual seats and shows just the final synthesized answer — cleanest for quick decisions. All Voices shows every seat's full response alongside the synthesis, so you can see exactly how each AI reasoned and where they agreed or disagreed."
           >
-            <Select value={config.outputScope} onValueChange={(v) => handleChange({ outputScope: v as CourtConfig["outputScope"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="consensus">Consensus Only</SelectItem>
-                <SelectItem value="all-voices">All Voices</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <V29OptionCard
+                selected={config.outputScope === "consensus"}
+                onClick={() => handleChange({ outputScope: "consensus" })}
+                icon={Target}
+                label="Consensus Only"
+                description="One clean synthesized answer. Individual seat responses are hidden — best for quick decisions."
+              />
+              <V29OptionCard
+                selected={config.outputScope === "all-voices"}
+                onClick={() => handleChange({ outputScope: "all-voices" })}
+                icon={Users}
+                label="All Voices"
+                description="Each AI's full response shown alongside the synthesis — see exactly how each seat reasoned."
+              />
+            </div>
           </V29Field>
 
           {/* DEBATE MODE */}
           <V29Field
             label="Debate Mode"
-            desc="Adversarial: AIs challenge each other. Collaborative: AIs build on each other."
-            tooltip="Sets how the seats treat each other's arguments, independent of which court mode is active. Adversarial: each seat actively challenges others, hunts for contradictions, and attacks weak reasoning — good for pressure-testing an idea. Collaborative: seats build on each other's points and work toward synthesis rather than confrontation — good for exploring or refining an idea together."
+            tooltip="Sets how the seats treat each other's arguments. Adversarial: each seat actively challenges others, hunts for contradictions, and attacks weak reasoning — good for pressure-testing an idea. Collaborative: seats build on each other's points and work toward synthesis rather than confrontation — good for exploring or refining an idea together."
           >
-            <Select value={config.debateMode} onValueChange={(v) => handleChange({ debateMode: v as CourtConfig["debateMode"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="adversarial">Adversarial</SelectItem>
-                <SelectItem value="collaborative">Collaborative</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <V29OptionCard
+                selected={config.debateMode === "adversarial"}
+                onClick={() => handleChange({ debateMode: "adversarial" })}
+                icon={Swords}
+                label="Adversarial"
+                description="Seats challenge each other's reasoning and attack weak arguments. Best for stress-testing ideas."
+                tag="Most popular"
+              />
+              <V29OptionCard
+                selected={config.debateMode === "collaborative"}
+                onClick={() => handleChange({ debateMode: "collaborative" })}
+                icon={Users}
+                label="Collaborative"
+                description="Seats build on each other's points toward a shared conclusion. Best for exploration and refinement."
+              />
+            </div>
           </V29Field>
 
           {/* AI REASONING */}
@@ -314,36 +384,22 @@ function ConfigPanel({
             label="AI Reasoning"
             tooltip="Controls whether seats hear each other. Independent: each AI only sees its own prior turns, never the other seats' responses — faster and cheaper, good for gathering distinct unbiased takes. Chain: each AI reads the entire transcript so far before responding, enabling real cross-examination and rebuttal — richer, but costs significantly more credits since every seat re-reads a growing transcript every round."
           >
-            <div className="flex flex-col gap-1.5">
-              {(["independent", "chain"] as const).map((mode) => {
-                const isSelected = config.aiReasoning === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => handleChange({ aiReasoning: mode })}
-                    className={cn(
-                      "text-left px-3 py-2.5 rounded border text-xs transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border/50 bg-background text-muted-foreground hover:border-border hover:text-foreground"
-                    )}
-                  >
-                    <div className="font-semibold capitalize mb-0.5">{mode}</div>
-                    {mode === "independent" ? (
-                      <div className="text-[11px] leading-snug opacity-80">
-                        Each AI builds on its own prior arguments only — other seats are not heard. Lower credit cost.
-                      </div>
-                    ) : (
-                      <div className="text-[11px] leading-snug opacity-80">
-                        Each AI reads the full debate before responding. Richer cross-examination —{" "}
-                        <span className={isSelected ? "text-yellow-400" : "text-yellow-500"}>uses significantly more credits</span>{" "}
-                        because all agents re-read the entire transcript each turn.
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="flex flex-col gap-2">
+              <V29OptionCard
+                selected={config.aiReasoning === "independent"}
+                onClick={() => handleChange({ aiReasoning: "independent" })}
+                icon={User}
+                label="Independent"
+                description="Each AI builds on its own prior turns only — other seats are not heard. Faster and cheaper."
+                tag="Recommended"
+              />
+              <V29OptionCard
+                selected={config.aiReasoning === "chain"}
+                onClick={() => handleChange({ aiReasoning: "chain" })}
+                icon={Link2}
+                label="Chain"
+                description="Each AI reads the full transcript before responding. Richer cross-examination — uses significantly more credits."
+              />
             </div>
           </V29Field>
 
@@ -373,14 +429,29 @@ function ConfigPanel({
             label="Response View"
             tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
           >
-            <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
-                <SelectItem value="individual">Individual Responses</SelectItem>
-                <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <V29OptionCard
+                selected={config.outputStrategy === "moderator-consensus"}
+                onClick={() => handleChange({ outputStrategy: "moderator-consensus" })}
+                icon={Gavel}
+                label="Moderator Consensus"
+                description="A moderator seat reads all arguments and writes one synthesized answer."
+              />
+              <V29OptionCard
+                selected={config.outputStrategy === "individual"}
+                onClick={() => handleChange({ outputStrategy: "individual" })}
+                icon={List}
+                label="Individual Responses"
+                description="Each AI's answer shown separately with no synthesis."
+              />
+              <V29OptionCard
+                selected={config.outputStrategy === "consensus+individual"}
+                onClick={() => handleChange({ outputStrategy: "consensus+individual" })}
+                icon={Layers}
+                label="Consensus + Individual"
+                description="Both the synthesized answer and every individual seat's full response."
+              />
+            </div>
           </V29Field>
 
           {/* FORMAT + ARTIFACT TYPE — only when Screen + Artifact */}
