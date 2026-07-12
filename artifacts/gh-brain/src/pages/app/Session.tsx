@@ -1372,99 +1372,201 @@ export default function SessionPage() {
         isAdmin={isAdmin}
       />
 
-      {/* ── HEADER NAV — Configure | Sessions | state controls ── */}
-      <div className="session-nav">
-        <button onClick={() => setConfigOpen(true)} className="session-nav-btn">
-          ⚙ Configure
-        </button>
-        <button onClick={() => navigate("/history")} className="session-nav-btn">
-          📂 Sessions
-        </button>
-        {isRunning && (
-          <button onClick={handleStop} className="session-nav-btn session-nav-btn--full session-nav-btn--stop">
-            ⏹ Stop Trial
-          </button>
-        )}
-        {(isComplete || isError) && (
-          <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">
-            ↺ New Trial
-          </button>
-        )}
-      </div>
-
-      {/* ── STATS BAR ── */}
-      <div className="session-stats-bar">
-        <span className="session-stats-item">
-          <span className="session-stats-key">Balance</span>
-          <span className={cn("session-stats-val", creditsCritical && "session-stats-val--critical", creditsLow && "session-stats-val--low")}>
-            {credits.toLocaleString()} cr
+      {/* ══════════════════════════════════════════════════════
+          ZONE 1 — CONTROL BOARD
+          Nav actions + live credit/session stats
+      ══════════════════════════════════════════════════════ */}
+      <div className="sz-control">
+        <div className="sz-control-nav">
+          <button onClick={() => setConfigOpen(true)} className="session-nav-btn">⚙ Configure</button>
+          <button onClick={() => navigate("/history")} className="session-nav-btn">📂 Sessions</button>
+          {isRunning && (
+            <button onClick={handleStop} className="session-nav-btn session-nav-btn--full session-nav-btn--stop">⏹ Stop Trial</button>
+          )}
+          {(isComplete || isError) && (
+            <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">↺ New Trial</button>
+          )}
+        </div>
+        <div className="sz-control-stats">
+          <span className="session-stats-item">
+            <span className="session-stats-key">Balance</span>
+            <span className={cn("session-stats-val", creditsCritical && "session-stats-val--critical", creditsLow && "session-stats-val--low")}>
+              {credits.toLocaleString()} cr
+            </span>
           </span>
-        </span>
-        <span className="session-stats-sep" />
-        <span className="session-stats-item">
-          <span className="session-stats-key">Used</span>
-          <span className="session-stats-val">{state.creditsUsed}</span>
-        </span>
-        <span className="session-stats-sep" />
-        <span className="session-stats-item">
-          <span className="session-stats-key">Est</span>
-          <span className="session-stats-val">~{estimatedCredits}</span>
-        </span>
-        <span className="session-stats-sep" />
-        <span className="session-stats-item">
-          <span className="session-stats-key">Litigants</span>
-          <span className="session-stats-val">{state.config.litigantCount}</span>
-        </span>
-        {insufficientCredits && (
-          <button onClick={() => navigate("/billing")} className="session-stats-topup">
-            Top up →
-          </button>
-        )}
+          <span className="session-stats-sep" />
+          <span className="session-stats-item">
+            <span className="session-stats-key">Used</span>
+            <span className="session-stats-val">{state.creditsUsed}</span>
+          </span>
+          <span className="session-stats-sep" />
+          <span className="session-stats-item">
+            <span className="session-stats-key">Est</span>
+            <span className="session-stats-val">~{estimatedCredits}</span>
+          </span>
+          <span className="session-stats-sep" />
+          <span className="session-stats-item">
+            <span className="session-stats-key">Litigants</span>
+            <span className="session-stats-val">{state.config.litigantCount}</span>
+          </span>
+          {insufficientCredits && (
+            <button onClick={() => navigate("/billing")} className="session-stats-topup">Top up →</button>
+          )}
+        </div>
       </div>
 
-      {/* ── CONVERSATION PANEL ── */}
+      {/* ══════════════════════════════════════════════════════
+          ZONE 2 — YOUR COURT
+          AI knobs: litigants, mode, provider, confidence target
+          Expanded when idle · collapsed summary when running
+      ══════════════════════════════════════════════════════ */}
+      {isIdle ? (
+        <div className="sz-court">
+          {(() => {
+            const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
+            const namedSeats = [
+              { id: "orchestrator", icon: "🎙", purpose: "Talks to you. Delivers the final verdict." },
+              { id: "moderator",   icon: "⚖",  purpose: "Controls courtroom flow. Builds the briefing." },
+              { id: "architect",   icon: "📐", purpose: "Defines the artifact structure before building." },
+              { id: "builder",     icon: "🔨", purpose: "Builds the requested artifact or implementation." },
+              { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
+            ];
+            return (
+              <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
+                <AccordionItem value="your-court" className="border-b-0">
+                  <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
+                    <div className="flex items-center justify-between w-full mr-2">
+                      <div className="flex items-center gap-2">
+                        <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-muted-foreground/60">
+                          {state.config.litigantCount} · {state.config.debateMode} · ~{estimatedCredits} cr
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfigOpen(true); }}
+                          className="flex items-center gap-0.5 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
+                        >
+                          Configure <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3 pt-0">
+                    <div className="flex flex-wrap gap-1.5 mb-3 pt-1">
+                      <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
+                        <button onClick={handleRemoveLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount <= 2}>−</button>
+                        <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">{state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}</span>
+                        <button onClick={handleAddLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount >= maxLitigants}>+</button>
+                      </div>
+                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize">{state.config.debateMode}</span>
+                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}</span>
+                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.confidenceTarget}% target</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {namedSeats.map(({ id, icon, purpose }) => {
+                        const assignment = seatMap[id];
+                        return (
+                          <div key={id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: id, litIndex: undefined })}>
+                            <span className="text-sm shrink-0">{icon}</span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-[11px] font-semibold text-foreground/80 capitalize">{id}</span>
+                              <span className="text-[10px] text-muted-foreground/50 truncate">{purpose}</span>
+                            </div>
+                            {assignment ? (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 shrink-0" />
+                                <span className="text-[10px] font-medium text-primary/70 truncate max-w-[80px]">{assignment.name ?? "Custom"}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground/30 shrink-0">default</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {Array.from({ length: Math.min(state.config.litigantCount, 4) }, (_, i) => {
+                        const seatId = `litigant_${i}`;
+                        const assignment = seatMap[seatId];
+                        return (
+                          <div key={seatId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId, litIndex: i })}>
+                            <span className="text-sm shrink-0">⚖</span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-[11px] font-semibold text-foreground/80">Litigant {i + 1}</span>
+                              <span className="text-[10px] text-muted-foreground/50 truncate">Argues one position in the courtroom.</span>
+                            </div>
+                            {assignment ? (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0" />
+                                <span className="text-[10px] font-medium text-amber-400/70 truncate max-w-[80px]">{assignment.name ?? "Custom"}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground/30 shrink-0">default</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            );
+          })()}
+          <div className="flex items-center gap-2 px-0.5">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
+          </div>
+        </div>
+      ) : (
+        <div className="sz-court-summary">
+          <Settings2 className="w-3 h-3 text-primary/40 shrink-0" />
+          <span className="sz-court-summary-text">
+            {state.config.litigantCount} litigants · {state.config.debateMode} · ~{estimatedCredits} cr
+          </span>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════
+          ZONE 3 — DIALOGUE
+          Question input (idle) · Conversation output (running/complete)
+      ══════════════════════════════════════════════════════ */}
       <section className="main-inner">
-      <div className="session-conv">
-        <h2 className="session-conv-label">Conversation</h2>
+      <div className="sz-dialogue">
 
         {/* Tool page pre-load banner */}
         {toolBanner && isIdle && (
           <div className="session-tool-banner">
             <LayoutTemplate style={{ width: 13, height: 13, color: "#7ab87a", flexShrink: 0 }} />
-            <span className="session-tool-banner-text">
-              Pre-loaded: <strong>{toolBanner}</strong>
-            </span>
-            <button
-              onClick={() => { setTemplate(null); setToolBanner(null); }}
-              className="session-tool-banner-clear"
-              title="Start fresh instead"
-            >✕</button>
+            <span className="session-tool-banner-text">Pre-loaded: <strong>{toolBanner}</strong></span>
+            <button onClick={() => { setTemplate(null); setToolBanner(null); }} className="session-tool-banner-clear" title="Start fresh instead">✕</button>
           </div>
         )}
 
-        {/* Confidence + Credits bars — always visible */}
-        <div className="session-meters">
-          <div>
-            <p className="session-meter-hd">
-              <span>Confidence</span>
-              <span className="session-meter-val" style={{ color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
-                {state.confidence}% / {state.config.confidenceTarget}%
-              </span>
-            </p>
-            <div className="session-meter-track">
-              <div className="session-meter-fill" style={{ background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
+        {/* Confidence + Credits meters — only while running/paused/complete */}
+        {!isIdle && (
+          <div className="session-meters">
+            <div>
+              <p className="session-meter-hd">
+                <span>Confidence</span>
+                <span className="session-meter-val" style={{ color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
+                  {state.confidence}% / {state.config.confidenceTarget}%
+                </span>
+              </p>
+              <div className="session-meter-track">
+                <div className="session-meter-fill" style={{ background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
+              </div>
+            </div>
+            <div>
+              <p className="session-meter-hd">
+                <span>Credits Used</span>
+                <span className="session-meter-val">{state.creditsUsed} / ~{estimatedCredits} est</span>
+              </p>
+              <div className="session-meter-track">
+                <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%` }} />
+              </div>
             </div>
           </div>
-          <div>
-            <p className="session-meter-hd">
-              <span>Credits Used</span>
-              <span className="session-meter-val">{state.creditsUsed} / ~{estimatedCredits} est</span>
-            </p>
-            <div className="session-meter-track">
-              <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%` }} />
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Running/paused status badge */}
         {isRunning && (
@@ -1680,11 +1782,11 @@ export default function SessionPage() {
           </>
         )}
 
-        {/* ── Idle state ── */}
+        {/* ── Idle: Get Started + Input ── */}
         {isIdle && (
           <div className="flex flex-col gap-3">
 
-            {/* ── Your Court accordion ── */}
+            {/* ── Your Court accordion ── (kept for seatMap IIFE only – UI is in Zone 2) */}
             {(() => {
               const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
               const namedSeats = [
@@ -1694,115 +1796,8 @@ export default function SessionPage() {
                 { id: "builder",     icon: "🔨", purpose: "Builds the requested artifact or implementation." },
                 { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
               ];
-              return (
-                <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
-                  <AccordionItem value="your-court" className="border-b-0">
-                    <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
-                      <div className="flex items-center justify-between w-full mr-2">
-                        <div className="flex items-center gap-2">
-                          <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-mono text-muted-foreground/60">
-                            {state.config.litigantCount} · {state.config.debateMode} · ~{estimatedCredits} cr
-                          </span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfigOpen(true); }}
-                            className="flex items-center gap-0.5 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
-                          >
-                            Configure <ChevronRight className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-3 pt-0">
-                      {/* Config pills */}
-                      <div className="flex flex-wrap gap-1.5 mb-3 pt-1">
-                        <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
-                          <button
-                            onClick={handleRemoveLitigant}
-                            className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none"
-                            disabled={state.config.litigantCount <= 2}
-                          >−</button>
-                          <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">
-                            {state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}
-                          </span>
-                          <button
-                            onClick={handleAddLitigant}
-                            className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none"
-                            disabled={state.config.litigantCount >= maxLitigants}
-                          >+</button>
-                        </div>
-                        <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize">{state.config.debateMode}</span>
-                        <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">
-                          {state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}
-                        </span>
-                        <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.confidenceTarget}% target</span>
-                        <span className="ml-auto text-[11px] font-mono text-primary/50">~{estimatedCredits} cr</span>
-                      </div>
-
-                      {/* Divider */}
-                      <div className="border-t border-primary/10 mb-3" />
-
-                      {/* Litigants */}
-                      <div className="mb-2.5">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Litigants</span>
-                          <div className="flex items-center gap-0 border border-primary/20 rounded-md overflow-hidden">
-                            <button onClick={handleRemoveLitigant} disabled={state.config.litigantCount <= 2}
-                              className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold">−</button>
-                            <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}{state.config.litigantCount > 4 ? "/4" : ""}</span>
-                            <button onClick={handleAddLitigant} disabled={state.config.litigantCount >= maxLitigants}
-                              className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold">+</button>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {seatMap.litigants.map((seat, i) => (
-                            <button key={i} onClick={() => handleSeatClick("litigant", i)}
-                              className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition-all group">
-                              <span className="text-[10px] text-primary/50 font-mono">L{i + 1}</span>
-                              <span className="text-[11px] font-medium text-primary/80 group-hover:text-primary transition-colors">{getSeatAIShortName(seat.provider)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Support roles */}
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Support Roles</div>
-                        <div className="grid grid-cols-1 gap-1">
-                          {namedSeats.map(({ id, icon, purpose }) => {
-                            const assignment = seatMap[id as keyof typeof seatMap] as SeatAssignment | undefined;
-                            const aiName = assignment ? getSeatAIShortName(assignment.provider) : "Claude";
-                            return (
-                              <button key={id} onClick={() => handleSeatClick(id)}
-                                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border border-border/20 hover:border-border/50 hover:bg-white/5 transition-all text-left group">
-                                <span className="text-base leading-none w-5 text-center shrink-0">{icon}</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[11px] font-semibold text-foreground/80 capitalize group-hover:text-foreground transition-colors">{id}</span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-border/30 text-muted-foreground/60 font-mono">{aiName}</span>
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5">{purpose}</div>
-                                </div>
-                                <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-muted-foreground/70 shrink-0 transition-colors" />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              );
+              return null;
             })()}
-
-            {/* Court status */}
-            <div className="flex items-center gap-2 px-0.5">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
-            </div>
 
             {/* Suggested prompts + template, collapsed into an accordion */}
             <Accordion type="single" collapsible className="border border-border/20 rounded-xl px-3">
@@ -1935,24 +1930,26 @@ export default function SessionPage() {
         )}
       </div>
 
-      {/* ── RUNTIME CONTROL PANEL ── */}
-      {!isIdle && (
-        <div style={{ border: "1px solid #1d331d", borderRadius: 12, padding: 8, background: "linear-gradient(160deg,rgba(14,26,14,.92),rgba(7,16,7,.92))", display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 800, marginBottom: 2 }}>Runtime Control</div>
-          <RuntimeControl
-            starting={credits + state.creditsUsed}
-            current={credits}
-            used={state.creditsUsed}
-            round={state.currentRound}
-            maxRound={state.config.maxIterations}
-            cap={state.estimatedCredits}
-          />
-          <ActivityLogSection />
-        </div>
-      )}
-
-      {/* ── COURT DIAGRAM — at the bottom ── */}
-      <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
+      {/* ══════════════════════════════════════════════════════
+          ZONE 4 — DIAGRAM
+          Runtime control (when active) + court diagram
+      ══════════════════════════════════════════════════════ */}
+      <div className="sz-diagram">
+        {!isIdle && (
+          <div className="sz-runtime">
+            <div className="sz-runtime-label">Runtime Control</div>
+            <RuntimeControl
+              starting={credits + state.creditsUsed}
+              current={credits}
+              used={state.creditsUsed}
+              round={state.currentRound}
+              maxRound={state.config.maxIterations}
+              cap={state.estimatedCredits}
+            />
+            <ActivityLogSection />
+          </div>
+        )}
+        <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
         <CourtDiagram
           activeRole={state.activeRole}
           activeAttempt={state.activeAttempt}
@@ -1974,20 +1971,20 @@ export default function SessionPage() {
             Revolution {state.currentRound} / {state.config.maxIterations}
           </div>
         )}
-      </div>
+        </div>{/* /diagram inner */}
 
-      {/* ── SEAT INSPECTOR ── */}
-      {inspectorSeat && (
-        <SeatInspector
-          seatId={inspectorSeat.seatId}
-          litIndex={inspectorSeat.litIndex}
-          litigantCount={state.config.litigantCount}
-          seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
-          grades={state.grades}
-          onClose={() => setInspectorSeat(null)}
-          onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
-        />
-      )}
+        {inspectorSeat && (
+          <SeatInspector
+            seatId={inspectorSeat.seatId}
+            litIndex={inspectorSeat.litIndex}
+            litigantCount={state.config.litigantCount}
+            seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
+            grades={state.grades}
+            onClose={() => setInspectorSeat(null)}
+            onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
+          />
+        )}
+      </div>{/* /sz-diagram */}
 
       </section>
 

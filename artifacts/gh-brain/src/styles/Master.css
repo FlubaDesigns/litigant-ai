@@ -469,14 +469,92 @@
 
 .session-bg .main-inner {
   flex: 1;
-  padding-top: 1rem;
+  padding-top: 0;
   padding-bottom: 1rem;
   display: flex;
   flex-direction: column;
 }
 
-.session-bg .session-conv {
-  flex: 1;
+/* ── 4-ZONE LAYOUT ──────────────────────────────────────── */
+
+/* Zone 1: Control Board */
+.sz-control {
+  flex-shrink: 0;
+  background: rgba(6, 6, 6, 0.98);
+  border-bottom: 1px solid #1a1a1a;
+}
+.sz-control-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 7px var(--gutter);
+}
+.sz-control-stats {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px var(--gutter) 6px;
+  overflow-x: auto;
+  border-top: 1px solid #111;
+}
+
+/* Zone 2: Your Court */
+.sz-court {
+  flex-shrink: 0;
+  padding: 8px var(--gutter);
+  background: rgba(2, 8, 2, 0.9);
+  border-bottom: 1px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sz-court-summary {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px var(--gutter);
+  background: rgba(2, 8, 2, 0.7);
+  border-bottom: 1px solid #111;
+}
+.sz-court-summary-text {
+  font-size: 11px;
+  font-family: monospace;
+  color: #3a5a3a;
+}
+
+/* Zone 3: Dialogue */
+.sz-dialogue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px var(--gutter);
+  border: 1px solid #27272a;
+  border-radius: 12px;
+  margin: 8px 0;
+  background: linear-gradient(160deg, rgba(18, 14, 8, 0.95), rgba(10, 10, 10, 0.95));
+}
+
+/* Zone 4: Diagram */
+.sz-diagram {
+  flex-shrink: 0;
+}
+.sz-runtime {
+  border: 1px solid #1d331d;
+  border-radius: 12px;
+  padding: 8px var(--gutter);
+  background: linear-gradient(160deg, rgba(14,26,14,.92), rgba(7,16,7,.92));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.sz-runtime-label {
+  font-size: 10px;
+  color: #00c853;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 800;
 }
 
 /* Top nav strip — Configure / Sessions / Stop / New Trial buttons */
