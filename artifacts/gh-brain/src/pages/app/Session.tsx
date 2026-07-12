@@ -280,11 +280,8 @@ function ConfigPanel({
                   { value: "analysis",   label: "Analysis",    desc: "Seats each analyze from a different lens — strategic, technical, risk. Best for multi-angle assessment." },
                   { value: "critique",   label: "Critique",    desc: "Seats act as reviewers who find flaws, weaknesses, and risks. Best for pre-mortem and quality review." },
                 ] as const).map(({ value, label, desc }) => (
-                  <SelectItem key={value} value={value} className="py-4 px-4 cursor-pointer">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-semibold text-sm">{label}</span>
-                      <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal">{desc}</span>
-                    </div>
+                  <SelectItem key={value} value={value} label={label} className="cursor-pointer">
+                    <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal break-words pr-2">{desc}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -570,7 +567,7 @@ function ConfigPanel({
           {/* FOOTER */}
           <div className="flex flex-col gap-2 pb-2">
             <Button
-              onClick={() => doSave(true)}
+              onClick={async () => { await doSave(true); setTimeout(onClose, 700); }}
               disabled={saveState === "saving"}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
             >
