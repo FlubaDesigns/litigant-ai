@@ -91,26 +91,26 @@ function AppRoutes() {
       <Route path="/tools" component={ToolsIndexPage} />
       <Route path="/tools/:slug" component={ToolPage} />
       <Route path="/history">
-        <ProtectedWithLayout>
+        <ProtectedRoute>
           <HistoryPage />
-        </ProtectedWithLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/billing">
-        <ProtectedWithLayout>
+        <ProtectedRoute>
           <BillingPage />
-        </ProtectedWithLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/settings">
-        <ProtectedWithLayout>
+        <ProtectedRoute>
           <SettingsPage />
-        </ProtectedWithLayout>
+        </ProtectedRoute>
       </Route>
 
       {/* Admin */}
       <Route path="/admin">
-        <ProtectedWithLayout requireAdmin>
+        <ProtectedRoute requireAdmin>
           <AdminPage />
-        </ProtectedWithLayout>
+        </ProtectedRoute>
       </Route>
 
       <Route component={NotFoundPage} />

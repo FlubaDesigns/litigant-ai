@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, CreditCard, History, AlertTriangle,
@@ -607,7 +609,10 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="main-inner">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <SiteHeader variant="app" />
+      <main className="flex-1">
+      <div className="main-inner">
       <section className="section">
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
           <div className="flex-row">
@@ -977,6 +982,9 @@ export default function BillingPage() {
           </div>
         </div>
       </section>
+    </div>
+      </main>
+      <SiteFooter variant="app" />
     </div>
   );
 }

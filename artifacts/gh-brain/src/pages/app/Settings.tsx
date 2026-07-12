@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import {
   Settings, User as UserIcon, Sliders, AlertTriangle, Save,
   Eye, EyeOff, Download, Loader2, Shield, Check, Bell,
@@ -762,7 +764,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="main-inner">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <SiteHeader variant="app" />
+      <main className="flex-1">
+      <div className="main-inner">
       <section className="section">
       <div className="row">
         <div className="flex items-center gap-2 mb-8" style={{ paddingTop: "var(--sv)" }}>
@@ -815,6 +820,9 @@ export default function SettingsPage() {
         </div>
       </div>{/* /row */}
       </section>
+    </div>
+      </main>
+      <SiteFooter variant="app" />
     </div>
   );
 }

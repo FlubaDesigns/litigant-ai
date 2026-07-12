@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -456,7 +458,9 @@ export default function HistoryPage() {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <SiteHeader variant="app" />
+      <main className="flex-1">
       <div className="main-inner">
       <section className="section">
 
@@ -632,6 +636,8 @@ export default function HistoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+      </main>
+      <SiteFooter variant="app" />
+    </div>
   );
 }
