@@ -318,60 +318,28 @@ function ConfigPanel({
             </div>
           </V29Field>
 
-          {/* DELIVERABLE SECTION */}
+          {/* DELIVERABLE TOGGLE */}
           <div className="flex items-center gap-2 pt-1">
             <div className="text-[9px] font-bold tracking-widest uppercase text-primary/40">Deliverable</div>
             <div className="flex-1 border-t border-primary/10" />
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            {(["none", "artifact"] as const).map((mode) => {
+              const active = mode === "none" ? config.artifactType === "none" : config.artifactType !== "none";
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleChange({ artifactType: mode === "none" ? "none" : "auto" })}
+                  className={cn("rounded-md border py-2 text-xs font-medium transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/50 hover:border-primary/40")}
+                >
+                  {mode === "none" ? "Screen Only" : "Screen + Artifact"}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* ARTIFACT TYPE */}
-          <V29Field
-            label="Artifact Type"
-            tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type forces the Builder to always produce that structure regardless of how the debate goes."
-          >
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: "auto", label: "Auto", desc: "Architect infers the best deliverable format from your question." },
-                { value: "report", label: "Report", desc: "Structured document with sections, findings, and recommendations." },
-                { value: "memo", label: "Decision Memo", desc: "Concise format for capturing a decision and its rationale." },
-                { value: "business-plan", label: "Business Plan", desc: "Full plan with executive summary, market analysis, and financials." },
-                { value: "risk-matrix", label: "Risk Matrix", desc: "Identifies risks by likelihood, impact, and mitigation strategy." },
-                { value: "contract-review", label: "Contract Review", desc: "Flags key clauses, obligations, and risks in legal agreements." },
-                { value: "technical-spec", label: "Technical Spec", desc: "Engineering spec with requirements, architecture, and design." },
-                { value: "pitch-deck", label: "Pitch Deck", desc: "Slide-ready narrative with problem, solution, and ask." },
-                { value: "legal-brief", label: "Legal Brief", desc: "Argument structure with citations, reasoning, and conclusion." },
-                { value: "blog-post", label: "Blog Post", desc: "Engaging long-form content with intro, body, and call to action." },
-                { value: "code", label: "Code", desc: "Working code with inline comments and usage examples." },
-                { value: "landing-page", label: "Landing Page", desc: "Conversion-focused copy with headline, benefits, and CTA." },
-              ].map(({ value, label, desc }) => {
-                const active = (config.artifactType ?? "auto") === value;
-                return (
-                  <div key={value} className={cn("flex items-center rounded-md border text-xs transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}>
-                    <button
-                      type="button"
-                      className="flex-1 text-left px-3 py-2.5 leading-snug font-medium"
-                      onClick={() => handleChange({ artifactType: value as CourtConfig["artifactType"] })}
-                    >
-                      {label}
-                    </button>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button type="button" className="px-2 py-2.5 text-primary/30 hover:text-primary/70 transition-colors" aria-label={`About ${label}`}>
-                          <HelpCircle className="w-3.5 h-3.5" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent side="top" align="end" className="max-w-[260px] text-[12px] leading-relaxed p-4">
-                        <p className="font-semibold mb-1.5">{label}</p>
-                        {desc}
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                );
-              })}
-            </div>
-          </V29Field>
-
-          {/* OUTPUT STRATEGY */}
+          {/* OUTPUT STRATEGY — always visible */}
           <V29Field
             label="Response View"
             tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
@@ -386,22 +354,72 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
-          {/* FORMAT */}
-          <V29Field
-            label="Format"
-            tooltip="The file format used when your output is downloaded or exported. Text: plain .txt. Markdown: headings and bullets preserved (.md). JSON: structured data for piping into other tools. Word: download as a .docx Word document. PDF: download as a real PDF file."
-          >
-            <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="markdown">Markdown</SelectItem>
-                <SelectItem value="json">JSON</SelectItem>
-                <SelectItem value="docx">Word (.docx)</SelectItem>
-                <SelectItem value="pdf">PDF</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
+          {/* FORMAT + ARTIFACT TYPE — only when Screen + Artifact */}
+          {config.artifactType !== "none" && (
+            <>
+              <V29Field
+                label="Format"
+                tooltip="The file format used when your output is downloaded or exported. Text: plain .txt. Markdown: headings and bullets preserved (.md). JSON: structured data for piping into other tools. Word: download as a .docx Word document. PDF: download as a real PDF file."
+              >
+                <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
+                  <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Text</SelectItem>
+                    <SelectItem value="markdown">Markdown</SelectItem>
+                    <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="docx">Word (.docx)</SelectItem>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                  </SelectContent>
+                </Select>
+              </V29Field>
+
+              <V29Field
+                label="Artifact Type"
+                tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type forces the Builder to always produce that structure regardless of how the debate goes."
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "auto", label: "Auto", desc: "Architect infers the best deliverable format from your question." },
+                    { value: "report", label: "Report", desc: "Structured document with sections, findings, and recommendations." },
+                    { value: "memo", label: "Decision Memo", desc: "Concise format for capturing a decision and its rationale." },
+                    { value: "business-plan", label: "Business Plan", desc: "Full plan with executive summary, market analysis, and financials." },
+                    { value: "risk-matrix", label: "Risk Matrix", desc: "Identifies risks by likelihood, impact, and mitigation strategy." },
+                    { value: "contract-review", label: "Contract Review", desc: "Flags key clauses, obligations, and risks in legal agreements." },
+                    { value: "technical-spec", label: "Technical Spec", desc: "Engineering spec with requirements, architecture, and design." },
+                    { value: "pitch-deck", label: "Pitch Deck", desc: "Slide-ready narrative with problem, solution, and ask." },
+                    { value: "legal-brief", label: "Legal Brief", desc: "Argument structure with citations, reasoning, and conclusion." },
+                    { value: "blog-post", label: "Blog Post", desc: "Engaging long-form content with intro, body, and call to action." },
+                    { value: "code", label: "Code", desc: "Working code with inline comments and usage examples." },
+                    { value: "landing-page", label: "Landing Page", desc: "Conversion-focused copy with headline, benefits, and CTA." },
+                  ].map(({ value, label, desc }) => {
+                    const active = (config.artifactType ?? "auto") === value;
+                    return (
+                      <div key={value} className={cn("flex items-center rounded-md border text-xs transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}>
+                        <button
+                          type="button"
+                          className="flex-1 text-left px-3 py-2.5 leading-snug font-medium"
+                          onClick={() => handleChange({ artifactType: value as CourtConfig["artifactType"] })}
+                        >
+                          {label}
+                        </button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="px-2 py-2.5 text-primary/30 hover:text-primary/70 transition-colors" aria-label={`About ${label}`}>
+                              <HelpCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="top" align="end" className="max-w-[260px] text-[12px] leading-relaxed p-4">
+                            <p className="font-semibold mb-1.5">{label}</p>
+                            {desc}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    );
+                  })}
+                </div>
+              </V29Field>
+            </>
+          )}
 
           {/* CONFIDENCE TARGET */}
           <V29Field

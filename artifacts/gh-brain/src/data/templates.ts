@@ -11,6 +11,7 @@ import type { SeatMapConfig } from "./seatTypes";
 export type ProviderName = "openai" | "anthropic" | "grok" | "gemini";
 
 export type ArtifactType =
+  | "none"
   | "auto"
   | "report"
   | "memo"
