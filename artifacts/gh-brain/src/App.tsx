@@ -76,16 +76,16 @@ function AppRoutes() {
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsPage} />
 
-      {/* Protected app pages — wrapped with shared AppLayout */}
+      {/* Session — standalone page, no AppLayout */}
       <Route path="/session">
-        <ProtectedWithLayout>
+        <ProtectedRoute>
           <SessionPage />
-        </ProtectedWithLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/session/:sessionId">
-        <ProtectedWithLayout>
+        <ProtectedRoute>
           <SessionPage />
-        </ProtectedWithLayout>
+        </ProtectedRoute>
       </Route>
       {/* Public SEO tool pages */}
       <Route path="/tools" component={ToolsIndexPage} />

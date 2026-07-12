@@ -458,9 +458,25 @@
    boxes, dialog lines, activity log, nav strip, meters, status cards.
    ─────────────────────────────────────────────────────────────────── */
 
-/* Page root — .main handles padding-top for fixed header */
+/* Page root — full-screen flex column, same pattern as Landing */
 .session-bg {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #000;
+  color: #f4f4f5;
+}
+
+.session-bg .main-inner {
+  flex: 1;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.session-bg .session-conv {
+  flex: 1;
 }
 
 /* Top nav strip — Configure / Sessions / Stop / New Trial buttons */

@@ -1084,7 +1084,7 @@ export default function SessionPage() {
   }
 
   return (
-    <>
+    <div className="session-bg">
       <ConfigPanel
         open={configOpen}
         onClose={() => setConfigOpen(false)}
@@ -1116,7 +1116,8 @@ export default function SessionPage() {
       </div>
 
       {/* ── CONVERSATION PANEL ── */}
-      <div className="session-conv main-inner">
+      <section className="main-inner">
+      <div className="session-conv">
         <h2 className="session-conv-label">Conversation</h2>
 
         {/* Tool page pre-load banner */}
@@ -1733,6 +1734,7 @@ export default function SessionPage() {
         />
       )}
 
+      </section>
 
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
@@ -1786,6 +1788,6 @@ export default function SessionPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </div>
   );
 }
