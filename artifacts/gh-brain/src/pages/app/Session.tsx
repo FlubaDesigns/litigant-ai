@@ -435,16 +435,16 @@ function ConfigPanel({
             <div className="space-y-2 pt-1 border-t border-primary/10">
               <div className="flex items-center gap-1.5">
                 <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">AI Provider</div>
-                <Tooltip delayDuration={150}>
-                  <TooltipTrigger asChild>
+                <Popover>
+                  <PopoverTrigger asChild>
                     <button type="button" tabIndex={-1} className="text-primary/40 hover:text-primary/80 transition-colors" aria-label="More info about AI Provider">
                       <HelpCircle className="w-3 h-3" />
                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed">
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
                     Which underlying AI model powers every seat in this session. Different providers vary in reasoning style, speed, and cost per credit. Switching provider also lets you pick a specific model from that provider below.
-                  </TooltipContent>
-                </Tooltip>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {availableProviders.map((p) => (
