@@ -1654,57 +1654,7 @@ export default function SessionPage() {
         {isIdle && (
           <div className="flex flex-col gap-3">
 
-            {/* ── Your Court config card ── */}
-            <div className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
-              <div className="flex items-center justify-between px-3 py-2 border-b border-primary/15">
-                <div className="flex items-center gap-2">
-                  <Settings2 className="w-3.5 h-3.5 text-primary/60" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
-                </div>
-                <button
-                  onClick={() => setConfigOpen(true)}
-                  className="flex items-center gap-1 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
-                >
-                  Configure all <ChevronRight className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="px-3 py-2.5 flex flex-wrap gap-2 items-center">
-                {/* Litigant count inline stepper */}
-                <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
-                  <button
-                    onClick={handleRemoveLitigant}
-                    className="w-7 h-7 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-base font-bold leading-none"
-                    disabled={state.config.litigantCount <= 2}
-                  >−</button>
-                  <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">
-                    {state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}
-                  </span>
-                  <button
-                    onClick={handleAddLitigant}
-                    className="w-7 h-7 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-base font-bold leading-none"
-                    disabled={state.config.litigantCount >= maxLitigants}
-                  >+</button>
-                </div>
-                {/* Mode pill */}
-                <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize bg-transparent">
-                  {state.config.debateMode}
-                </span>
-                {/* Provider pill */}
-                <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground bg-transparent">
-                  {state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}
-                </span>
-                {/* Confidence pill */}
-                <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground bg-transparent">
-                  {state.config.confidenceTarget}% target
-                </span>
-                {/* Est. cost */}
-                <span className="ml-auto text-[11px] font-mono text-primary/50">
-                  ~{estimatedCredits} cr
-                </span>
-              </div>
-            </div>
-
-            {/* ── Staff Your Court ── */}
+            {/* ── Your Court accordion ── */}
             {(() => {
               const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
               const namedSeats = [
@@ -1715,83 +1665,106 @@ export default function SessionPage() {
                 { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
               ];
               return (
-                <div className="rounded-xl border border-border/30 overflow-hidden">
-                  {/* header */}
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-border/20" style={{ background: "rgba(255,255,255,.025)" }}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">⚖</span>
-                      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70">Staff Your Court</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/40">tap any seat to assign an AI</span>
-                  </div>
-
-                  {/* Litigants row */}
-                  <div className="px-3 pt-2.5 pb-1.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">
-                        Litigants — your debaters
-                      </span>
-                      <div className="flex items-center gap-0 border border-primary/20 rounded-md overflow-hidden">
-                        <button
-                          onClick={handleRemoveLitigant}
-                          disabled={state.config.litigantCount <= 2}
-                          className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold"
-                        >−</button>
-                        <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}{state.config.litigantCount > 4 ? "/4" : ""}</span>
-                        <button
-                          onClick={handleAddLitigant}
-                          disabled={state.config.litigantCount >= maxLitigants}
-                          className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold"
-                        >+</button>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {seatMap.litigants.map((seat, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleSeatClick("litigant", i)}
-                          className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition-all group"
-                        >
-                          <span className="text-[10px] text-primary/50 font-mono">L{i + 1}</span>
-                          <span className="text-[11px] font-medium text-primary/80 group-hover:text-primary transition-colors">
-                            {getSeatAIShortName(seat.provider)}
+                <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
+                  <AccordionItem value="your-court" className="border-b-0">
+                    <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
+                      <div className="flex items-center justify-between w-full mr-2">
+                        <div className="flex items-center gap-2">
+                          <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-mono text-muted-foreground/60">
+                            {state.config.litigantCount} · {state.config.debateMode} · ~{estimatedCredits} cr
                           </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="mx-3 border-t border-border/15 my-1.5" />
-
-                  {/* Named support roles */}
-                  <div className="px-3 pb-2.5 pt-1">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Support roles</div>
-                    <div className="grid grid-cols-1 gap-1">
-                      {namedSeats.map(({ id, icon, purpose }) => {
-                        const assignment = seatMap[id as keyof typeof seatMap] as SeatAssignment | undefined;
-                        const aiName = assignment ? getSeatAIShortName(assignment.provider) : "Claude";
-                        return (
                           <button
-                            key={id}
-                            onClick={() => handleSeatClick(id)}
-                            className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border border-border/20 hover:border-border/50 hover:bg-white/5 transition-all text-left group"
+                            onClick={(e) => { e.stopPropagation(); setConfigOpen(true); }}
+                            className="flex items-center gap-0.5 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
                           >
-                            <span className="text-base leading-none w-5 text-center shrink-0">{icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-semibold text-foreground/80 capitalize group-hover:text-foreground transition-colors">{id}</span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded border border-border/30 text-muted-foreground/60 font-mono">{aiName}</span>
-                              </div>
-                              <div className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5">{purpose}</div>
-                            </div>
-                            <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-muted-foreground/70 shrink-0 transition-colors" />
+                            Configure <ChevronRight className="w-3 h-3" />
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3 pb-3 pt-0">
+                      {/* Config pills */}
+                      <div className="flex flex-wrap gap-1.5 mb-3 pt-1">
+                        <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
+                          <button
+                            onClick={handleRemoveLitigant}
+                            className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none"
+                            disabled={state.config.litigantCount <= 2}
+                          >−</button>
+                          <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">
+                            {state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}
+                          </span>
+                          <button
+                            onClick={handleAddLitigant}
+                            className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none"
+                            disabled={state.config.litigantCount >= maxLitigants}
+                          >+</button>
+                        </div>
+                        <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize">{state.config.debateMode}</span>
+                        <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">
+                          {state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}
+                        </span>
+                        <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.confidenceTarget}% target</span>
+                        <span className="ml-auto text-[11px] font-mono text-primary/50">~{estimatedCredits} cr</span>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-primary/10 mb-3" />
+
+                      {/* Litigants */}
+                      <div className="mb-2.5">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Litigants</span>
+                          <div className="flex items-center gap-0 border border-primary/20 rounded-md overflow-hidden">
+                            <button onClick={handleRemoveLitigant} disabled={state.config.litigantCount <= 2}
+                              className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold">−</button>
+                            <span className="text-[10px] font-mono text-primary/70 px-1.5">{state.config.litigantCount}{state.config.litigantCount > 4 ? "/4" : ""}</span>
+                            <button onClick={handleAddLitigant} disabled={state.config.litigantCount >= maxLitigants}
+                              className="w-5 h-5 flex items-center justify-center text-primary/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors text-xs font-bold">+</button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {seatMap.litigants.map((seat, i) => (
+                            <button key={i} onClick={() => handleSeatClick("litigant", i)}
+                              className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition-all group">
+                              <span className="text-[10px] text-primary/50 font-mono">L{i + 1}</span>
+                              <span className="text-[11px] font-medium text-primary/80 group-hover:text-primary transition-colors">{getSeatAIShortName(seat.provider)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Support roles */}
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Support Roles</div>
+                        <div className="grid grid-cols-1 gap-1">
+                          {namedSeats.map(({ id, icon, purpose }) => {
+                            const assignment = seatMap[id as keyof typeof seatMap] as SeatAssignment | undefined;
+                            const aiName = assignment ? getSeatAIShortName(assignment.provider) : "Claude";
+                            return (
+                              <button key={id} onClick={() => handleSeatClick(id)}
+                                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border border-border/20 hover:border-border/50 hover:bg-white/5 transition-all text-left group">
+                                <span className="text-base leading-none w-5 text-center shrink-0">{icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[11px] font-semibold text-foreground/80 capitalize group-hover:text-foreground transition-colors">{id}</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-border/30 text-muted-foreground/60 font-mono">{aiName}</span>
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5">{purpose}</div>
+                                </div>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-muted-foreground/70 shrink-0 transition-colors" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               );
             })()}
 
