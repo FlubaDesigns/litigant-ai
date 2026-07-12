@@ -169,7 +169,11 @@ export default function ShareReportPage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-10 space-y-8">
+      <main className="main">
+      <section className="section">
+      <div className="lgt-container">
+      <div className="row">
+      <div className="space-y-8">
         {/* Question */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -379,6 +383,10 @@ export default function ShareReportPage() {
         <p className="text-center text-xs text-muted-foreground font-mono pb-8">
           Litigant AI outputs are not legal, financial, or medical advice.
         </p>
+      </div>
+      </div>
+      </div>
+      </section>
       </main>
     </div>
   );

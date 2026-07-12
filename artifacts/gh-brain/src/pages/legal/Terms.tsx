@@ -1,9 +1,13 @@
 import { Link } from "wouter";
 import { Scale, ArrowLeft, AlertTriangle } from "lucide-react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SiteHeader variant="landing" />
+      <main className="main">
       <div className="prose-page">
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" />
@@ -135,6 +139,8 @@ export default function TermsPage() {
           <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy →</Link>
         </div>
       </div>
+      </main>
+      <SiteFooter variant="landing" />
     </div>
   );
 }
