@@ -109,7 +109,7 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
 // ── V29 field wrapper ─────────────────────────────────────────────────────────
 function V29Field({
   label, desc, tooltip, children,
-}: { label: string; desc?: string; tooltip?: string; children: React.ReactNode }) {
+}: { label: string; desc?: string; tooltip?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
@@ -355,40 +355,48 @@ function ConfigPanel({
           {/* ARTIFACT TYPE */}
           <V29Field
             label="Artifact Type"
-            desc="What the Builder produces. Auto: Architect decides based on your question."
-            tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type (report, memo, business plan, code, etc.) forces the Builder to always produce that structure regardless of how the debate goes."
+            tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type forces the Builder to always produce that structure regardless of how the debate goes."
           >
-            <Select
-              value={config.artifactType ?? "auto"}
-              onValueChange={(v) => handleChange({ artifactType: v as CourtConfig["artifactType"] })}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  { value: "auto", label: "Auto — Architect decides", desc: "Architect infers the best deliverable format from your question." },
-                  { value: "report", label: "Report", desc: "Structured document with sections, findings, and recommendations." },
-                  { value: "memo", label: "Decision Memo", desc: "Concise format for capturing a decision and its rationale." },
-                  { value: "business-plan", label: "Business Plan", desc: "Full plan with executive summary, market analysis, and financials." },
-                  { value: "risk-matrix", label: "Risk Matrix", desc: "Identifies risks by likelihood, impact, and mitigation strategy." },
-                  { value: "contract-review", label: "Contract Review", desc: "Flags key clauses, obligations, and risks in legal agreements." },
-                  { value: "technical-spec", label: "Technical Spec", desc: "Engineering spec with requirements, architecture, and design." },
-                  { value: "pitch-deck", label: "Pitch Deck", desc: "Slide-ready narrative with problem, solution, and ask." },
-                  { value: "legal-brief", label: "Legal Brief", desc: "Argument structure with citations, reasoning, and conclusion." },
-                  { value: "blog-post", label: "Blog Post", desc: "Engaging long-form content with intro, body, and call to action." },
-                  { value: "code", label: "Code", desc: "Working code with inline comments and usage examples." },
-                  { value: "landing-page", label: "Landing Page", desc: "Conversion-focused copy with headline, benefits, and CTA." },
-                ].map(({ value, label, desc }) => (
-                  <SelectItem key={value} value={value}>
-                    <div className="flex flex-col py-0.5">
-                      <span>{label}</span>
-                      <span className="text-[10px] text-muted-foreground leading-snug">{desc}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: "auto", label: "Auto", desc: "Architect infers the best deliverable format from your question." },
+                { value: "report", label: "Report", desc: "Structured document with sections, findings, and recommendations." },
+                { value: "memo", label: "Decision Memo", desc: "Concise format for capturing a decision and its rationale." },
+                { value: "business-plan", label: "Business Plan", desc: "Full plan with executive summary, market analysis, and financials." },
+                { value: "risk-matrix", label: "Risk Matrix", desc: "Identifies risks by likelihood, impact, and mitigation strategy." },
+                { value: "contract-review", label: "Contract Review", desc: "Flags key clauses, obligations, and risks in legal agreements." },
+                { value: "technical-spec", label: "Technical Spec", desc: "Engineering spec with requirements, architecture, and design." },
+                { value: "pitch-deck", label: "Pitch Deck", desc: "Slide-ready narrative with problem, solution, and ask." },
+                { value: "legal-brief", label: "Legal Brief", desc: "Argument structure with citations, reasoning, and conclusion." },
+                { value: "blog-post", label: "Blog Post", desc: "Engaging long-form content with intro, body, and call to action." },
+                { value: "code", label: "Code", desc: "Working code with inline comments and usage examples." },
+                { value: "landing-page", label: "Landing Page", desc: "Conversion-focused copy with headline, benefits, and CTA." },
+              ].map(({ value, label, desc }) => {
+                const active = (config.artifactType ?? "auto") === value;
+                return (
+                  <div key={value} className={cn("flex items-center rounded-md border text-xs transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}>
+                    <button
+                      type="button"
+                      className="flex-1 text-left px-3 py-2.5 leading-snug font-medium"
+                      onClick={() => handleChange({ artifactType: value as CourtConfig["artifactType"] })}
+                    >
+                      {label}
+                    </button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="px-2 py-2.5 text-primary/30 hover:text-primary/70 transition-colors" aria-label={`About ${label}`}>
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="end" className="max-w-[260px] text-[12px] leading-relaxed p-4">
+                        <p className="font-semibold mb-1.5">{label}</p>
+                        {desc}
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                );
+              })}
+            </div>
           </V29Field>
 
           {/* CONFIDENCE TARGET */}
