@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   History, Search, Star, Archive, Trash2, Share2, Download,
   Edit3, Check, X, ChevronRight, Clock, Zap, Target,
-  MoreHorizontal, Filter, Loader2, RotateCcw, Play,
+  MoreHorizontal, Filter, Loader2, Upload, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +99,7 @@ function SessionDetail({ session, onClose, onRerun, onResume }: {
               className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
               onClick={onRerun}
             >
-              <RotateCcw className="w-3.5 h-3.5" />Re-run
+              <Upload className="w-3.5 h-3.5" />Load
             </Button>
             {onResume && (
               <Button
@@ -283,7 +283,7 @@ function SessionRow({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onRerun}>
-            <RotateCcw className="w-3.5 h-3.5 mr-2" />Re-run
+            <Upload className="w-3.5 h-3.5 mr-2" />Load
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onShare}>
