@@ -394,7 +394,7 @@ router.post("/run-brain", async (req, res) => {
 
             // Settle with real token-based cost using live (Firestore-backed) multiplier
         actualCost = await calculateLiveCredits(
-          result.model || "gpt-4o",
+          result.model || "gpt-5",
           result.tokenUsage.inputTokens,
           result.tokenUsage.outputTokens
         );

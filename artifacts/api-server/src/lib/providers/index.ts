@@ -43,7 +43,7 @@ export async function createProviderAsync(
     );
   }
 
-  const resolvedModel = model ?? DEFAULT_MODELS[id as ProviderName] ?? "gpt-4o";
+  const resolvedModel = model ?? DEFAULT_MODELS[id as ProviderName] ?? "gpt-5";
 
   switch (id) {
     case "openai":    return new OpenAIProvider(resolvedModel, creds);
