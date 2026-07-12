@@ -194,7 +194,6 @@ function ConfigPanel({
           debateMode: config.debateMode,
           aiReasoning: config.aiReasoning,
           outputStrategy: config.outputStrategy,
-          outputPreference: config.outputPreference,
           format: config.format,
           artifactType: config.artifactType,
           confidenceTarget: config.confidenceTarget,
@@ -332,21 +331,6 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
-          {/* OUTPUT PREFERENCE */}
-          <V29Field
-            label="Output Preference"
-            tooltip="Controls where the final result ends up. Display in chat: read the result directly in the session, nothing downloaded automatically. Download only: skips the on-screen display and gives you a file to save. Display + download: shows the result in chat and also makes it available as a downloadable file."
-          >
-            <Select value={config.outputPreference} onValueChange={(v) => handleChange({ outputPreference: v as CourtConfig["outputPreference"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="chat">Display in chat</SelectItem>
-                <SelectItem value="download">Download only</SelectItem>
-                <SelectItem value="both">Display + download</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
           {/* FORMAT */}
           <V29Field
             label="Format"
@@ -368,7 +352,7 @@ function ConfigPanel({
             desc="What the Builder produces. Auto: Architect decides based on your question."
             tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type (report, memo, business plan, code, etc.) forces the Builder to always produce that structure regardless of how the debate goes."
           >
-            <div className="grid grid-cols-1 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {([
                 { value: "auto",          label: "Auto",            sub: "Architect decides from context",         group: "general" },
                 { value: "report",        label: "Report",          sub: "Research summary or analysis",           group: "doc" },
@@ -404,7 +388,9 @@ function ConfigPanel({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] leading-snug opacity-70 mt-0.5">{sub}</div>
+                    {isSelected && (
+                      <div className="text-[11px] leading-snug opacity-70 mt-0.5">{sub}</div>
+                    )}
                   </button>
                 );
               })}
@@ -435,10 +421,10 @@ function ConfigPanel({
             <Select value={String(config.maxIterations)} onValueChange={(v) => handleChange({ maxIterations: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1</SelectItem>
                 <SelectItem value="3">3</SelectItem>
                 <SelectItem value="5">5</SelectItem>
                 <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
               </SelectContent>
             </Select>
           </V29Field>
@@ -860,7 +846,7 @@ export default function SessionPage() {
         maxCredits:       userProfile.defaultSettings.maxCredits ?? undefined,
         outputScope:      (userProfile.defaultSettings.outputScope as CourtConfig["outputScope"]) ?? undefined,
         outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? undefined,
-        outputPreference: (userProfile.defaultSettings.outputPreference as CourtConfig["outputPreference"]) ?? undefined,
+        outputPreference: "both",
         format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? undefined,
         artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
       }

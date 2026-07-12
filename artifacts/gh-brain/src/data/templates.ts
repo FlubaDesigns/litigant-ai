@@ -72,7 +72,7 @@ export const DEFAULT_CONFIG: CourtConfig = {
   debateMode: "adversarial",
   aiReasoning: "independent",
   outputStrategy: "moderator-consensus",
-  outputPreference: "chat",
+  outputPreference: "both",
   format: "text",
   artifactType: "auto",
   confidenceTarget: 90,
