@@ -1689,8 +1689,6 @@ export default function SessionPage() {
         </div>
       )}
 
-      </div>{/* /main-inner */}
-
       {/* ── COURT DIAGRAM — at the bottom ── */}
       <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
         <CourtDiagram
@@ -1737,6 +1735,8 @@ export default function SessionPage() {
           onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
         />
       )}
+
+      </div>{/* /main-inner */}
 
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
