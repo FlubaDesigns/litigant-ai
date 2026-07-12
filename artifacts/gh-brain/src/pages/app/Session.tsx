@@ -155,10 +155,12 @@ function ConfigPanel({
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const hasChanges = useRef(false);
-  const configRef = useRef(config);
+  // Always-current config: updated synchronously on every handleChange call
+  // (can't rely on useEffect for configRef because React flushes async)
+  const latestConfigRef = useRef<CourtConfig>(config);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { configRef.current = config; }, [config]);
+  useEffect(() => { latestConfigRef.current = config; }, [config]);
 
   useEffect(() => {
     if (open) {
@@ -172,7 +174,7 @@ function ConfigPanel({
     if (!uid || !onboardingComplete) return;
     setSaveState("saving");
     try {
-      const c = configRef.current;
+      const c = latestConfigRef.current;
       const rawSettings = {
         conscience: c.conscience, outputScope: c.outputScope,
         debateMode: c.debateMode, aiReasoning: c.aiReasoning,
@@ -199,8 +201,9 @@ function ConfigPanel({
     }
   }
 
-  // Wrap onChange — track changes and auto-save after 1.5 s of inactivity
+  // Wrap onChange — sync ref immediately so doSave always reads latest values
   function handleChange(partial: Partial<CourtConfig>) {
+    latestConfigRef.current = { ...latestConfigRef.current, ...partial };
     hasChanges.current = true;
     onChange(partial);
     if (saveTimer.current) clearTimeout(saveTimer.current);
