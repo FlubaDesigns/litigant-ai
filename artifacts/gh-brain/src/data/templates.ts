@@ -77,7 +77,7 @@ export const DEFAULT_CONFIG: CourtConfig = {
   artifactType: "auto",
   confidenceTarget: 90,
   maxIterations: 5,
-  maxCredits: 25,
+  maxCredits: 500,
   litigantCount: 4,
   // Internal
   courtMode: "adversarial",

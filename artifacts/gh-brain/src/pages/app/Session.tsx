@@ -420,11 +420,11 @@ function ConfigPanel({
             <Select value={String(config.maxCredits)} onValueChange={(v) => handleChange({ maxCredits: Number(v) })}>
               <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="15">15</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
+                <SelectItem value="250">250</SelectItem>
+                <SelectItem value="500">500</SelectItem>
+                <SelectItem value="1000">1 000</SelectItem>
+                <SelectItem value="2500">2 500</SelectItem>
               </SelectContent>
             </Select>
           </V29Field>
