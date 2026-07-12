@@ -283,7 +283,7 @@ function ConfigPanel({
                   <SelectItem key={value} value={value} className="py-3 cursor-pointer">
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold text-sm">{label}</span>
-                      <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal">{desc}</span>
+                      <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal pt-1 pb-0.5">{desc}</span>
                     </div>
                   </SelectItem>
                 ))}
