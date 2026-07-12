@@ -1160,7 +1160,7 @@ export default function SessionPage() {
       toast.error("Please enter a question first.");
       return;
     }
-    if (userProfile && userProfile.creditBalance < estimatedCreditsHigh) {
+    if (!isAdmin && userProfile && userProfile.creditBalance < estimatedCreditsHigh) {
       toast.error(`You need at least ${estimatedCreditsHigh} credits to run this session.`, {
         action: { label: "Buy Credits", onClick: () => navigate("/billing") },
       });
@@ -1317,7 +1317,7 @@ export default function SessionPage() {
   // Live credit health — from Firestore via useUserProfile (updates as backend deducts)
   const creditsCritical = credits < 10;
   const creditsLow = credits < 50 && !creditsCritical;
-  const insufficientCredits = credits < estimatedCreditsHigh;
+  const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh;
 
   const filteredTemplates =
     activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
