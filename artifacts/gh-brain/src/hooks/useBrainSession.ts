@@ -561,5 +561,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     setConfig,
     setSeatAI,
     applyFeedbackGrades,
+    ...(import.meta.env.DEV ? { _dispatch: dispatch } : {}),
   };
 }

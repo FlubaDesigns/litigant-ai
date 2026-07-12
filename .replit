@@ -11,6 +11,26 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "gh-brain-pdf-export-tests"
+
+[[workflows.workflow]]
+name = "gh-brain-pdf-export-tests"
+author = "agent"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/gh-brain && VITEST=true NODE_ENV=test pnpm test && PLAYWRIGHT_BASE_URL=\"https://$REPLIT_DEV_DOMAIN\" PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$(which chromium) npx playwright test e2e/pdf-export.spec.ts --config playwright.config.ts"
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true

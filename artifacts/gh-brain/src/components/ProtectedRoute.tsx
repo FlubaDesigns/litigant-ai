@@ -19,6 +19,11 @@ export function ProtectedRoute({
     return <>{children}</>;
   }
 
+  // Dev-only e2e bypass: ?e2e=1 skips auth so Playwright tests can access protected pages
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get("e2e") === "1") {
+    return <>{children}</>;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

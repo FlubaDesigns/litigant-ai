@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { applyPdfTrimGuard, buildPdfToastActions } from "@/lib/pdfExport";
 import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
 import type { CourtConfig, ProviderName } from "@/data/templates";
@@ -877,8 +878,6 @@ async function exportDocx(state: SessionState): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-const PDF_FIELD_CHAR_LIMIT = 15_000;
-
 function exportJsPdf(state: SessionState): { wasTrimmed: boolean } {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -889,11 +888,8 @@ function exportJsPdf(state: SessionState): { wasTrimmed: boolean } {
 
   function addText(text: string, opts: { fontSize?: number; bold?: boolean; color?: string; newline?: number } = {}) {
     const { fontSize = 11, bold = false, color = "111111", newline = 6 } = opts;
-    let safeText = text;
-    if (safeText.length > PDF_FIELD_CHAR_LIMIT) {
-      safeText = safeText.slice(0, PDF_FIELD_CHAR_LIMIT) + "\n[…content trimmed — export as .docx for the full text]";
-      wasTrimmed = true;
-    }
+    const { safeText, wasTrimmed: trimmed } = applyPdfTrimGuard(text);
+    if (trimmed) wasTrimmed = true;
     doc.setFontSize(fontSize);
     doc.setFont("helvetica", bold ? "bold" : "normal");
     doc.setTextColor(parseInt(color.slice(0, 2), 16), parseInt(color.slice(2, 4), 16), parseInt(color.slice(4, 6), 16));
@@ -967,7 +963,8 @@ export default function SessionPage() {
         artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
       }
     : undefined;
-  const { state, run, stop, reset, acceptPartial, continueSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = useBrainSession(savedConfig);
+  const brainSession = useBrainSession(savedConfig);
+  const { state, run, stop, reset, acceptPartial, continueSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = brainSession;
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -995,6 +992,32 @@ export default function SessionPage() {
   useEffect(() => {
     setFieldValues({});
   }, [state.template?.id]);
+
+  // Dev-only test helper: exposes window.__testPdfExport(finalAnswer) so
+  // Playwright tests can inject a completed session state and verify PDF export.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const _dispatch = (brainSession as any)._dispatch;
+    if (!_dispatch) return;
+    (window as any).__testPdfExport = (finalAnswer: string) => {
+      setQuestion("Test question for PDF export");
+      setConfig({ format: "pdf" });
+      _dispatch({
+        type: "SESSION_DONE",
+        payload: {
+          confidence: 85,
+          creditsUsed: 3,
+          finalAnswer,
+          debateNotes: "Test debate notes.",
+          transcript: "Test transcript.",
+          caveats: "Test caveats.",
+          artifacts: "",
+          sessionId: "test-session",
+        },
+      });
+    };
+    return () => { delete (window as any).__testPdfExport; };
+  });
 
   // Pre-select template from ?templateId= URL param
   const [toolBanner, setToolBanner] = useState<string | null>(null);
@@ -1084,9 +1107,10 @@ export default function SessionPage() {
     if (fmt === "pdf") {
       try {
         const { wasTrimmed } = exportJsPdf(state);
-        toast.success("PDF downloaded.");
-        if (wasTrimmed) {
-          toast.warning("Some content was too long for PDF and was trimmed. Export as .docx to get the full text.");
+        const actions = buildPdfToastActions(wasTrimmed);
+        for (const action of actions) {
+          if (action.type === "success") toast.success(action.message);
+          else toast.warning(action.message);
         }
       } catch {
         toast.error("Failed to generate PDF.");
