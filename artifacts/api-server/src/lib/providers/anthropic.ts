@@ -8,7 +8,7 @@ export class AnthropicProvider implements AIProvider {
   private client: Anthropic;
   private _lastUsage: TokenUsageSnapshot | null = null;
 
-  constructor(model = "claude-opus-4-5", credentials?: { key: string; baseUrl?: string }) {
+  constructor(model = "claude-haiku-4-5", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
     const apiKey = credentials?.key ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("Anthropic not configured — set ANTHROPIC_API_KEY or add key in Admin → API Keys");

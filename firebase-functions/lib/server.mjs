@@ -49521,7 +49521,7 @@ import crypto3 from "crypto";
 // artifacts/api-server/src/lib/providers/types.ts
 var DEFAULT_MODELS = {
   openai: "gpt-5",
-  anthropic: "claude-opus-4-5",
+  anthropic: "claude-haiku-4-5",
   grok: "grok-3",
   gemini: "gemini-2.5-pro"
 };
@@ -59334,7 +59334,7 @@ var AnthropicProvider = class {
   model;
   client;
   _lastUsage = null;
-  constructor(model = "claude-opus-4-5", credentials) {
+  constructor(model = "claude-haiku-4-5", credentials) {
     this.model = model;
     const apiKey = credentials?.key ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("Anthropic not configured \u2014 set ANTHROPIC_API_KEY or add key in Admin \u2192 API Keys");
@@ -59957,6 +59957,9 @@ function sendSSE(res, event) {
     res.write(`data: ${JSON.stringify(event)}
 
 `);
+    if (typeof res.flush === "function") {
+      res.flush();
+    }
   }
 }
 function estimateCreditCost(config) {
@@ -60795,7 +60798,7 @@ router3.post("/run-brain", async (req, res) => {
   res.flushHeaders();
   const abortCtrl = new AbortController();
   req.on("close", () => abortCtrl.abort());
-  const SESSION_TIMEOUT_MS = 5 * 60 * 1e3;
+  const SESSION_TIMEOUT_MS = 10 * 60 * 1e3;
   const sessionTimer = setTimeout(() => {
     console.warn("[brain] Session hard-timeout after 5 minutes \u2014 aborting.");
     abortCtrl.abort();

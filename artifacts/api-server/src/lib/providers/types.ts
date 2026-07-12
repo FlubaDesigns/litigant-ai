@@ -29,7 +29,7 @@ export interface ProviderConfig {
 
 export const DEFAULT_MODELS: Record<ProviderName, string> = {
   openai: "gpt-5",
-  anthropic: "claude-opus-4-5",
+  anthropic: "claude-haiku-4-5",
   grok: "grok-3",
   gemini: "gemini-2.5-pro",
 };

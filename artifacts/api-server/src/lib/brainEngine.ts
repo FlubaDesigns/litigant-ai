@@ -73,6 +73,11 @@ function getMaxOutputTokens(responseMode: ResponseMode): number {
 function sendSSE(res: Response, event: Record<string, unknown>): void {
   if (!res.writableEnded) {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
+    // Flush immediately so SSE events reach the client without waiting for a buffer to fill.
+    // Express compression middleware adds res.flush(); fall back to the raw socket drain.
+    if (typeof (res as any).flush === "function") {
+      (res as any).flush();
+    }
   }
 }
 
