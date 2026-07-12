@@ -280,10 +280,10 @@ function ConfigPanel({
                   { value: "analysis",   label: "Analysis",    desc: "Seats each analyze from a different lens — strategic, technical, risk. Best for multi-angle assessment." },
                   { value: "critique",   label: "Critique",    desc: "Seats act as reviewers who find flaws, weaknesses, and risks. Best for pre-mortem and quality review." },
                 ] as const).map(({ value, label, desc }) => (
-                  <SelectItem key={value} value={value} className="py-3 cursor-pointer">
-                    <div className="flex flex-col gap-0.5">
+                  <SelectItem key={value} value={value} className="py-4 px-4 cursor-pointer">
+                    <div className="flex flex-col gap-1.5">
                       <span className="font-semibold text-sm">{label}</span>
-                      <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal pt-1 pb-0.5">{desc}</span>
+                      <span className="text-[11px] text-muted-foreground leading-snug whitespace-normal">{desc}</span>
                     </div>
                   </SelectItem>
                 ))}
