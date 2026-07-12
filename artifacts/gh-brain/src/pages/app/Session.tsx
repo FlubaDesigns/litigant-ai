@@ -356,49 +356,28 @@ function ConfigPanel({
             desc="What the Builder produces. Auto: Architect decides based on your question."
             tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type (report, memo, business plan, code, etc.) forces the Builder to always produce that structure regardless of how the debate goes."
           >
-            <div className="grid grid-cols-2 gap-1.5">
-              {([
-                { value: "auto",          label: "Auto",            sub: "Architect decides from context",         group: "general" },
-                { value: "report",        label: "Report",          sub: "Research summary or analysis",           group: "doc" },
-                { value: "memo",          label: "Decision Memo",   sub: "Clear recommendation + rationale",       group: "doc" },
-                { value: "business-plan", label: "Business Plan",   sub: "Full venture plan",                     group: "doc" },
-                { value: "risk-matrix",   label: "Risk Matrix",     sub: "Structured risk assessment",            group: "doc" },
-                { value: "contract-review", label: "Contract Review", sub: "Risks, red flags, negotiation points", group: "doc" },
-                { value: "technical-spec", label: "Technical Spec", sub: "Architecture or build specification",   group: "doc" },
-                { value: "pitch-deck",    label: "Pitch Deck",      sub: "Slide-by-slide narrative outline",      group: "doc" },
-                { value: "legal-brief",   label: "Legal Brief",     sub: "Argument structure + supporting points", group: "doc" },
-                { value: "blog-post",     label: "Blog Post",       sub: "Long-form article or editorial",        group: "doc" },
-                { value: "code",          label: "Code",            sub: "Runnable code — function, script, module", group: "code" },
-                { value: "landing-page",  label: "Landing Page",    sub: isAdmin ? "HTML/React page — Git integration in v2" : "Generate a full HTML or React page", group: "code" },
-              ] as { value: string; label: string; sub: string; group: string }[]).map(({ value, label, sub, group }) => {
-                const isSelected = (config.artifactType ?? "auto") === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleChange({ artifactType: value as CourtConfig["artifactType"] })}
-                    className={cn(
-                      "text-left px-3 py-2 rounded border text-xs transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border/50 bg-background text-muted-foreground hover:border-border hover:text-foreground"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold">{label}</span>
-                      {group === "code" && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-primary/30 text-primary/60 font-mono uppercase tracking-wider">
-                          {value === "landing-page" ? "v2" : "code"}
-                        </span>
-                      )}
-                    </div>
-                    {isSelected && (
-                      <div className="text-[11px] leading-snug opacity-70 mt-0.5">{sub}</div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <Select
+              value={config.artifactType ?? "auto"}
+              onValueChange={(v) => handleChange({ artifactType: v as CourtConfig["artifactType"] })}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto — Architect decides</SelectItem>
+                <SelectItem value="report">Report</SelectItem>
+                <SelectItem value="memo">Decision Memo</SelectItem>
+                <SelectItem value="business-plan">Business Plan</SelectItem>
+                <SelectItem value="risk-matrix">Risk Matrix</SelectItem>
+                <SelectItem value="contract-review">Contract Review</SelectItem>
+                <SelectItem value="technical-spec">Technical Spec</SelectItem>
+                <SelectItem value="pitch-deck">Pitch Deck</SelectItem>
+                <SelectItem value="legal-brief">Legal Brief</SelectItem>
+                <SelectItem value="blog-post">Blog Post</SelectItem>
+                <SelectItem value="code">Code</SelectItem>
+                <SelectItem value="landing-page">Landing Page</SelectItem>
+              </SelectContent>
+            </Select>
           </V29Field>
 
           {/* CONFIDENCE TARGET */}
