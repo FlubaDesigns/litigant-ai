@@ -546,13 +546,6 @@ function ConfigPanel({
             >
               {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : "Save Settings"}
             </Button>
-            <Button
-              onClick={handleClose}
-              variant="ghost"
-              className="w-full text-muted-foreground hover:text-foreground"
-            >
-              Done
-            </Button>
             {onboardingComplete
               ? <p className="text-[11px] text-muted-foreground/50 text-center">Changes also save automatically as you go</p>
               : uid && <p className="text-[11px] text-muted-foreground/50 text-center">Complete onboarding to persist settings</p>
