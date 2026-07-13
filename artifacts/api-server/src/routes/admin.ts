@@ -1306,16 +1306,38 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
  * GET /admin/ai-studio/models
  * Returns all known models with API cost, user cost, credits, and enabled status.
  */
+interface CustomModel {
+  id: string;
+  label: string;
+  inputRatePer1k: number;
+  outputRatePer1k: number;
+  multiplier: number;
+}
+interface CustomProvider {
+  id: string;
+  label: string;
+  models: CustomModel[];
+}
+
+async function loadAiStudioDoc(db: ReturnType<typeof getFirestoreDb>) {
+  if (!db) return { disabledModels: [] as string[], disabledProviders: [] as string[], customProviders: [] as CustomProvider[] };
+  const doc = await db.collection("system_config").doc("aiStudio").get();
+  const d = doc.data() ?? {};
+  return {
+    disabledModels: (d["disabledModels"] as string[]) ?? [],
+    disabledProviders: (d["disabledProviders"] as string[]) ?? [],
+    customProviders: (d["customProviders"] as CustomProvider[]) ?? [],
+  };
+}
+
 router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
   try {
     const db = getFirestoreDb();
-    let disabledModels: string[] = [];
-    if (db) {
-      const doc = await db.collection("system_config").doc("aiStudio").get();
-      disabledModels = (doc.data()?.disabledModels as string[]) ?? [];
-    }
+    const { disabledModels, disabledProviders, customProviders } = await loadAiStudioDoc(db);
 
     const models: object[] = [];
+
+    // Built-in providers
     for (const [providerId, providerModels] of Object.entries(PROVIDER_MODELS)) {
       for (const { id, label } of providerModels) {
         const rate = MODEL_RATES[id] ?? { input: 0.003, output: 0.015 };
@@ -1338,10 +1360,36 @@ router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
           userOutputPer1k: rate.output * multiplier,
           exampleCredits,
           enabled: !disabledModels.includes(id),
+          custom: false,
         });
       }
     }
-    return res.json({ models });
+
+    // Custom providers
+    for (const cp of customProviders) {
+      for (const m of cp.models) {
+        const userIn = m.inputRatePer1k * m.multiplier;
+        const userOut = m.outputRatePer1k * m.multiplier;
+        const exampleTokens = 3 * 2 * 2000;
+        const exampleCredits = Math.ceil(((userIn + userOut) / 2) * (exampleTokens / 1000) / 0.01);
+        models.push({
+          id: m.id,
+          label: m.label,
+          provider: cp.id,
+          providerLabel: cp.label,
+          inputRatePer1k: m.inputRatePer1k,
+          outputRatePer1k: m.outputRatePer1k,
+          multiplier: m.multiplier,
+          userInputPer1k: userIn,
+          userOutputPer1k: userOut,
+          exampleCredits,
+          enabled: !disabledModels.includes(m.id),
+          custom: true,
+        });
+      }
+    }
+
+    return res.json({ models, disabledProviders, customProviders });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
@@ -1349,30 +1397,95 @@ router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
 
 /**
  * PATCH /admin/ai-studio/models/:modelId
- * Enable or disable a model in the user-facing catalog.
+ * Enable or disable an individual model.
  */
 router.patch("/admin/ai-studio/models/:modelId", requireAdmin, async (req: any, res) => {
   const modelId = req.params["modelId"] as string;
   const { enabled } = req.body as { enabled?: boolean };
-  if (typeof enabled !== "boolean") {
-    return res.status(400).json({ error: "enabled must be boolean" });
-  }
+  if (typeof enabled !== "boolean") return res.status(400).json({ error: "enabled must be boolean" });
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
-
   try {
     const ref = db.collection("system_config").doc("aiStudio");
     const doc = await ref.get();
-    let disabledModels: string[] = (doc.data()?.disabledModels as string[]) ?? [];
-
-    if (enabled) {
-      disabledModels = disabledModels.filter((m) => m !== modelId);
-    } else {
-      if (!disabledModels.includes(modelId)) disabledModels.push(modelId);
-    }
-
+    let disabledModels: string[] = (doc.data()?.["disabledModels"] as string[]) ?? [];
+    if (enabled) disabledModels = disabledModels.filter((m) => m !== modelId);
+    else if (!disabledModels.includes(modelId)) disabledModels.push(modelId);
     await ref.set({ disabledModels, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return res.json({ ok: true, modelId, enabled });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/ai-studio/providers/:providerId
+ * Enable or disable an entire provider (all its models hidden/shown).
+ */
+router.patch("/admin/ai-studio/providers/:providerId", requireAdmin, async (req: any, res) => {
+  const providerId = req.params["providerId"] as string;
+  const { enabled } = req.body as { enabled?: boolean };
+  if (typeof enabled !== "boolean") return res.status(400).json({ error: "enabled must be boolean" });
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  try {
+    const ref = db.collection("system_config").doc("aiStudio");
+    const doc = await ref.get();
+    let disabledProviders: string[] = (doc.data()?.["disabledProviders"] as string[]) ?? [];
+    if (enabled) disabledProviders = disabledProviders.filter((p) => p !== providerId);
+    else if (!disabledProviders.includes(providerId)) disabledProviders.push(providerId);
+    await ref.set({ disabledProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return res.json({ ok: true, providerId, enabled });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /admin/ai-studio/providers
+ * Add a new custom provider with its models.
+ */
+router.post("/admin/ai-studio/providers", requireAdmin, async (req: any, res) => {
+  const { id, label, models } = req.body as Partial<CustomProvider>;
+  if (!id || !label || !Array.isArray(models) || models.length === 0) {
+    return res.status(400).json({ error: "id, label, and at least one model are required" });
+  }
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  try {
+    const ref = db.collection("system_config").doc("aiStudio");
+    const doc = await ref.get();
+    let customProviders: CustomProvider[] = (doc.data()?.["customProviders"] as CustomProvider[]) ?? [];
+    if (customProviders.find((cp) => cp.id === id)) {
+      return res.status(409).json({ error: `Provider "${id}" already exists` });
+    }
+    customProviders.push({ id, label, models });
+    await ref.set({ customProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return res.status(201).json({ ok: true, id });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * DELETE /admin/ai-studio/providers/:providerId
+ * Remove a custom provider and all its models.
+ */
+router.delete("/admin/ai-studio/providers/:providerId", requireAdmin, async (req: any, res) => {
+  const providerId = req.params["providerId"] as string;
+  const BUILT_IN = Object.keys(PROVIDER_MODELS);
+  if (BUILT_IN.includes(providerId)) {
+    return res.status(400).json({ error: "Cannot delete a built-in provider. Disable it instead." });
+  }
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  try {
+    const ref = db.collection("system_config").doc("aiStudio");
+    const doc = await ref.get();
+    let customProviders: CustomProvider[] = (doc.data()?.["customProviders"] as CustomProvider[]) ?? [];
+    customProviders = customProviders.filter((cp) => cp.id !== providerId);
+    await ref.set({ customProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return res.json({ ok: true, providerId });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

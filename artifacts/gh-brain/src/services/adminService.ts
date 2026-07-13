@@ -543,13 +543,33 @@ export interface AiStudioModel {
   userOutputPer1k: number;
   exampleCredits: number;
   enabled: boolean;
+  custom: boolean;
 }
 
-export async function getAiStudioModels(): Promise<AiStudioModel[]> {
+export interface AiStudioCustomModel {
+  id: string;
+  label: string;
+  inputRatePer1k: number;
+  outputRatePer1k: number;
+  multiplier: number;
+}
+
+export interface AiStudioCustomProvider {
+  id: string;
+  label: string;
+  models: AiStudioCustomModel[];
+}
+
+export interface AiStudioData {
+  models: AiStudioModel[];
+  disabledProviders: string[];
+  customProviders: AiStudioCustomProvider[];
+}
+
+export async function getAiStudioModels(): Promise<AiStudioData> {
   const res = await adminFetch("/admin/ai-studio/models");
   if (!res.ok) throw new Error("Failed to load AI Studio models");
-  const data = await res.json();
-  return data.models as AiStudioModel[];
+  return res.json() as Promise<AiStudioData>;
 }
 
 export async function toggleAiStudioModel(modelId: string, enabled: boolean): Promise<void> {
@@ -560,6 +580,38 @@ export async function toggleAiStudioModel(modelId: string, enabled: boolean): Pr
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error ?? "Failed to update model");
+  }
+}
+
+export async function toggleAiStudioProvider(providerId: string, enabled: boolean): Promise<void> {
+  const res = await adminFetch(`/admin/ai-studio/providers/${encodeURIComponent(providerId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update provider");
+  }
+}
+
+export async function addAiStudioProvider(provider: AiStudioCustomProvider): Promise<void> {
+  const res = await adminFetch("/admin/ai-studio/providers", {
+    method: "POST",
+    body: JSON.stringify(provider),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to add provider");
+  }
+}
+
+export async function deleteAiStudioProvider(providerId: string): Promise<void> {
+  const res = await adminFetch(`/admin/ai-studio/providers/${encodeURIComponent(providerId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to delete provider");
   }
 }
 

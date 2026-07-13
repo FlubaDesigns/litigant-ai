@@ -44,10 +44,12 @@ import {
   getApiKeys, saveApiKey, deleteApiKey,
   getAdminBillingDefaults, saveAdminBillingDefaults,
   getChecklist, setChecklistItemChecked,
-  getAiStudioModels, toggleAiStudioModel,
+  getAiStudioModels, toggleAiStudioModel, toggleAiStudioProvider,
+  addAiStudioProvider, deleteAiStudioProvider,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
-  type BillingDefaults, type ChecklistItem, type AiStudioModel,
+  type BillingDefaults, type ChecklistItem,
+  type AiStudioModel, type AiStudioData, type AiStudioCustomProvider, type AiStudioCustomModel,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
@@ -2834,23 +2836,311 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
 }
 
 // ─── AI Studio Tab ────────────────────────────────────────────────────────────
-const PROVIDER_ORDER_STUDIO = ["openai", "anthropic", "grok", "gemini"];
+const BUILT_IN_PROVIDER_ORDER = ["openai", "anthropic", "grok", "gemini"];
 
 function fmtRate(ratePerK: number): string {
   const perM = ratePerK * 1000;
-  if (perM < 0.01) return `$${(perM).toFixed(4)}/1M`;
+  if (perM < 0.01) return `$${perM.toFixed(4)}/1M`;
   return `$${perM.toFixed(2)}/1M`;
+}
+
+const EMPTY_MODEL = (): AiStudioCustomModel => ({
+  id: "", label: "", inputRatePer1k: 0.003, outputRatePer1k: 0.015, multiplier: 5,
+});
+
+function AddProviderModal({
+  open, onClose, onSaved,
+}: { open: boolean; onClose: () => void; onSaved: () => void }) {
+  const [label, setLabel] = React.useState("");
+  const [id, setId] = React.useState("");
+  const [idManual, setIdManual] = React.useState(false);
+  const [models, setModels] = React.useState<AiStudioCustomModel[]>([EMPTY_MODEL()]);
+  const [saving, setSaving] = React.useState(false);
+  const [err, setErr] = React.useState("");
+
+  function toSlug(s: string) {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  }
+
+  function handleLabelChange(v: string) {
+    setLabel(v);
+    if (!idManual) setId(toSlug(v));
+  }
+
+  function setModel(i: number, patch: Partial<AiStudioCustomModel>) {
+    setModels((ms) => ms.map((m, idx) => idx === i ? { ...m, ...patch } : m));
+  }
+
+  async function handleSave() {
+    setErr("");
+    if (!label.trim() || !id.trim()) { setErr("Provider name and ID are required."); return; }
+    if (models.some((m) => !m.id.trim() || !m.label.trim())) {
+      setErr("Every model needs an ID and a label."); return;
+    }
+    setSaving(true);
+    try {
+      await addAiStudioProvider({ id: id.trim(), label: label.trim(), models });
+      onSaved();
+      onClose();
+      setLabel(""); setId(""); setIdManual(false); setModels([EMPTY_MODEL()]);
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-primary" /> Add Provider
+          </DialogTitle>
+          <DialogDescription>
+            Define a custom AI provider and its models. Users will see these alongside built-in ones.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Provider identity */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Provider Name</label>
+              <Input
+                placeholder="e.g. Mistral AI"
+                value={label}
+                onChange={(e) => handleLabelChange(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Provider ID (slug)</label>
+              <Input
+                placeholder="e.g. mistral"
+                value={id}
+                onChange={(e) => { setIdManual(true); setId(toSlug(e.target.value)); }}
+              />
+            </div>
+          </div>
+
+          {/* Models */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Models</p>
+              <Button
+                size="sm" variant="ghost"
+                className="h-6 text-xs gap-1"
+                onClick={() => setModels((ms) => [...ms, EMPTY_MODEL()])}
+              >
+                <Plus className="w-3 h-3" /> Add model
+              </Button>
+            </div>
+
+            {models.map((m, i) => (
+              <div key={i} className="rounded-lg border border-border p-3 space-y-2 bg-secondary/20">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-mono text-muted-foreground">Model {i + 1}</p>
+                  {models.length > 1 && (
+                    <button
+                      onClick={() => setModels((ms) => ms.filter((_, idx) => idx !== i))}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Model Label</label>
+                    <Input
+                      placeholder="e.g. Mistral Large"
+                      value={m.label}
+                      onChange={(e) => setModel(i, { label: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Model ID</label>
+                    <Input
+                      placeholder="e.g. mistral-large-2411"
+                      value={m.id}
+                      onChange={(e) => setModel(i, { id: e.target.value })}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Input $/1K tokens</label>
+                    <Input
+                      type="number" step="0.0001" min="0"
+                      value={m.inputRatePer1k}
+                      onChange={(e) => setModel(i, { inputRatePer1k: parseFloat(e.target.value) || 0 })}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Output $/1K tokens</label>
+                    <Input
+                      type="number" step="0.0001" min="0"
+                      value={m.outputRatePer1k}
+                      onChange={(e) => setModel(i, { outputRatePer1k: parseFloat(e.target.value) || 0 })}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Multiplier</label>
+                    <Input
+                      type="number" step="1" min="1"
+                      value={m.multiplier}
+                      onChange={(e) => setModel(i, { multiplier: parseInt(e.target.value) || 1 })}
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {err && (
+            <p className="text-xs text-destructive flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" /> {err}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            Add Provider
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AiStudioProviderSection({
+  id: pid,
+  label,
+  provModels,
+  providerEnabled,
+  custom,
+  onToggleProvider,
+  onToggleModel,
+  onDelete,
+  busy,
+}: {
+  id: string;
+  label: string;
+  provModels: AiStudioModel[];
+  providerEnabled: boolean;
+  custom: boolean;
+  onToggleProvider: (enabled: boolean) => void;
+  onToggleModel: (modelId: string, enabled: boolean) => void;
+  onDelete: () => void;
+  busy: boolean;
+}) {
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+
+  return (
+    <div className={cn("space-y-2 transition-opacity", !providerEnabled && "opacity-50")}>
+      {/* Provider header row */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold">{label}</h3>
+          {custom && (
+            <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">custom</span>
+          )}
+          <span className="text-xs text-muted-foreground font-mono">{provModels.length} model{provModels.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">{providerEnabled ? "On" : "Off"}</span>
+            <Switch
+              checked={providerEnabled}
+              onCheckedChange={onToggleProvider}
+              disabled={busy}
+              className="data-[state=checked]:bg-primary"
+            />
+          </div>
+          {custom && (
+            confirmDelete ? (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-destructive">Delete?</span>
+                <button onClick={onDelete} className="text-xs text-destructive font-semibold hover:underline">Yes</button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-muted-foreground hover:underline">No</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+                title="Delete provider"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Models table */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary/30">
+              <TableHead className="text-xs">Model</TableHead>
+              <TableHead className="text-xs text-right">API In /1M</TableHead>
+              <TableHead className="text-xs text-right">API Out /1M</TableHead>
+              <TableHead className="text-xs text-right text-amber-400">User In /1M</TableHead>
+              <TableHead className="text-xs text-right text-amber-400">User Out /1M</TableHead>
+              <TableHead className="text-xs text-right">×Mult</TableHead>
+              <TableHead className="text-xs text-right">Est. Credits</TableHead>
+              <TableHead className="text-xs text-center">Available</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {provModels.map((m: AiStudioModel) => (
+              <TableRow key={m.id} className={cn("transition-opacity", !m.enabled && "opacity-40")}>
+                <TableCell>
+                  <span className="font-mono text-xs font-medium">{m.label}</span>
+                  <span className="block text-[10px] text-muted-foreground font-mono">{m.id}</span>
+                </TableCell>
+                <TableCell className="text-right text-xs font-mono text-muted-foreground">{fmtRate(m.inputRatePer1k)}</TableCell>
+                <TableCell className="text-right text-xs font-mono text-muted-foreground">{fmtRate(m.outputRatePer1k)}</TableCell>
+                <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">{fmtRate(m.userInputPer1k)}</TableCell>
+                <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">{fmtRate(m.userOutputPer1k)}</TableCell>
+                <TableCell className="text-right text-xs font-mono">×{m.multiplier}</TableCell>
+                <TableCell className="text-right text-xs font-bold font-mono">{m.exampleCredits}</TableCell>
+                <TableCell className="text-center">
+                  <Switch
+                    checked={m.enabled}
+                    onCheckedChange={(checked) => onToggleModel(m.id, checked)}
+                    disabled={busy || !providerEnabled}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
 }
 
 function AiStudioTab() {
   const qc = useQueryClient();
-  const { data: models = [], isLoading, isError, refetch } = useQuery({
+  const [addOpen, setAddOpen] = React.useState(false);
+
+  const { data, isLoading, isError, refetch } = useQuery<AiStudioData>({
     queryKey: ["admin-ai-studio"],
     queryFn: getAiStudioModels,
     retry: false,
   });
 
-  const toggleMut = useMutation({
+  const toggleModelMut = useMutation({
     mutationFn: ({ modelId, enabled }: { modelId: string; enabled: boolean }) =>
       toggleAiStudioModel(modelId, enabled),
     onSuccess: (_d, { modelId, enabled }) => {
@@ -2860,9 +3150,28 @@ function AiStudioTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleProviderMut = useMutation({
+    mutationFn: ({ providerId, enabled }: { providerId: string; enabled: boolean }) =>
+      toggleAiStudioProvider(providerId, enabled),
+    onSuccess: (_d, { providerId, enabled }) => {
+      toast.success(`${providerId} ${enabled ? "enabled" : "disabled"}`);
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteProviderMut = useMutation({
+    mutationFn: (providerId: string) => deleteAiStudioProvider(providerId),
+    onSuccess: (_d, providerId) => {
+      toast.success(`Provider "${providerId}" deleted`);
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <TabSkeleton />;
 
-  if (isError) {
+  if (isError || !data) {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -2872,107 +3181,84 @@ function AiStudioTab() {
     );
   }
 
+  const { models, disabledProviders, customProviders } = data;
+  const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending;
   const enabledCount = models.filter((m) => m.enabled).length;
 
-  const byProvider = PROVIDER_ORDER_STUDIO.map((pid) => ({
+  // Build ordered provider list: built-ins first, then custom
+  const customProviderIds = customProviders.map((cp) => cp.id);
+  const allProviderIds = [
+    ...BUILT_IN_PROVIDER_ORDER.filter((pid) => models.some((m) => m.provider === pid)),
+    ...customProviderIds,
+  ];
+
+  const byProvider = allProviderIds.map((pid) => ({
     id: pid,
     label: models.find((m) => m.provider === pid)?.providerLabel ?? pid,
     models: models.filter((m) => m.provider === pid),
-  })).filter((g) => g.models.length > 0);
+    custom: customProviderIds.includes(pid),
+    enabled: !disabledProviders.includes(pid),
+  }));
 
   return (
     <div className="space-y-6">
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Total Models</p>
-          <p className="text-2xl font-bold font-mono">{models.length}</p>
-          <p className="text-xs text-muted-foreground">across {byProvider.length} providers</p>
+      {/* Summary + Add button */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid grid-cols-3 gap-4 flex-1">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Total Models</p>
+            <p className="text-2xl font-bold font-mono">{models.length}</p>
+            <p className="text-xs text-muted-foreground">across {byProvider.length} providers</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Enabled</p>
+            <p className="text-2xl font-bold font-mono text-primary">{enabledCount}</p>
+            <p className="text-xs text-muted-foreground">available to users</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Disabled</p>
+            <p className="text-2xl font-bold font-mono text-muted-foreground">{models.length - enabledCount}</p>
+            <p className="text-xs text-muted-foreground">hidden from users</p>
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Enabled</p>
-          <p className="text-2xl font-bold font-mono text-primary">{enabledCount}</p>
-          <p className="text-xs text-muted-foreground">available to users</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Disabled</p>
-          <p className="text-2xl font-bold font-mono text-muted-foreground">{models.length - enabledCount}</p>
-          <p className="text-xs text-muted-foreground">hidden from users</p>
-        </div>
+        <Button
+          onClick={() => setAddOpen(true)}
+          className="gap-2 shrink-0 mt-1"
+          size="sm"
+        >
+          <Plus className="w-4 h-4" /> Add Provider
+        </Button>
       </div>
 
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
         <Bot className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <div>
           <span className="font-medium text-foreground">You control the catalog. </span>
-          Toggle models on or off — only enabled models appear when users assign AI to their roles.
-          <span className="block mt-1">
-            <strong className="text-foreground">API cost</strong> = what you pay the provider.{" "}
-            <strong className="text-amber-400">User cost</strong> = API cost × multiplier.{" "}
-            <strong className="text-foreground">Example credits</strong> = a typical session (3 agents, 2 rounds, balanced).
-          </span>
+          Provider toggle gates the whole company. Individual toggles gate each model.
+          Only enabled models appear when users assign AI to their roles.
         </div>
       </div>
 
-      {byProvider.map(({ id: pid, label, models: provModels }) => (
-        <div key={pid} className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/30">
-                  <TableHead className="text-xs">Model</TableHead>
-                  <TableHead className="text-xs text-right">API In /1M</TableHead>
-                  <TableHead className="text-xs text-right">API Out /1M</TableHead>
-                  <TableHead className="text-xs text-right text-amber-400">User In /1M</TableHead>
-                  <TableHead className="text-xs text-right text-amber-400">User Out /1M</TableHead>
-                  <TableHead className="text-xs text-right">×Mult</TableHead>
-                  <TableHead className="text-xs text-right">Example Credits</TableHead>
-                  <TableHead className="text-xs text-center">Available</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {provModels.map((m: AiStudioModel) => (
-                  <TableRow key={m.id} className={cn("transition-opacity", !m.enabled && "opacity-40")}>
-                    <TableCell className="font-medium text-sm">
-                      <span className="font-mono text-xs">{m.label}</span>
-                      <span className="block text-[10px] text-muted-foreground font-mono">{m.id}</span>
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-mono text-muted-foreground">
-                      {fmtRate(m.inputRatePer1k)}
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-mono text-muted-foreground">
-                      {fmtRate(m.outputRatePer1k)}
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">
-                      {fmtRate(m.userInputPer1k)}
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">
-                      {fmtRate(m.userOutputPer1k)}
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-mono">
-                      ×{m.multiplier}
-                    </TableCell>
-                    <TableCell className="text-right text-xs font-bold font-mono">
-                      {m.exampleCredits}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Switch
-                        checked={m.enabled}
-                        onCheckedChange={(checked) =>
-                          toggleMut.mutate({ modelId: m.id, enabled: checked })
-                        }
-                        disabled={toggleMut.isPending}
-                        className="data-[state=checked]:bg-primary"
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+      {byProvider.map(({ id: pid, label, models: provModels, custom, enabled: provEnabled }) => (
+        <AiStudioProviderSection
+          key={pid}
+          id={pid}
+          label={label}
+          provModels={provModels}
+          providerEnabled={provEnabled}
+          custom={custom}
+          busy={busy}
+          onToggleProvider={(en) => toggleProviderMut.mutate({ providerId: pid, enabled: en })}
+          onToggleModel={(modelId, en) => toggleModelMut.mutate({ modelId, enabled: en })}
+          onDelete={() => deleteProviderMut.mutate(pid)}
+        />
       ))}
+
+      <AddProviderModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["admin-ai-studio"] })}
+      />
     </div>
   );
 }
