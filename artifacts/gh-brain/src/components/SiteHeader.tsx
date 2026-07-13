@@ -106,10 +106,10 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             </nav>
           ) : (
             <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500 flex-1">
-              <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-              <a href="#the-bench"    className="hover:text-white transition-colors">The Bench</a>
-              <a href="#tools"        className="hover:text-white transition-colors">Tools</a>
-              <a href="#pricing"      className="hover:text-white transition-colors">Pricing</a>
+              <a href="/#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+              <a href="/#the-bench"    className="hover:text-white transition-colors">The Bench</a>
+              <a href="/#tools"        className="hover:text-white transition-colors">Tools</a>
+              <a href="/#pricing"      className="hover:text-white transition-colors">Pricing</a>
             </nav>
           )}
 
