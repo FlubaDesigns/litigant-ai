@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { TEMPLATES } from "@/data/templates";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 
 const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api";
 
@@ -52,6 +53,7 @@ function MarkdownBlock({ text }: { text: string }) {
 }
 
 export default function ShareReportPage() {
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
   const { shareId } = useParams<{ shareId: string }>();
   const [report, setReport] = useState<SharedReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -375,7 +377,7 @@ export default function ShareReportPage() {
             </Button>
           </Link>
           <p className="text-xs text-muted-foreground">
-            No credit card required · 500 free credits on signup
+            {`No credit card required · ${signupBonus} free credits on signup`}
           </p>
         </motion.div>
 

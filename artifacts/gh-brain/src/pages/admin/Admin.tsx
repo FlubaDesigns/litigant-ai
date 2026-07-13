@@ -1749,6 +1749,7 @@ function BillingDefaultsSection() {
     defaultAutoRefillAmount: 20,
     defaultThresholdCredits: 100,
     defaultWarningThresholdCredits: 200,
+    signupBonusCredits: 500,
   };
   const current: BillingDefaults = {
     ...(defaults ?? BILLING_FALLBACK),
@@ -1840,6 +1841,25 @@ function BillingDefaultsSection() {
               max={100000}
               value={current.defaultWarningThresholdCredits}
               onChange={(e) => setEdited((prev) => ({ ...prev, defaultWarningThresholdCredits: parseInt(e.target.value) || 200 }))}
+              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+            <span className="text-xs text-muted-foreground">credits</span>
+          </div>
+        </div>
+
+        {/* Signup bonus */}
+        <div className="flex items-center justify-between px-5 py-4 gap-6">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Signup Bonus</p>
+            <p className="text-xs text-muted-foreground">Credits granted to every new user on first verified sign-in. Propagates to all marketing copy and emails.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              max={100000}
+              value={current.signupBonusCredits}
+              onChange={(e) => setEdited((prev) => ({ ...prev, signupBonusCredits: parseInt(e.target.value) || 0 }))}
               className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
             />
             <span className="text-xs text-muted-foreground">credits</span>

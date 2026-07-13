@@ -369,6 +369,7 @@ export default function BillingPage() {
     defaultAutoRefillAmount: 20,
     defaultThresholdCredits: 100,
     defaultWarningThresholdCredits: 200,
+    signupBonusCredits: 500,
   });
   const [creditControlsSaving, setCreditControlsSaving] = useState(false);
 

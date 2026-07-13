@@ -155,6 +155,7 @@ export interface BillingDefaults {
   defaultAutoRefillAmount: number;
   defaultThresholdCredits: number;
   defaultWarningThresholdCredits: number;
+  signupBonusCredits: number;
 }
 
 const STATIC_BILLING_DEFAULTS: BillingDefaults = {
@@ -162,6 +163,7 @@ const STATIC_BILLING_DEFAULTS: BillingDefaults = {
   defaultAutoRefillAmount: 20,
   defaultThresholdCredits: 100,
   defaultWarningThresholdCredits: 200,
+  signupBonusCredits: 500,
 };
 
 /**

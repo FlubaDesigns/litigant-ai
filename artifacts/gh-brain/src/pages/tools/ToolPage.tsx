@@ -7,6 +7,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { funnelTo } from "@/lib/funnel";
 import NotFoundPage from "@/pages/not-found";
 import { useState } from "react";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -27,6 +28,7 @@ function FAQ({ q, a }: { q: string; a: string }) {
 }
 
 export default function ToolPage() {
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
   const { slug } = useParams<{ slug: string }>();
   const tool = getToolBySlug(slug);
   const { register: registerHref, signIn: signInHref } = tool
@@ -253,7 +255,7 @@ export default function ToolPage() {
                 Ready to analyze your {tool.subject}?
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                500 free credits on signup. No credit card required. Your first session takes less than 2 minutes.
+                {`${signupBonus} free credits on signup. No credit card required. Your first session takes less than 2 minutes.`}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href={registerHref}>

@@ -10,6 +10,8 @@ export interface BillingDefaults {
   defaultThresholdCredits: number;
   /** Credits threshold that shows a low-balance warning to the user */
   defaultWarningThresholdCredits: number;
+  /** Credits granted to every new user on first verified sign-in */
+  signupBonusCredits: number;
 }
 
 const STATIC_DEFAULTS: BillingDefaults = {
@@ -17,6 +19,7 @@ const STATIC_DEFAULTS: BillingDefaults = {
   defaultAutoRefillAmount: 20,
   defaultThresholdCredits: 100,
   defaultWarningThresholdCredits: 200,
+  signupBonusCredits: 500,
 };
 
 let _cache: BillingDefaults | null = null;

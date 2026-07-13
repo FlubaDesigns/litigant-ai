@@ -10,6 +10,7 @@
  *   (loops back to config after 5s pause)
  */
 import { useEffect, useRef, useState } from "react";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { Link } from "wouter";
 
 const DEMO_QUESTION = "Is the Earth flat?";
@@ -171,6 +172,7 @@ function PhaseConfig({ onRun }: { onRun: () => void }) {
 type Phase = "config" | "starting" | "running" | "complete";
 
 export default function LandingDemoPlayer() {
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
   const [phase, setPhase]           = useState<Phase>("config");
   const [activeTurn, setActiveTurn] = useState(-1);
   const [doneTurns, setDoneTurns]   = useState<number[]>([]);
@@ -287,7 +289,7 @@ export default function LandingDemoPlayer() {
               )}
 
               <Link href="/register" className="demo-cta">
-                Put your question on trial — 500 credits free →
+                {`Put your question on trial — ${signupBonus} credits free →`}
               </Link>
             </div>
           )}

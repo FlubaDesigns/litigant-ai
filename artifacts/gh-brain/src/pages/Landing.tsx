@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
 import { TOOL_PAGES } from "@/data/toolPages";
 import { TEMPLATES } from "@/data/templates";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 
 const TOOL_ICON_MAP: Record<string, React.ElementType> = {
   Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
@@ -296,6 +297,16 @@ function ToolRow({
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const isSignedIn = !loading && !!user;
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
+  const plans = PLANS.map((plan, i) =>
+    i === 0
+      ? {
+          ...plan,
+          credits: `${signupBonus} credits on signup`,
+          features: [`${signupBonus} credits — no card required`, ...plan.features.slice(1)],
+        }
+      : plan
+  );
   const [openPanel, setOpenPanel] = useState<number | null>(null);
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
@@ -339,7 +350,7 @@ export default function LandingPage() {
                     className="h-11 px-7 text-sm font-bold tracking-wide transition-all inline-flex items-center gap-2"
                     style={{background:'hsl(38 92% 50%)', color:'#000'}}
                   >
-                    {isSignedIn ? "Open App" : "Start Free — 500 credits"}
+                    {isSignedIn ? "Open App" : `Start Free — ${signupBonus} credits`}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
@@ -545,7 +556,7 @@ export default function LandingPage() {
             </div></div>{/* /row — pricing heading */}
             <div className="row">
             <div className="layout__split-4">
-              {PLANS.map((plan, i) => (
+              {plans.map((plan, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -593,7 +604,7 @@ export default function LandingPage() {
               ))}
             </div>
             <p className="text-center text-xs text-zinc-600 font-mono mt-8">
-              100 credits = $1.00 · 500 free on signup · Credits never expire · Auto top-up available · Cancel anytime
+              {`100 credits = $1.00 · ${signupBonus} free on signup · Credits never expire · Auto top-up available · Cancel anytime`}
             </p>
             </div>{/* /row — pricing grid */}
 
@@ -697,7 +708,7 @@ export default function LandingPage() {
                 Ready to convene the court?
               </h2>
               <p className="text-zinc-500 mb-10 text-sm">
-                Start free. No credit card required. Your first 500 credits are on us.
+                {`Start free. No credit card required. Your first ${signupBonus} credits are on us.`}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link href={isSignedIn ? "/session" : "/register"}>
@@ -705,7 +716,7 @@ export default function LandingPage() {
                     className="h-12 px-10 text-sm font-bold uppercase tracking-wide transition-all inline-flex items-center gap-2"
                     style={{background:'hsl(38 92% 50%)', color:'#000'}}
                   >
-                    {isSignedIn ? "Open App" : "Start Free — 500 credits included"}
+                    {isSignedIn ? "Open App" : `Start Free — ${signupBonus} credits included`}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>

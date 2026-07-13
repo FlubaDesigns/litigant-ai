@@ -528,6 +528,7 @@ export interface BillingDefaults {
   defaultAutoRefillAmount: number;
   defaultThresholdCredits: number;
   defaultWarningThresholdCredits: number;
+  signupBonusCredits: number;
 }
 
 export async function getAdminBillingDefaults(): Promise<BillingDefaults> {

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, Zap } from "lucide-react";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { FcGoogle } from "react-icons/fc";
 import { USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
 
@@ -24,6 +25,7 @@ const registerSchema = z.object({
 });
 
 export default function RegisterPage() {
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
   const [location, setLocation] = useLocation();
   const { signUp, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +79,7 @@ export default function RegisterPage() {
           </Link>
           <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Create an account</h1>
           <p className="text-muted-foreground text-center text-sm">
-            Get 500 free credits to explore the adversarial reasoning engine.
+            {`Get ${signupBonus} free credits to explore the adversarial reasoning engine.`}
           </p>
         </div>
 
@@ -86,7 +88,7 @@ export default function RegisterPage() {
           <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
             <Zap className="w-4 h-4 text-primary shrink-0" />
             <div>
-              <div className="text-sm font-semibold text-primary">500 free credits on signup</div>
+              <div className="text-sm font-semibold text-primary">{signupBonus} free credits on signup</div>
               <div className="text-xs text-muted-foreground mt-0.5">No card required. Top up anytime — credits never expire.</div>
             </div>
           </div>

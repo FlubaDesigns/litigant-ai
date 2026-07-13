@@ -26,6 +26,7 @@
  */
 import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { getBillingDefaults } from "./billingDefaultsConfig.js";
 
 /**
  * All valid credit movement categories.
@@ -237,17 +238,21 @@ export async function updateUserPlan(
 }
 
 /**
- * Idempotently grants 500 trial credits to a new user on first sign-in.
+ * Idempotently grants signup trial credits to a new user on first sign-in.
+ * The amount is read from the admin-configurable billing defaults
+ * (config/billingDefaults.signupBonusCredits), falling back to 500.
  *
  * Uses "signup_bonus_{uid}" as the idempotency key so this fires at most
  * once per user even if the auth webhook fires multiple times.
  */
-export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean }> {
-  const result = await addCredits(uid, 500, "signup_bonus", {
+export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean; amount: number }> {
+  const { signupBonusCredits } = await getBillingDefaults();
+  const amount = signupBonusCredits ?? 500;
+  const result = await addCredits(uid, amount, "signup_bonus", {
     source:          "signup_trial",
     idempotencyKey:  `signup_bonus_${uid}`,
   });
-  return { skipped: result?.skipped === true };
+  return { skipped: result?.skipped === true, amount };
 }
 
 /**

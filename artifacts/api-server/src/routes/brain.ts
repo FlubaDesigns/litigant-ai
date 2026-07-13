@@ -38,6 +38,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixedPipelineCost } from "../lib/creditEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
+import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
 
 const router = Router();
@@ -320,9 +321,10 @@ router.post("/run-brain", async (req, res) => {
     // Mark BEFORE starting so concurrent requests from the same IP can't both slip through.
     const ip = getClientIp(req);
     if (await hasGuestUsed(ip)) {
+      const { signupBonusCredits } = await getBillingDefaults();
       res.status(402).json({
         message:
-          "Guest sessions are limited to one free trial. Create a free account to continue — you'll receive 500 credits.",
+          `Guest sessions are limited to one free trial. Create a free account to continue — you'll receive ${signupBonusCredits ?? 500} credits.`,
         guestLimitReached: true,
       });
       return;

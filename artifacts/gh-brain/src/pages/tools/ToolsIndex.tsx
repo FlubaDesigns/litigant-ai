@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TOOL_PAGES, TOOL_CATEGORIES } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useState } from "react";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -22,6 +23,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function ToolsIndexPage() {
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
   usePageMeta({
     title: "AI Analysis Tools — Litigant AI | Multi-Model Adversarial Reasoning",
     description: "Free AI-powered analysis tools for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
@@ -163,7 +165,7 @@ export default function ToolsIndexPage() {
             <div className="row">
               <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                500 free credits on signup. No credit card required.
+                {`${signupBonus} free credits on signup. No credit card required.`}
               </p>
               <Link href="/register">
                 <Button size="lg" className="font-semibold gap-2">
