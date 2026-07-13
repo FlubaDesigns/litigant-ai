@@ -1240,12 +1240,43 @@ router.get("/admin/billing-defaults", requireAdmin, async (_req: any, res) => {
  * Updates the billing defaults stored in Firestore config/billingDefaults.
  */
 router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
-  const { autoRefillAmounts, defaultAutoRefillAmount, defaultThresholdCredits, defaultWarningThresholdCredits } = req.body as {
+  const { autoRefillAmounts, defaultAutoRefillAmount, defaultThresholdCredits, defaultWarningThresholdCredits, signupBonusCredits } = req.body as {
     autoRefillAmounts?: number[];
     defaultAutoRefillAmount?: number;
     defaultThresholdCredits?: number;
     defaultWarningThresholdCredits?: number;
+    signupBonusCredits?: number;
   };
+
+  if (autoRefillAmounts !== undefined) {
+    if (!Array.isArray(autoRefillAmounts) || autoRefillAmounts.length === 0 ||
+        autoRefillAmounts.some((a) => !Number.isInteger(a) || a < 1 || a > 500)) {
+      return res.status(400).json({ error: "autoRefillAmounts must be a non-empty array of integers between 1 and 500" });
+    }
+  }
+  if (defaultAutoRefillAmount !== undefined) {
+    if (!Number.isInteger(defaultAutoRefillAmount) || defaultAutoRefillAmount < 1 || defaultAutoRefillAmount > 500) {
+      return res.status(400).json({ error: "defaultAutoRefillAmount must be an integer between 1 and 500" });
+    }
+    if (autoRefillAmounts !== undefined && !autoRefillAmounts.includes(defaultAutoRefillAmount)) {
+      return res.status(400).json({ error: "defaultAutoRefillAmount must be one of the autoRefillAmounts values" });
+    }
+  }
+  if (defaultThresholdCredits !== undefined) {
+    if (!Number.isInteger(defaultThresholdCredits) || defaultThresholdCredits < 0 || defaultThresholdCredits > 100000) {
+      return res.status(400).json({ error: "defaultThresholdCredits must be an integer between 0 and 100000" });
+    }
+  }
+  if (defaultWarningThresholdCredits !== undefined) {
+    if (!Number.isInteger(defaultWarningThresholdCredits) || defaultWarningThresholdCredits < 0 || defaultWarningThresholdCredits > 100000) {
+      return res.status(400).json({ error: "defaultWarningThresholdCredits must be an integer between 0 and 100000" });
+    }
+  }
+  if (signupBonusCredits !== undefined) {
+    if (!Number.isInteger(signupBonusCredits) || signupBonusCredits < 0 || signupBonusCredits > 100000) {
+      return res.status(400).json({ error: "signupBonusCredits must be an integer between 0 and 100000" });
+    }
+  }
 
   try {
     const updated = await saveBillingDefaults({
@@ -1253,6 +1284,7 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
       ...(defaultAutoRefillAmount !== undefined && { defaultAutoRefillAmount }),
       ...(defaultThresholdCredits !== undefined && { defaultThresholdCredits }),
       ...(defaultWarningThresholdCredits !== undefined && { defaultWarningThresholdCredits }),
+      ...(signupBonusCredits !== undefined && { signupBonusCredits }),
     });
     return res.json(updated);
   } catch (err: any) {

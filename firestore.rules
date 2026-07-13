@@ -53,13 +53,11 @@ service cloud.firestore {
                     && !setsAutoRefillCheckoutFields();
     }
 
-    // Sessions: owner can read/write; shared sessions readable by anyone with
-    // the shareId. Field name corrected to "shared" — the app never sets
-    // "isPublic" (brain.ts / sessions.ts both write "shared"), so the old
-    // clause never matched anything.
+    // Sessions: owner can read/write only. Shared-session access is handled
+    // server-side via the Admin SDK (report.ts / sessions.ts), which bypasses
+    // these rules entirely — no broad client-SDK read needed here.
     match /sessions/{sessionId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow read: if resource.data.shared == true;
     }
 
     // Feedback: any signed-in user (or guest, where userId is null) may

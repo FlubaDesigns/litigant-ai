@@ -592,7 +592,7 @@ function ConfigPanel({
             <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
             <div className="text-2xl font-bold text-primary">{credLow}–{credHigh} Credits</div>
             <div className="text-xs text-muted-foreground leading-relaxed">
-              Based on {Math.min(config.litigantCount, 4)} litigants{config.litigantCount > 4 ? ` of ${config.litigantCount} configured` : ""}, {config.debateMode} mode,{" "}
+              Based on {config.litigantCount} litigants, {config.debateMode} mode,{" "}
               {confidenceLabel}{config.conscience ? " + conscience gate (+1 Cr)" : ""}.
             </div>
           </div>
@@ -1510,7 +1510,7 @@ export default function SessionPage() {
                     <div className="flex flex-wrap gap-1.5 mb-3 pt-1">
                       <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
                         <button onClick={handleRemoveLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount <= 2}>−</button>
-                        <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">{state.config.litigantCount} litigants{state.config.litigantCount > 4 ? " · 4 active" : ""}</span>
+                        <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">{state.config.litigantCount} litigants</span>
                         <button onClick={handleAddLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount >= maxLitigants}>+</button>
                       </div>
                       <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize">{state.config.debateMode}</span>
@@ -1538,7 +1538,7 @@ export default function SessionPage() {
                           </div>
                         );
                       })}
-                      {Array.from({ length: Math.min(state.config.litigantCount, 4) }, (_, i) => {
+                      {Array.from({ length: state.config.litigantCount }, (_, i) => {
                         const seatId = `litigant_${i}`;
                         const assignment = (seatMap as unknown as Record<string, any>)[seatId];
                         return (
