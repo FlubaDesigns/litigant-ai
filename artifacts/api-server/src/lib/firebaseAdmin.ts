@@ -38,7 +38,10 @@ export async function verifyIdToken(
 ): Promise<{ uid: string; email?: string; name?: string; admin?: boolean } | null> {
   if (!isFirebaseConfigured()) return null;
   try {
-    const decoded = await getAuth().verifyIdToken(idToken);
+    // checkRevoked: true makes Firebase reject tokens whose refresh tokens have
+    // been revoked (e.g. after a ban) and tokens belonging to disabled accounts,
+    // rather than accepting them until natural expiry (~1 hour).
+    const decoded = await getAuth().verifyIdToken(idToken, true);
     return {
       uid: decoded.uid,
       email: decoded.email,

@@ -340,7 +340,9 @@ router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => 
 /**
  * POST /admin/users/:uid/ban
  * Body: { banned: boolean, reason?: string }
- * Sets Firestore flag + disables Firebase Auth account.
+ * Sets Firestore flag, disables the Firebase Auth account, and (on ban) revokes
+ * all existing refresh tokens so already-signed-in sessions are invalidated
+ * immediately rather than coasting until natural token expiry (~1 hour).
  * Returns authWarning if the Firebase Auth update fails (Firestore flag was still set).
  */
 router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
@@ -370,6 +372,12 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
     let authWarning: string | null = null;
     try {
       await getAuth().updateUser(req.params["uid"]!, { disabled: banned });
+      // Revoke all existing refresh tokens on ban so already-signed-in sessions
+      // are rejected immediately. Not needed on unban — the user will sign in
+      // fresh once their account is re-enabled.
+      if (banned) {
+        await getAuth().revokeRefreshTokens(req.params["uid"]!);
+      }
     } catch (authErr: any) {
       authWarning = `Firestore flag was set, but Firebase Auth account update failed: ${authErr.message}. The user can still sign in.`;
     }
