@@ -584,24 +584,32 @@ export function CourtDiagram({
             })}
           </g>
 
-          {/* Court controls (+/−) in center */}
-          <g>
-            <circle
-              cx={CX - 58} cy={Y_MID} r={48}
-              fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
-              onClick={onAddLitigant}
-              style={{ cursor: onAddLitigant ? "pointer" : "default" }}
-            />
-            <line x1={CX - 80} y1={Y_MID} x2={CX - 36} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
-            <line x1={CX - 58} y1={Y_MID - 22} x2={CX - 58} y2={Y_MID + 22} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
-            <circle
-              cx={CX + 58} cy={Y_MID} r={48}
-              fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
-              onClick={onRemoveLitigant}
-              style={{ cursor: onRemoveLitigant ? "pointer" : "default" }}
-            />
-            <line x1={CX + 36} y1={Y_MID} x2={CX + 80} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
-          </g>
+          {/* Court controls (+/−) in center of inner courtroom box */}
+          {(() => {
+            const ICX = (C.left + C.right) / 2; // 485 — inner box horizontal center
+            const SEP = 58;
+            const addX = ICX - SEP;
+            const remX = ICX + SEP;
+            return (
+              <g>
+                <circle
+                  cx={addX} cy={Y_MID} r={48}
+                  fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
+                  onClick={onAddLitigant}
+                  style={{ cursor: onAddLitigant ? "pointer" : "default" }}
+                />
+                <line x1={addX - 22} y1={Y_MID} x2={addX + 22} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
+                <line x1={addX} y1={Y_MID - 22} x2={addX} y2={Y_MID + 22} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
+                <circle
+                  cx={remX} cy={Y_MID} r={48}
+                  fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
+                  onClick={onRemoveLitigant}
+                  style={{ cursor: onRemoveLitigant ? "pointer" : "default" }}
+                />
+                <line x1={remX - 22} y1={Y_MID} x2={remX + 22} y2={Y_MID} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
+              </g>
+            );
+          })()}
 
           {/* Meteor animation paths */}
           <path ref={wakeRef} d=""
