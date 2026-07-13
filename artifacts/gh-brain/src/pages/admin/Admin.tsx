@@ -165,7 +165,6 @@ function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
             </div>
           ))}
         </div>
-        <ChecklistLinkCard onOpenChecklist={onOpenChecklist} />
         <SystemNotesCard />
       </div>
     );
@@ -180,7 +179,6 @@ function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
         <StatCard label="Last 7 Days"   value={data?.recentSessions ?? 0}    icon={TrendingUp} sub="new sessions" />
       </div>
 
-      <ChecklistLinkCard onOpenChecklist={onOpenChecklist} />
       <SystemNotesCard />
     </div>
   );
