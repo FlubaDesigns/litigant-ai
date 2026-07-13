@@ -2849,12 +2849,12 @@ const EMPTY_MODEL = (): AiStudioCustomModel => ({
 function AddProviderModal({
   open, onClose, onSaved,
 }: { open: boolean; onClose: () => void; onSaved: () => void }) {
-  const [label, setLabel] = React.useState("");
-  const [id, setId] = React.useState("");
-  const [idManual, setIdManual] = React.useState(false);
-  const [models, setModels] = React.useState<AiStudioCustomModel[]>([EMPTY_MODEL()]);
-  const [saving, setSaving] = React.useState(false);
-  const [err, setErr] = React.useState("");
+  const [label, setLabel] = useState("");
+  const [id, setId] = useState("");
+  const [idManual, setIdManual] = useState(false);
+  const [models, setModels] = useState<AiStudioCustomModel[]>([EMPTY_MODEL()]);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
 
   function toSlug(s: string) {
     return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -3040,7 +3040,7 @@ function AiStudioProviderSection({
   onDelete: () => void;
   busy: boolean;
 }) {
-  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <div className={cn("space-y-2 transition-opacity", !providerEnabled && "opacity-50")}>
@@ -3130,7 +3130,7 @@ function AiStudioProviderSection({
 
 function AiStudioTab() {
   const qc = useQueryClient();
-  const [addOpen, setAddOpen] = React.useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery<AiStudioData>({
     queryKey: ["admin-ai-studio"],
