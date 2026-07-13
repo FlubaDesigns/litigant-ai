@@ -1,4 +1,5 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { addCredits } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -97,7 +98,14 @@ router.post("/admin/set-claim", async (req, res) => {
     uid?: string;
   };
 
-  if (secret !== masterSecret) {
+  // Timing-safe comparison — prevents timing-oracle attacks on the master secret.
+  // Consistent with squareEventHandler.ts which uses timingSafeEqual for the same reason.
+  const secretBuf = Buffer.from(secret ?? "");
+  const masterBuf = Buffer.from(masterSecret);
+  const valid =
+    secretBuf.length === masterBuf.length &&
+    crypto.timingSafeEqual(secretBuf, masterBuf);
+  if (!valid) {
     return res.status(403).json({ error: "Invalid master secret" });
   }
   if (!email && !uid) {

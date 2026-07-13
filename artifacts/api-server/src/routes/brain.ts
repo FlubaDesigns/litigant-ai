@@ -79,9 +79,10 @@ async function createAutoRefillUrl(dollarAmount: number, uid: string): Promise<s
 const _guestMemoryFallback = new Set<string>();
 
 function getClientIp(req: import("express").Request): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
-  return req.socket.remoteAddress ?? "unknown";
+  // req.ip is trust-proxy-aware (app-firebase.ts sets "trust proxy", 1).
+  // Using req.ip is consistent with how auth.ts rate-limiters key on client IP
+  // and is NOT spoofable via a crafted X-Forwarded-For header.
+  return req.ip ?? req.socket.remoteAddress ?? "unknown";
 }
 
 async function hasGuestUsed(ip: string): Promise<boolean> {
