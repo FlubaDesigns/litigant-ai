@@ -4,8 +4,8 @@
  * POST /case-file/fetch-url  — fetch a URL and return its readable text
  * POST /case-file/upload     — accept a file upload and return extracted text
  */
-import { Router } from "express";
-import multer from "multer";
+import { Router, type Request, type Response, type NextFunction } from "express";
+import multer, { MulterError } from "multer";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -131,6 +131,15 @@ router.post("/case-file/upload", upload.single("file"), async (req, res) => {
     console.error("[case-file/upload] extraction error:", err?.message);
     res.status(422).json({ message: "Could not extract text from file" });
   }
+});
+
+// Catch multer errors (e.g. file too large) and return a clean 400
+router.use("/case-file/upload", (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
+    res.status(400).json({ message: "File exceeds the 10 MB limit" });
+    return;
+  }
+  res.status(500).json({ message: "Upload failed" });
 });
 
 export default router;
