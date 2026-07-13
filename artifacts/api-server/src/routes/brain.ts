@@ -35,7 +35,7 @@ import crypto from "crypto";
 import { runBrainSession, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
-import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixedPipelineCost } from "../lib/creditEngine.js";
+import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixedPipelineCost, getModelRate } from "../lib/creditEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
@@ -458,6 +458,22 @@ router.post("/run-brain", async (req, res) => {
               }).catch((e) => console.error("[brain] failed to record overage shortfall:", e));
             }
           }
+        }
+
+        // Persist final token usage + USD cost to session doc (non-fatal)
+        try {
+          const rate = getModelRate(result.model || "gpt-5");
+          const costUSD = (result.tokenUsage.inputTokens / 1000) * rate.input
+                        + (result.tokenUsage.outputTokens / 1000) * rate.output;
+          await sessionRef.update({
+            inputTokens: result.tokenUsage.inputTokens,
+            outputTokens: result.tokenUsage.outputTokens,
+            costUSD: Math.round(costUSD * 100000) / 100000,
+            creditsUsed: actualCost,
+            model: result.model || "gpt-5",
+          });
+        } catch (e) {
+          console.error("[brain] Failed to update token usage on session:", e);
         }
 
         // Auto-refill: check if user's balance has dropped below their threshold

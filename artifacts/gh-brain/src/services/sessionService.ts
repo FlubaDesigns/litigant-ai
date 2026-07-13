@@ -174,6 +174,10 @@ export interface SavedSession {
   templateId: string | null;
   confidence: number;
   creditsUsed: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  costUSD?: number;
+  model?: string;
   status: "complete" | "incomplete" | "error";
   starred?: boolean;
   archived?: boolean;

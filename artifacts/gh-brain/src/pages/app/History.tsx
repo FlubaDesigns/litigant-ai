@@ -155,6 +155,43 @@ function SessionDetail({ session, onClose, onRerun, onResume }: {
             </div>
           )}
 
+          {(session.inputTokens || session.outputTokens || session.costUSD) && (
+            <div className="rounded-lg border border-border/40 bg-muted/10 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Token Usage</p>
+                {session.model && (
+                  <span className="text-xs font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">{session.model}</span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {session.inputTokens !== undefined && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-0.5">Input</div>
+                    <div className="text-sm font-mono font-semibold tabular-nums">{session.inputTokens.toLocaleString()}</div>
+                  </div>
+                )}
+                {session.outputTokens !== undefined && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-0.5">Output</div>
+                    <div className="text-sm font-mono font-semibold tabular-nums">{session.outputTokens.toLocaleString()}</div>
+                  </div>
+                )}
+                {session.costUSD !== undefined && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-0.5">API Cost</div>
+                    <div className="text-sm font-mono font-semibold tabular-nums text-amber-400">${session.costUSD.toFixed(4)}</div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 pt-2 border-t border-border/30 flex justify-between text-xs text-muted-foreground">
+                <span>{session.creditsUsed} credits charged</span>
+                {session.inputTokens && session.outputTokens && (
+                  <span>{(session.inputTokens + session.outputTokens).toLocaleString()} total tokens</span>
+                )}
+              </div>
+            </div>
+          )}
+
           {!session.finalAnswer && !session.debateNotes && !session.transcript && (
             <p className="text-muted-foreground text-xs text-center py-8">
               Session content is not available in the list view. This session may have been saved without full transcript data.
