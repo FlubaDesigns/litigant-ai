@@ -209,3 +209,9 @@ id = "Ly4JT1MUhSJ0sC9LMj2TJ"
 uri = "file://downloads/litigant-ai-audit-pass5-9.zip"
 type = "unspecified"
 title = "Audit Pass 5–9 — all touched files"
+
+[[outputs]]
+id = "g01eVJaemOOPojPLlZ6iJ"
+uri = "file://downloads/litigant-ai-full-site.zip"
+type = "unspecified"
+title = "Litigant AI — full site source (250 files)"
