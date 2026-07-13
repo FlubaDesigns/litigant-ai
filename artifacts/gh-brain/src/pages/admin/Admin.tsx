@@ -2477,13 +2477,13 @@ function ProviderRow({
         {info.updatedAt ? new Date(info.updatedAt).toLocaleDateString() : "—"}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => onEdit(info)}>
-            <Edit3 className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" className="h-11 min-w-[44px] px-3 opacity-70 hover:opacity-100 focus-visible:opacity-100" onClick={() => onEdit(info)} aria-label={`Edit ${info.label} API key`}>
+            <Edit3 className="w-4 h-4" />
           </Button>
           {info.source === "firestore" && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => onDelete(info)}>
-              <RotateCcw className="w-3.5 h-3.5" />
+            <Button size="sm" variant="ghost" className="h-11 min-w-[44px] px-3 text-destructive hover:text-destructive opacity-70 hover:opacity-100 focus-visible:opacity-100" onClick={() => onDelete(info)} aria-label={`Reset ${info.label} API key to environment configuration`}>
+              <RotateCcw className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -2787,12 +2787,14 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
         <span className="text-xs text-muted-foreground">(default: {row.defaultMultiplier}×)</span>
       )}
       <button onClick={() => { setDraft(String(row.effectiveMultiplier)); setEditing(true); }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 text-muted-foreground hover:text-foreground">
+        className="ml-1 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground opacity-70 hover:text-foreground hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+        aria-label={`Edit multiplier for ${row.model}`}>
         <Edit3 className="w-3.5 h-3.5" />
       </button>
       {row.isOverridden && (
         <button onClick={() => resetMut.mutate()} disabled={resetMut.isPending}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-amber-400">
+          className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground opacity-70 hover:text-amber-400 hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          aria-label={`Reset ${row.model} multiplier to default`}>
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
       )}
@@ -2974,7 +2976,7 @@ export default function AdminPage() {
             key={id}
             onClick={() => setActiveTab(id)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-2 text-xs min-w-0 flex-1 transition-colors",
+              "flex flex-col items-center gap-0.5 px-3 py-2 text-xs min-w-[72px] shrink-0 transition-colors",
               activeTab === id ? "text-primary" : "text-muted-foreground"
             )}
           >
@@ -2985,7 +2987,7 @@ export default function AdminPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 px-6 py-8 pb-24 lg:pb-8 max-w-5xl">
+      <div className="flex-1 min-w-0 px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 pb-24 lg:pb-8 max-w-5xl">
         <div className="mb-6 flex items-center gap-3">
           <h1 className="text-xl font-bold">
             {TABS.find((t) => t.id === activeTab)?.label}
