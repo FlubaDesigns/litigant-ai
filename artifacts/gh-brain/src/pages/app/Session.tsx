@@ -1527,7 +1527,7 @@ export default function SessionPage() {
                         const seatId = `litigant_${i}`;
                         const assignment = seatMap[seatId];
                         return (
-                          <div key={seatId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId, litIndex: i })}>
+                          <div key={seatId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: "litigant", litIndex: i })}>
                             <span className="text-sm shrink-0">⚖</span>
                             <div className="flex flex-col min-w-0 flex-1">
                               <span className="text-[11px] font-semibold text-foreground/80">Litigant {i + 1}</span>
