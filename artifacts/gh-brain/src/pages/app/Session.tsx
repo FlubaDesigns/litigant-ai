@@ -1059,7 +1059,7 @@ export default function SessionPage() {
       }
     : undefined;
   const brainSession = useBrainSession(savedConfig);
-  const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = brainSession;
+  const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, loadCompleteSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = brainSession;
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -1137,7 +1137,7 @@ export default function SessionPage() {
     sessionStorage.removeItem("litigant_prefill");
     try {
       const prefill = JSON.parse(raw) as {
-        mode: "rerun" | "resume";
+        mode: "rerun" | "resume" | "load";
         question: string;
         templateId: string | null;
         sessionId?: string;
@@ -1155,6 +1155,19 @@ export default function SessionPage() {
       }
       if (prefill.mode === "rerun") {
         setQuestion(prefill.question);
+      } else if (prefill.mode === "load" && prefill.sessionId) {
+        loadCompleteSession({
+          question: prefill.question,
+          config: {},
+          sessionId: prefill.sessionId,
+          confidence: prefill.confidence ?? 0,
+          creditsUsed: prefill.creditsUsed ?? 0,
+          finalAnswer: prefill.finalAnswer ?? "",
+          debateNotes: prefill.debateNotes ?? "",
+          transcript: prefill.transcript ?? "",
+          caveats: prefill.caveats ?? "",
+          artifacts: prefill.artifacts ?? "",
+        });
       } else if (prefill.mode === "resume" && prefill.sessionId) {
         loadPausedSession({
           question: prefill.question,

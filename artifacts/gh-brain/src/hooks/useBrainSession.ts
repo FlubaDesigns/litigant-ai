@@ -114,6 +114,19 @@ type Action =
       caveats: string;
       artifacts: string;
       pauseTranscript: string[];
+    }
+  | {
+      type: "PREFILL_COMPLETE";
+      question: string;
+      config: Partial<CourtConfig>;
+      sessionId: string;
+      confidence: number;
+      creditsUsed: number;
+      finalAnswer: string;
+      debateNotes: string;
+      transcript: string;
+      caveats: string;
+      artifacts: string;
     };
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
@@ -389,6 +402,27 @@ function reducer(state: SessionState, action: Action): SessionState {
       };
     }
 
+    case "PREFILL_COMPLETE": {
+      const newConfig = { ...state.config, ...action.config };
+      return {
+        ...makeInitialState(newConfig),
+        phase: "complete" as const,
+        question: action.question,
+        config: newConfig,
+        sessionId: action.sessionId,
+        confidence: action.confidence,
+        creditsUsed: action.creditsUsed,
+        finalAnswer: action.finalAnswer,
+        debateNotes: action.debateNotes,
+        transcript: action.transcript,
+        caveats: action.caveats,
+        artifacts: action.artifacts,
+        pauseReason: null,
+        pauseTranscript: null,
+        courtHappened: true,
+      };
+    }
+
     default:
       return state;
   }
@@ -547,6 +581,21 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     });
   }, []);
 
+  const loadCompleteSession = useCallback((s: {
+    question: string;
+    config: Partial<CourtConfig>;
+    sessionId: string;
+    confidence: number;
+    creditsUsed: number;
+    finalAnswer: string;
+    debateNotes: string;
+    transcript: string;
+    caveats: string;
+    artifacts: string;
+  }) => {
+    dispatch({ type: "PREFILL_COMPLETE", ...s });
+  }, []);
+
   const setQuestion = useCallback((q: string) => dispatch({ type: "SET_QUESTION", question: q }), []);
   const setTemplate = useCallback((t: Template | null) => dispatch({ type: "SET_TEMPLATE", template: t }), []);
   const setConfig = useCallback((c: Partial<CourtConfig>) => dispatch({ type: "SET_CONFIG", config: c }), []);
@@ -613,6 +662,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     acceptPartial,
     continueSession: continueSessionFn,
     loadPausedSession,
+    loadCompleteSession,
     submitRebuttal,
     setQuestion,
     setTemplate,

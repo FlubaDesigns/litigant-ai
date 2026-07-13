@@ -456,11 +456,26 @@ export default function HistoryPage() {
     }
   }
 
-  function handleRerun(session: SavedSession) {
+  async function handleRerun(session: SavedSession) {
+    let full = session;
+    if ((!full.transcript || !full.finalAnswer) && user) {
+      try {
+        const idToken = await user.getIdToken();
+        full = await getSession(session.id, idToken);
+      } catch { /* fall back to partial data */ }
+    }
     sessionStorage.setItem("litigant_prefill", JSON.stringify({
-      mode: "rerun",
-      question: session.question,
-      templateId: session.templateId,
+      mode: "load",
+      question: full.question,
+      templateId: full.templateId,
+      sessionId: full.id,
+      confidence: full.confidence ?? 0,
+      creditsUsed: full.creditsUsed ?? 0,
+      finalAnswer: full.finalAnswer ?? "",
+      debateNotes: full.debateNotes ?? "",
+      transcript: full.transcript ?? "",
+      caveats: full.caveats ?? "",
+      artifacts: full.artifacts ?? "",
     }));
     setLocation("/session");
   }
