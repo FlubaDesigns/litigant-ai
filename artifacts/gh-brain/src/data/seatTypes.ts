@@ -34,6 +34,10 @@ export type SeatAIId = (typeof SEAT_AI_OPTIONS)[number]["id"];
 export interface SeatAssignment {
   provider: string;
   model?: string;
+  /** 0–100 slider position for this seat. When set, overrides the global intelligenceLevel. */
+  intelligenceLevel?: number;
+  /** When true the seat inherits the session's global intelligenceLevel instead of its own. */
+  useMasterSettings?: boolean;
 }
 
 export interface SeatMapConfig {

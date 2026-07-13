@@ -45,7 +45,7 @@ import {
   getAdminBillingDefaults, saveAdminBillingDefaults,
   getChecklist, setChecklistItemChecked,
   getAiStudioModels, toggleAiStudioModel, toggleAiStudioProvider,
-  addAiStudioProvider, deleteAiStudioProvider,
+  addAiStudioProvider, deleteAiStudioProvider, setModelQualityScore,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
   type BillingDefaults, type ChecklistItem,
@@ -3028,6 +3028,7 @@ function AiStudioProviderSection({
   custom,
   onToggleProvider,
   onToggleModel,
+  onSetScore,
   onDelete,
   busy,
 }: {
@@ -3038,6 +3039,7 @@ function AiStudioProviderSection({
   custom: boolean;
   onToggleProvider: (enabled: boolean) => void;
   onToggleModel: (modelId: string, enabled: boolean) => void;
+  onSetScore: (modelId: string, score: number) => void;
   onDelete: () => void;
   busy: boolean;
 }) {
@@ -3096,6 +3098,7 @@ function AiStudioProviderSection({
               <TableHead className="text-xs text-right text-amber-400">User Out /1M</TableHead>
               <TableHead className="text-xs text-right">×Mult</TableHead>
               <TableHead className="text-xs text-right">Est. Credits</TableHead>
+              <TableHead className="text-xs text-center text-primary/80">IQ Score</TableHead>
               <TableHead className="text-xs text-center">Available</TableHead>
             </TableRow>
           </TableHeader>
@@ -3112,6 +3115,21 @@ function AiStudioProviderSection({
                 <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">{fmtRate(m.userOutputPer1k)}</TableCell>
                 <TableCell className="text-right text-xs font-mono">×{m.multiplier}</TableCell>
                 <TableCell className="text-right text-xs font-bold font-mono">{m.exampleCredits}</TableCell>
+                <TableCell className="text-center">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    defaultValue={m.qualityScore ?? 50}
+                    onBlur={(e) => {
+                      const v = Math.max(0, Math.min(100, Number(e.target.value)));
+                      if (v !== (m.qualityScore ?? 50)) onSetScore(m.id, v);
+                    }}
+                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    disabled={busy}
+                    className="w-14 text-center text-xs font-mono bg-transparent border border-border/40 rounded px-1 py-0.5 focus:outline-none focus:border-primary/50 text-primary"
+                  />
+                </TableCell>
                 <TableCell className="text-center">
                   <Switch
                     checked={m.enabled}
@@ -3168,6 +3186,16 @@ function AiStudioTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const scoreModelMut = useMutation({
+    mutationFn: ({ modelId, score }: { modelId: string; score: number }) =>
+      setModelQualityScore(modelId, score),
+    onSuccess: (_d, { modelId, score }) => {
+      toast.success(`${modelId} IQ score set to ${score}`);
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <TabSkeleton />;
 
   if (isError || !data) {
@@ -3181,7 +3209,7 @@ function AiStudioTab() {
   }
 
   const { models, disabledProviders, customProviders } = data;
-  const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending;
+  const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending;
   const enabledCount = models.filter((m) => m.enabled).length;
 
   // Build ordered provider list: built-ins first, then custom
@@ -3249,6 +3277,7 @@ function AiStudioTab() {
           busy={busy}
           onToggleProvider={(en) => toggleProviderMut.mutate({ providerId: pid, enabled: en })}
           onToggleModel={(modelId, en) => toggleModelMut.mutate({ modelId, enabled: en })}
+          onSetScore={(modelId, score) => scoreModelMut.mutate({ modelId, score })}
           onDelete={() => deleteProviderMut.mutate(pid)}
         />
       ))}

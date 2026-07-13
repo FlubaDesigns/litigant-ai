@@ -41,27 +41,35 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderName, string> = {
   gemini: "Google Gemini",
 };
 
-export const PROVIDER_MODELS: Record<ProviderName, { id: string; label: string }[]> = {
+export const PROVIDER_MODELS: Record<ProviderName, { id: string; label: string; qualityScore: number }[]> = {
   openai: [
-    { id: "gpt-5",      label: "GPT-5" },
-    { id: "gpt-4o",     label: "GPT-4o" },
-    { id: "gpt-4o-mini", label: "GPT-4o Mini" },
-    { id: "o3",         label: "o3 (reasoning)" },
-    { id: "o4-mini",    label: "o4-mini (reasoning)" },
+    { id: "gpt-5",       label: "GPT-5",              qualityScore: 90 },
+    { id: "gpt-4o",      label: "GPT-4o",             qualityScore: 78 },
+    { id: "gpt-4o-mini", label: "GPT-4o Mini",        qualityScore: 38 },
+    { id: "o3",          label: "o3 (reasoning)",      qualityScore: 96 },
+    { id: "o4-mini",     label: "o4-mini (reasoning)", qualityScore: 68 },
   ],
   anthropic: [
-    { id: "claude-opus-4-5", label: "Claude Opus 4.5" },
-    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
-    { id: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
+    { id: "claude-opus-4-5",   label: "Claude Opus 4.5",   qualityScore: 92 },
+    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", qualityScore: 80 },
+    { id: "claude-haiku-4-5",  label: "Claude Haiku 4.5",  qualityScore: 42 },
   ],
   grok: [
-    { id: "grok-3", label: "Grok 3" },
-    { id: "grok-3-mini", label: "Grok 3 Mini" },
-    { id: "grok-2", label: "Grok 2" },
+    { id: "grok-3",      label: "Grok 3",      qualityScore: 74 },
+    { id: "grok-3-mini", label: "Grok 3 Mini", qualityScore: 32 },
+    { id: "grok-2",      label: "Grok 2",      qualityScore: 58 },
   ],
   gemini: [
-    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+    { id: "gemini-2.5-pro",   label: "Gemini 2.5 Pro",   qualityScore: 84 },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", qualityScore: 48 },
+    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash", qualityScore: 28 },
   ],
 };
+
+/**
+ * Default quality scores extracted from PROVIDER_MODELS for easy lookup.
+ * Admins can override these via Firestore (system_config/modelScores).
+ */
+export const DEFAULT_QUALITY_SCORES: Record<string, number> = Object.fromEntries(
+  Object.values(PROVIDER_MODELS).flat().map((m) => [m.id, m.qualityScore])
+);

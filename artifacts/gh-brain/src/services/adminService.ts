@@ -544,6 +544,8 @@ export interface AiStudioModel {
   exampleCredits: number;
   enabled: boolean;
   custom: boolean;
+  /** 0–100 quality score used by the intelligence slider */
+  qualityScore?: number;
 }
 
 export interface AiStudioCustomModel {
@@ -602,6 +604,17 @@ export async function addAiStudioProvider(provider: AiStudioCustomProvider): Pro
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error ?? "Failed to add provider");
+  }
+}
+
+export async function setModelQualityScore(modelId: string, qualityScore: number): Promise<void> {
+  const res = await adminFetch(`/admin/model-scores/${encodeURIComponent(modelId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ qualityScore }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update quality score");
   }
 }
 

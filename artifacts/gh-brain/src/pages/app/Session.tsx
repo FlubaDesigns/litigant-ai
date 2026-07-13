@@ -8,7 +8,7 @@ import {
   ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download,
   Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
   Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Shuffle,
-  ChevronRight, Gavel, HelpCircle,
+  ChevronRight, Gavel, HelpCircle, GraduationCap, DollarSign,
   Check, Shield, ShieldOff, Users, Swords, Link2, User, Layers, List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -232,6 +232,7 @@ function ConfigPanel({
         litigantCount: c.litigantCount,
         responseMode: c.responseMode, outputFormat: c.outputFormat,
         provider: c.provider, model: c.model,
+        intelligenceLevel: c.intelligenceLevel,
       };
       const settings = Object.fromEntries(
         Object.entries(rawSettings).filter(([, v]) => v !== undefined)
@@ -542,51 +543,35 @@ function ConfigPanel({
             </Select>
           </V29Field>
 
-          {/* AI PROVIDER */}
-          {availableProviders.length > 0 && (
-            <div className="space-y-2 pt-1 border-t border-primary/10">
-              <div className="flex items-center gap-1.5">
-                <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">AI Provider</div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" tabIndex={-1} className="text-primary/40 hover:text-primary/80 transition-colors" aria-label="More info about AI Provider">
-                      <HelpCircle className="w-3 h-3" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
-                    Which underlying AI model powers every seat in this session. Different providers vary in reasoning style, speed, and cost per credit. Switching provider also lets you pick a specific model from that provider below.
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {availableProviders.map((p) => (
-                  <button
-                    key={p.name}
-                    onClick={() => handleChange({ provider: p.name as ProviderName, model: p.defaultModel })}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-xs font-medium transition-all",
-                      config.provider === p.name || (!config.provider && p === availableProviders[0])
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border/40 bg-transparent text-muted-foreground hover:border-primary/30"
-                    )}
-                  >
-                    <span>{PROVIDER_ICONS[p.name as ProviderName]}</span>
-                    {PROVIDER_LABELS[p.name as ProviderName]}
+          {/* INTELLIGENCE SLIDER */}
+          <div className="space-y-3 pt-1 border-t border-primary/10">
+            <div className="flex items-center gap-1.5">
+              <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Intelligence</div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" tabIndex={-1} className="text-primary/40 hover:text-primary/80 transition-colors" aria-label="More info about Intelligence">
+                    <HelpCircle className="w-3 h-3" />
                   </button>
-                ))}
-              </div>
-              {selectedProvider && selectedProvider.models.length > 0 && (
-                <Select value={config.model ?? selectedProvider.defaultModel} onValueChange={(v) => handleChange({ model: v })}>
-                  <SelectTrigger className={V29_SELECT + " text-xs h-8"}><SelectValue placeholder="Select model" /></SelectTrigger>
-                  <SelectContent>
-                    {selectedProvider.models.map((m) => (
-                      <SelectItem key={m.id} value={m.id} className="text-xs">{m.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
+                  Controls AI capability across all seats. Left is more economical; right uses the strongest available models. Each seat can be tuned individually from the courtroom diagram.
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+            <div className="flex items-center gap-3">
+              <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={config.intelligenceLevel ?? 50}
+                onChange={(e) => handleChange({ intelligenceLevel: Number(e.target.value), provider: undefined, model: undefined })}
+                className="flex-1 cursor-pointer"
+                style={{ accentColor: "hsl(var(--primary, 120 100% 50%))" }}
+              />
+              <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" />
+            </div>
+          </div>
 
           {/* ESTIMATED RUN COST */}
           <div className="rounded-lg border border-primary/25 bg-primary/5 p-4 space-y-1">
@@ -1075,8 +1060,14 @@ export default function SessionPage() {
   const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
   const [calibration, setCalibration] = useState<CalibrationStats | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(false);
+  const [allProviders, setAllProviders] = useState<ProviderInfo[]>([]);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityLogRef = useRef<HTMLDivElement>(null);
+
+  // Load providers once — used for SeatInspector and credit estimation
+  useEffect(() => {
+    getProviders().then((data) => setAllProviders(data.providers)).catch(() => {});
+  }, []);
 
   // Load provider credit info for accurate session cost estimate
   useEffect(() => {
@@ -2154,10 +2145,10 @@ export default function SessionPage() {
           <SeatInspector
             seatId={inspectorSeat.seatId}
             litIndex={inspectorSeat.litIndex}
-            litigantCount={state.config.litigantCount}
             seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
             grades={state.grades}
-            enabledProviderIds={availableProviders.length > 0 ? availableProviders.map((p) => p.name) : undefined}
+            providers={allProviders}
+            globalIntelligenceLevel={state.config.intelligenceLevel ?? 50}
             onClose={() => setInspectorSeat(null)}
             onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
           />

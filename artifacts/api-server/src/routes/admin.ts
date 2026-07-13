@@ -24,6 +24,7 @@ import {
 import {
   PROVIDER_MODELS,
   PROVIDER_DISPLAY_NAMES,
+  DEFAULT_QUALITY_SCORES,
   type ProviderName,
 } from "../lib/providers/index.js";
 import {
@@ -1522,6 +1523,52 @@ router.patch("/admin/checklist/:id", requireAdmin, async (req: any, res) => {
     return res.json({ ok: true });
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /admin/model-scores
+ * Returns quality scores for all known models (default + Firestore overrides).
+ * Used by the Admin AI Studio tab to let admins calibrate the intelligence slider.
+ */
+router.get("/admin/model-scores", requireAdmin, async (_req, res) => {
+  try {
+    const db = getFirestoreDb();
+    let firestoreOverrides: Record<string, number> = {};
+    if (db) {
+      const doc = await db.collection("system_config").doc("modelScores").get();
+      firestoreOverrides = (doc.data() ?? {}) as Record<string, number>;
+    }
+    const scores = { ...DEFAULT_QUALITY_SCORES, ...firestoreOverrides };
+    return res.json({ scores, overrides: firestoreOverrides });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/model-scores/:modelId
+ * Set a custom quality score (0–100) for a model. Stored in Firestore.
+ * DELETE-equivalent: pass score: null to reset to default.
+ */
+router.patch("/admin/model-scores/:modelId", requireAdmin, async (req: any, res) => {
+  const { modelId } = req.params;
+  const { score } = req.body as { score?: number | null };
+  if (score !== null && (typeof score !== "number" || score < 0 || score > 100)) {
+    return res.status(400).json({ error: "score must be a number between 0 and 100, or null to reset" });
+  }
+  try {
+    const db = getFirestoreDb();
+    if (!db) return res.status(503).json({ error: "Firestore unavailable" });
+    const ref = db.collection("system_config").doc("modelScores");
+    if (score === null) {
+      await ref.set({ [modelId]: FieldValue.delete() }, { merge: true });
+    } else {
+      await ref.set({ [modelId]: score, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
+    return res.json({ ok: true, modelId, score: score ?? DEFAULT_QUALITY_SCORES[modelId] });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
   }
 });
 

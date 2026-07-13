@@ -1,5 +1,5 @@
 export type { AIProvider, ChatMessage, ProviderConfig, ProviderName } from "./types.js";
-export { DEFAULT_MODELS, PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS } from "./types.js";
+export { DEFAULT_MODELS, PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_QUALITY_SCORES } from "./types.js";
 export { OpenAIProvider } from "./openai.js";
 export { AnthropicProvider } from "./anthropic.js";
 export { GrokProvider } from "./grok.js";

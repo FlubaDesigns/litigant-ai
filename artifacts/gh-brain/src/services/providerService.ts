@@ -40,7 +40,39 @@ export interface ModelCreditInfo {
 export interface ModelInfo {
   id: string;
   label: string;
+  /** 0–100 quality score used by the intelligence slider. Admin-configurable. */
+  qualityScore: number;
   creditInfo: ModelCreditInfo;
+}
+
+/**
+ * Resolve the best-matching { provider, model } for a given intelligence level (0–100).
+ * When providerPreference is "auto", searches across all enabled providers.
+ * Picks the model whose qualityScore is closest to the requested level.
+ */
+export function resolveModelByIntelligence(
+  intelligenceLevel: number,
+  providerPreference: string,
+  providers: ProviderInfo[]
+): { provider: string; model: string; label: string } | null {
+  const candidates =
+    providerPreference === "auto"
+      ? providers.flatMap((p) => p.models.map((m) => ({ ...m, providerName: p.name })))
+      : (providers.find((p) => p.name === providerPreference)?.models ?? []).map((m) => ({
+          ...m,
+          providerName: providerPreference,
+        }));
+
+  if (candidates.length === 0) return null;
+
+  const best = candidates.reduce((b, m) =>
+    Math.abs((m.qualityScore ?? 50) - intelligenceLevel) <
+    Math.abs((b.qualityScore ?? 50) - intelligenceLevel)
+      ? m
+      : b
+  );
+
+  return { provider: best.providerName, model: best.id, label: best.label };
 }
 
 export interface ProviderInfo {

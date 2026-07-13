@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { X, ChevronDown } from "lucide-react";
+import { X, DollarSign, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  SEAT_AI_OPTIONS,
   SEAT_PURPOSES,
   SEAT_DEFAULT_GRADES,
   getGradeSummary,
@@ -10,15 +9,15 @@ import {
   type GradeMap,
   type SeatMapConfig,
 } from "@/data/seatTypes";
+import { resolveModelByIntelligence, type ProviderInfo } from "@/services/providerService";
 
 interface SeatInspectorProps {
   seatId: string | null;
   litIndex?: number;
   seatMap: SeatMapConfig;
   grades: GradeMap;
-  litigantCount: number;
-  /** IDs of providers enabled in AI Studio. When undefined, all built-in options are shown. */
-  enabledProviderIds?: string[];
+  providers: ProviderInfo[];
+  globalIntelligenceLevel: number;
   onClose: () => void;
   onUpdate: (seatId: string, assignment: SeatAssignment, litIndex?: number) => void;
 }
@@ -63,17 +62,22 @@ export function SeatInspector({
   litIndex,
   seatMap,
   grades,
-  enabledProviderIds,
+  providers,
+  globalIntelligenceLevel,
   onClose,
   onUpdate,
 }: SeatInspectorProps) {
-  const [selectedProvider, setSelectedProvider] = useState<string>("anthropic");
   const [open, setOpen] = useState(false);
+  const [useMasterSettings, setUseMasterSettings] = useState(true);
+  const [localLevel, setLocalLevel] = useState(50);
+  const [localProvider, setLocalProvider] = useState("auto");
 
   useEffect(() => {
     if (seatId) {
       const assignment = getCurrentAssignment(seatId, litIndex, seatMap);
-      setSelectedProvider(assignment.provider);
+      setUseMasterSettings(assignment.useMasterSettings !== false);
+      setLocalLevel(assignment.intelligenceLevel ?? globalIntelligenceLevel);
+      setLocalProvider(assignment.provider ?? "auto");
       requestAnimationFrame(() => setOpen(true));
     } else {
       setOpen(false);
@@ -92,28 +96,21 @@ export function SeatInspector({
   const currentGrade = gradeData?.grade ?? defaultGrade;
   const gradeSummary = getGradeSummary(gradeData);
 
-  // Build the option list: filter built-ins by enabled set, then append any
-  // custom providers that aren't in SEAT_AI_OPTIONS.
-  const displayOptions = enabledProviderIds
-    ? [
-        ...SEAT_AI_OPTIONS.filter((o) => enabledProviderIds.includes(o.id)),
-        ...enabledProviderIds
-          .filter((id) => !SEAT_AI_OPTIONS.find((o) => o.id === id))
-          .map((id) => ({ id, name: id, shortName: id, grade: "?", desc: "" } as const)),
-      ]
-    : [...SEAT_AI_OPTIONS];
-
-  const selectedOption = displayOptions.find((o) => o.id === selectedProvider) ?? displayOptions[0];
+  const effectiveLevel = useMasterSettings ? globalIntelligenceLevel : localLevel;
+  const effectiveProvider = useMasterSettings ? "auto" : localProvider;
+  const resolved = providers.length > 0
+    ? resolveModelByIntelligence(effectiveLevel, effectiveProvider, providers)
+    : null;
 
   function handleConfirm() {
     if (!seatId) { handleClose(); return; }
-    const defaultModels: Record<string, string> = {
-      anthropic: "claude-opus-4-5",
-      openai:    "gpt-5",
-      grok:      "grok-3",
-      gemini:    "gemini-2.5-pro",
+    const assignment: SeatAssignment = {
+      provider: resolved?.provider ?? "anthropic",
+      model: resolved?.model,
+      useMasterSettings,
+      intelligenceLevel: useMasterSettings ? undefined : localLevel,
     };
-    onUpdate(seatId, { provider: selectedProvider, model: defaultModels[selectedProvider] ?? selectedProvider }, litIndex);
+    onUpdate(seatId, assignment, litIndex);
     handleClose();
   }
 
@@ -173,55 +170,95 @@ export function SeatInspector({
             {gradeSummary}
           </div>
 
-          {/* AI picker */}
-          <div className="mb-1 text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold">
-            Assigned AI
+          {/* Master settings toggle */}
+          <div className="flex items-center justify-between mb-4 px-3 py-2.5 rounded-lg border border-[#1d331d] bg-black/20">
+            <div>
+              <div className="text-xs font-semibold text-white/80">Use session settings</div>
+              <div className="text-[10px] text-[#7ab87a] mt-0.5">
+                {useMasterSettings
+                  ? "Inherits intelligence level from the session"
+                  : "Custom intelligence level for this seat"}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUseMasterSettings(!useMasterSettings)}
+              className={cn(
+                "relative w-10 h-5.5 rounded-full transition-colors shrink-0",
+                useMasterSettings ? "bg-[#00c853]" : "bg-white/10"
+              )}
+              style={{ minWidth: "2.5rem", height: "1.375rem" }}
+              aria-label="Toggle session settings"
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
+                  useMasterSettings ? "translate-x-5" : "translate-x-0.5"
+                )}
+              />
+            </button>
           </div>
-          <div className="space-y-2 mb-4">
-            {displayOptions.map((opt) => {
-              const isSelected = selectedProvider === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setSelectedProvider(opt.id)}
-                  className={cn(
-                    "w-full text-left rounded-xl border px-3.5 py-2.5 transition-all",
-                    isSelected
-                      ? "border-[#00c853] bg-[#00c853]/10"
-                      : "border-[#1d331d] bg-black/20 hover:border-[#00c853]/40"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full flex-none transition-colors",
-                        isSelected ? "bg-[#00c853]" : "bg-[#1d331d]"
-                      )} />
-                      <span className={cn(
-                        "text-sm font-bold",
-                        isSelected ? "text-[#d7ff77]" : "text-white/70"
-                      )}>
-                        {opt.name}
-                      </span>
-                    </div>
-                    <span className={cn(
-                      "text-[11px] font-bold px-1.5 py-0.5 rounded border",
-                      isSelected
-                        ? "border-[#00c853]/40 text-[#00c853] bg-[#00c853]/10"
-                        : "border-[#1d331d] text-[#7ab87a] bg-transparent"
-                    )}>
-                      {opt.grade}
-                    </span>
+
+          {/* Per-seat controls (only when not using master settings) */}
+          {!useMasterSettings && (
+            <div className="space-y-3 mb-4">
+              {/* Provider dropdown */}
+              <div>
+                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold">Provider</div>
+                <div className="relative">
+                  <select
+                    value={localProvider}
+                    onChange={(e) => setLocalProvider(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-[#1d331d] bg-black/20 text-sm text-white/80 px-3.5 py-2.5 pr-8 focus:outline-none focus:border-[#00c853]/50"
+                  >
+                    <option value="auto">Automatic (best match)</option>
+                    {providers.map((p) => (
+                      <option key={p.name} value={p.name}>{p.displayName}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                      <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-                  <p className={cn(
-                    "text-[11px] mt-1 ml-4",
-                    isSelected ? "text-white/60" : "text-white/30"
-                  )}>
-                    {opt.desc}
-                  </p>
-                </button>
-              );
-            })}
+                </div>
+              </div>
+
+              {/* Intelligence slider */}
+              <div>
+                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold">Intelligence</div>
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-4 h-4 text-white/30 shrink-0" />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={localLevel}
+                    onChange={(e) => setLocalLevel(Number(e.target.value))}
+                    className="flex-1 cursor-pointer"
+                    style={{ accentColor: "#00c853" }}
+                  />
+                  <GraduationCap className="w-4 h-4 text-white/30 shrink-0" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Resolved model preview */}
+          <div className="mb-4 px-3 py-2.5 rounded-lg border border-[#1d331d] bg-black/20">
+            <div className="text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold mb-1">
+              Resolves to
+            </div>
+            {resolved ? (
+              <div className="text-sm font-semibold text-white/80">{resolved.label}</div>
+            ) : (
+              <div className="text-xs text-white/30 italic">Loading providers…</div>
+            )}
+            <div className="text-[10px] text-white/30 mt-0.5 font-mono">
+              {useMasterSettings
+                ? `Session level ${globalIntelligenceLevel}`
+                : `Seat level ${localLevel}${localProvider !== "auto" ? ` · ${localProvider}` : ""}`}
+            </div>
           </div>
 
           {/* Actions */}
@@ -236,7 +273,7 @@ export function SeatInspector({
               onClick={handleConfirm}
               className="flex-1 h-10 rounded-xl text-sm font-bold transition-colors bg-[#00c853] text-[#071007]"
             >
-              Assign {selectedOption.shortName}
+              Apply
             </button>
           </div>
         </div>

@@ -46,6 +46,9 @@ export interface CourtConfig {
   litigantCount: number;
   // ── Per-seat AI assignment (V29 node inspector) ───────────────────────────
   seatMap?: SeatMapConfig;
+  // ── Intelligence slider (0 = cheapest, 100 = best quality) ──────────────
+  /** 0–100 position on the $ ↔ 🎓 slider. Drives automatic model selection. */
+  intelligenceLevel?: number;
   // ── Internal / API compat ────────────────────────────────────────────────
   responseMode: "balanced" | "thorough" | "concise";
   outputFormat: "report" | "memo" | "bullets" | "verdict";
