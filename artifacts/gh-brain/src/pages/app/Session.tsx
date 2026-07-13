@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { applyPdfTrimGuard, buildPdfToastActions } from "@/lib/pdfExport";
 import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
 import type { CourtConfig, ProviderName } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
@@ -1067,6 +1068,7 @@ export default function SessionPage() {
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
+  const [overdraftDialogOpen, setOverdraftDialogOpen] = useState(false);
   const [rebuttalChallenge, setRebuttalChallenge] = useState("");
   const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
@@ -1236,6 +1238,10 @@ export default function SessionPage() {
       return;
     }
     if (!isAdmin && userProfile && userProfile.creditBalance < estimatedCreditsHigh) {
+      if (overdraftAvailable) {
+        setOverdraftDialogOpen(true);
+        return;
+      }
       toast.error(`You need at least ${estimatedCreditsHigh} credits to run this session.`, {
         action: { label: "Buy Credits", onClick: () => navigate("/billing") },
       });
@@ -1364,7 +1370,8 @@ export default function SessionPage() {
     setSeatAI(seatId, assignment, litIndex);
   }
 
-  const { maxLitigants } = useLimits();
+  const { maxLitigants, overdraftLimit } = useLimits();
+  const overdraftFlag = useFeatureFlag("creditOverdraft");
 
   function handleAddLitigant() {
     const next = Math.min(state.config.litigantCount + 1, maxLitigants);
@@ -1397,7 +1404,10 @@ export default function SessionPage() {
   // Live credit health — from Firestore via useUserProfile (updates as backend deducts)
   const creditsCritical = credits < 10;
   const creditsLow = credits < 50 && !creditsCritical;
-  const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh;
+  const hasDebt = credits < 0;
+  const overdraftAvailable = overdraftFlag && credits > -overdraftLimit;
+  // Hard block only when overdraft is not available; overdraft path shows confirmation instead
+  const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh && !overdraftAvailable;
 
   const filteredTemplates =
     activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
@@ -1432,8 +1442,49 @@ export default function SessionPage() {
     );
   }
 
+  async function handleOverdraftConfirm() {
+    setOverdraftDialogOpen(false);
+    const hasFields = state.template && state.template.inputFields.length > 0;
+    const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
+    setFeedbackGiven(null);
+    await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined, { overdraft: true });
+  }
+
   return (
     <div className="session-bg">
+      {/* ── Overdraft confirmation dialog ── */}
+      {overdraftDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-amber-400/30 bg-[#1a1200] p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-300 text-sm">Out of credits</p>
+                <p className="text-xs text-amber-400/70 mt-1">
+                  This session costs ~{estimatedCreditsHigh} credits. Your balance is {credits.toLocaleString()} cr.
+                  You can continue on credit — the debt ({Math.abs(Math.min(0, credits - estimatedCreditsHigh)).toLocaleString()} cr max) will be cleared automatically on your next top-up.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setOverdraftDialogOpen(false)}
+                className="flex-1 py-2 rounded-lg text-sm font-medium border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleOverdraftConfirm}
+                className="flex-1 py-2 rounded-lg text-sm font-bold transition-colors"
+                style={{ background: "hsl(38 92% 50%)", color: "#000" }}
+              >
+                Continue on Credit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfigPanel
         open={configOpen}
         onClose={() => setConfigOpen(false)}
@@ -1461,9 +1512,9 @@ export default function SessionPage() {
         </div>
         <div className="sz-control-stats">
           <span className="session-stats-item">
-            <span className="session-stats-key">Balance</span>
-            <span className={cn("session-stats-val", creditsCritical && "session-stats-val--critical", creditsLow && "session-stats-val--low")}>
-              {credits.toLocaleString()} cr
+            <span className="session-stats-key">{hasDebt ? "Debt" : "Balance"}</span>
+            <span className={cn("session-stats-val", hasDebt ? "session-stats-val--critical" : creditsCritical ? "session-stats-val--critical" : creditsLow ? "session-stats-val--low" : "")}>
+              {hasDebt ? `${Math.abs(credits).toLocaleString()} cr owed` : `${credits.toLocaleString()} cr`}
             </span>
           </span>
           <span className="session-stats-sep" />

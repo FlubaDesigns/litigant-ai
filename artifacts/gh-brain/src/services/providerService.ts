@@ -4,16 +4,20 @@ const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-s
 
 export interface PlatformLimits {
   maxLitigants: number;
+  overdraftLimit: number;
 }
 
 export async function getLimits(): Promise<PlatformLimits> {
   try {
     const res = await fetch(`${API_BASE}/limits`);
-    if (!res.ok) return { maxLitigants: 10 };
+    if (!res.ok) return { maxLitigants: 10, overdraftLimit: 500 };
     const data = await res.json();
-    return { maxLitigants: data.limits?.maxLitigants ?? 10 };
+    return {
+      maxLitigants: data.limits?.maxLitigants ?? 10,
+      overdraftLimit: data.limits?.overdraftLimit ?? 500,
+    };
   } catch {
-    return { maxLitigants: 10 };
+    return { maxLitigants: 10, overdraftLimit: 500 };
   }
 }
 

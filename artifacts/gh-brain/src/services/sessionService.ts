@@ -41,6 +41,8 @@ export interface BrainRunRequest {
    * credit cap during debate. Must be combined with `continueFromTranscript`.
    */
   resumeWithFixedPipeline?: boolean;
+  /** User confirmed continuation on credit (overdraft). */
+  overdraft?: boolean;
 }
 
 export type SSEEventType =

@@ -135,7 +135,8 @@ async function reserveCredits(
   uid: string,
   amount: number,
   sessionId: string,
-  source = "brain_reservation"
+  source = "brain_reservation",
+  overdraftLimit = 0
 ): Promise<boolean> {
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore not configured");
@@ -144,7 +145,7 @@ async function reserveCredits(
     const userRef = db.collection("users").doc(uid);
     const userDoc = await txn.get(userRef);
     const balance = (userDoc.data()?.creditBalance as number) ?? 0;
-    if (balance < amount) return false;
+    if (balance - amount < -overdraftLimit) return false;
 
     const newBalance = balance - amount;
 
@@ -300,13 +301,30 @@ router.post("/run-brain", async (req, res) => {
     isAdminRun = decoded.admin === true;
 
     if (!isAdminRun) {
+      // Resolve overdraft limit if user opted in
+      let overdraftLimit = 0;
+      const overdraftRequested = (req.body as any).overdraft === true;
+      if (overdraftRequested && db) {
+        try {
+          const [flagDoc, limitDoc] = await Promise.all([
+            db.collection("config").doc("featureFlags").get(),
+            db.collection("config").doc("adminLimits").get(),
+          ]);
+          const overdraftEnabled = flagDoc.exists ? (flagDoc.data()?.["creditOverdraft"] === true) : false;
+          if (overdraftEnabled) {
+            overdraftLimit = limitDoc.exists ? ((limitDoc.data()?.["overdraftLimit"] as number) ?? 500) : 500;
+          }
+        } catch { /* non-fatal — no overdraft */ }
+      }
+
       // Optimistic credit reservation: deduct estimatedCost upfront.
       // Every balance change (reservation, refund, failure refund) is ledgered atomically.
       try {
-        const reserved = await reserveCredits(uid, estimatedCost, sessionId);
+        const reserved = await reserveCredits(uid, estimatedCost, sessionId, "brain_reservation", overdraftLimit);
         if (!reserved) {
           res.status(402).json({
             message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
+            overdraftLimit,
           });
           return;
         }

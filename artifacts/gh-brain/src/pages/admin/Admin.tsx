@@ -1325,6 +1325,7 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   shareReports: "Allow users to generate public share links for sessions",
   templateLibrary: "Show the templates page and template selector in session",
   autoRefill: "Enable auto-refill credit top-up when balance falls below threshold",
+  creditOverdraft: "Allow users to continue sessions on credit when their balance hits zero — debt is cleared on next top-up",
 };
 
 const PLAN_SCOPE_LABELS: Record<string, string> = {

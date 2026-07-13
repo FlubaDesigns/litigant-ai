@@ -523,7 +523,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     }
   }, []);
 
-  const run = useCallback(async (questionOverride?: string) => {
+  const run = useCallback(async (questionOverride?: string, opts?: { overdraft?: boolean }) => {
     const effectiveQuestion = questionOverride ?? state.question;
     if (!effectiveQuestion.trim()) return;
 
@@ -544,6 +544,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       templateId: state.template?.id,
       idToken,
       caseFile: state.caseFile.length > 0 ? state.caseFile : undefined,
+      ...(opts?.overdraft ? { overdraft: true } : {}),
     };
 
     try {
