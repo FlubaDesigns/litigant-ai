@@ -39,9 +39,9 @@ export interface ChecklistItem extends ChecklistItemDef {
 export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   // ── Agent: code fixes ──────────────────────────────────────────────────
   { id: "agent-credit-formula", section: "agent", text: "Unify the credit-estimate formula across backend reservation, admin pricing table, and frontend display/Run-gate", note: "Audit Pass 1 #2, Pass 2 #5, Pass 9 #27 — currently four separately hand-maintained copies of the same stale, pre-8-call-pipeline formula. Blocked on owner's fill-rate input." },
-  { id: "agent-overage-silent-fail", section: "agent", text: "Fix overage credit charge silently failing when the user can't afford it", note: "Audit Pass 1 #3" },
-  { id: "agent-overage-ledger", section: "agent", text: "Fix successful overage charges being ledgered identically to failed ones", note: "Audit Pass 1 #4" },
-  { id: "agent-auditor-loop", section: "agent", text: "Build a real Auditor \u2192 Builder retry loop (currently doesn't exist)", note: "Audit Pass 1 #1 — blocked on owner decision: inline correction vs. full retry loop." },
+  { id: "agent-overage-silent-fail", section: "agent", text: "✅ DONE: Overage charge failure handled explicitly — caught, logged, and written as usage_shortfall ledger entry", note: "Audit Pass 1 #3 — resolved in brain.ts (Pass 3 verification)." },
+  { id: "agent-overage-ledger", section: "agent", text: "✅ DONE: Failed overage charges written with type:usage_shortfall / source:brain_overage_uncollected — distinct from successful type:usage entries", note: "Audit Pass 1 #4 — resolved in brain.ts (Pass 3 verification)." },
+  { id: "agent-auditor-loop", section: "agent", text: "✅ DONE: Auditor → Builder retry loop built — MAX_AUDITOR_RETRIES=2, RETURNED decisions trigger a Builder revision pass with extracted notes before re-review", note: "Audit Pass 1 #1 — resolved in brainEngine.ts (Pass 3 verification)." },
   { id: "agent-anthropic-abort", section: "agent", text: "Cancel in-flight Anthropic requests when a session is aborted", note: "Audit Pass 3 #7 — the other three providers already do this correctly." },
   { id: "agent-dup-model-map", section: "agent", text: "Remove the duplicate hardcoded default-model map in createProviderAsync", note: "Audit Pass 3 #8 — should reference the single DEFAULT_MODELS export." },
   { id: "agent-password-reset-leak", section: "agent", text: "Fix password-reset endpoint so it actually doesn't reveal whether an email exists", note: "Audit Pass 4 #9 — comment claims this but the error handling doesn't back it up." },
@@ -58,14 +58,14 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   { id: "agent-audit-admin-tsx", section: "agent", text: "Code-review Admin.tsx (~2,660 lines) — tabs exist but internals are unreviewed", note: "" },
   { id: "agent-verify-share-report", section: "agent", text: "Verify the public Share Report page matches spec (shared-only gating, CTA, OG tags)", note: "" },
   { id: "agent-review-notifications", section: "agent", text: "Review NotificationsTab in Settings", note: "Flagged unreviewed in Pass 10." },
-  { id: "agent-recalibrate-max-credits", section: "agent", text: "Recalibrate the \"Maximum Credits\" dropdown against real ~83-credit session cost", note: "Current options (10/15/25/50/100) predate the corrected cost figure." },
+  { id: "agent-recalibrate-max-credits", section: "agent", text: "Recalibrate the \"Maximum Credits\" dropdown against real session cost", note: "Current options (100/250/500/1,000/2,500) — updated from prior stale values, but calibration vs. real cost is still open pending fill-rate decision (owner-fill-rate-decision)." },
   { id: "agent-review-remaining-frontend", section: "agent", text: "Review Landing.tsx, tools pages, and shared components (AppLayout, CourtDiagram, LandingDemoPlayer, OnboardingWizard)", note: "Never audited." },
 
   // ── Owner: manual / business actions ────────────────────────────────────
   { id: "owner-fill-rate-decision", section: "owner", text: "Decide the fill-rate assumption for non-litigant pipeline stages", note: "Needed to fix the credit-estimate formula everywhere it's duplicated." },
   { id: "owner-subscription-decision", section: "owner", text: "✅ DONE: Dropped subscription tier — product is pay-as-you-go credits only", note: "Billing.tsx and billingService.ts updated. No Pro plan, no subscription language." },
   { id: "owner-litigant-cap-decision", section: "owner", text: "✅ DONE: Litigant cap set to 10 — creditEngine.ts and brainEngine.ts updated", note: "Picker max and cost formula both respect 10." },
-  { id: "owner-auditor-loop-decision", section: "owner", text: "Decide the Auditor retry-loop UX", note: "Inline correction vs. a real automated retry loop back to the Builder." },
+  { id: "owner-auditor-loop-decision", section: "owner", text: "✅ DONE: Automated retry loop chosen and built — Auditor returns notes to Builder, Builder revises, Auditor re-reviews (up to 2 retries)", note: "Decision resolved implicitly by implementation in brainEngine.ts (Pass 3 verification)." },
   {
     id: "owner-secrets",
     section: "owner",
