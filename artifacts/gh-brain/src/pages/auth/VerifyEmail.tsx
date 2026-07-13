@@ -1,20 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { reload } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowRight, Mail, Loader2, LogOut } from "lucide-react";
+import { safeNext } from "@/lib/authUtils";
 
 export default function VerifyEmailPage() {
   const { resendVerification, logOut, user } = useAuth();
   const [location, setLocation] = useLocation();
   const [isResending, setIsResending] = useState(false);
-  const next = new URLSearchParams(location.split("?")[1] ?? "").get("next") ?? "/session";
+  const next = safeNext(new URLSearchParams(location.split("?")[1] ?? "").get("next"));
 
-  // If they somehow got here but are verified, send them on
-  if (user?.emailVerified) {
-    setLocation(next);
-    return null;
+  // Move side-effecting navigation out of the render path
+  useEffect(() => {
+    if (user?.emailVerified) setLocation(next);
+  }, [user?.emailVerified, next, setLocation]);
+
+  async function handleVerifyCheck() {
+    if (!user) return;
+    try {
+      await reload(user);
+      if (user.emailVerified) {
+        setLocation(next);
+      } else {
+        toast.error("Email not yet verified — please click the link in your inbox.");
+      }
+    } catch {
+      window.location.reload();
+    }
   }
 
   async function handleResend() {
@@ -62,9 +77,7 @@ export default function VerifyEmailPage() {
           </p>
 
           <Button
-            onClick={() => {
-              if (user?.emailVerified) { setLocation(next); } else { window.location.reload(); }
-            }}
+            onClick={handleVerifyCheck}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
             I have verified my clearance

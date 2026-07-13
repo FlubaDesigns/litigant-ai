@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import { safeNext } from "@/lib/authUtils";
 
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -20,7 +21,7 @@ export default function SignInPage() {
   const [location, setLocation] = useLocation();
   const { signIn, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const next = new URLSearchParams(location.split("?")[1] ?? "").get("next") ?? "/session";
+  const next = safeNext(new URLSearchParams(location.split("?")[1] ?? "").get("next"));
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),

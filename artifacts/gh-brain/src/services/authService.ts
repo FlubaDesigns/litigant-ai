@@ -93,23 +93,26 @@ export async function signOut(): Promise<void> {
 
 /**
  * Send password reset email via the server (Resend).
- * Falls back to Firebase's built-in sender on failure.
+ * Only catches genuine network failures — HTTP errors (including 429 rate-limit
+ * responses) are surfaced directly to the caller. The Firebase fallback has been
+ * removed: it silently bypassed the backend's dual rate limiters on any non-2xx
+ * response, defeating the abuse protection entirely.
  */
 export async function sendPasswordResetEmail(email: string): Promise<void> {
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE}/auth/send-password-reset`, {
+    res = await fetch(`${API_BASE}/auth/send-password-reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error ?? `HTTP ${res.status}`);
-    }
-  } catch (err) {
-    console.warn("[AuthService] server password reset failed, falling back to Firebase:", err);
-    const { sendPasswordResetEmail: firebaseReset } = await import("firebase/auth");
-    await firebaseReset(auth, email);
+  } catch {
+    throw new Error("Password-reset service is temporarily unavailable. Please try again.");
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 429) throw new Error("Too many reset requests. Please try again later.");
+    throw new Error(data.error ?? "Unable to send password-reset instructions.");
   }
 }
 

@@ -15,12 +15,18 @@ import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { FcGoogle } from "react-icons/fc";
 import { USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
+import { safeNext } from "@/lib/authUtils";
+
+const ALLOWED_ROLES = new Set(Object.keys(USER_ROLE_LABELS) as UserRole[]);
 
 const registerSchema = z.object({
   displayName: z.string().min(2, "Name is required"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.string().optional(),
+  role: z.string().optional().refine(
+    (v) => !v || ALLOWED_ROLES.has(v as UserRole),
+    { message: "Invalid role" },
+  ),
   organization: z.string().optional(),
 });
 
@@ -29,7 +35,7 @@ export default function RegisterPage() {
   const [location, setLocation] = useLocation();
   const { signUp, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const next = new URLSearchParams(location.split("?")[1] ?? "").get("next") ?? "/session";
+  const next = safeNext(new URLSearchParams(location.split("?")[1] ?? "").get("next"));
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
