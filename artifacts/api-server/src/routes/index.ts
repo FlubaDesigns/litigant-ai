@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import reportRouter from "./report";
 import providersRouter from "./providers";
 import webhookRouter from "./webhook";
+import caseFileRouter from "./caseFile";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(adminRouter);
 router.use(reportRouter);
 router.use(providersRouter);
 router.use(webhookRouter);
+router.use(caseFileRouter);
 
 export default router;

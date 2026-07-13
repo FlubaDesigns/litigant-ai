@@ -1,5 +1,6 @@
 import { useReducer, useRef, useCallback } from "react";
-import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext } from "@/services/sessionService";
+import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem } from "@/services/sessionService";
+export type { CaseFileItem };
 import type { Template, CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
 import {
@@ -68,6 +69,8 @@ export interface SessionState {
   rebuttals: RebuttalRecord[];
   /** Which rebuttal round we are on (0 = original trial, 1 = first rebuttal, etc.). */
   rebuttalRound: number;
+  /** Pre-briefing documents / URLs attached before this session run. */
+  caseFile: CaseFileItem[];
 }
 
 type Action =
@@ -100,6 +103,8 @@ type Action =
     }
   | { type: "ERROR"; message: string }
   | { type: "RESET" }
+  | { type: "ADD_CASE_FILE"; item: CaseFileItem }
+  | { type: "REMOVE_CASE_FILE"; id: string }
   | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string }
   | {
       type: "PREFILL_PAUSED";
@@ -162,6 +167,7 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     pauseReason: null,
     pauseTranscript: null,
     grades: makeDefaultGrades(),
+    caseFile: [],
   };
 }
 
@@ -381,6 +387,12 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "RESET":
       return makeInitialState();
 
+    case "ADD_CASE_FILE":
+      return { ...state, caseFile: [...state.caseFile, action.item] };
+
+    case "REMOVE_CASE_FILE":
+      return { ...state, caseFile: state.caseFile.filter((i) => i.id !== action.id) };
+
     case "PREFILL_PAUSED": {
       const newConfig = { ...state.config, ...action.config };
       return {
@@ -496,6 +508,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       config: state.config,
       templateId: state.template?.id,
       idToken,
+      caseFile: state.caseFile.length > 0 ? state.caseFile : undefined,
     };
 
     try {
@@ -653,6 +666,14 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     }
   }, [user, handleSSEEvent]);
 
+  const addCaseFile = useCallback((item: CaseFileItem) => {
+    dispatch({ type: "ADD_CASE_FILE", item });
+  }, []);
+
+  const removeCaseFile = useCallback((id: string) => {
+    dispatch({ type: "REMOVE_CASE_FILE", id });
+  }, []);
+
   return {
     state,
     run,
@@ -669,6 +690,8 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     setConfig,
     setSeatAI,
     applyFeedbackGrades,
+    addCaseFile,
+    removeCaseFile,
     ...(import.meta.env.DEV ? { _dispatch: dispatch } : {}),
   };
 }

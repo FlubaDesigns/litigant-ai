@@ -15,6 +15,14 @@ export interface RebuttalContext {
   parentSessionId?: string;
 }
 
+export interface CaseFileItem {
+  id: string;
+  type: "url" | "file";
+  name: string;
+  content: string;
+  url?: string;
+}
+
 export interface BrainRunRequest {
   question: string;
   config: CourtConfig;
@@ -25,6 +33,8 @@ export interface BrainRunRequest {
   continueFromTranscript?: string[];
   /** Present when the user challenges a verdict — triggers a rebuttal run. */
   rebuttalContext?: RebuttalContext;
+  /** Pre-briefing documents or URLs entered before the session run. */
+  caseFile?: CaseFileItem[];
 }
 
 export type SSEEventType =
@@ -92,6 +102,7 @@ export function runBrainSession(
           continueFromTranscript: request.continueFromTranscript,
           rebuttalContext: request.rebuttalContext,
           parentSessionId: request.rebuttalContext?.parentSessionId,
+          caseFile: request.caseFile,
         }),
         signal,
       });

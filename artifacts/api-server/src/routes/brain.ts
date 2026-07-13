@@ -214,7 +214,7 @@ async function reconcileCredits(
 }
 
 router.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId } = req.body as {
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile } = req.body as {
     question: string;
     config: CourtConfig;
     templateId?: string;
@@ -222,6 +222,7 @@ router.post("/run-brain", async (req, res) => {
     continueFromTranscript?: string[];
     rebuttalContext?: RebuttalContext;
     parentSessionId?: string;
+    caseFile?: { id: string; type: "url" | "file"; name: string; content: string; url?: string }[];
   };
 
   if (!question?.trim()) {
@@ -352,6 +353,7 @@ router.post("/run-brain", async (req, res) => {
       sessionId,
       continueFromTranscript,
       rebuttalContext,
+      caseFile,
       res,
       abortSignal: abortCtrl.signal,
     });
@@ -391,6 +393,10 @@ router.post("/run-brain", async (req, res) => {
           archived: false,
           shared: false,
           shareId: null,
+          // Case file metadata — names + urls only (content not stored in Firestore)
+          ...(caseFile && caseFile.length > 0 ? {
+            caseFileMeta: caseFile.map(({ id, type, name, url }) => ({ id, type, name, url: url ?? null })),
+          } : {}),
           // Rebuttal metadata — present only on challenge runs
           ...(rebuttalContext ? {
             isRebuttal: true,

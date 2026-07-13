@@ -100,6 +100,14 @@ export interface RebuttalContext {
   parentSessionId?: string;
 }
 
+export interface CaseFileItem {
+  id: string;
+  type: "url" | "file";
+  name: string;
+  content: string;
+  url?: string;
+}
+
 export interface BrainRunOptions {
   question: string;
   config: CourtConfig;
@@ -110,6 +118,8 @@ export interface BrainRunOptions {
   continueFromTranscript?: string[];
   /** When the user challenges a verdict — triggers a rebuttal run. */
   rebuttalContext?: RebuttalContext;
+  /** Pre-briefing documents or URLs attached before the session run. */
+  caseFile?: CaseFileItem[];
   res: Response;
   abortSignal?: AbortSignal;
 }
@@ -269,11 +279,25 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const turns: TurnRecord[] = [];
   let confidence = 20;
 
+  // ── Case File briefing — injected before the question ───────────────────────
+  const { caseFile } = opts;
+  const caseFileBlock =
+    caseFile && caseFile.length > 0
+      ? "\n\n── COURT EVIDENCE (Case File) ──\nThe following documents and sources have been entered into evidence by the user before this session. All seats must treat this material as authoritative factual context for their analysis.\n\n" +
+        caseFile
+          .map(
+            (item, i) =>
+              `[Evidence ${i + 1}] ${item.name}${item.url ? ` (${item.url})` : ""}\n\n${item.content}`
+          )
+          .join("\n\n---\n\n") +
+        "\n\n── END OF COURT EVIDENCE ──"
+      : "";
+
   const baseContext = rebuttalContext
-    ? `You are participating in a structured multi-AI reasoning session.\n\nOriginal question: "${question}"\n\nThe court previously delivered this verdict:\n\n${rebuttalContext.originalVerdict}\n\nThe user has challenged the verdict (Rebuttal Round ${rebuttalContext.rebuttalRound}):\n\n"${rebuttalContext.challenge}"\n\nThe court must reconvene and re-examine the question in light of this challenge. Every litigant must directly address the objection raised. Determine whether the original verdict should be upheld, amended, or reversed.`
+    ? `You are participating in a structured multi-AI reasoning session.\n\nOriginal question: "${question}"\n\nThe court previously delivered this verdict:\n\n${rebuttalContext.originalVerdict}\n\nThe user has challenged the verdict (Rebuttal Round ${rebuttalContext.rebuttalRound}):\n\n"${rebuttalContext.challenge}"\n\nThe court must reconvene and re-examine the question in light of this challenge. Every litigant must directly address the objection raised. Determine whether the original verdict should be upheld, amended, or reversed.${caseFileBlock}`
     : templateSystemPrompt
-    ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"`
-    : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"`;
+    ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"${caseFileBlock}`
+    : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"${caseFileBlock}`;
 
   // Conscience gate — Canon v2 "Execution-Honest" truth mandate
   // Loaded from Firestore system_config/conscience with 5-min TTL; falls back to Canon v2 hardcoded text.

@@ -43,6 +43,7 @@ import { useLimits } from "@/hooks/useLimits";
 import { Input } from "@/components/ui/input";
 import { CourtDiagram } from "@/components/CourtDiagram";
 import { SeatInspector } from "@/components/SeatInspector";
+import { CaseFileSection } from "@/components/CaseFileSection";
 import { makeDefaultSeatMap, SEAT_PURPOSES, getSeatAIShortName } from "@/data/seatTypes";
 import type { SeatAssignment } from "@/data/seatTypes";
 
@@ -1059,7 +1060,7 @@ export default function SessionPage() {
       }
     : undefined;
   const brainSession = useBrainSession(savedConfig);
-  const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, loadCompleteSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades } = brainSession;
+  const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, loadCompleteSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades, addCaseFile, removeCaseFile } = brainSession;
   const [, navigate] = useLocation();
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -1897,6 +1898,14 @@ export default function SessionPage() {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* Case File — attach documents or URLs before the session runs */}
+            <CaseFileSection
+              items={state.caseFile}
+              onAdd={addCaseFile}
+              onRemove={removeCaseFile}
+              getIdToken={() => user?.getIdToken()}
+            />
 
           </div>
         )}
