@@ -18,6 +18,13 @@ const APP_NAV = [
   { href: "/settings",  label: "Settings",    icon: Settings },
 ];
 
+const LANDING_NAV = [
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/#the-bench",    label: "The Bench" },
+  { href: "/#tools",        label: "Tools" },
+  { href: "/#pricing",      label: "Pricing" },
+];
+
 export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app" }) {
   const [location] = useLocation();
   const { user, logOut, isAdmin, firebaseReady } = useAuth();
@@ -53,7 +60,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             variant === "app" ? "max-w-none" : "max-w-6xl mx-auto"
           )}
         >
-          {/* ── Logo + verbiage ── */}
+          {/* ── Logo ── */}
           <Link
             href={variant === "app" ? "/session" : "/"}
             className="flex items-center gap-3 shrink-0 opacity-90 hover:opacity-100 transition-opacity group"
@@ -73,7 +80,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             </div>
           </Link>
 
-          {/* ── Nav links ── */}
+          {/* ── Desktop nav ── */}
           {variant === "app" ? (
             <nav className="hidden md:flex items-center gap-1 ml-2 flex-1">
               {APP_NAV.map(({ href, label, icon: Icon }) => (
@@ -108,10 +115,9 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             </nav>
           ) : (
             <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500 flex-1">
-              <a href="/#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-              <a href="/#the-bench"    className="hover:text-white transition-colors">The Bench</a>
-              <a href="/#tools"        className="hover:text-white transition-colors">Tools</a>
-              <a href="/#pricing"      className="hover:text-white transition-colors">Pricing</a>
+              {LANDING_NAV.map(({ href, label }) => (
+                <a key={href} href={href} className="hover:text-white transition-colors">{label}</a>
+              ))}
             </nav>
           )}
 
@@ -149,8 +155,9 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
               </>
             ) : (
               <>
+                {/* CTA — hidden on mobile when menu open to avoid clutter */}
                 {isSignedIn ? (
-                  <Link href="/session">
+                  <Link href="/session" className="hidden sm:block">
                     <button
                       className="h-8 px-4 text-xs font-bold uppercase tracking-wide transition-all"
                       style={{ background: "hsl(38 92% 50%)", color: "#000" }}
@@ -160,10 +167,10 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
                   </Link>
                 ) : (
                   <>
-                    <Link href="/sign-in" className="text-sm text-zinc-500 hover:text-white transition-colors">
+                    <Link href="/sign-in" className="hidden md:block text-sm text-zinc-500 hover:text-white transition-colors">
                       Sign In
                     </Link>
-                    <Link href="/register">
+                    <Link href="/register" className="hidden sm:block">
                       <button
                         className="h-8 px-4 text-xs font-bold uppercase tracking-wide transition-all"
                         style={{ background: "hsl(38 92% 50%)", color: "#000" }}
@@ -173,16 +180,25 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
                     </Link>
                   </>
                 )}
+                {/* Mobile hamburger for landing */}
+                <button
+                  className="md:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-white transition-colors"
+                  onClick={() => setMobileOpen(!mobileOpen)}
+                >
+                  {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
               </>
             )}
           </div>
         </div>
       </header>
 
-      {/* ── App mobile menu ── */}
-      {variant === "app" && mobileOpen && (
+      {/* ── Backdrop ── */}
+      {mobileOpen && (
         <div className="fixed inset-0 z-30 md:hidden" onClick={() => setMobileOpen(false)} />
       )}
+
+      {/* ── App mobile menu ── */}
       {variant === "app" && mobileOpen && (
         <div className="fixed top-14 left-0 right-0 z-40 md:hidden border-b border-border bg-card px-4 py-3 space-y-1">
           {APP_NAV.map(({ href, label, icon: Icon }) => (
@@ -230,6 +246,50 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
               <LogOut className="w-4 h-4" />
               Sign out
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Landing mobile menu ── */}
+      {variant === "landing" && mobileOpen && (
+        <div className="fixed top-16 left-0 right-0 z-40 md:hidden border-b border-white/[0.06] bg-[#0e0e0e] px-4 py-3 space-y-1">
+          {LANDING_NAV.map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              onClick={() => setMobileOpen(false)}
+              className="block px-3 py-2.5 text-sm text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/5"
+            >
+              {label}
+            </a>
+          ))}
+          <div className="pt-3 mt-2 border-t border-white/[0.06] flex flex-col gap-2">
+            {isSignedIn ? (
+              <Link href="/session" onClick={() => setMobileOpen(false)}>
+                <button
+                  className="w-full h-9 px-4 text-xs font-bold uppercase tracking-wide transition-all"
+                  style={{ background: "hsl(38 92% 50%)", color: "#000" }}
+                >
+                  Open App
+                </button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/register" onClick={() => setMobileOpen(false)}>
+                  <button
+                    className="w-full h-9 px-4 text-xs font-bold uppercase tracking-wide transition-all"
+                    style={{ background: "hsl(38 92% 50%)", color: "#000" }}
+                  >
+                    Start Free
+                  </button>
+                </Link>
+                <Link href="/sign-in" onClick={() => setMobileOpen(false)}
+                  className="block text-center text-sm text-zinc-500 hover:text-white transition-colors py-1"
+                >
+                  Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
