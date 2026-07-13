@@ -17,6 +17,8 @@ interface SeatInspectorProps {
   seatMap: SeatMapConfig;
   grades: GradeMap;
   litigantCount: number;
+  /** IDs of providers enabled in AI Studio. When undefined, all built-in options are shown. */
+  enabledProviderIds?: string[];
   onClose: () => void;
   onUpdate: (seatId: string, assignment: SeatAssignment, litIndex?: number) => void;
 }
@@ -61,6 +63,7 @@ export function SeatInspector({
   litIndex,
   seatMap,
   grades,
+  enabledProviderIds,
   onClose,
   onUpdate,
 }: SeatInspectorProps) {
@@ -89,7 +92,18 @@ export function SeatInspector({
   const currentGrade = gradeData?.grade ?? defaultGrade;
   const gradeSummary = getGradeSummary(gradeData);
 
-  const selectedOption = SEAT_AI_OPTIONS.find((o) => o.id === selectedProvider) ?? SEAT_AI_OPTIONS[0];
+  // Build the option list: filter built-ins by enabled set, then append any
+  // custom providers that aren't in SEAT_AI_OPTIONS.
+  const displayOptions = enabledProviderIds
+    ? [
+        ...SEAT_AI_OPTIONS.filter((o) => enabledProviderIds.includes(o.id)),
+        ...enabledProviderIds
+          .filter((id) => !SEAT_AI_OPTIONS.find((o) => o.id === id))
+          .map((id) => ({ id, name: id, shortName: id, grade: "?", desc: "" } as const)),
+      ]
+    : [...SEAT_AI_OPTIONS];
+
+  const selectedOption = displayOptions.find((o) => o.id === selectedProvider) ?? displayOptions[0];
 
   function handleConfirm() {
     if (!seatId) { handleClose(); return; }
@@ -164,7 +178,7 @@ export function SeatInspector({
             Assigned AI
           </div>
           <div className="space-y-2 mb-4">
-            {SEAT_AI_OPTIONS.map((opt) => {
+            {displayOptions.map((opt) => {
               const isSelected = selectedProvider === opt.id;
               return (
                 <button

@@ -2106,6 +2106,7 @@ export default function SessionPage() {
             litigantCount={state.config.litigantCount}
             seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
             grades={state.grades}
+            enabledProviderIds={availableProviders.length > 0 ? availableProviders.map((p) => p.name) : undefined}
             onClose={() => setInspectorSeat(null)}
             onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
           />
