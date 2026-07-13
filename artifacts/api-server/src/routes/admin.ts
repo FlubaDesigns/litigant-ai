@@ -17,6 +17,16 @@ import {
   deleteApiKey,
 } from "../lib/apiKeyStore.js";
 import {
+  MODEL_RATES,
+  MODEL_MULTIPLIERS,
+  estimateSessionCredits,
+} from "../lib/creditEngine.js";
+import {
+  PROVIDER_MODELS,
+  PROVIDER_DISPLAY_NAMES,
+  type ProviderName,
+} from "../lib/providers/index.js";
+import {
   getAllCreditPacks,
   createCreditPack,
   updateCreditPack,
@@ -1287,6 +1297,82 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
       ...(signupBonusCredits !== undefined && { signupBonusCredits }),
     });
     return res.json(updated);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /admin/ai-studio/models
+ * Returns all known models with API cost, user cost, credits, and enabled status.
+ */
+router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
+  try {
+    const db = getFirestoreDb();
+    let disabledModels: string[] = [];
+    if (db) {
+      const doc = await db.collection("system_config").doc("aiStudio").get();
+      disabledModels = (doc.data()?.disabledModels as string[]) ?? [];
+    }
+
+    const models: object[] = [];
+    for (const [providerId, providerModels] of Object.entries(PROVIDER_MODELS)) {
+      for (const { id, label } of providerModels) {
+        const rate = MODEL_RATES[id] ?? { input: 0.003, output: 0.015 };
+        const multiplier = MODEL_MULTIPLIERS[id] ?? 5;
+        const exampleCredits = estimateSessionCredits({
+          litigantCount: 3,
+          maxIterations: 2,
+          responseMode: "balanced",
+          model: id,
+        });
+        models.push({
+          id,
+          label,
+          provider: providerId,
+          providerLabel: PROVIDER_DISPLAY_NAMES[providerId as ProviderName] ?? providerId,
+          inputRatePer1k: rate.input,
+          outputRatePer1k: rate.output,
+          multiplier,
+          userInputPer1k: rate.input * multiplier,
+          userOutputPer1k: rate.output * multiplier,
+          exampleCredits,
+          enabled: !disabledModels.includes(id),
+        });
+      }
+    }
+    return res.json({ models });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/ai-studio/models/:modelId
+ * Enable or disable a model in the user-facing catalog.
+ */
+router.patch("/admin/ai-studio/models/:modelId", requireAdmin, async (req: any, res) => {
+  const modelId = req.params["modelId"] as string;
+  const { enabled } = req.body as { enabled?: boolean };
+  if (typeof enabled !== "boolean") {
+    return res.status(400).json({ error: "enabled must be boolean" });
+  }
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  try {
+    const ref = db.collection("system_config").doc("aiStudio");
+    const doc = await ref.get();
+    let disabledModels: string[] = (doc.data()?.disabledModels as string[]) ?? [];
+
+    if (enabled) {
+      disabledModels = disabledModels.filter((m) => m !== modelId);
+    } else {
+      if (!disabledModels.includes(modelId)) disabledModels.push(modelId);
+    }
+
+    await ref.set({ disabledModels, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return res.json({ ok: true, modelId, enabled });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

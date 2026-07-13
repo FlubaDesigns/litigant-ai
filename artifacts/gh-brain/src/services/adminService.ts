@@ -531,6 +531,38 @@ export interface BillingDefaults {
   signupBonusCredits: number;
 }
 
+export interface AiStudioModel {
+  id: string;
+  label: string;
+  provider: string;
+  providerLabel: string;
+  inputRatePer1k: number;
+  outputRatePer1k: number;
+  multiplier: number;
+  userInputPer1k: number;
+  userOutputPer1k: number;
+  exampleCredits: number;
+  enabled: boolean;
+}
+
+export async function getAiStudioModels(): Promise<AiStudioModel[]> {
+  const res = await adminFetch("/admin/ai-studio/models");
+  if (!res.ok) throw new Error("Failed to load AI Studio models");
+  const data = await res.json();
+  return data.models as AiStudioModel[];
+}
+
+export async function toggleAiStudioModel(modelId: string, enabled: boolean): Promise<void> {
+  const res = await adminFetch(`/admin/ai-studio/models/${encodeURIComponent(modelId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update model");
+  }
+}
+
 export async function getAdminBillingDefaults(): Promise<BillingDefaults> {
   const res = await adminFetch("/admin/billing-defaults");
   if (!res.ok) throw new Error("Failed to load billing defaults");

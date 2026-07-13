@@ -9,7 +9,7 @@ import {
   Ban, Zap, Clock, RefreshCw, Check, Edit3,
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
-  ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks,
+  ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks, Bot,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -44,21 +44,23 @@ import {
   getApiKeys, saveApiKey, deleteApiKey,
   getAdminBillingDefaults, saveAdminBillingDefaults,
   getChecklist, setChecklistItemChecked,
+  getAiStudioModels, toggleAiStudioModel,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
-  type BillingDefaults, type ChecklistItem,
+  type BillingDefaults, type ChecklistItem, type AiStudioModel,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
   | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys"
-  | "checklist";
+  | "checklist" | "ai-studio";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
   { id: "checklist",    label: "Setup Checklist", icon: ListChecks },
   { id: "health",       label: "System Health",  icon: Server },
+  { id: "ai-studio",    label: "AI Studio",      icon: Bot },
   { id: "pricing",      label: "Pricing",        icon: DollarSign },
   { id: "api-keys",     label: "API Keys",       icon: Shield },
   { id: "users",        label: "Users",           icon: Users },
@@ -2831,6 +2833,150 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
   );
 }
 
+// ─── AI Studio Tab ────────────────────────────────────────────────────────────
+const PROVIDER_ORDER_STUDIO = ["openai", "anthropic", "grok", "gemini"];
+
+function fmtRate(ratePerK: number): string {
+  const perM = ratePerK * 1000;
+  if (perM < 0.01) return `$${(perM).toFixed(4)}/1M`;
+  return `$${perM.toFixed(2)}/1M`;
+}
+
+function AiStudioTab() {
+  const qc = useQueryClient();
+  const { data: models = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-ai-studio"],
+    queryFn: getAiStudioModels,
+    retry: false,
+  });
+
+  const toggleMut = useMutation({
+    mutationFn: ({ modelId, enabled }: { modelId: string; enabled: boolean }) =>
+      toggleAiStudioModel(modelId, enabled),
+    onSuccess: (_d, { modelId, enabled }) => {
+      toast.success(`${modelId} ${enabled ? "enabled" : "disabled"}`);
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        Failed to load AI Studio. Firebase may not be configured.
+        <button onClick={() => refetch()} className="ml-auto text-xs underline">Retry</button>
+      </div>
+    );
+  }
+
+  const enabledCount = models.filter((m) => m.enabled).length;
+
+  const byProvider = PROVIDER_ORDER_STUDIO.map((pid) => ({
+    id: pid,
+    label: models.find((m) => m.provider === pid)?.providerLabel ?? pid,
+    models: models.filter((m) => m.provider === pid),
+  })).filter((g) => g.models.length > 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Total Models</p>
+          <p className="text-2xl font-bold font-mono">{models.length}</p>
+          <p className="text-xs text-muted-foreground">across {byProvider.length} providers</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Enabled</p>
+          <p className="text-2xl font-bold font-mono text-primary">{enabledCount}</p>
+          <p className="text-xs text-muted-foreground">available to users</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Disabled</p>
+          <p className="text-2xl font-bold font-mono text-muted-foreground">{models.length - enabledCount}</p>
+          <p className="text-xs text-muted-foreground">hidden from users</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
+        <Bot className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+        <div>
+          <span className="font-medium text-foreground">You control the catalog. </span>
+          Toggle models on or off — only enabled models appear when users assign AI to their roles.
+          <span className="block mt-1">
+            <strong className="text-foreground">API cost</strong> = what you pay the provider.{" "}
+            <strong className="text-amber-400">User cost</strong> = API cost × multiplier.{" "}
+            <strong className="text-foreground">Example credits</strong> = a typical session (3 agents, 2 rounds, balanced).
+          </span>
+        </div>
+      </div>
+
+      {byProvider.map(({ id: pid, label, models: provModels }) => (
+        <div key={pid} className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/30">
+                  <TableHead className="text-xs">Model</TableHead>
+                  <TableHead className="text-xs text-right">API In /1M</TableHead>
+                  <TableHead className="text-xs text-right">API Out /1M</TableHead>
+                  <TableHead className="text-xs text-right text-amber-400">User In /1M</TableHead>
+                  <TableHead className="text-xs text-right text-amber-400">User Out /1M</TableHead>
+                  <TableHead className="text-xs text-right">×Mult</TableHead>
+                  <TableHead className="text-xs text-right">Example Credits</TableHead>
+                  <TableHead className="text-xs text-center">Available</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {provModels.map((m: AiStudioModel) => (
+                  <TableRow key={m.id} className={cn("transition-opacity", !m.enabled && "opacity-40")}>
+                    <TableCell className="font-medium text-sm">
+                      <span className="font-mono text-xs">{m.label}</span>
+                      <span className="block text-[10px] text-muted-foreground font-mono">{m.id}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-mono text-muted-foreground">
+                      {fmtRate(m.inputRatePer1k)}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-mono text-muted-foreground">
+                      {fmtRate(m.outputRatePer1k)}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">
+                      {fmtRate(m.userInputPer1k)}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">
+                      {fmtRate(m.userOutputPer1k)}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-mono">
+                      ×{m.multiplier}
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-bold font-mono">
+                      {m.exampleCredits}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={m.enabled}
+                        onCheckedChange={(checked) =>
+                          toggleMut.mutate({ modelId: m.id, enabled: checked })
+                        }
+                        disabled={toggleMut.isPending}
+                        className="data-[state=checked]:bg-primary"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PricingTab() {
   const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
@@ -3032,6 +3178,7 @@ export default function AdminPage() {
           {activeTab === "overview"     && <OverviewTab onOpenChecklist={() => setActiveTab("checklist")} />}
           {activeTab === "checklist"    && <ChecklistTab />}
           {activeTab === "health"       && <SystemHealthTab />}
+          {activeTab === "ai-studio"    && <AiStudioTab />}
           {activeTab === "pricing"      && <PricingTab />}
           {activeTab === "api-keys"     && <ApiKeysTab />}
           {activeTab === "users"        && <UsersTab />}
