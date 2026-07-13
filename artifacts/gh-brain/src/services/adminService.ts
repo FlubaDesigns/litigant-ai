@@ -607,6 +607,42 @@ export async function addAiStudioProvider(provider: AiStudioCustomProvider): Pro
   }
 }
 
+// ─── Seat Orders (Seat Briefs) ────────────────────────────────────────────────
+
+export interface SeatBriefsData {
+  active: Record<string, string>;
+  defaults: Record<string, string>;
+  overrides: Record<string, string>;
+  seatIds: string[];
+}
+
+export async function getSeatBriefs(): Promise<SeatBriefsData> {
+  const res = await adminFetch("/admin/seat-briefs");
+  if (!res.ok) throw new Error("Failed to load seat orders");
+  return res.json() as Promise<SeatBriefsData>;
+}
+
+export async function patchSeatBrief(seatId: string, text: string): Promise<void> {
+  const res = await adminFetch(`/admin/seat-briefs/${encodeURIComponent(seatId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to save seat order");
+  }
+}
+
+export async function deleteSeatBrief(seatId: string): Promise<void> {
+  const res = await adminFetch(`/admin/seat-briefs/${encodeURIComponent(seatId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to reset seat order");
+  }
+}
+
 export async function setModelQualityScore(modelId: string, qualityScore: number): Promise<void> {
   const res = await adminFetch(`/admin/model-scores/${encodeURIComponent(modelId)}`, {
     method: "PATCH",

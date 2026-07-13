@@ -10,6 +10,7 @@ import {
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
   ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks, Bot,
+  ScrollText, RotateCcw as ResetIcon, Pencil,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -46,23 +47,26 @@ import {
   getChecklist, setChecklistItemChecked,
   getAiStudioModels, toggleAiStudioModel, toggleAiStudioProvider,
   addAiStudioProvider, deleteAiStudioProvider, setModelQualityScore,
+  getSeatBriefs, patchSeatBrief, deleteSeatBrief,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
   type BillingDefaults, type ChecklistItem,
   type AiStudioModel, type AiStudioData, type AiStudioCustomProvider, type AiStudioCustomModel,
+  type SeatBriefsData,
 } from "@/services/adminService";
 import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
   | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys"
-  | "checklist" | "ai-studio";
+  | "checklist" | "ai-studio" | "seat-orders";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
   { id: "checklist",    label: "Setup Checklist", icon: ListChecks },
   { id: "health",       label: "System Health",  icon: Server },
   { id: "ai-studio",    label: "AI Studio",      icon: Bot },
+  { id: "seat-orders",  label: "Seat Orders",    icon: ScrollText },
   { id: "pricing",      label: "Pricing",        icon: DollarSign },
   { id: "api-keys",     label: "API Keys",       icon: Shield },
   { id: "users",        label: "Users",           icon: Users },
@@ -3147,6 +3151,182 @@ function AiStudioProviderSection({
   );
 }
 
+// ─── Seat Orders Tab ──────────────────────────────────────────────────────────
+
+const SEAT_META: Record<string, { label: string; description: string }> = {
+  orchestrator: { label: "Orchestrator", description: "Directs the flow of proceedings and coordinates all roles" },
+  moderator:    { label: "Moderator",    description: "Maintains order, enforces rules, and manages debate timing" },
+  auditor:      { label: "Auditor",      description: "Reviews arguments for quality and assigns grades" },
+  architect:    { label: "Architect",    description: "Designs the high-level solution structure" },
+  builder:      { label: "Builder",      description: "Implements and details the solution" },
+  litigant:     { label: "Litigant",     description: "Argues a position in the courtroom debate" },
+};
+
+function SeatOrdersTab() {
+  const qc = useQueryClient();
+  const [editingSeat, setEditingSeat] = useState<string | null>(null);
+  const [draftText, setDraftText] = useState("");
+
+  const { data, isLoading, isError, refetch } = useQuery<SeatBriefsData>({
+    queryKey: ["admin-seat-orders"],
+    queryFn: getSeatBriefs,
+    retry: false,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: ({ seatId, text }: { seatId: string; text: string }) =>
+      patchSeatBrief(seatId, text),
+    onSuccess: (_d, { seatId }) => {
+      toast.success(`${SEAT_META[seatId]?.label ?? seatId} order saved`);
+      qc.invalidateQueries({ queryKey: ["admin-seat-orders"] });
+      setEditingSeat(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const resetMut = useMutation({
+    mutationFn: (seatId: string) => deleteSeatBrief(seatId),
+    onSuccess: (_d, seatId) => {
+      toast.success(`${SEAT_META[seatId]?.label ?? seatId} order reset to default`);
+      qc.invalidateQueries({ queryKey: ["admin-seat-orders"] });
+      setEditingSeat(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function openEditor(seatId: string) {
+    if (!data) return;
+    setDraftText(data.active[seatId] ?? "");
+    setEditingSeat(seatId);
+  }
+
+  if (isLoading) return <TabSkeleton />;
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        Failed to load seat orders.
+        <button onClick={() => refetch()} className="ml-auto text-xs underline">Retry</button>
+      </div>
+    );
+  }
+
+  const seatIds = data.seatIds.length > 0 ? data.seatIds : Object.keys(SEAT_META);
+  const busy = saveMut.isPending || resetMut.isPending;
+  const editingMeta = editingSeat ? (SEAT_META[editingSeat] ?? { label: editingSeat, description: "" }) : null;
+  const isCustom = (seatId: string) => !!data.overrides?.[seatId];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Seat Orders</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            The standing procedure for each courtroom role. These instructions shape how each AI seat behaves across every session.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {seatIds.map((seatId) => {
+          const meta = SEAT_META[seatId] ?? { label: seatId, description: "" };
+          const text = data.active[seatId] ?? "";
+          const custom = isCustom(seatId);
+          return (
+            <button
+              key={seatId}
+              onClick={() => openEditor(seatId)}
+              className="text-left rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-all p-5 space-y-3 group"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ScrollText className="w-4 h-4 text-primary/60 shrink-0" />
+                  <span className="font-semibold text-sm">{meta.label}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {custom && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                      Custom
+                    </span>
+                  )}
+                  <Pencil className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{meta.description}</p>
+              <div className="text-[10px] font-mono text-muted-foreground/60">
+                {text.length.toLocaleString()} chars · {text.split("\n").length} lines
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Editor Dialog */}
+      <Dialog open={!!editingSeat} onOpenChange={(o) => !o && setEditingSeat(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScrollText className="w-4 h-4 text-primary" />
+              {editingMeta?.label} Order
+              {editingSeat && isCustom(editingSeat) && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 ml-1">
+                  Custom
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {editingMeta?.description}. Edit the markdown below and save to apply across all sessions.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <Textarea
+              value={draftText}
+              onChange={(e) => setDraftText(e.target.value)}
+              className="h-[50vh] resize-none font-mono text-xs leading-relaxed"
+              placeholder="Enter the seat order in markdown…"
+              disabled={busy}
+            />
+          </div>
+
+          <div className="text-[10px] font-mono text-muted-foreground/60 -mt-1">
+            {draftText.length.toLocaleString()} chars · {draftText.split("\n").length} lines
+          </div>
+
+          <DialogFooter className="gap-2 flex-wrap">
+            {editingSeat && isCustom(editingSeat) && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => editingSeat && resetMut.mutate(editingSeat)}
+                className="text-amber-400 border-amber-400/30 hover:bg-amber-400/5 mr-auto"
+              >
+                <ResetIcon className="w-3.5 h-3.5 mr-1.5" />
+                Reset to default
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setEditingSeat(null)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={busy || !draftText.trim()}
+              onClick={() => editingSeat && saveMut.mutate({ seatId: editingSeat, text: draftText })}
+            >
+              {saveMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+              Save Order
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── AI Studio Tab ────────────────────────────────────────────────────────────
+
 function AiStudioTab() {
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
@@ -3493,6 +3673,7 @@ export default function AdminPage() {
           {activeTab === "checklist"    && <ChecklistTab />}
           {activeTab === "health"       && <SystemHealthTab />}
           {activeTab === "ai-studio"    && <AiStudioTab />}
+          {activeTab === "seat-orders"  && <SeatOrdersTab />}
           {activeTab === "pricing"      && <PricingTab />}
           {activeTab === "api-keys"     && <ApiKeysTab />}
           {activeTab === "users"        && <UsersTab />}
