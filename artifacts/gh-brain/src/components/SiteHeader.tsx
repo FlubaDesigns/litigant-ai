@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
   const { user, logOut, isAdmin, firebaseReady } = useAuth();
   const { credits, plan } = useUserProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => { setMobileOpen(false); }, [location]);
 
   const isSignedIn = firebaseReady && !!user;
 
@@ -178,6 +180,9 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
       </header>
 
       {/* ── App mobile menu ── */}
+      {variant === "app" && mobileOpen && (
+        <div className="fixed inset-0 z-30 md:hidden" onClick={() => setMobileOpen(false)} />
+      )}
       {variant === "app" && mobileOpen && (
         <div className="fixed top-14 left-0 right-0 z-40 md:hidden border-b border-border bg-card px-4 py-3 space-y-1">
           {APP_NAV.map(({ href, label, icon: Icon }) => (
