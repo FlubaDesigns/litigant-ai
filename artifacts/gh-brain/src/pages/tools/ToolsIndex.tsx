@@ -58,7 +58,7 @@ export default function ToolsIndexPage() {
 
         {/* Hero */}
         <section className="section text-center">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
@@ -77,7 +77,7 @@ export default function ToolsIndexPage() {
 
         {/* Category filter */}
         <section className="section">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <div className="flex flex-wrap gap-2">
                 <button
@@ -161,7 +161,7 @@ export default function ToolsIndexPage() {
 
         {/* Bottom CTA */}
         <section className="section section--bordered section--alt text-center">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">

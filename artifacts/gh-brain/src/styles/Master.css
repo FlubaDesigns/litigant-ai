@@ -64,19 +64,6 @@
 }
 
 
-/* ── CONTAINER ───────────────────────────────────────────────────────
-   Drop-in replacement for `container mx-auto px-6`.
-   Use inside every section as the width/gutter wrapper.
-   ─────────────────────────────────────────────────────────────────── */
-.lgt-container {
-  width: 100%;
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: var(--gutter);
-  padding-right: var(--gutter);
-}
-
 
 /* ── HERO SECTION ────────────────────────────────────────────────────
    Matches BlastyBiz .hero exactly. No viewport height tricks —
@@ -124,7 +111,7 @@
 
    Pattern:
      <section class="section">
-       <div class="lgt-container">
+       <div class="main-inner">
          <div class="row">  ← heading / eyebrow / description
          <div class="row">  ← grid or content block
    ─────────────────────────────────────────────────────────────────── */

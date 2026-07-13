@@ -173,7 +173,7 @@ export default function ShareReportPage() {
 
       <main className="main">
       <section className="section">
-      <div className="lgt-container">
+      <div className="main-inner">
       <div className="row">
       <div className="space-y-8">
         {/* Question */}

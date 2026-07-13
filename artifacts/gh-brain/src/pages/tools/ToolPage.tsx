@@ -88,7 +88,7 @@ export default function ToolPage() {
 
         {/* Hero */}
         <section className="section text-center">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
@@ -119,7 +119,7 @@ export default function ToolPage() {
 
         {/* Hero image */}
         <section className="section">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <div className="rounded-2xl overflow-hidden border border-border/40 shadow-2xl shadow-black/40 aspect-video relative">
                 <img
@@ -135,7 +135,7 @@ export default function ToolPage() {
 
         {/* Credibility strip */}
         <section className="section section--bordered section--alt">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
                 {[
@@ -155,7 +155,7 @@ export default function ToolPage() {
 
         {/* How it works */}
         <section className="section">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
             </div>
@@ -186,7 +186,7 @@ export default function ToolPage() {
 
         {/* Benefits */}
         <section className="section section--bordered section--alt">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-10">What you get</h2>
             </div>
@@ -219,7 +219,7 @@ export default function ToolPage() {
 
         {/* Output summary */}
         <section className="section">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
                 <h2 className="text-lg font-bold mb-3">What the output looks like</h2>
@@ -233,7 +233,7 @@ export default function ToolPage() {
 
         {/* FAQ */}
         <section className="section section--bordered section--alt">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-8">Questions</h2>
             </div>
@@ -249,7 +249,7 @@ export default function ToolPage() {
 
         {/* CTA */}
         <section className="section text-center">
-          <div className="lgt-container">
+          <div className="main-inner">
             <div className="row">
               <h2 className="text-3xl font-bold mb-3">
                 Ready to analyze your {tool.subject}?
