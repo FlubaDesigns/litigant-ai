@@ -107,6 +107,14 @@ type Action =
   | { type: "REMOVE_CASE_FILE"; id: string }
   | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string }
   | {
+      type: "PAUSED_PRE_PIPELINE";
+      sessionId: string;
+      confidence: number;
+      creditsUsed: number;
+      debateTranscriptLines: string[];
+      debateNotes: string;
+    }
+  | {
       type: "PREFILL_PAUSED";
       question: string;
       config: Partial<CourtConfig>;
@@ -393,6 +401,23 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "REMOVE_CASE_FILE":
       return { ...state, caseFile: state.caseFile.filter((i) => i.id !== action.id) };
 
+    case "PAUSED_PRE_PIPELINE":
+      return {
+        ...state,
+        phase: "paused" as const,
+        activeRole: null,
+        sessionId: action.sessionId,
+        confidence: action.confidence,
+        creditsUsed: action.creditsUsed,
+        pauseReason: "credit_cap_pre_pipeline" as const,
+        pauseTranscript: action.debateTranscriptLines,
+        debateNotes: action.debateNotes,
+        activityLog: [
+          ...state.activityLog,
+          `[Court] Debate complete — credit cap reached before the verdict pipeline`,
+        ],
+      };
+
     case "PREFILL_PAUSED": {
       const newConfig = { ...state.config, ...action.config };
       return {
@@ -464,6 +489,16 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
         break;
       case "confidence_update":
         dispatch({ type: "CONFIDENCE_UPDATE", confidence: event.confidence!, creditsUsed: event.creditsUsed! });
+        break;
+      case "paused_pre_pipeline":
+        dispatch({
+          type: "PAUSED_PRE_PIPELINE",
+          sessionId: event.sessionId!,
+          confidence: event.confidence ?? 0,
+          creditsUsed: event.creditsUsed ?? 0,
+          debateTranscriptLines: event.debateTranscriptLines ?? [],
+          debateNotes: event.debateNotes ?? "",
+        });
         break;
       case "done":
         dispatch({
@@ -542,7 +577,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   const stateRef = useRef<SessionState>(state);
   stateRef.current = state;
 
-  const continueSessionFn = useCallback(async () => {
+  const continueSessionFn = useCallback(async (newMaxCredits?: number) => {
     const s = stateRef.current;
     if (!s.pauseTranscript?.length) return;
 
@@ -553,12 +588,20 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       idToken = (await user?.getIdToken()) ?? undefined;
     } catch { /* guest */ }
 
+    const isPrePipelinePause = s.pauseReason === "credit_cap_pre_pipeline";
+
+    const effectiveConfig: typeof s.config =
+      isPrePipelinePause && newMaxCredits !== undefined
+        ? { ...s.config, maxCredits: newMaxCredits }
+        : s.config;
+
     const request: BrainRunRequest = {
       question: s.question,
-      config: s.config,
+      config: effectiveConfig,
       templateId: s.template?.id,
       idToken,
       continueFromTranscript: s.pauseTranscript,
+      ...(isPrePipelinePause ? { resumeWithFixedPipeline: true } : {}),
     };
 
     dispatch({ type: "SET_PHASE", phase: "running" });

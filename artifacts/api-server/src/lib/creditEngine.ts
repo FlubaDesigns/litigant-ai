@@ -316,6 +316,15 @@ export function estimateSessionCredits(config: SessionEstimateConfig): number {
 }
 
 /**
+ * Estimates credits for the fixed pipeline stages only (Moderator, Architect,
+ * Builder, Auditor, Verdict). Used when resuming a paused-pre-pipeline session
+ * so the second reservation covers only what will actually run.
+ */
+export function estimateFixedPipelineCost(model?: string): number {
+  return calculateActualCredits(model ?? "gpt-5", FIXED_STAGE_PRIOR.input, FIXED_STAGE_PRIOR.output);
+}
+
+/**
  * Async variant of estimateSessionCredits that replaces the hardcoded
  * FIXED_STAGE_PRIOR with real averages learned from the last 50 sessions.
  *

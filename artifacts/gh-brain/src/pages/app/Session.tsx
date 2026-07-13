@@ -1117,6 +1117,7 @@ export default function SessionPage() {
 
   // Pre-select template from ?templateId= URL param
   const [toolBanner, setToolBanner] = useState<string | null>(null);
+  const [newPipelineCap, setNewPipelineCap] = useState<number>(0);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tid = params.get("templateId");
@@ -1637,16 +1638,59 @@ export default function SessionPage() {
         {isPaused && state.pauseReason && (
           <div className="session-pause-card">
             <div className="session-pause-title">
-              ⏸ {state.pauseReason === "credit_cap" ? `Credit cap reached — ${Math.round(state.confidence)}% confidence` : `${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
+              {state.pauseReason === "credit_cap_pre_pipeline"
+                ? `⏸ Debate complete — credit cap hit before verdict pipeline`
+                : state.pauseReason === "credit_cap"
+                ? `⏸ Credit cap reached — ${Math.round(state.confidence)}% confidence`
+                : `⏸ ${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
             </div>
-            <div className="session-pause-btns">
-              {credits === 0 ? (
-                <button onClick={() => navigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
-              ) : (
-                <button onClick={() => { void continueSession(); }} className="session-pause-btn-primary">Continue — {credits} cr</button>
-              )}
-              <button onClick={acceptPartial} className="session-pause-btn-secondary">Accept answer</button>
-            </div>
+
+            {state.pauseReason === "credit_cap_pre_pipeline" ? (
+              <>
+                <div style={{ fontSize: 12, color: "#9ab89a", marginBottom: 10, lineHeight: 1.5 }}>
+                  The court has finished debating with <strong>{Math.round(state.confidence)}% confidence</strong>.
+                  The verdict pipeline (Moderator → Architect → Builder → Verdict) still needs to run.
+                  Raise your cap to allow it, or accept the debate transcript as-is.
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <label style={{ fontSize: 12, color: "#7ab87a", whiteSpace: "nowrap" }}>New credit cap</label>
+                  <input
+                    type="number"
+                    min={state.creditsUsed + 1}
+                    step={10}
+                    value={newPipelineCap || (state.config.maxCredits ?? 0) + 30}
+                    onChange={(e) => setNewPipelineCap(Math.max(state.creditsUsed + 1, Number(e.target.value)))}
+                    style={{
+                      width: 90, padding: "4px 8px", borderRadius: 7, border: "1px solid #2a4a2a",
+                      background: "#0d1f0d", color: "#eef7ee", fontSize: 13,
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: "#556655" }}>credits (you have {credits})</span>
+                </div>
+                <div className="session-pause-btns">
+                  {credits < 25 ? (
+                    <button onClick={() => navigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
+                  ) : (
+                    <button
+                      onClick={() => { void continueSession(newPipelineCap || (state.config.maxCredits ?? 0) + 30); }}
+                      className="session-pause-btn-primary"
+                    >
+                      Continue to verdict — {credits} cr
+                    </button>
+                  )}
+                  <button onClick={acceptPartial} className="session-pause-btn-secondary">Accept debate only</button>
+                </div>
+              </>
+            ) : (
+              <div className="session-pause-btns">
+                {credits === 0 ? (
+                  <button onClick={() => navigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
+                ) : (
+                  <button onClick={() => { void continueSession(); }} className="session-pause-btn-primary">Continue — {credits} cr</button>
+                )}
+                <button onClick={acceptPartial} className="session-pause-btn-secondary">Accept answer</button>
+              </div>
+            )}
           </div>
         )}
 

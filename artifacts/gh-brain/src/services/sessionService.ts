@@ -6,7 +6,7 @@ function getApiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
-export type PauseReason = "credit_cap" | "iteration_limit";
+export type PauseReason = "credit_cap" | "credit_cap_pre_pipeline" | "iteration_limit";
 
 export interface RebuttalContext {
   challenge: string;
@@ -35,6 +35,12 @@ export interface BrainRunRequest {
   rebuttalContext?: RebuttalContext;
   /** Pre-briefing documents or URLs entered before the session run. */
   caseFile?: CaseFileItem[];
+  /**
+   * Skip debate entirely and run only the fixed pipeline (Mod→Arch→Builder→Aud→Verdict).
+   * Used when resuming a session that was paused before the pipeline due to hitting the
+   * credit cap during debate. Must be combined with `continueFromTranscript`.
+   */
+  resumeWithFixedPipeline?: boolean;
 }
 
 export type SSEEventType =
@@ -45,6 +51,7 @@ export type SSEEventType =
   | "confidence_update"
   | "round_start"
   | "round_end"
+  | "paused_pre_pipeline"
   | "done"
   | "error";
 
@@ -75,6 +82,11 @@ export interface SSEEvent {
    * Absent on all other roles.
    */
   attempt?: number;
+  /**
+   * Debate transcript lines sent with `paused_pre_pipeline` events so the frontend
+   * can store them and pass back as `continueFromTranscript` on the resume call.
+   */
+  debateTranscriptLines?: string[];
 }
 
 export function runBrainSession(
@@ -103,6 +115,7 @@ export function runBrainSession(
           rebuttalContext: request.rebuttalContext,
           parentSessionId: request.rebuttalContext?.parentSessionId,
           caseFile: request.caseFile,
+          resumeWithFixedPipeline: request.resumeWithFixedPipeline,
         }),
         signal,
       });
@@ -132,7 +145,7 @@ export function runBrainSession(
             try {
               const event = JSON.parse(raw) as SSEEvent;
               onEvent(event);
-              if (event.type === "done" || event.type === "error") {
+              if (event.type === "done" || event.type === "error" || event.type === "paused_pre_pipeline") {
                 resolve();
                 return;
               }

@@ -137,7 +137,7 @@ export function estimateCreditCost(config: CourtConfig): number {
   });
 }
 
-export type PauseReason = "credit_cap" | "iteration_limit";
+export type PauseReason = "credit_cap" | "credit_cap_pre_pipeline" | "iteration_limit";
 
 export interface RebuttalContext {
   challenge: string;
@@ -166,6 +166,14 @@ export interface BrainRunOptions {
   rebuttalContext?: RebuttalContext;
   /** Pre-briefing documents or URLs attached before the session run. */
   caseFile?: CaseFileItem[];
+  /**
+   * Skip the orchestrator and debate loop entirely — run only the fixed
+   * pipeline (Moderator → Architect → Builder → Auditor → Verdict).
+   * Used when resuming a session that was paused before the pipeline
+   * because the credit cap was hit during debate.
+   * Must be combined with `continueFromTranscript` (the debate transcript).
+   */
+  resumeWithFixedPipeline?: boolean;
   res: Response;
   abortSignal?: AbortSignal;
 }
@@ -188,11 +196,19 @@ export interface BrainRunResult {
   /** Present when the session stopped before hitting the confidence target. */
   pauseReason?: PauseReason;
   /**
+   * True when the session stopped BEFORE the fixed pipeline because the credit
+   * cap was hit during debate. The pipeline (Mod/Arch/Builder/Aud/Verdict) has
+   * NOT run. The frontend will show a pause card; the user can raise their cap
+   * and continue (which runs only the fixed pipeline via resumeWithFixedPipeline).
+   */
+  pausedPrePipeline?: boolean;
+  /**
    * Token usage for the fixed pipeline stages (Moderator, Architect, Builder,
    * Auditor, Verdict) — everything after the debate loop ends, including any
    * Auditor retry passes (Builder revision + re-review). Saved to Firestore so
    * getCalibratedFixedStageTokens() can learn real averages across the last 50
    * sessions instead of relying on hardcoded priors.
+   * Zero when pausedPrePipeline is true (pipeline never ran).
    */
   fixedStageTokens: { input: number; output: number };
 }
@@ -386,86 +402,90 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   }
 
   // ── Debate rounds ─────────────────────────────────────────────────────────────
+  // Skipped entirely when resuming a paused-pre-pipeline session — the debate
+  // already happened; the user raised their cap and wants only the fixed pipeline.
   const debateNotesList: string[] = [];
   const creditCap = config.maxCredits ?? Infinity;
   let creditCapHit = false;
 
-  for (let round = 1; round <= config.maxIterations; round++) {
-    throwIfAborted(abortSignal);
-    sendSSE(res, { type: "round_start", round });
-
-    const previousTranscript = transcript.join("\n\n");
-
-    for (let i = 0; i < roles.length; i++) {
+  if (!opts.resumeWithFixedPipeline) {
+    for (let round = 1; round <= config.maxIterations; round++) {
       throwIfAborted(abortSignal);
+      sendSSE(res, { type: "round_start", round });
 
-      const role = roles[i];
-      const litProvider = await resolveSeatProvider("litigant", config, provider, configured, i);
-      sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
+      const previousTranscript = transcript.join("\n\n");
 
-      // In independent mode each agent only sees its OWN prior turns —
-      // it can build on its own reasoning across rounds but cannot hear
-      // what the other seats argued. This keeps input tokens flat (no
-      // transcript compounding) while still letting positions evolve.
-      const myPriorTurns = turns
-        .filter((t) => t.role === role.name)
-        .map((t) => `Round ${t.round}: ${t.content}`)
-        .join("\n\n");
+      for (let i = 0; i < roles.length; i++) {
+        throwIfAborted(abortSignal);
 
-      const messages: ChatMessage[] = [
-        {
-          role: "system",
-          content: `${seatBriefs.litigant}\n\n${baseContext}\n\nYour assigned role this session: ${role.persona}. ${role.instruction}${getDebateModeClause(config.debateMode)}${conscienceClause}`,
-        },
-        {
-          role: "user",
-          content: (() => {
-            const isIndependent = config.aiReasoning === "independent";
-            if (round === 1 && i === 0) return `Begin your examination of the question.`;
-            if (isIndependent) {
-              const ownHistory = myPriorTurns
-                ? `Your previous arguments:\n\n${myPriorTurns}\n\nNow give your round ${round} argument as ${role.persona}. Build on your own reasoning — you have not heard the other seats.`
-                : `Give your opening argument as ${role.persona}. Reason independently.`;
-              return ownHistory;
-            }
-            return `Previous discussion:\n\n${previousTranscript}\n\nNow give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`;
-          })(),
-        },
-      ];
+        const role = roles[i];
+        const litProvider = await resolveSeatProvider("litigant", config, provider, configured, i);
+        sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
 
-      const roleOutput = await streamRole(
-        litProvider, messages, maxTokens,
-        (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
-        usage, abortSignal
-      );
+        // In independent mode each agent only sees its OWN prior turns —
+        // it can build on its own reasoning across rounds but cannot hear
+        // what the other seats argued. This keeps input tokens flat (no
+        // transcript compounding) while still letting positions evolve.
+        const myPriorTurns = turns
+          .filter((t) => t.role === role.name)
+          .map((t) => `Round ${t.round}: ${t.content}`)
+          .join("\n\n");
 
-      throwIfAborted(abortSignal);
+        const messages: ChatMessage[] = [
+          {
+            role: "system",
+            content: `${seatBriefs.litigant}\n\n${baseContext}\n\nYour assigned role this session: ${role.persona}. ${role.instruction}${getDebateModeClause(config.debateMode)}${conscienceClause}`,
+          },
+          {
+            role: "user",
+            content: (() => {
+              const isIndependent = config.aiReasoning === "independent";
+              if (round === 1 && i === 0) return `Begin your examination of the question.`;
+              if (isIndependent) {
+                const ownHistory = myPriorTurns
+                  ? `Your previous arguments:\n\n${myPriorTurns}\n\nNow give your round ${round} argument as ${role.persona}. Build on your own reasoning — you have not heard the other seats.`
+                  : `Give your opening argument as ${role.persona}. Reason independently.`;
+                return ownHistory;
+              }
+              return `Previous discussion:\n\n${previousTranscript}\n\nNow give your ${round > 1 ? "follow-up" : "opening"} argument as ${role.persona}. ${i > 0 ? `Respond to what has been said, especially by ${roles.slice(0, i).map((r) => r.name).join(" and ")}.` : ""}`;
+            })(),
+          },
+        ];
 
-      transcript.push(`**${role.name} (Round ${round}):** ${roleOutput}`);
-      debateNotesList.push(`### ${role.name} — Round ${round}\n${roleOutput}`);
-      turns.push({ role: role.name, round, content: roleOutput });
+        const roleOutput = await streamRole(
+          litProvider, messages, maxTokens,
+          (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
+          usage, abortSignal
+        );
 
-      sendSSE(res, { type: "role_end", role: role.name, fullContent: roleOutput });
+        throwIfAborted(abortSignal);
 
-      confidence = Math.min(
-        config.confidenceTarget,
-        20 + (round * roles.length + i + 1) * Math.floor((config.confidenceTarget - 20) / (config.maxIterations * roles.length))
-      );
+        transcript.push(`**${role.name} (Round ${round}):** ${roleOutput}`);
+        debateNotesList.push(`### ${role.name} — Round ${round}\n${roleOutput}`);
+        turns.push({ role: role.name, round, content: roleOutput });
 
-      // Stream live credit update based on actual tokens so far
-      const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
-      sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
+        sendSSE(res, { type: "role_end", role: role.name, fullContent: roleOutput });
 
-      // Credit cap — stop debate early and fall through to partial verdict
-      if (creditsUsedSoFar >= creditCap) {
-        creditCapHit = true;
-        break;
+        confidence = Math.min(
+          config.confidenceTarget,
+          20 + (round * roles.length + i + 1) * Math.floor((config.confidenceTarget - 20) / (config.maxIterations * roles.length))
+        );
+
+        // Stream live credit update based on actual tokens so far
+        const creditsUsedSoFar = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
+        sendSSE(res, { type: "confidence_update", confidence, creditsUsed: creditsUsedSoFar });
+
+        // Credit cap — stop debate before the fixed pipeline (not after it)
+        if (creditsUsedSoFar >= creditCap) {
+          creditCapHit = true;
+          break;
+        }
       }
-    }
 
-    sendSSE(res, { type: "round_end", round, confidence });
-    if (creditCapHit) break;
-    if (confidence >= config.confidenceTarget && round >= 2) break;
+      sendSSE(res, { type: "round_end", round, confidence });
+      if (creditCapHit) break;
+      if (confidence >= config.confidenceTarget && round >= 2) break;
+    }
   }
 
   // Snapshot cumulative usage at end of debate. The delta from here to the end of the
@@ -474,10 +494,43 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // learn real averages from the last 50 sessions instead of using hardcoded priors.
   const usageAfterDebate = { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
 
-  // ── Determine why we stopped ──────────────────────────────────────────────
-  const pauseReason: PauseReason | undefined = creditCapHit
-    ? "credit_cap"
-    : confidence < config.confidenceTarget
+  // ── Hard cap gate — stop BEFORE the fixed pipeline ────────────────────────
+  // When the debate consumed the full credit budget, emit a pause event and
+  // return early. The pipeline (Mod→Arch→Builder→Aud→Verdict) does NOT run.
+  // The frontend shows a pause card; the user can raise their cap and send a
+  // fresh request with resumeWithFixedPipeline:true to run just the pipeline.
+  if (creditCapHit) {
+    const creditsUsed = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
+    sendSSE(res, {
+      type: "paused_pre_pipeline",
+      sessionId,
+      confidence,
+      creditsUsed,
+      debateTranscriptLines: transcript,
+      debateNotes: debateNotesList.join("\n\n---\n\n"),
+    });
+    return {
+      sessionId,
+      confidence,
+      creditsUsed,
+      finalAnswer: "",
+      debateNotes: debateNotesList.join("\n\n---\n\n"),
+      transcript,
+      caveats: "",
+      artifacts: "",
+      turns,
+      provider: providerName,
+      model: modelName,
+      tokenUsage: usage,
+      conscienceVersion,
+      pauseReason: "credit_cap_pre_pipeline",
+      pausedPrePipeline: true,
+      fixedStageTokens: { input: 0, output: 0 },
+    };
+  }
+
+  // ── Determine why we stopped (credit_cap now handled above — only iteration_limit remains) ──
+  const pauseReason: PauseReason | undefined = confidence < config.confidenceTarget
     ? "iteration_limit"
     : undefined;
 

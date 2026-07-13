@@ -35,7 +35,7 @@ import crypto from "crypto";
 import { runBrainSession, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
-import { calculateActualCredits, estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
+import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixedPipelineCost } from "../lib/creditEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
@@ -215,7 +215,7 @@ async function reconcileCredits(
 }
 
 router.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile } = req.body as {
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile, resumeWithFixedPipeline } = req.body as {
     question: string;
     config: CourtConfig;
     templateId?: string;
@@ -224,6 +224,7 @@ router.post("/run-brain", async (req, res) => {
     rebuttalContext?: RebuttalContext;
     parentSessionId?: string;
     caseFile?: { id: string; type: "url" | "file"; name: string; content: string; url?: string }[];
+    resumeWithFixedPipeline?: boolean;
   };
 
   if (!question?.trim()) {
@@ -269,7 +270,11 @@ router.post("/run-brain", async (req, res) => {
     }
   }
 
-  const estimatedCost = await estimateSessionCreditsCalibrated(effectiveConfig);
+  // Pipeline-only resumes cost much less — use the fixed-stage estimate so we
+  // don't over-reserve (and then partially refund) on every cap-raise continue.
+  const estimatedCost = resumeWithFixedPipeline
+    ? estimateFixedPipelineCost(effectiveConfig.model)
+    : await estimateSessionCreditsCalibrated(effectiveConfig);
 
   // ── Auth + credit reservation ─────────────────────────────────────────────
   let uid: string | null = null;
@@ -317,7 +322,7 @@ router.post("/run-brain", async (req, res) => {
     if (await hasGuestUsed(ip)) {
       res.status(402).json({
         message:
-          "Guest sessions are limited to one free trial. Create a free account to continue — you'll receive 750 credits.",
+          "Guest sessions are limited to one free trial. Create a free account to continue — you'll receive 500 credits.",
         guestLimitReached: true,
       });
       return;
@@ -355,6 +360,7 @@ router.post("/run-brain", async (req, res) => {
       continueFromTranscript,
       rebuttalContext,
       caseFile,
+      resumeWithFixedPipeline,
       res,
       abortSignal: abortCtrl.signal,
     });
@@ -379,7 +385,7 @@ router.post("/run-brain", async (req, res) => {
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: actualCost,
           fixedStageTokens: result.fixedStageTokens,
-          status: "complete",
+          status: result.pausedPrePipeline ? "paused_pre_pipeline" : "complete",
           finalAnswer: result.finalAnswer,
           debateNotes: result.debateNotes,
           transcript: result.debateNotes
