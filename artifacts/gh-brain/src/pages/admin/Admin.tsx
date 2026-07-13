@@ -1336,6 +1336,7 @@ function CreditPacksTab() {
   const qc = useQueryClient();
   const [editingPack, setEditingPack] = useState<AdminCreditPack | null>(null);
   const [creating, setCreating] = useState(false);
+  const [pendingDeactivate, setPendingDeactivate] = useState<AdminCreditPack | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin-credit-packs"],
@@ -1439,7 +1440,7 @@ function CreditPacksTab() {
                       <Button
                         size="sm" variant="ghost"
                         className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive"
-                        onClick={() => deactivateMut.mutate(pack.id)}
+                        onClick={() => setPendingDeactivate(pack)}
                         disabled={deactivateMut.isPending}
                       >
                         <Trash2 className="w-3 h-3" /> Deactivate
@@ -1503,6 +1504,34 @@ function CreditPacksTab() {
           bounds={data.bounds}
           onClose={() => setCreating(false)}
         />
+      )}
+
+      {pendingDeactivate && (
+        <Dialog open onOpenChange={(o) => { if (!o) setPendingDeactivate(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deactivate Credit Pack</DialogTitle>
+              <DialogDescription>
+                Deactivating <span className="font-semibold text-foreground">{pendingDeactivate.name}</span> will remove it from the customer-facing Billing page immediately.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPendingDeactivate(null)}>Cancel</Button>
+              <Button
+                variant="destructive"
+                disabled={deactivateMut.isPending}
+                onClick={() => {
+                  deactivateMut.mutate(pendingDeactivate.id, {
+                    onSettled: () => setPendingDeactivate(null),
+                  });
+                }}
+              >
+                {deactivateMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Deactivate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
