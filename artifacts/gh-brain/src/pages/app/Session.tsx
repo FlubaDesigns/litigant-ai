@@ -36,8 +36,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation } from "wouter";
 import {
-  getProviders, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
-  type ProviderInfo, type ModelInfo, type ModelCreditInfo,
+  getProviders, getCalibration, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
+  type ProviderInfo, type ModelInfo, type ModelCreditInfo, type CalibrationStats,
 } from "@/services/providerService";
 import { useLimits } from "@/hooks/useLimits";
 import { Input } from "@/components/ui/input";
@@ -1071,6 +1071,7 @@ export default function SessionPage() {
   const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
+  const [calibration, setCalibration] = useState<CalibrationStats | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityLogRef = useRef<HTMLDivElement>(null);
@@ -1083,6 +1084,14 @@ export default function SessionPage() {
       setSelectedCreditInfo(model?.creditInfo ?? null);
     }).catch(() => {});
   }, [state.config.provider, state.config.model]);
+
+  // Load per-user calibration stats — makes the credit estimate improve with each session run
+  useEffect(() => {
+    if (!user) { setCalibration(null); return; }
+    user.getIdToken().then((token) => getCalibration(token)).then((cal) => {
+      if (cal) setCalibration(cal);
+    }).catch(() => {});
+  }, [user]);
 
   // Reset field values when template changes
   useEffect(() => {
@@ -1373,8 +1382,13 @@ export default function SessionPage() {
   const isError = state.phase === "error";
   const isIdle = state.phase === "idle";
 
-  const estimatedCredits = selectedCreditInfo
-    ? estimateCredits(selectedCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
+  // When calibrated, override the hardcoded fixedStagePrior with the user's own history averages
+  const effectiveCreditInfo = selectedCreditInfo && calibration?.isCalibrated
+    ? { ...selectedCreditInfo, fixedStagePrior: calibration.fixedStage }
+    : selectedCreditInfo;
+
+  const estimatedCredits = effectiveCreditInfo
+    ? estimateCredits(effectiveCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
     : state.config.litigantCount * state.config.maxIterations * 3 + 6;
   // Padded high-end estimate (mirrors ConfigPanel's credHigh formula); used for all credit gates
   // so the UI's displayed safety margin actually protects the credit system.
@@ -1458,8 +1472,16 @@ export default function SessionPage() {
             <span className="session-stats-val">{state.creditsUsed}</span>
           </span>
           <span className="session-stats-sep" />
-          <span className="session-stats-item">
-            <span className="session-stats-key">Est</span>
+          <span className="session-stats-item" title={
+            calibration?.isCalibrated
+              ? `Calibrated from ${calibration.sessionCount} of your sessions`
+              : calibration
+                ? `Using default estimate — run ${calibration.minSessions - calibration.sessionCount} more session${calibration.minSessions - calibration.sessionCount === 1 ? "" : "s"} to personalise`
+                : "Credit estimate"
+          }>
+            <span className="session-stats-key">
+              Est{calibration?.isCalibrated ? " ✦" : ""}
+            </span>
             <span className="session-stats-val">~{estimatedCredits}</span>
           </span>
           <span className="session-stats-sep" />

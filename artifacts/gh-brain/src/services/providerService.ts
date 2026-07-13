@@ -82,6 +82,29 @@ export const PROVIDER_ICONS: Record<ProviderName, string> = {
 
 export type ResponseMode = "concise" | "balanced" | "thorough";
 
+export interface CalibrationStats {
+  fixedStage: { input: number; output: number };
+  sessionCount: number;
+  isCalibrated: boolean;
+  minSessions: number;
+}
+
+/**
+ * Fetches the user's personal calibration stats — averaged fixed-stage token
+ * usage from their own session history.  Returns null on any error.
+ */
+export async function getCalibration(idToken: string): Promise<CalibrationStats | null> {
+  try {
+    const res = await fetch(`${API_BASE}/calibration`, {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    if (!res.ok) return null;
+    return res.json() as Promise<CalibrationStats>;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Estimate credit cost client-side.
  *

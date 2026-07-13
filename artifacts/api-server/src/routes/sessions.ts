@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
+import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
 
 const router = Router();
 
@@ -221,6 +222,57 @@ router.post("/sessions/:id/share", async (req, res) => {
     res.json({ success: true, shareId });
   } catch (e: any) {
     res.status(500).json({ message: e?.message });
+  }
+});
+
+/**
+ * GET /calibration
+ * Returns per-user calibrated fixed-stage token averages derived from the
+ * user's own session history.  The frontend uses this to make credit
+ * estimates more accurate the more sessions the user has run.
+ */
+router.get("/calibration", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  const db = getFirestoreDb();
+  if (!db) {
+    res.json({ fixedStage: FIXED_STAGE_PRIOR, sessionCount: 0, isCalibrated: false, minSessions: 3 });
+    return;
+  }
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  const MIN_SESSIONS = 3;
+  try {
+    const snap = await db
+      .collection("sessions")
+      .where("userId", "==", decoded.uid)
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
+
+    const records = snap.docs
+      .map((d) => d.data().fixedStageTokens as { input: number; output: number } | undefined)
+      .filter((r): r is { input: number; output: number } => !!r && r.input > 0 && r.output > 0);
+
+    if (records.length < MIN_SESSIONS) {
+      res.json({ fixedStage: FIXED_STAGE_PRIOR, sessionCount: records.length, isCalibrated: false, minSessions: MIN_SESSIONS });
+      return;
+    }
+
+    const avg = {
+      input:  Math.round(records.reduce((s, r) => s + r.input,  0) / records.length),
+      output: Math.round(records.reduce((s, r) => s + r.output, 0) / records.length),
+    };
+    res.json({ fixedStage: avg, sessionCount: records.length, isCalibrated: true, minSessions: MIN_SESSIONS });
+  } catch {
+    res.json({ fixedStage: FIXED_STAGE_PRIOR, sessionCount: 0, isCalibrated: false, minSessions: 3 });
   }
 });
 
