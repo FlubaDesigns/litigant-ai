@@ -245,12 +245,12 @@ router.post("/run-brain", async (req, res) => {
     clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const effectiveConfig: CourtConfig = {
-    litigantCount: 3,
-    confidenceTarget: 80,
-    maxIterations: 2,
-    responseMode: "balanced",
-    outputFormat: "report",
     ...config,
+    litigantCount: config.litigantCount ?? 3,
+    confidenceTarget: config.confidenceTarget ?? 80,
+    maxIterations: config.maxIterations ?? 2,
+    responseMode: config.responseMode ?? "balanced",
+    outputFormat: config.outputFormat ?? "report",
   };
 
   // Enforce the admin-configured max litigant count before cost estimation so

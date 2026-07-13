@@ -1519,7 +1519,7 @@ export default function SessionPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       {namedSeats.map(({ id, icon, purpose }) => {
-                        const assignment = seatMap[id];
+                        const assignment = (seatMap as unknown as Record<string, any>)[id];
                         return (
                           <div key={id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: id, litIndex: undefined })}>
                             <span className="text-sm shrink-0">{icon}</span>
@@ -1540,7 +1540,7 @@ export default function SessionPage() {
                       })}
                       {Array.from({ length: Math.min(state.config.litigantCount, 4) }, (_, i) => {
                         const seatId = `litigant_${i}`;
-                        const assignment = seatMap[seatId];
+                        const assignment = (seatMap as unknown as Record<string, any>)[seatId];
                         return (
                           <div key={seatId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: "litigant", litIndex: i })}>
                             <span className="text-sm shrink-0">⚖</span>
@@ -1948,7 +1948,7 @@ export default function SessionPage() {
               items={state.caseFile}
               onAdd={addCaseFile}
               onRemove={removeCaseFile}
-              getIdToken={() => user?.getIdToken()}
+              getIdToken={() => user?.getIdToken() ?? Promise.resolve(undefined)}
             />
 
           </div>

@@ -104,7 +104,8 @@ router.post("/case-file/upload", upload.single("file"), async (req, res) => {
 
   try {
     if (mime === "application/pdf" || name.endsWith(".pdf")) {
-      const pdfParse = (await import("pdf-parse")).default;
+      const pdfMod = await import("pdf-parse");
+      const pdfParse = (pdfMod as any).default ?? pdfMod;
       const result = await pdfParse(file.buffer);
       content = result.text;
     } else if (
@@ -134,7 +135,7 @@ router.post("/case-file/upload", upload.single("file"), async (req, res) => {
 });
 
 // Catch multer errors (e.g. file too large) and return a clean 400
-router.use("/case-file/upload", (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+router.use("/case-file/upload", (err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
     res.status(400).json({ message: "File exceeds the 10 MB limit" });
     return;
