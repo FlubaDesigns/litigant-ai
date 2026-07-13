@@ -19,7 +19,7 @@
  */
 
 import { execSync } from "child_process";
-import { writeFileSync, unlinkSync } from "fs";
+import { writeFileSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -78,8 +78,12 @@ ${envEntry("GEMINI_API_KEY", process.env.GEMINI_API_KEY ?? "")}
 ${envEntry("XAI_API_KEY", process.env.XAI_API_KEY ?? "")}
 `;
 
-const yamlPath = join(tmpdir(), `cloudrun-service-${Date.now()}.yaml`);
-writeFileSync(yamlPath, yaml, "utf8");
+// Private temp dir (random suffix, accessible only by owner) so the YAML
+// containing the service account key and API keys is never in a shared,
+// guessable location. File is also written with owner-only permissions.
+const tmpDir = mkdtempSync(join(tmpdir(), "cloudrun-deploy-"));
+const yamlPath = join(tmpDir, "service.yaml");
+writeFileSync(yamlPath, yaml, { encoding: "utf8", mode: 0o600 });
 console.log(`Service YAML written to ${yamlPath}`);
 console.log(`  FIREBASE_SERVICE_ACCOUNT length : ${required.sa.length}`);
 console.log(`  ANTHROPIC_API_KEY starts with   : ${required.anthropic.slice(0, 15)}…`);
@@ -91,5 +95,5 @@ try {
   );
   console.log("✅ Cloud Run service updated.");
 } finally {
-  unlinkSync(yamlPath);
+  rmSync(tmpDir, { recursive: true, force: true });
 }
