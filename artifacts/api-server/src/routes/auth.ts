@@ -53,7 +53,7 @@ const verifyByIpLimiter = makeRateLimiter({
  *
  * Atomically:
  *   1. Creates the user document in Firestore (if it does not already exist)
- *   2. Grants the 100-credit signup bonus (idempotent — fires at most once per user)
+ *   2. Grants the 500-credit signup bonus (idempotent — fires at most once per user)
  *
  * The client never controls the credit amount or grant logic — this endpoint is
  * the sole authority for initial provisioning.

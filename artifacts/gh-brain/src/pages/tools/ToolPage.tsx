@@ -253,7 +253,7 @@ export default function ToolPage() {
                 Ready to analyze your {tool.subject}?
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                100 free credits on signup. No credit card required. Your first session takes less than 2 minutes.
+                500 free credits on signup. No credit card required. Your first session takes less than 2 minutes.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href={registerHref}>

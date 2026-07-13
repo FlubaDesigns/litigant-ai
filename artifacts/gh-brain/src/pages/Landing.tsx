@@ -124,11 +124,11 @@ const PLANS = [
   {
     name: "Trial",
     price: "Free",
-    credits: "100 credits on signup",
+    credits: "500 credits on signup",
     badge: null,
     highlight: false,
     features: [
-      "100 credits — no card required",
+      "500 credits — no card required",
       "Full access to the courtroom",
       "All AI models available",
       "Export to Markdown",
@@ -339,7 +339,7 @@ export default function LandingPage() {
                     className="h-11 px-7 text-sm font-bold tracking-wide transition-all inline-flex items-center gap-2"
                     style={{background:'hsl(38 92% 50%)', color:'#000'}}
                   >
-                    {isSignedIn ? "Open App" : "Start Free — 100 credits"}
+                    {isSignedIn ? "Open App" : "Start Free — 500 credits"}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
@@ -593,7 +593,7 @@ export default function LandingPage() {
               ))}
             </div>
             <p className="text-center text-xs text-zinc-600 font-mono mt-8">
-              100 credits = $1.00 · Credits never expire · Auto top-up available · Cancel anytime
+              100 credits = $1.00 · 500 free on signup · Credits never expire · Auto top-up available · Cancel anytime
             </p>
             </div>{/* /row — pricing grid */}
 
@@ -697,7 +697,7 @@ export default function LandingPage() {
                 Ready to convene the court?
               </h2>
               <p className="text-zinc-500 mb-10 text-sm">
-                Start free. No credit card required. Your first 100 credits are on us.
+                Start free. No credit card required. Your first 500 credits are on us.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link href={isSignedIn ? "/session" : "/register"}>
@@ -705,7 +705,7 @@ export default function LandingPage() {
                     className="h-12 px-10 text-sm font-bold uppercase tracking-wide transition-all inline-flex items-center gap-2"
                     style={{background:'hsl(38 92% 50%)', color:'#000'}}
                   >
-                    {isSignedIn ? "Open App" : "Start Free — 100 credits included"}
+                    {isSignedIn ? "Open App" : "Start Free — 500 credits included"}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>

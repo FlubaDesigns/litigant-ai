@@ -6,6 +6,7 @@
 - [Seat briefs system](seat-briefs.md) — per-seat MD files in api-server/src/seats/; loaded by seatBriefs.ts with Firestore override + 5-min cache; admin routes GET/PATCH/DELETE /admin/seat-briefs/:seatId
 - [Admin bootstrap](admin-bootstrap.md) — POST /admin/set-claim is master-secret gated (no Bearer token); user must sign out/in after claim is set; ADMIN_MASTER_SECRET env var required
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
+- [Signup bonus & personas](signup-config.md) — signup bonus = 500 credits ($1.67 actual Opus cost); 10 litigant personas wired in brainEngine.ts getRoles()
 - [Cloud Run deployment](cloud-run-deployment.md) — use Docker + Cloud Build API to deploy; timestamped image tag required to force new revision; index-firebase.ts is the Cloud Run routes entry point.
 - [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
 - [Cloud Run env vars](cloud-run-env.md) — ALWAYS use `node scripts/deploy-cloudrun.mjs`; NEVER `--env-vars-file scripts/cloud-run-env.yaml` (placeholders wipe real secrets every time).

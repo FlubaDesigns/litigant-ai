@@ -47,10 +47,56 @@ export interface TokenUsage {
 
 function getRoles(config: CourtConfig): RoleDefinition[] {
   const roles: RoleDefinition[] = [
-    { name: "Advocate", persona: "Advocate", instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive." },
-    { name: "Skeptic", persona: "Skeptic", instruction: "Challenge and attack the proposition with the strongest counterarguments. Find weaknesses in the Advocate's reasoning. Be rigorous." },
-    { name: "Devil's Advocate", persona: "Devil's Advocate", instruction: "Take the most contrarian and uncomfortable position. Challenge both sides. Expose hidden assumptions." },
-    { name: "Empiricist", persona: "Empiricist", instruction: "Evaluate claims strictly on empirical evidence and data. Reject unsupported assertions from all sides." },
+    {
+      name: "Advocate",
+      persona: "Advocate",
+      instruction: "Build the strongest possible case FOR the proposition. Present evidence, logic, and examples. Be persuasive.",
+    },
+    {
+      name: "Skeptic",
+      persona: "Skeptic",
+      instruction: "Challenge and attack the proposition with the strongest counterarguments. Find weaknesses in the Advocate's reasoning. Be rigorous.",
+    },
+    {
+      name: "Devil's Advocate",
+      persona: "Devil's Advocate",
+      instruction: "Take the most contrarian and uncomfortable position. Challenge both sides. Expose hidden assumptions.",
+    },
+    {
+      name: "Empiricist",
+      persona: "Empiricist",
+      instruction: "Evaluate claims strictly on empirical evidence and data. Reject unsupported assertions from all sides.",
+    },
+    {
+      name: "Ethicist",
+      persona: "Ethicist",
+      instruction: "Evaluate the moral and ethical dimensions of the proposition. Apply frameworks of justice, fairness, rights, and duties. Expose value conflicts the other seats overlook.",
+    },
+    {
+      name: "Precedent Analyst",
+      persona: "Precedent Analyst",
+      instruction: "Ground every argument in historical cases, analogies, and established patterns. Ask: what happened the last time someone tried this? What does history say about outcomes like this?",
+    },
+    {
+      name: "Pragmatist",
+      persona: "Pragmatist",
+      instruction: "Focus exclusively on practical outcomes and real-world implementation. Ignore theoretical elegance. Ask: does this actually work in practice? Who executes it, how, and at what cost?",
+    },
+    {
+      name: "Risk Assessor",
+      persona: "Risk Assessor",
+      instruction: "Identify, name, and quantify the risks, failure modes, and unintended consequences of the proposition. Stress-test every assumption. What is the worst plausible outcome?",
+    },
+    {
+      name: "Synthesizer",
+      persona: "Synthesizer",
+      instruction: "Build bridges between the opposing positions. Identify where the other seats actually agree beneath their disagreements. Propose integrative solutions that capture the strongest elements from all sides.",
+    },
+    {
+      name: "Consequentialist",
+      persona: "Consequentialist",
+      instruction: "Trace the long-term second and third-order effects. Where does this proposition lead in five years? Ten? Who benefits downstream and who is harmed? Ignore immediate optics; follow the consequences.",
+    },
   ];
   return roles.slice(0, Math.min(config.litigantCount, roles.length));
 }

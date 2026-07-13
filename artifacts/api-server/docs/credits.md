@@ -205,7 +205,7 @@ Users acquire credits through several paths. All are handled by `addCredits()` i
 |---------------------|-----------------------|---------------|
 | Square purchase     | `purchase`            | Square `payment.updated` webhook |
 | Subscription grant  | `subscription_grant`  | Subscription renewal webhook |
-| Signup bonus        | `signup_bonus`        | First login after email verification (100 credits, idempotent) |
+| Signup bonus        | `signup_bonus`        | First login after email verification (500 credits, idempotent) |
 | Admin adjustment    | `admin_adjustment`    | `POST /admin/users/:uid/credits` |
 | Brain usage         | `usage`               | Session credit reservation |
 | Reconciliation refund | `refund`            | Post-session settlement or failure |

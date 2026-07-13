@@ -283,7 +283,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
                   <Zap className="w-3.5 h-3.5 shrink-0 text-primary" />
-                  <span>Selected: <strong className="text-foreground">{prefs.litigantCount} litigants</strong> — no upper limit, the more you choose the more comprehensive the analysis.</span>
+                  <span>Selected: <strong className="text-foreground">{prefs.litigantCount} litigants</strong> — up to 10 minds on your panel. More seats means more angles and a deeper debate.</span>
                 </div>
               </div>
             )}

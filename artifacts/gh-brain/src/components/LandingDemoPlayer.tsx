@@ -287,7 +287,7 @@ export default function LandingDemoPlayer() {
               )}
 
               <Link href="/register" className="demo-cta">
-                Put your question on trial — 100 credits free →
+                Put your question on trial — 500 credits free →
               </Link>
             </div>
           )}
