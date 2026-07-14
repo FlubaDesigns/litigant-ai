@@ -36,6 +36,12 @@ for (const [key, val] of Object.entries(required)) {
   }
 }
 
+// Warn (but don't block) if email/payment secrets are absent
+const optionalWarn = ["RESEND_API_KEY", "SQUARE_ACCESS_TOKEN", "SQUARE_LOCATION_ID", "SQUARE_WEBHOOK_SIGNATURE_KEY"];
+for (const v of optionalWarn) {
+  if (!process.env[v]) console.warn(`WARN: ${v} is not set — emails/payments will be disabled in production.`);
+}
+
 function envEntry(name, value) {
   return `        - name: ${name}\n          value: ${JSON.stringify(value ?? "")}`;
 }
@@ -76,6 +82,11 @@ ${envEntry("ADMIN_MASTER_SECRET", process.env.ADMIN_MASTER_SECRET ?? "")}
 ${envEntry("OPENAI_API_KEY", process.env.OPENAI_API_KEY ?? "")}
 ${envEntry("GEMINI_API_KEY", process.env.GEMINI_API_KEY ?? "")}
 ${envEntry("XAI_API_KEY", process.env.XAI_API_KEY ?? "")}
+${envEntry("RESEND_API_KEY", process.env.RESEND_API_KEY ?? "")}
+${envEntry("SQUARE_ACCESS_TOKEN", process.env.SQUARE_ACCESS_TOKEN ?? "")}
+${envEntry("SQUARE_LOCATION_ID", process.env.SQUARE_LOCATION_ID ?? "")}
+${envEntry("SQUARE_WEBHOOK_SIGNATURE_KEY", process.env.SQUARE_WEBHOOK_SIGNATURE_KEY ?? "")}
+${envEntry("SQUARE_ENVIRONMENT", process.env.SQUARE_ENVIRONMENT ?? "production")}
 `;
 
 // Private temp dir (random suffix, accessible only by owner) so the YAML

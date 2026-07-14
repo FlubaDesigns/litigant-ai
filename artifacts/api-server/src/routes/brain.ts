@@ -224,7 +224,29 @@ async function reconcileCredits(
 }
 
 router.post("/run-brain", async (req, res) => {
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile, resumeWithFixedPipeline } = req.body as {
+  // ── Auth fast-path ────────────────────────────────────────────────────────
+  // Validate auth token (or confirm guest intent) BEFORE touching the body,
+  // so unauthenticated / malformed requests never reach Firestore or the
+  // credit engine. Previously the body was destructured and cost-estimation
+  // ran before auth, which caused 500s on empty-body requests.
+  const earlyAuthHeader = req.headers["authorization"];
+  if (earlyAuthHeader?.startsWith("Bearer ")) {
+    const earlyDb = getFirestoreDb();
+    if (!earlyDb || !isFirebaseConfigured()) {
+      res.status(503).json({ message: "Auth service unavailable." });
+      return;
+    }
+    const earlyDecoded = await verifyIdToken(earlyAuthHeader.slice(7));
+    if (!earlyDecoded) {
+      res.status(401).json({ message: "Invalid or expired auth token." });
+      return;
+    }
+    // Token is valid — fall through to full processing below.
+  }
+  // No Authorization header → guest path, allowed to continue.
+
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile, resumeWithFixedPipeline } = body as unknown as {
     question: string;
     config: CourtConfig;
     templateId?: string;
