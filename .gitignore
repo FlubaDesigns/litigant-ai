@@ -49,3 +49,6 @@ Thumbs.db
 .local/
 scripts/cloud-run-env.yaml
 .firebase/hosting.*.cache
+
+# Never commit Replit-attached files — may contain secrets
+attached_assets/
