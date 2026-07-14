@@ -7,7 +7,7 @@ Firebase Cloud Functions Gen2 uses a custom Node.js buildpack that sets its own 
 
 **The working approach:**
 1. Build a standalone Express server entrypoint (`server-cloudrun.ts` → `firebase-functions/lib/server.mjs`) via esbuild: `node artifacts/api-server/build-functions.mjs`.
-2. Pack the `firebase-functions/` directory (excluding `node_modules`) as a `tar.gz`.
+2. Pack the `firebase-functions/` directory (excluding only `node_modules`) as a `tar.gz` — `lib/` MUST be included, the Dockerfile does `COPY lib/ ./lib/` and will fail if it's absent.
 3. Upload to GCS bucket `gcf-v2-sources-781960492360-us-central1`.
 4. Submit a Cloud Build job via the Cloud Build API (uses `gcr.io/cloud-builders/docker`), building image `gcr.io/litigant-ai/api:deploy-<timestamp>`.
 5. PATCH the Cloud Run service via the Cloud Run v2 API with the new **timestamped** image tag.
