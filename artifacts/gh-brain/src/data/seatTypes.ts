@@ -8,7 +8,7 @@ export const SEAT_AI_OPTIONS = [
   },
   {
     id: "openai",
-    name: "GPT-4o",
+    name: "OpenAI",
     shortName: "GPT",
     grade: "A",
     desc: "Strong general reasoning, synthesis, and user-facing explanation.",
@@ -89,7 +89,7 @@ export interface SeatGrade {
 export type GradeMap = Record<string, SeatGrade>;
 
 export function makeDefaultSeatAssignment(): SeatAssignment {
-  return { provider: "anthropic", model: "claude-opus-4-5" };
+  return { provider: "anthropic" };
 }
 
 export function makeDefaultSeatMap(litigantCount: number): SeatMapConfig {
