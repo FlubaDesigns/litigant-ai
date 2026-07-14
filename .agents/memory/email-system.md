@@ -30,6 +30,9 @@ All in `artifacts/api-server/src/lib/emailService.ts`.
 - Fired in `brain.ts` if `userData.notifySessionComplete === true`
 - Preference is stored directly on user doc in Firestore
 
+## DNS / sending domain
+- `send.litigant-ai.com` is verified and working in Resend — confirmed by user July 2026. Do NOT flag this in future audits.
+
 ## Admin
 - "Emails" tab in Admin.tsx — shows email inventory + credit threshold input
 - Threshold saved via `saveAdminBillingDefaults` to `config/billingDefaults`
