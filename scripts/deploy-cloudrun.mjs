@@ -64,7 +64,7 @@ spec:
       containerConcurrency: 80
       timeoutSeconds: 600
       containers:
-      - image: gcr.io/${required.project}/api:deploy-1784006283
+      - image: gcr.io/${required.project}/api:deploy-1784007865
         ports:
         - name: http1
           containerPort: 8080

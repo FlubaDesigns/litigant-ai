@@ -1,26 +1,31 @@
 ---
 name: Cloud Run deployment
-description: How to deploy the api-server to Cloud Run; Firebase Functions buildpack is unusable.
+description: How to deploy the api-server to Cloud Run with a new Docker image.
 ---
 
-Firebase Cloud Functions Gen2 uses a custom Node.js buildpack that sets its own container CMD, completely ignoring `npm start`, `Procfile`, or any custom entrypoint. The buildpack tries to invoke the firebase-functions framework, which fails with our ESM bundle.
+**Full deploy flow (all three steps required for a code change):**
 
-**The working approach:**
-1. Build a standalone Express server entrypoint (`server-cloudrun.ts` → `firebase-functions/lib/server.mjs`) via esbuild: `node artifacts/api-server/build-functions.mjs`.
-2. Pack the `firebase-functions/` directory (excluding only `node_modules`) as a `tar.gz` — `lib/` MUST be included, the Dockerfile does `COPY lib/ ./lib/` and will fail if it's absent.
-3. Upload to GCS bucket `gcf-v2-sources-781960492360-us-central1`.
-4. Submit a Cloud Build job via the Cloud Build API (uses `gcr.io/cloud-builders/docker`), building image `gcr.io/litigant-ai/api:deploy-<timestamp>`.
-5. PATCH the Cloud Run service via the Cloud Run v2 API with the new **timestamped** image tag.
-6. Re-grant `roles/run.invoker` to `allUsers` via the Cloud Run v1 IAM API (does not persist across deploys).
+```bash
+# Step 1 — Bundle TypeScript → firebase-functions/lib/server.mjs
+node artifacts/api-server/build-functions.mjs
 
-**CRITICAL — Timestamped image tag:** Always use `gcr.io/litigant-ai/api:deploy-<timestamp>` (not bare `:latest`). Cloud Run detects no change when the image reference is identical and will NOT create a new revision, even if the underlying image content changed.
+# Step 2 — Build + push Docker image (use a fresh timestamp each time)
+IMAGE_TAG="deploy-$(date +%s)"
+gcloud builds submit firebase-functions/ \
+  --tag "gcr.io/$VITE_FIREBASE_PROJECT_ID/api:${IMAGE_TAG}" \
+  --project "$VITE_FIREBASE_PROJECT_ID" \
+  --timeout=300
 
-**CRITICAL — Routes entry point:** `app-firebase.ts` imports from `./routes/index-firebase.ts` (NOT `index.ts`). Any new route registered in `index.ts` MUST also be added to `index-firebase.ts` or it will be missing from the Cloud Run deployment.
+# Step 3 — Update tag in scripts/deploy-cloudrun.mjs, then:
+node scripts/deploy-cloudrun.mjs
+```
 
-**google-auth-library location:** `firebase-functions/node_modules/google-auth-library` — use `createRequire` to import it in `.mjs` scripts.
+**CRITICAL — Timestamped image tag:** Always use a fresh `deploy-<timestamp>` tag. Cloud Run will NOT create a new revision if the image reference is identical.
 
-**firebase.json** uses `"run": {"serviceId": "api", "region": "us-central1"}` rewrite (NOT `"function": "api"`). No Firebase Functions deployment needed.
+**Env-var-only change** (no code change): just run `node scripts/deploy-cloudrun.mjs` directly — no Docker rebuild needed. The script reads all secrets from Replit env vars.
 
-**Why:** Firebase Functions buildpack is designed for its own framework; it ignores all standard container startup conventions.
+**Routes entry point:** `app-firebase.ts` imports `./routes/index-firebase.ts` (NOT `index.ts`). New routes must be in both or they won't reach Cloud Run.
 
-**How to apply:** Any time the api-server needs a new production deployment, follow steps 1-7 above. Do NOT use `firebase deploy --only functions`.
+**Current image:** `gcr.io/litigant-ai/api:deploy-1784007865` (July 14, 2026)
+
+**Why:** Firebase Functions buildpack ignores npm start/Procfile entirely; we build a standalone Express server and deploy it as a plain Docker container on Cloud Run.

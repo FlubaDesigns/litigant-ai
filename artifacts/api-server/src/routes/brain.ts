@@ -47,8 +47,21 @@ import {
   isResendConfigured,
 } from "../lib/emailService.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
+import { makeRateLimiter } from "../lib/rateLimiter.js";
 
 const router = Router();
+
+/**
+ * IP-level burst limiter — applied before auth so anonymous traffic is also
+ * throttled. 30 runs per hour per IP. Generous for real users; stops hammering.
+ * Admins bypass the per-UID inner limiter below but still count here.
+ */
+const brainIpLimiter = makeRateLimiter({
+  keyFn: (req) => `brain-ip:${req.ip ?? "unknown"}`,
+  limit: 30,
+  windowMs: 60 * 60 * 1000,
+  message: "Too many requests. Please wait before starting another session.",
+});
 
 /**
  * Creates a Square Payment Link for an auto-refill top-up.
@@ -223,7 +236,7 @@ async function reconcileCredits(
   }).catch((e) => console.error(`[brain] ${source} failed for ${uid}:`, e));
 }
 
-router.post("/run-brain", async (req, res) => {
+router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // ── Auth fast-path ────────────────────────────────────────────────────────
   // Validate auth token (or confirm guest intent) BEFORE touching the body,
   // so unauthenticated / malformed requests never reach Firestore or the
