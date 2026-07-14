@@ -345,7 +345,7 @@ function ChecklistTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Firebase is not configured — checklist state cannot be saved.
+        Could not load checklist — try refreshing the page.
       </div>
     );
   }
