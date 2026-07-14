@@ -6,8 +6,23 @@
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer, { MulterError } from "multer";
+import { verifyIdToken } from "../lib/firebaseAdmin.js";
 
 const router = Router();
+
+async function requireAuth(req: Request, res: Response): Promise<string | null> {
+  const authHeader = req.headers["authorization"] as string | undefined;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  return decoded.uid;
+}
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -35,6 +50,9 @@ function truncate(text: string, maxChars = 12000): string {
 // ── POST /case-file/fetch-url ─────────────────────────────────────────────────
 
 router.post("/case-file/fetch-url", async (req, res) => {
+  const uid = await requireAuth(req, res);
+  if (!uid) return;
+
   const { url } = req.body as { url?: string };
   if (!url?.trim()) {
     res.status(400).json({ message: "url is required" });
@@ -92,6 +110,9 @@ router.post("/case-file/fetch-url", async (req, res) => {
 // ── POST /case-file/upload ────────────────────────────────────────────────────
 
 router.post("/case-file/upload", upload.single("file"), async (req, res) => {
+  const uid = await requireAuth(req, res);
+  if (!uid) return;
+
   const file = req.file;
   if (!file) {
     res.status(400).json({ message: "No file uploaded" });
