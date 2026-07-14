@@ -259,7 +259,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // No Authorization header → guest path, allowed to continue.
 
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile, resumeWithFixedPipeline } = body as unknown as {
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile, resumeWithFixedPipeline, failoverProvider } = body as unknown as {
     question: string;
     config: CourtConfig;
     templateId?: string;
@@ -269,6 +269,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     parentSessionId?: string;
     caseFile?: { id: string; type: "url" | "file"; name: string; content: string; url?: string }[];
     resumeWithFixedPipeline?: boolean;
+    failoverProvider?: string;
   };
 
   if (!question?.trim()) {
@@ -423,6 +424,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       rebuttalContext,
       caseFile,
       resumeWithFixedPipeline,
+      forcedProvider: failoverProvider,
       res,
       abortSignal: abortCtrl.signal,
     });

@@ -72,6 +72,11 @@ export interface SessionState {
   rebuttalRound: number;
   /** Pre-briefing documents / URLs attached before this session run. */
   caseFile: CaseFileItem[];
+  /**
+   * When a provider failover occurs during a run, the backup provider name is
+   * stored here so all subsequent turns are pinned to it.
+   */
+  failoverProvider: string | null;
 }
 
 type Action =
@@ -103,6 +108,7 @@ type Action =
       };
     }
   | { type: "ERROR"; message: string }
+  | { type: "PROVIDER_FAILOVER"; provider: string }
   | { type: "RESET" }
   | { type: "ADD_CASE_FILE"; item: CaseFileItem }
   | { type: "REMOVE_CASE_FILE"; id: string }
@@ -177,6 +183,7 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     pauseTranscript: null,
     grades: makeDefaultGrades(),
     caseFile: [],
+    failoverProvider: null,
   };
 }
 
@@ -363,6 +370,9 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
 
+    case "PROVIDER_FAILOVER":
+      return { ...state, failoverProvider: action.provider };
+
     case "REBUTTAL_SUBMIT":
       return {
         ...state,
@@ -521,6 +531,9 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       case "error":
         dispatch({ type: "ERROR", message: event.message || "Unknown error" });
         break;
+      case "provider_failover":
+        if (event.provider) dispatch({ type: "PROVIDER_FAILOVER", provider: event.provider });
+        break;
     }
   }, []);
 
@@ -585,6 +598,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       idToken,
       caseFile: state.caseFile.length > 0 ? state.caseFile : undefined,
       ...(opts?.overdraft ? { overdraft: true } : {}),
+      ...(state.failoverProvider ? { failoverProvider: state.failoverProvider } : {}),
     };
 
     try {

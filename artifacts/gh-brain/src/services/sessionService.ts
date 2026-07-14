@@ -43,6 +43,11 @@ export interface BrainRunRequest {
   resumeWithFixedPipeline?: boolean;
   /** User confirmed continuation on credit (overdraft). */
   overdraft?: boolean;
+  /**
+   * When a previous turn's provider failed over, the client sends back the
+   * backup provider name so the new run is pinned to it from the start.
+   */
+  failoverProvider?: string;
 }
 
 export type SSEEventType =
@@ -55,7 +60,8 @@ export type SSEEventType =
   | "round_end"
   | "paused_pre_pipeline"
   | "done"
-  | "error";
+  | "error"
+  | "provider_failover";
 
 export interface SSEEvent {
   type: SSEEventType;
@@ -118,6 +124,7 @@ export function runBrainSession(
           parentSessionId: request.rebuttalContext?.parentSessionId,
           caseFile: request.caseFile,
           resumeWithFixedPipeline: request.resumeWithFixedPipeline,
+          failoverProvider: request.failoverProvider,
         }),
         signal,
       });

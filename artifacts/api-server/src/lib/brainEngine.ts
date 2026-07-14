@@ -174,6 +174,12 @@ export interface BrainRunOptions {
    * Must be combined with `continueFromTranscript` (the debate transcript).
    */
   resumeWithFixedPipeline?: boolean;
+  /**
+   * Provider name sent by the client after a previous session's provider failed over.
+   * When set, overrides `config.provider` so the whole session uses this provider
+   * instead of the one originally selected by the user.
+   */
+  forcedProvider?: string;
   res: Response;
   abortSignal?: AbortSignal;
 }
@@ -217,10 +223,10 @@ function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error("Session aborted by client");
 }
 
-async function resolveProvider(config: CourtConfig): Promise<AIProvider> {
+async function resolveProvider(config: CourtConfig, forcedProvider?: string): Promise<AIProvider> {
   const configured = await getConfiguredProvidersAsync();
 
-  const requested = config.provider as string | undefined;
+  const requested = forcedProvider ?? (config.provider as string | undefined);
   if (requested && configured.includes(requested)) {
     return createProviderAsync(requested, config.model);
   }
@@ -272,6 +278,14 @@ async function resolveSeatProvider(
   }
 }
 
+/** Thrown by streamRole when the AI provider itself errors (not an abort). */
+class ProviderFailureError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProviderFailureError";
+  }
+}
+
 /** Stream a role's response, using real provider token counts when available */
 async function streamRole(
   provider: AIProvider,
@@ -294,9 +308,7 @@ async function streamRole(
     }
   } catch (err: any) {
     if (err?.message === "Session aborted by client" || signal?.aborted) throw err;
-    const fallback = `[${err?.message || "Provider error"}]`;
-    output = fallback;
-    onChunk(fallback);
+    throw new ProviderFailureError(err?.message || "Provider error");
   }
 
   // Use real token counts from provider if available; fall back to char estimation
@@ -320,19 +332,75 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const estimatedCredits = estimateCreditCost(config);
 
   const configured = await getConfiguredProvidersAsync();
-  const provider = await resolveProvider(config);
-  const providerName = provider.name;
+  let globalProvider = await resolveProvider(config, opts.forcedProvider);
+  const providerName = globalProvider.name;
   const modelName = config.model ?? "";
 
   // Per-seat providers — fall back to global provider when seat not configured
-  const orchProvider   = await resolveSeatProvider("orchestrator", config, provider, configured);
-  const modProvider    = await resolveSeatProvider("moderator",    config, provider, configured);
-  const archProvider   = await resolveSeatProvider("architect",    config, provider, configured);
-  const buildProvider  = await resolveSeatProvider("builder",      config, provider, configured);
-  const auditProvider  = await resolveSeatProvider("auditor",      config, provider, configured);
+  let orchProvider   = await resolveSeatProvider("orchestrator", config, globalProvider, configured);
+  let modProvider    = await resolveSeatProvider("moderator",    config, globalProvider, configured);
+  let archProvider   = await resolveSeatProvider("architect",    config, globalProvider, configured);
+  let buildProvider  = await resolveSeatProvider("builder",      config, globalProvider, configured);
+  let auditProvider  = await resolveSeatProvider("auditor",      config, globalProvider, configured);
 
   // Cumulative token tracker — passed by reference into every streamRole call
   const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
+
+  // ── Provider failover state ───────────────────────────────────────────────
+  // If a provider errors mid-run we silently switch the whole session to the
+  // next available configured provider and emit one `provider_failover` SSE
+  // event so the client can pin subsequent turns to the backup.
+  let failoverTriggered = false;
+
+  async function triggerFailover(failedProviderName: string): Promise<boolean> {
+    if (failoverTriggered) return true; // already on backup
+    const backupName = configured.find((n) => n !== failedProviderName);
+    if (!backupName) return false;
+    failoverTriggered = true;
+    const backup = await createProviderAsync(backupName);
+    globalProvider = backup;
+    if (orchProvider.name   === failedProviderName) orchProvider   = backup;
+    if (modProvider.name    === failedProviderName) modProvider    = backup;
+    if (archProvider.name   === failedProviderName) archProvider   = backup;
+    if (buildProvider.name  === failedProviderName) buildProvider  = backup;
+    if (auditProvider.name  === failedProviderName) auditProvider  = backup;
+    sendSSE(res, { type: "provider_failover", provider: backupName });
+    console.info(`[brainEngine] provider failover: ${failedProviderName} → ${backupName} (session ${opts.sessionId ?? "new"})`);
+    return true;
+  }
+
+  /**
+   * Calls streamRole with the given provider. On ProviderFailureError, triggers
+   * failover to a backup provider and retries once. Falls back to an inline
+   * error string only when no backup is available.
+   */
+  async function callRole(
+    p: AIProvider,
+    messages: ChatMessage[],
+    maxTokens: number,
+    onChunk: (text: string) => void,
+  ): Promise<string> {
+    try {
+      return await streamRole(p, messages, maxTokens, onChunk, usage, abortSignal);
+    } catch (err: any) {
+      if (err?.message === "Session aborted by client" || abortSignal?.aborted) throw err;
+      if (err instanceof ProviderFailureError || err?.name === "ProviderFailureError") {
+        const swapped = await triggerFailover(p.name);
+        if (swapped) {
+          try {
+            return await streamRole(globalProvider, messages, maxTokens, onChunk, usage, abortSignal);
+          } catch (retryErr: any) {
+            if (retryErr?.message === "Session aborted by client" || abortSignal?.aborted) throw retryErr;
+            // Both providers failed — fall through to error string
+          }
+        }
+        const fallback = `[${err?.message || "Provider error"}]`;
+        onChunk(fallback);
+        return fallback;
+      }
+      throw err;
+    }
+  }
 
   sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });
 
@@ -390,10 +458,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       },
     ];
 
-    const orchestratorFrame = await streamRole(
+    const orchestratorFrame = await callRole(
       orchProvider, orchMessages, 400,
       (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
-      usage, abortSignal
     );
 
     transcript.push(`**Orchestrator:** ${orchestratorFrame}`);
@@ -419,7 +486,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         throwIfAborted(abortSignal);
 
         const role = roles[i];
-        const litProvider = await resolveSeatProvider("litigant", config, provider, configured, i);
+        const litProvider = await resolveSeatProvider("litigant", config, globalProvider, configured, i);
         sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
 
         // In independent mode each agent only sees its OWN prior turns —
@@ -452,10 +519,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
           },
         ];
 
-        const roleOutput = await streamRole(
+        const roleOutput = await callRole(
           litProvider, messages, maxTokens,
           (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
-          usage, abortSignal
         );
 
         throwIfAborted(abortSignal);
@@ -551,10 +617,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
   ];
 
-  const moderatorSummary = await streamRole(
+  const moderatorSummary = await callRole(
     modProvider, moderatorMessages, 800,
     (chunk) => sendSSE(res, { type: "content", role: "Moderator", content: chunk }),
-    usage, abortSignal
   );
 
   transcript.push(`**Moderator (Summary):** ${moderatorSummary}`);
@@ -580,10 +645,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
   ];
 
-  const architectBlueprint = await streamRole(
+  const architectBlueprint = await callRole(
     archProvider, architectMessages, 600,
     (chunk) => sendSSE(res, { type: "content", role: "Architect", content: chunk }),
-    usage, abortSignal
   );
 
   transcript.push(`**Architect (Blueprint):** ${architectBlueprint}`);
@@ -612,10 +676,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
   ];
 
-  let builtArtifact = await streamRole(
+  let builtArtifact = await callRole(
     buildProvider, initialBuilderMessages, 1800,
     (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
-    usage, abortSignal
   );
 
   transcript.push(`**Builder (Artifact):** ${builtArtifact}`);
@@ -641,10 +704,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       { role: "user",   content: auditorUserPrompt },
     ];
 
-    auditorOutput = await streamRole(
+    auditorOutput = await callRole(
       auditProvider, auditorMessages, 1200,
       (chunk) => sendSSE(res, { type: "content", role: "Auditor", content: chunk }),
-      usage, abortSignal
     );
 
     const auditLabel = attempt === 1 ? "Auditor (Release)" : `Auditor (Re-review ${attempt - 1})`;
@@ -677,10 +739,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       },
     ];
 
-    builtArtifact = await streamRole(
+    builtArtifact = await callRole(
       buildProvider, revisionMessages, 1800,
       (chunk) => sendSSE(res, { type: "content", role: "Builder", content: chunk }),
-      usage, abortSignal
     );
 
     transcript.push(`**Builder (Revision ${attempt}):** ${builtArtifact}`);
@@ -703,10 +764,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
   ];
 
-  const finalAnswer = await streamRole(
+  const finalAnswer = await callRole(
     orchProvider, orchestratorCloseMessages, 1000,
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
-    usage, abortSignal
   );
 
   // Extract caveats from auditor output or final answer
