@@ -345,6 +345,125 @@ export async function sendSessionCompleteEmail(
   if (error) throw new Error(`Resend error: ${error.message}`);
 }
 
+function paymentReceiptTemplate(
+  displayName: string,
+  creditsAdded: number,
+  amountPaid: string,
+  newBalance: number,
+  appUrl: string
+): string {
+  const name = escapeHtml(displayName);
+  const now = new Date().toLocaleString("en-US", {
+    month: "long", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  });
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
+        <tr>
+          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
+                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px;">
+            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Payment Confirmed</p>
+            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Credits loaded,<br>${name}.</h1>
+            <p style="margin:0 0 32px;font-size:15px;color:#888;line-height:1.6;">Your payment went through and your credits are ready to use.</p>
+
+            <table cellpadding="0" cellspacing="0" style="width:100%;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;margin:0 0 32px;">
+              <tr>
+                <td style="padding:20px 24px;border-bottom:1px solid #1a1a1a;">
+                  <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td style="font-size:13px;color:#555;">Amount charged</td>
+                      <td align="right" style="font-size:16px;font-weight:700;color:#fff;">${amountPaid}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:20px 24px;border-bottom:1px solid #1a1a1a;">
+                  <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td style="font-size:13px;color:#555;">Credits added</td>
+                      <td align="right" style="font-size:16px;font-weight:700;color:#00c853;">+${creditsAdded.toLocaleString()}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:20px 24px;border-bottom:1px solid #1a1a1a;">
+                  <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td style="font-size:13px;color:#555;">New balance</td>
+                      <td align="right" style="font-size:16px;font-weight:700;color:#fff;">${newBalance.toLocaleString()} credits</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:20px 24px;">
+                  <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td style="font-size:13px;color:#555;">Date</td>
+                      <td align="right" style="font-size:13px;color:#666;">${now}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 24px;font-size:13px;color:#555;line-height:1.6;">Credits never expire — use them whenever you need them.</p>
+            <a href="${appUrl}/app" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">Start a session →</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
+            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${appUrl}" style="color:#555;text-decoration:none;">litigant-ai.com</a> · This is a receipt for your credit purchase. Keep it for your records.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendPaymentReceiptEmail(
+  uid: string,
+  creditsAdded: number,
+  amountPaidCents: number,
+  newBalance: number
+): Promise<void> {
+  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
+  const user = await getAuth().getUser(uid);
+  const amountPaid = `$${(amountPaidCents / 100).toFixed(2)}`;
+  const r = getResend();
+  const { error } = await r.emails.send({
+    from: FROM,
+    to: user.email!,
+    subject: `Receipt — ${creditsAdded.toLocaleString()} credits added to your account`,
+    html: paymentReceiptTemplate(
+      user.displayName ?? "Operator",
+      creditsAdded,
+      amountPaid,
+      newBalance,
+      APP_URL
+    ),
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
 export function isResendConfigured(): boolean {
   return !!process.env["RESEND_API_KEY"];
 }

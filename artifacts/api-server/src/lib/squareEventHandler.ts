@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { addCredits } from "./creditLedger.js";
 import { isFirebaseConfigured } from "./firebaseAdmin.js";
 import { logger } from "./logger.js";
+import { sendPaymentReceiptEmail, isResendConfigured } from "./emailService.js";
 
 /**
  * Verify a Square webhook signature.
@@ -104,6 +105,14 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         logger.info(`[SquareEvent] Event ${event.event_id} already processed — skipped`);
       } else {
         logger.info(`[SquareEvent] Granted ${creditAmount} credits to ${userId}`);
+
+        // Send payment receipt — only on a genuine, non-duplicate completed payment
+        if (isResendConfigured()) {
+          const amountPaidCents = (payment.amount_money?.amount as number | undefined) ?? 0;
+          const newBalance = result?.newBalance ?? 0;
+          sendPaymentReceiptEmail(userId, creditAmount, amountPaidCents, newBalance)
+            .catch((e) => logger.error(`[SquareEvent] Receipt email failed (non-fatal): ${e.message}`));
+        }
       }
       break;
     }
