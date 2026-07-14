@@ -685,3 +685,97 @@ export async function saveAdminBillingDefaults(
   return res.json();
 }
 
+
+// ── Email template management ─────────────────────────────────────────────────
+
+export interface EmailTemplate {
+  id: string;
+  label: string;
+  trigger: string;
+  tokens: string[];
+  canDisable: boolean;
+  defaultSubject: string;
+  defaultHeadline: string;
+  defaultIntroText: string;
+  enabled: boolean;
+  subject?: string;
+  headline?: string;
+  introText?: string;
+  updatedAt?: number;
+  updatedBy?: string;
+}
+
+export interface EmailTemplateVersion {
+  id: string;
+  templateId: string;
+  versionName: string;
+  subject: string;
+  headline: string;
+  introText: string;
+  createdAt: number;
+  createdBy: string;
+}
+
+export async function getEmailTemplates(): Promise<EmailTemplate[]> {
+  const res = await adminFetch("/admin/email-templates");
+  if (!res.ok) throw new Error("Failed to load email templates");
+  return (await res.json()).templates;
+}
+
+export async function updateEmailTemplate(
+  id: string,
+  updates: { enabled?: boolean; subject?: string; headline?: string; introText?: string }
+): Promise<void> {
+  const res = await adminFetch(`/admin/email-templates/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to update email template");
+  }
+}
+
+export async function fetchEmailTemplatePreview(id: string): Promise<string> {
+  const res = await adminFetch(`/admin/email-templates/${id}/preview`);
+  if (!res.ok) throw new Error("Failed to load preview");
+  return res.text();
+}
+
+export async function getEmailTemplateVersions(id: string): Promise<EmailTemplateVersion[]> {
+  const res = await adminFetch(`/admin/email-templates/${id}/versions`);
+  if (!res.ok) throw new Error("Failed to load versions");
+  return (await res.json()).versions;
+}
+
+export async function saveEmailTemplateVersion(id: string, versionName: string): Promise<string> {
+  const res = await adminFetch(`/admin/email-templates/${id}/versions`, {
+    method: "POST",
+    body: JSON.stringify({ versionName }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to save version");
+  }
+  return (await res.json()).versionId;
+}
+
+export async function activateEmailTemplateVersion(id: string, versionId: string): Promise<void> {
+  const res = await adminFetch(`/admin/email-templates/${id}/versions/${versionId}/activate`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to activate version");
+  }
+}
+
+export async function deleteEmailTemplateVersion(id: string, versionId: string): Promise<void> {
+  const res = await adminFetch(`/admin/email-templates/${id}/versions/${versionId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error ?? "Failed to delete version");
+  }
+}

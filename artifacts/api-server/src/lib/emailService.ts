@@ -2,6 +2,13 @@ import { Resend } from "resend";
 import { getAuth } from "firebase-admin/auth";
 import { isFirebaseConfigured, getFirestoreDb } from "./firebaseAdmin.js";
 import { getBillingDefaults } from "./billingDefaultsConfig.js";
+import {
+  getTemplateConfig,
+  EMAIL_TEMPLATE_META,
+  EMAIL_TEMPLATE_IDS,
+  interpolate,
+  type EmailTemplateId,
+} from "./emailTemplateStore.js";
 
 let resend: Resend | null = null;
 
@@ -16,18 +23,25 @@ function getResend(): Resend {
 
 const FROM = "Litigant AI <noreply@send.litigant-ai.com>";
 const APP_URL = `https://${process.env["APP_DOMAIN"] ?? "litigant-ai.com"}`;
+const LOGO_URL = "https://litigant-ai.com/logo.png";
 
-/**
- * Escapes the five HTML-significant characters before interpolating
- * user-controlled text into email HTML.
- */
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
   );
 }
 
-// ── Shared layout primitives ──────────────────────────────────────────────────
+/** Render intro text — split on blank lines so admins get multi-paragraph support. */
+function renderIntro(text: string): string {
+  return text
+    .split(/\n\n+/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .map((chunk) => paragraph(escapeHtml(chunk)))
+    .join("");
+}
+
+// ── Layout primitives ─────────────────────────────────────────────────────────
 
 function baseTemplate({
   badge,
@@ -49,19 +63,26 @@ function baseTemplate({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
+  <title>Litigant AI</title>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0a0a0a;padding:48px 16px;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="background:#111;border:1px solid #222;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
+      <table width="560" cellpadding="0" cellspacing="0" role="presentation"
+        style="background:#111;border:1px solid #222;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
 
         <!-- Header -->
         <tr>
-          <td style="padding:26px 40px;border-bottom:1px solid #1a1a1a;">
+          <td style="padding:22px 36px;border-bottom:1px solid #1a1a1a;">
             <table cellpadding="0" cellspacing="0" role="presentation">
               <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;vertical-align:middle;"></td>
-                <td style="padding-left:10px;font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.2px;vertical-align:middle;">Litigant AI</td>
+                <td style="vertical-align:middle;">
+                  <img src="${LOGO_URL}" width="34" height="34" alt="Litigant AI"
+                    style="display:block;border-radius:7px;border:0;">
+                </td>
+                <td style="padding-left:12px;vertical-align:middle;">
+                  <span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.2px;">Litigant AI</span>
+                </td>
               </tr>
             </table>
           </td>
@@ -69,20 +90,20 @@ function baseTemplate({
 
         <!-- Body -->
         <tr>
-          <td style="padding:40px 40px 36px;">
+          <td style="padding:40px 36px 36px;">
             <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:2.5px;color:${badgeColor};text-transform:uppercase;">${badge}</p>
-            <h1 style="margin:0 0 24px;font-size:26px;font-weight:700;color:#fff;line-height:1.25;letter-spacing:-0.3px;">${headline}</h1>
+            <h1 style="margin:0 0 26px;font-size:26px;font-weight:700;color:#fff;line-height:1.25;letter-spacing:-0.3px;">${headline}</h1>
             ${body}
           </td>
         </tr>
 
         <!-- Footer -->
         <tr>
-          <td style="padding:20px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;line-height:1.6;">
+          <td style="padding:18px 36px;border-top:1px solid #1a1a1a;">
+            <p style="margin:0;font-size:11px;color:#444;line-height:1.7;">
               &copy; ${year} Litigant AI &nbsp;&middot;&nbsp;
               <a href="${APP_URL}" style="color:#555;text-decoration:none;">litigant-ai.com</a>
-              ${footerExtra ? `&nbsp;&middot;&nbsp; ${footerExtra}` : ""}
+              ${footerExtra ? `&nbsp;&middot;&nbsp;${footerExtra}` : ""}
             </p>
           </td>
         </tr>
@@ -95,28 +116,29 @@ function baseTemplate({
 }
 
 function btn(text: string, url: string, bg = "#00c853", fg = "#000"): string {
-  return `<a href="${url}" style="display:inline-block;background:${bg};color:${fg};font-size:14px;font-weight:700;letter-spacing:0.3px;text-decoration:none;padding:13px 30px;border-radius:8px;">${text} &rarr;</a>`;
+  return `<a href="${url}" style="display:inline-block;background:${bg};color:${fg};font-size:14px;font-weight:700;letter-spacing:0.3px;text-decoration:none;padding:13px 28px;border-radius:8px;">${text} &rarr;</a>`;
 }
 
 function btnOutline(text: string, url: string): string {
-  return `<a href="${url}" style="display:inline-block;background:transparent;color:#777;font-size:14px;font-weight:600;letter-spacing:0.3px;text-decoration:none;padding:13px 30px;border-radius:8px;border:1px solid #2a2a2a;">${text}</a>`;
+  return `<a href="${url}" style="display:inline-block;background:transparent;color:#777;font-size:14px;font-weight:600;text-decoration:none;padding:13px 28px;border-radius:8px;border:1px solid #2a2a2a;">${text}</a>`;
 }
 
 function paragraph(html: string): string {
-  return `<p style="margin:0 0 22px;font-size:15px;color:#888;line-height:1.7;">${html}</p>`;
+  return `<p style="margin:0 0 22px;font-size:15px;color:#888;line-height:1.75;">${html}</p>`;
 }
 
-function callout(html: string, accentColor = "#00c853"): string {
-  return `<div style="background:#0d0d0d;border:1px solid ${accentColor}30;border-left:3px solid ${accentColor};border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 28px;">
-  <p style="margin:0;font-size:13px;color:#888;line-height:1.6;">${html}</p>
+function callout(html: string, accent = "#00c853"): string {
+  return `<div style="background:#0d0d0d;border:1px solid ${accent}28;border-left:3px solid ${accent};border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 28px;">
+  <p style="margin:0;font-size:13px;color:#888;line-height:1.65;">${html}</p>
 </div>`;
 }
 
 function infoTable(rows: { label: string; value: string; color?: string }[]): string {
   const cells = rows.map(({ label, value, color = "#fff" }, i) => {
-    const isLast = i === rows.length - 1;
+    const last = i === rows.length - 1;
+    const border = last ? "" : "border-bottom:1px solid #1a1a1a;";
     return `<tr>
-      <td style="padding:16px 22px;${isLast ? "" : "border-bottom:1px solid #1a1a1a;"}">
+      <td style="padding:16px 22px;${border}">
         <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
           <tr>
             <td style="font-size:12px;color:#555;">${label}</td>
@@ -126,131 +148,135 @@ function infoTable(rows: { label: string; value: string; color?: string }[]): st
       </td>
     </tr>`;
   }).join("");
-  return `<table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">${cells}</table>`;
+  return `<table cellpadding="0" cellspacing="0" role="presentation"
+    style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">${cells}</table>`;
 }
 
-// ── 1. Email verification ─────────────────────────────────────────────────────
+function featureList(items: { label: string; desc: string }[]): string {
+  const rows = items.map(({ label, desc }, i) => {
+    const last = i === items.length - 1;
+    const border = last ? "" : "border-bottom:1px solid #1a1a1a;";
+    return `<tr>
+      <td style="padding:16px 22px;${border}">
+        <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">${label}</p>
+        <p style="margin:0;font-size:13px;color:#888;">${desc}</p>
+      </td>
+    </tr>`;
+  }).join("");
+  return `<table cellpadding="0" cellspacing="0" role="presentation"
+    style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">${rows}</table>`;
+}
 
-function verificationTemplate(link: string, name: string, bonusCredits: number): string {
-  const safeName = escapeHtml(name);
+function ctaRow(primary: { text: string; url: string; bg?: string; fg?: string }, secondary?: { text: string; url: string }): string {
+  const primaryBtn = btn(primary.text, primary.url, primary.bg, primary.fg);
+  if (!secondary) return primaryBtn;
+  return `<table cellpadding="0" cellspacing="0" role="presentation"><tr>
+    <td style="padding-right:12px;">${primaryBtn}</td>
+    <td>${btnOutline(secondary.text, secondary.url)}</td>
+  </tr></table>`;
+}
+
+// ── Template renderers ────────────────────────────────────────────────────────
+// Each accepts `intro` — the resolved (interpolated) intro paragraph text.
+
+function verificationTemplate(link: string, intro: string, headline: string): string {
   return baseTemplate({
-    badge: "Email Verification",
-    headline: `Verify your access,<br>${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.verification.badgeText,
+    headline,
     body: `
-      ${paragraph(`A verification request was initiated for your Litigant AI account. Confirm your email to activate full access and unlock your <strong style="color:#fff;">${bonusCredits} free credits</strong>.`)}
-      ${btn(link ? "Verify my email" : "Verify my email", link)}
-      <p style="margin:24px 0 0;font-size:12px;color:#555;line-height:1.6;">
-        If you didn't create this account, you can safely ignore this email. This link expires in 24 hours.<br>
-        <span style="word-break:break-all;color:#444;">Or copy: ${link}</span>
+      ${renderIntro(intro)}
+      ${btn("Verify my email", link)}
+      <p style="margin:24px 0 0;font-size:12px;color:#555;line-height:1.65;">
+        If you didn't create this account, ignore this email — nothing has changed.<br>
+        <span style="word-break:break-all;color:#444;">Or copy this link: ${link}</span>
       </p>
     `,
     footerExtra: "You received this because an account was created with your email address.",
   });
 }
 
-// ── 2. Password reset ─────────────────────────────────────────────────────────
-
-function passwordResetTemplate(link: string, name: string): string {
-  const safeName = escapeHtml(name);
+function passwordResetTemplate(link: string, intro: string, headline: string): string {
   return baseTemplate({
-    badge: "Security",
-    headline: "Password reset<br>requested.",
+    badge: EMAIL_TEMPLATE_META.passwordReset.badgeText,
+    headline,
     body: `
-      ${paragraph(`Hi ${safeName}, a password reset was requested for your Litigant AI account. Click below to choose a new password.`)}
-      ${btn(link ? "Reset my password" : "Reset my password", link)}
-      ${callout("If you didn't request this, your account is safe — you can ignore this email. No changes have been made.")}
+      ${renderIntro(intro)}
+      ${btn("Reset my password", link)}
+      ${callout("If you didn't request this, your account is safe — no changes have been made.")}
       <p style="margin:0;font-size:12px;color:#555;">This link expires in 1 hour.</p>
     `,
     footerExtra: "You received this because a password reset was requested for your account.",
   });
 }
 
-// ── 3. Welcome (post-verification) ───────────────────────────────────────────
-
-function welcomeTemplate(name: string): string {
-  const safeName = escapeHtml(name);
+function welcomeTemplate(intro: string, headline: string): string {
   return baseTemplate({
-    badge: "Access Granted",
-    headline: `Welcome aboard,<br>${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.welcome.badgeText,
+    headline,
     body: `
-      ${paragraph("Your account is verified and your credits are loaded. You're all set to put the adversarial reasoning engine to work.")}
-      <table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">
-        <tr>
-          <td style="padding:18px 22px;border-bottom:1px solid #1a1a1a;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Run a session</p>
-            <p style="margin:0;font-size:13px;color:#888;">Submit a legal question and watch both sides argue it out.</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:18px 22px;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Top up credits</p>
-            <p style="margin:0;font-size:13px;color:#888;">Credits never expire — add more whenever you need them.</p>
-          </td>
-        </tr>
-      </table>
-      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
-        <td style="padding-right:12px;">${btn("Open dashboard", `${APP_URL}/app`)}</td>
-        <td>${btnOutline("Top up", `${APP_URL}/billing`)}</td>
-      </tr></table>
+      ${renderIntro(intro)}
+      ${featureList([
+        { label: "Run a session", desc: "Submit any legal question and watch both sides argued end-to-end." },
+        { label: "Rebuttal rounds", desc: "Challenge any answer to trigger a full rebuttal — stress-test your position." },
+        { label: "Top up anytime", desc: "Credits never expire. Add more whenever you need them." },
+      ])}
+      ${ctaRow({ text: "Open dashboard", url: `${APP_URL}/app` }, { text: "Top up", url: `${APP_URL}/billing` })}
     `,
   });
 }
 
-// ── 4. Low-credits warning ────────────────────────────────────────────────────
-
-function lowCreditsTemplate(name: string, balance: number, threshold: number): string {
-  const safeName = escapeHtml(name);
+function lowCreditsTemplate(intro: string, headline: string): string {
   return baseTemplate({
-    badge: "Credit Alert",
-    badgeColor: "#f59e0b",
-    headline: `Running low,<br>${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.lowCredits.badgeText,
+    badgeColor: EMAIL_TEMPLATE_META.lowCredits.badgeColor,
+    headline,
     body: `
-      ${paragraph(`Your balance has dropped to <strong style="color:#f59e0b;">${balance.toLocaleString()} credits</strong> — below your alert threshold of ${threshold.toLocaleString()}. Top up to keep your sessions running without interruption.`)}
-      ${callout("Credits never expire — add them any time and use them at your own pace.", "#f59e0b")}
+      ${renderIntro(intro)}
+      ${callout("Credits never expire once added — load any amount and use them at your own pace.", "#f59e0b")}
       ${btn("Top up credits", `${APP_URL}/billing`, "#f59e0b", "#000")}
     `,
     footerExtra: "You received this because your balance crossed your configured alert threshold.",
   });
 }
 
-// ── 5. Session complete ───────────────────────────────────────────────────────
-
-function sessionCompleteTemplate(name: string, sessionTitle: string, creditsUsed: number, sessionUrl: string): string {
-  const safeName = escapeHtml(name);
-  const safeTitle = escapeHtml(sessionTitle);
+function sessionCompleteTemplate(
+  sessionId: string,
+  sessionTitle: string,
+  creditsUsed: number,
+  intro: string,
+  headline: string
+): string {
   return baseTemplate({
-    badge: "Analysis Complete",
-    headline: "Your session<br>is ready.",
+    badge: EMAIL_TEMPLATE_META.sessionComplete.badgeText,
+    headline,
     body: `
-      ${paragraph(`Hey ${safeName}, the adversarial reasoning engine has finished analysing your query.`)}
+      ${renderIntro(intro)}
       ${infoTable([
-        { label: "Session", value: safeTitle },
+        { label: "Session", value: sessionTitle },
         { label: "Credits used", value: creditsUsed.toLocaleString(), color: "#888" },
       ])}
-      ${btn("View results", sessionUrl)}
+      ${btn("View results", `${APP_URL}/app/session/${sessionId}`)}
     `,
-    footerExtra: `You can disable session notifications in your <a href="${APP_URL}/settings" style="color:#555;text-decoration:none;">account settings</a>.`,
+    footerExtra: `Disable in your <a href="${APP_URL}/settings" style="color:#555;text-decoration:none;">account settings</a>.`,
   });
 }
 
-// ── 6. Payment receipt (manual purchase) ─────────────────────────────────────
-
 function paymentReceiptTemplate(
-  name: string,
   creditsAdded: number,
   amountPaid: string,
-  newBalance: number
+  newBalance: number,
+  intro: string,
+  headline: string
 ): string {
-  const safeName = escapeHtml(name);
   const now = new Date().toLocaleString("en-US", {
     month: "long", day: "numeric", year: "numeric",
     hour: "numeric", minute: "2-digit", timeZoneName: "short",
   });
   return baseTemplate({
-    badge: "Payment Confirmed",
-    headline: `Credits loaded,<br>${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.paymentReceipt.badgeText,
+    headline,
     body: `
-      ${paragraph("Your payment went through and your credits are ready to use.")}
+      ${renderIntro(intro)}
       ${infoTable([
         { label: "Amount charged", value: amountPaid },
         { label: "Credits added", value: `+${creditsAdded.toLocaleString()}`, color: "#00c853" },
@@ -263,377 +289,364 @@ function paymentReceiptTemplate(
   });
 }
 
-// ── 7. Auto-refill triggered ──────────────────────────────────────────────────
-
 function autoRefillTriggeredTemplate(
-  name: string,
   balance: number,
   topUpUrl: string,
-  dollarAmount: number
+  dollarAmount: number,
+  intro: string,
+  headline: string
 ): string {
-  const safeName = escapeHtml(name);
   return baseTemplate({
-    badge: "Auto Top-Up Ready",
-    badgeColor: "#f59e0b",
-    headline: `Top-up prepared,<br>${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.autoRefillTriggered.badgeText,
+    badgeColor: EMAIL_TEMPLATE_META.autoRefillTriggered.badgeColor,
+    headline,
     body: `
-      ${paragraph(`Your balance has dropped to <strong style="color:#f59e0b;">${balance.toLocaleString()} credits</strong>, triggering your auto top-up. A $${dollarAmount} checkout has been prepared — click below to complete it and reload your credits instantly.`)}
-      ${callout("This checkout link is unique to you and expires after 24 hours.", "#f59e0b")}
-      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
-        <td style="padding-right:12px;">${btn("Complete top-up", topUpUrl, "#f59e0b", "#000")}</td>
-        <td>${btnOutline("Manage billing", `${APP_URL}/billing`)}</td>
-      </tr></table>
+      ${renderIntro(intro)}
+      ${callout("This checkout link is unique to your account and expires after 24 hours.", "#f59e0b")}
+      ${ctaRow(
+        { text: "Complete top-up", url: topUpUrl, bg: "#f59e0b", fg: "#000" },
+        { text: "Manage billing", url: `${APP_URL}/billing` }
+      )}
     `,
     footerExtra: "You received this because your balance crossed your auto top-up threshold.",
   });
 }
 
-// ── 8. Account suspended ──────────────────────────────────────────────────────
-
-function accountSuspendedTemplate(name: string, reason?: string): string {
-  const safeName = escapeHtml(name);
-  const safeReason = reason ? escapeHtml(reason) : null;
+function accountSuspendedTemplate(reason: string | undefined, intro: string, headline: string): string {
   return baseTemplate({
-    badge: "Account Notice",
-    badgeColor: "#ef4444",
-    headline: `Your account<br>has been suspended.`,
+    badge: EMAIL_TEMPLATE_META.accountSuspended.badgeText,
+    badgeColor: EMAIL_TEMPLATE_META.accountSuspended.badgeColor,
+    headline,
     body: `
-      ${paragraph(`Hi ${safeName}, your Litigant AI account has been suspended and you will not be able to sign in.`)}
-      ${safeReason
-        ? infoTable([{ label: "Reason", value: safeReason, color: "#888" }])
-        : ""}
-      ${callout("If you believe this is a mistake, please contact our support team and we'll review your account.", "#ef4444")}
-      ${btn("Contact support", `mailto:support@litigant-ai.com`, "#ef4444", "#fff")}
+      ${renderIntro(intro)}
+      ${reason ? infoTable([{ label: "Reason on file", value: escapeHtml(reason), color: "#888" }]) : ""}
+      ${btn("Contact support", "mailto:support@litigant-ai.com", "#ef4444", "#fff")}
     `,
     footerExtra: "This notice was sent to the email address associated with your account.",
   });
 }
 
-// ── 9. Re-engagement (14 days inactive) ──────────────────────────────────────
-
-function reengagementTemplate(name: string, creditBalance: number): string {
-  const safeName = escapeHtml(name);
+function reengagementTemplate(creditBalance: number, intro: string, headline: string): string {
   return baseTemplate({
-    badge: "We Miss You",
-    headline: `Still here for you,<br>${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.reengagement.badgeText,
+    headline,
     body: `
-      ${paragraph(`You have <strong style="color:#fff;">${creditBalance.toLocaleString()} credits</strong> waiting in your account. Pick up where you left off — the adversarial reasoning engine is ready when you are.`)}
-      <table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">
-        <tr>
-          <td style="padding:18px 22px;border-bottom:1px solid #1a1a1a;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Case analysis</p>
-            <p style="margin:0;font-size:13px;color:#888;">Submit a brief or case summary and get both sides argued in full.</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:18px 22px;border-bottom:1px solid #1a1a1a;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Strategy review</p>
-            <p style="margin:0;font-size:13px;color:#888;">Test your arguments before filing — find the weaknesses first.</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:18px 22px;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Research</p>
-            <p style="margin:0;font-size:13px;color:#888;">Rapid legal reasoning on any question, jurisdiction, or doctrine.</p>
-          </td>
-        </tr>
-      </table>
+      ${renderIntro(intro)}
+      ${featureList([
+        { label: "Case analysis", desc: "Submit a brief or case summary and get both sides argued in full." },
+        { label: "Strategy review", desc: "Test your arguments before filing — find the weak points first." },
+        { label: "Legal research", desc: "Rapid reasoning on any question, jurisdiction, or doctrine." },
+      ])}
       ${btn("Return to dashboard", `${APP_URL}/app`)}
     `,
     footerExtra: `<a href="${APP_URL}/settings" style="color:#444;text-decoration:none;">Unsubscribe from re-engagement emails</a>`,
   });
 }
 
-// ── 10. First session milestone ───────────────────────────────────────────────
-
-function firstSessionTemplate(name: string, sessionTitle: string, sessionUrl: string): string {
-  const safeName = escapeHtml(name);
-  const safeTitle = escapeHtml(sessionTitle);
+function firstSessionTemplate(
+  sessionId: string,
+  sessionTitle: string,
+  intro: string,
+  headline: string
+): string {
   return baseTemplate({
-    badge: "First Session Complete",
-    headline: `You just ran your<br>first session.`,
+    badge: EMAIL_TEMPLATE_META.firstSession.badgeText,
+    headline,
     body: `
-      ${paragraph(`Nice work, ${safeName}. The adversarial reasoning engine has processed your first query — both sides have been argued. Your results are waiting.`)}
-      ${infoTable([{ label: "Session", value: safeTitle }])}
-      ${paragraph(`A few things worth knowing as you continue:`)}
-      <table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">
-        <tr>
-          <td style="padding:16px 22px;border-bottom:1px solid #1a1a1a;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Rebuttal rounds</p>
-            <p style="margin:0;font-size:13px;color:#888;">From inside a session you can challenge the answer and trigger a full rebuttal — useful for stress-testing arguments.</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:16px 22px;">
-            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Session history</p>
-            <p style="margin:0;font-size:13px;color:#888;">Every session is saved. You can review, share, or export transcripts from your dashboard.</p>
-          </td>
-        </tr>
-      </table>
-      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
-        <td style="padding-right:12px;">${btn("View my results", sessionUrl)}</td>
-        <td>${btnOutline("Back to dashboard", `${APP_URL}/app`)}</td>
-      </tr></table>
+      ${renderIntro(intro)}
+      ${infoTable([{ label: "Session", value: sessionTitle }])}
+      ${featureList([
+        { label: "Rebuttal rounds", desc: "Challenge any answer from inside a session to trigger a full rebuttal — great for stress-testing arguments." },
+        { label: "Session history", desc: "Every session is saved. Review, share, or export transcripts any time from your dashboard." },
+      ])}
+      ${ctaRow(
+        { text: "View my results", url: `${APP_URL}/app/session/${sessionId}` },
+        { text: "Back to dashboard", url: `${APP_URL}/app` }
+      )}
     `,
   });
 }
 
-// ── 11. Zero credits ──────────────────────────────────────────────────────────
-
-function zeroCreditsTemplate(name: string): string {
-  const safeName = escapeHtml(name);
+function zeroCreditsTemplate(intro: string, headline: string): string {
   return baseTemplate({
-    badge: "Out of Credits",
-    badgeColor: "#ef4444",
-    headline: `You're out of<br>credits, ${safeName}.`,
+    badge: EMAIL_TEMPLATE_META.zeroCredits.badgeText,
+    badgeColor: EMAIL_TEMPLATE_META.zeroCredits.badgeColor,
+    headline,
     body: `
-      ${paragraph("Your credit balance has hit zero. You won't be able to run new sessions until you top up.")}
+      ${renderIntro(intro)}
       ${callout("Credits never expire once added — top up any amount and start again immediately.", "#ef4444")}
-      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
-        <td style="padding-right:12px;">${btn("Top up now", `${APP_URL}/billing`, "#ef4444", "#fff")}</td>
-        <td>${btnOutline("View plans", `${APP_URL}/billing`)}</td>
-      </tr></table>
+      ${ctaRow(
+        { text: "Top up now", url: `${APP_URL}/billing`, bg: "#ef4444", fg: "#fff" },
+        { text: "View plans", url: `${APP_URL}/billing` }
+      )}
     `,
     footerExtra: "You received this because your credit balance reached zero.",
   });
 }
 
-// ── Send functions ────────────────────────────────────────────────────────────
+// ── Preview helper (used by admin preview endpoint) ───────────────────────────
+
+const SAMPLE_VARS: Record<EmailTemplateId, Record<string, string | number>> = {
+  verification:        { name: "Alex", bonusCredits: 500 },
+  passwordReset:       { name: "Alex" },
+  welcome:             { name: "Alex" },
+  lowCredits:          { name: "Alex", balance: 42, threshold: 100 },
+  sessionComplete:     { name: "Alex", credits: 120 },
+  paymentReceipt:      { name: "Alex", credits: 500 },
+  autoRefillTriggered: { name: "Alex", balance: 45, amount: 20 },
+  accountSuspended:    { name: "Alex" },
+  reengagement:        { name: "Alex", credits: 350 },
+  firstSession:        { name: "Alex" },
+  zeroCredits:         { name: "Alex" },
+};
+
+export function renderTemplatePreview(id: EmailTemplateId, overrides?: {
+  subject?: string; headline?: string; introText?: string;
+}): string {
+  const meta = EMAIL_TEMPLATE_META[id];
+  const sampleVars = SAMPLE_VARS[id];
+  const rawHeadline = overrides?.headline ?? meta.defaultHeadline;
+  const rawIntro    = overrides?.introText ?? meta.defaultIntroText;
+  const headline    = escapeHtml(interpolate(rawHeadline, sampleVars));
+  const intro       = interpolate(rawIntro, sampleVars);
+
+  switch (id) {
+    case "verification":
+      return verificationTemplate(`${APP_URL}/verify?token=PREVIEW`, intro, headline);
+    case "passwordReset":
+      return passwordResetTemplate(`${APP_URL}/reset?token=PREVIEW`, intro, headline);
+    case "welcome":
+      return welcomeTemplate(intro, headline);
+    case "lowCredits":
+      return lowCreditsTemplate(intro, headline);
+    case "sessionComplete":
+      return sessionCompleteTemplate("previewSessionId", "Sample legal query preview", 120, intro, headline);
+    case "paymentReceipt":
+      return paymentReceiptTemplate(500, "$25.00", 850, intro, headline);
+    case "autoRefillTriggered":
+      return autoRefillTriggeredTemplate(45, `${APP_URL}/billing`, 20, intro, headline);
+    case "accountSuspended":
+      return accountSuspendedTemplate("Violation of terms of service", intro, headline);
+    case "reengagement":
+      return reengagementTemplate(350, intro, headline);
+    case "firstSession":
+      return firstSessionTemplate("previewSessionId", "Sample legal query preview", intro, headline);
+    case "zeroCredits":
+      return zeroCreditsTemplate(intro, headline);
+  }
+}
+
+// ── Resolve + guard helper ────────────────────────────────────────────────────
+
+async function resolveTemplate(id: EmailTemplateId, vars: Record<string, string | number>): Promise<{
+  enabled: boolean;
+  subject: string;
+  headline: string;
+  intro: string;
+}> {
+  const meta   = EMAIL_TEMPLATE_META[id];
+  const config = await getTemplateConfig(id);
+  const subject  = interpolate(config.subject  ?? meta.defaultSubject,  vars);
+  const headline = interpolate(config.headline ?? meta.defaultHeadline, vars);
+  const intro    = interpolate(config.introText ?? meta.defaultIntroText, vars);
+  return { enabled: config.enabled, subject, headline, intro };
+}
+
+// ── Public send functions ─────────────────────────────────────────────────────
 
 export async function sendVerificationEmail(uid: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
-  const [user, billingDefaults] = await Promise.all([
-    getAuth().getUser(uid),
-    getBillingDefaults(),
-  ]);
-  const link = await getAuth().generateEmailVerificationLink(user.email!, {
-    url: `${APP_URL}/login?verified=1`,
+  const [user, billing] = await Promise.all([getAuth().getUser(uid), getBillingDefaults()]);
+  const link = await getAuth().generateEmailVerificationLink(user.email!, { url: `${APP_URL}/login?verified=1` });
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("verification", {
+    name, bonusCredits: billing.signupBonusCredits,
   });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: "Verify your Litigant AI access",
-    html: verificationTemplate(link, user.displayName ?? "Operator", billingDefaults.signupBonusCredits),
+    from: FROM, to: user.email!, subject,
+    html: verificationTemplate(link, intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendPasswordResetEmail(email: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
-  const link = await getAuth().generatePasswordResetLink(email, {
-    url: `${APP_URL}/login?reset=1`,
-  });
-  let displayName = "Operator";
-  try {
-    const user = await getAuth().getUserByEmail(email);
-    displayName = user.displayName ?? displayName;
-  } catch { /* user not found — still send */ }
+  const link = await getAuth().generatePasswordResetLink(email, { url: `${APP_URL}/login?reset=1` });
+  let name = "there";
+  try { name = (await getAuth().getUserByEmail(email)).displayName ?? name; } catch { /* ok */ }
+  const { enabled, subject, headline, intro } = await resolveTemplate("passwordReset", { name });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: email,
-    subject: "Reset your Litigant AI password",
-    html: passwordResetTemplate(link, displayName),
+    from: FROM, to: email, subject,
+    html: passwordResetTemplate(link, intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendWelcomeEmail(uid: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("welcome", { name });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: "Welcome to Litigant AI — you're in",
-    html: welcomeTemplate(user.displayName ?? "Operator"),
+    from: FROM, to: user.email!, subject,
+    html: welcomeTemplate(intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendLowCreditsEmail(uid: string, balance: number, threshold: number): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: `Credit alert — ${balance.toLocaleString()} credits remaining`,
-    html: lowCreditsTemplate(user.displayName ?? "Operator", balance, threshold),
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("lowCredits", {
+    name, balance: balance.toLocaleString(), threshold: threshold.toLocaleString(),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (!enabled) return;
+  const { error } = await getResend().emails.send({
+    from: FROM, to: user.email!, subject,
+    html: lowCreditsTemplate(intro, headline),
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendSessionCompleteEmail(
-  uid: string,
-  sessionId: string,
-  title: string,
-  creditsUsed: number
+  uid: string, sessionId: string, title: string, creditsUsed: number
 ): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("sessionComplete", { name });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: "Your analysis is ready",
-    html: sessionCompleteTemplate(
-      user.displayName ?? "Operator",
-      title,
-      creditsUsed,
-      `${APP_URL}/app/session/${sessionId}`
-    ),
+    from: FROM, to: user.email!, subject,
+    html: sessionCompleteTemplate(sessionId, title, creditsUsed, intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendPaymentReceiptEmail(
-  uid: string,
-  creditsAdded: number,
-  amountPaidCents: number,
-  newBalance: number
+  uid: string, creditsAdded: number, amountPaidCents: number, newBalance: number
 ): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: `Receipt — ${creditsAdded.toLocaleString()} credits added`,
-    html: paymentReceiptTemplate(
-      user.displayName ?? "Operator",
-      creditsAdded,
-      `$${(amountPaidCents / 100).toFixed(2)}`,
-      newBalance
-    ),
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("paymentReceipt", {
+    name, credits: creditsAdded.toLocaleString(),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (!enabled) return;
+  const { error } = await getResend().emails.send({
+    from: FROM, to: user.email!, subject,
+    html: paymentReceiptTemplate(creditsAdded, `$${(amountPaidCents / 100).toFixed(2)}`, newBalance, intro, headline),
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendAutoRefillTriggeredEmail(
-  uid: string,
-  balance: number,
-  topUpUrl: string,
-  dollarAmount: number
+  uid: string, balance: number, topUpUrl: string, dollarAmount: number
 ): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: `Auto top-up ready — complete your $${dollarAmount} reload`,
-    html: autoRefillTriggeredTemplate(
-      user.displayName ?? "Operator",
-      balance,
-      topUpUrl,
-      dollarAmount
-    ),
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("autoRefillTriggered", {
+    name, balance: balance.toLocaleString(), amount: dollarAmount,
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (!enabled) return;
+  const { error } = await getResend().emails.send({
+    from: FROM, to: user.email!, subject,
+    html: autoRefillTriggeredTemplate(balance, topUpUrl, dollarAmount, intro, headline),
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendAccountSuspendedEmail(uid: string, reason?: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
   if (!user.email) return;
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("accountSuspended", { name });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email,
-    subject: "Your Litigant AI account has been suspended",
-    html: accountSuspendedTemplate(user.displayName ?? "Operator", reason),
+    from: FROM, to: user.email, subject,
+    html: accountSuspendedTemplate(reason, intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
-export async function sendReengagementEmail(
-  uid: string,
-  creditBalance: number
-): Promise<void> {
+export async function sendReengagementEmail(uid: string, creditBalance: number): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
   if (!user.email) return;
-  const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email,
-    subject: `You have ${creditBalance.toLocaleString()} credits waiting`,
-    html: reengagementTemplate(user.displayName ?? "Operator", creditBalance),
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("reengagement", {
+    name, credits: creditBalance.toLocaleString(),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (!enabled) return;
+  const { error } = await getResend().emails.send({
+    from: FROM, to: user.email, subject,
+    html: reengagementTemplate(creditBalance, intro, headline),
+  });
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendFirstSessionEmail(
-  uid: string,
-  sessionId: string,
-  title: string
+  uid: string, sessionId: string, title: string
 ): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("firstSession", { name });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: "Your first session is ready",
-    html: firstSessionTemplate(
-      user.displayName ?? "Operator",
-      title,
-      `${APP_URL}/app/session/${sessionId}`
-    ),
+    from: FROM, to: user.email!, subject,
+    html: firstSessionTemplate(sessionId, title, intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 export async function sendZeroCreditsEmail(uid: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  const name = user.displayName ?? "there";
+  const { enabled, subject, headline, intro } = await resolveTemplate("zeroCredits", { name });
+  if (!enabled) return;
   const { error } = await getResend().emails.send({
-    from: FROM,
-    to: user.email!,
-    subject: "You're out of credits — top up to continue",
-    html: zeroCreditsTemplate(user.displayName ?? "Operator"),
+    from: FROM, to: user.email!, subject,
+    html: zeroCreditsTemplate(intro, headline),
   });
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  if (error) throw new Error(`Resend: ${error.message}`);
 }
 
 /**
- * Sends re-engagement emails to users who:
- *  - have creditBalance > 0
- *  - have not had a session in the last `inactiveDays` days
- *  - have not received a re-engagement email in the last `inactiveDays` days
- * Returns the number of emails sent.
+ * Re-engagement campaign — queries Firestore for users with credits who
+ * haven't had a session in `inactiveDays` days, and haven't been re-engaged
+ * in that same window.  Returns the number of emails successfully sent.
  */
 export async function runReengagementCampaign(inactiveDays = 14): Promise<number> {
   if (!isFirebaseConfigured()) return 0;
   const db = getFirestoreDb();
   if (!db) return 0;
 
-  const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000);
-  const cutoffMs = cutoff.getTime();
-
-  const snap = await db
-    .collection("users")
-    .where("creditBalance", ">", 0)
-    .get();
-
+  const cutoffMs = Date.now() - inactiveDays * 24 * 60 * 60 * 1000;
+  const snap = await db.collection("users").where("creditBalance", ">", 0).get();
   let sent = 0;
 
   for (const doc of snap.docs) {
     const data = doc.data();
-    const uid = doc.id;
-
-    // Skip if they've been active recently
-    const lastSessionMs = (data["lastSessionAt"] as number | undefined) ?? 0;
-    if (lastSessionMs > cutoffMs) continue;
-
-    // Skip if already re-engaged recently
-    const lastReengagedMs = (data["reengagementEmailSentAt"] as number | undefined) ?? 0;
-    if (lastReengagedMs > cutoffMs) continue;
-
-    // Skip banned users
     if (data["banned"]) continue;
+    if ((data["lastSessionAt"] as number | undefined ?? 0) > cutoffMs) continue;
+    if ((data["reengagementEmailSentAt"] as number | undefined ?? 0) > cutoffMs) continue;
 
     try {
-      await sendReengagementEmail(uid, data["creditBalance"] as number);
+      await sendReengagementEmail(doc.id, data["creditBalance"] as number);
       await doc.ref.update({ reengagementEmailSentAt: Date.now() });
       sent++;
     } catch (e: any) {
-      console.error(`[Reengagement] Failed for uid=${uid}: ${e.message}`);
+      console.error(`[Reengagement] uid=${doc.id}: ${e.message}`);
     }
   }
-
   return sent;
 }
 

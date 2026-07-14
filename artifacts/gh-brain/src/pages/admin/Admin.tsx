@@ -10,7 +10,7 @@ import {
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
   ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks, Bot,
-  ScrollText, RotateCcw as ResetIcon, Pencil, Mail,
+  ScrollText, RotateCcw as ResetIcon, Pencil, Mail, Eye, History,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -44,6 +44,10 @@ import {
   getPricingConfig, updateModelMultiplier, resetModelMultiplier,
   getApiKeys, saveApiKey, deleteApiKey,
   getAdminBillingDefaults, saveAdminBillingDefaults,
+  getEmailTemplates, updateEmailTemplate, fetchEmailTemplatePreview,
+  getEmailTemplateVersions, saveEmailTemplateVersion,
+  activateEmailTemplateVersion, deleteEmailTemplateVersion,
+  type EmailTemplate, type EmailTemplateVersion,
   getChecklist, setChecklistItemChecked,
   getAiStudioModels, toggleAiStudioModel, toggleAiStudioProvider,
   addAiStudioProvider, deleteAiStudioProvider, setModelQualityScore,
@@ -3474,11 +3478,187 @@ function AiStudioTab() {
 
 // ─── Emails Tab ──────────────────────────────────────────────────────────────
 
+function VersionRow({
+  version, templateId, onActivated, onDeleted,
+}: { version: EmailTemplateVersion; templateId: string; onActivated: () => void; onDeleted: () => void }) {
+  const [activating, setActivating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  return (
+    <div className="px-4 py-3 flex items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{version.versionName}</p>
+        <p className="text-xs text-muted-foreground">{new Date(version.createdAt).toLocaleDateString()}</p>
+      </div>
+      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-primary hover:text-primary gap-1" disabled={activating}
+        onClick={async () => {
+          setActivating(true);
+          try { await activateEmailTemplateVersion(templateId, version.id); toast.success(`"${version.versionName}" is now active.`); onActivated(); }
+          catch (e: any) { toast.error(e.message); } finally { setActivating(false); }
+        }}>
+        {activating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Activate
+      </Button>
+      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" disabled={deleting}
+        onClick={async () => {
+          setDeleting(true);
+          try { await deleteEmailTemplateVersion(templateId, version.id); onDeleted(); }
+          catch (e: any) { toast.error(e.message); } finally { setDeleting(false); }
+        }}>
+        {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+      </Button>
+    </div>
+  );
+}
+
+function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    subject:   template.subject   ?? template.defaultSubject,
+    headline:  template.headline  ?? template.defaultHeadline,
+    introText: template.introText ?? template.defaultIntroText,
+  });
+  const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [versionName, setVersionName] = useState("");
+  const [savingVersion, setSavingVersion] = useState(false);
+
+  const { data: versionsData, refetch: refetchVersions } = useQuery({
+    queryKey: ["email-template-versions", template.id],
+    queryFn: () => getEmailTemplateVersions(template.id),
+  } as any);
+  const versions: EmailTemplateVersion[] = (versionsData as any) ?? [];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try { await updateEmailTemplate(template.id, form); toast.success("Template saved."); onSaved(); }
+    catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
+  const handlePreview = async () => {
+    setPreviewing(true);
+    try {
+      const html = await fetchEmailTemplatePreview(template.id);
+      const win = window.open("", "_blank");
+      if (win) { win.document.write(html); win.document.close(); }
+    } catch (e: any) { toast.error(e.message); } finally { setPreviewing(false); }
+  };
+
+  const handleSaveVersion = async () => {
+    if (!versionName.trim()) return;
+    setSavingVersion(true);
+    try {
+      await saveEmailTemplateVersion(template.id, versionName.trim());
+      toast.success(`Version "${versionName.trim()}" saved.`);
+      setVersionName(""); refetchVersions();
+    } catch (e: any) { toast.error(e.message); } finally { setSavingVersion(false); }
+  };
+
+  return (
+    <>
+      <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
+        <SheetTitle className="text-base font-semibold">{template.label}</SheetTitle>
+        <SheetDescription className="text-xs font-mono text-muted-foreground/70 leading-snug">{template.trigger}</SheetDescription>
+      </SheetHeader>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Subject line</label>
+          <Input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} className="h-9 text-sm" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Headline</label>
+          <Input value={form.headline} onChange={e => setForm(p => ({ ...p, headline: e.target.value }))} className="h-9 text-sm" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Body text</label>
+          <Textarea value={form.introText} onChange={e => setForm(p => ({ ...p, introText: e.target.value }))} rows={6} className="text-sm resize-none leading-relaxed" />
+          <p className="text-[11px] text-muted-foreground/50">Separate paragraphs with a blank line. Variables below are auto-substituted.</p>
+        </div>
+        {template.tokens.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Available variables</p>
+            <div className="flex flex-wrap gap-1.5">
+              {template.tokens.map(t => (
+                <code key={t} className="text-[11px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-mono">{"{" + t + "}"}</code>
+              ))}
+            </div>
+          </div>
+        )}
+        <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5" disabled={previewing} onClick={handlePreview}>
+          {previewing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />} Preview in new tab
+        </Button>
+        <Separator />
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <History className="w-3.5 h-3.5" /> Save as version
+          </p>
+          <div className="flex gap-2">
+            <Input placeholder="e.g. Launch copy, A/B test v2…" value={versionName} onChange={e => setVersionName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleSaveVersion(); }} className="h-8 text-sm" />
+            <Button size="sm" variant="outline" className="h-8 shrink-0 px-4" disabled={!versionName.trim() || savingVersion} onClick={handleSaveVersion}>
+              {savingVersion ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+            </Button>
+          </div>
+        </div>
+        {versions.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Saved versions</p>
+            <div className="rounded-lg border border-border divide-y divide-border overflow-hidden">
+              {versions.map(v => (
+                <VersionRow key={v.id} version={v} templateId={template.id}
+                  onActivated={() => { refetchVersions(); onSaved(); setForm({ subject: v.subject, headline: v.headline, introText: v.introText }); }}
+                  onDeleted={refetchVersions} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 p-6 border-t border-border flex gap-3">
+        <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
+          {saving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />} Save changes
+        </Button>
+        <Button variant="outline" size="sm" title="Reset to system defaults"
+          onClick={() => setForm({ subject: template.defaultSubject, headline: template.defaultHeadline, introText: template.defaultIntroText })}>
+          <ResetIcon className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </>
+  );
+}
+
+function EmailRow({ template, onEdit, onToggle }: { template: EmailTemplate; onEdit: () => void; onToggle: (v: boolean) => void }) {
+  return (
+    <div className="px-5 py-4 flex items-center gap-4">
+      <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-medium">{template.label}</p>
+          {template.enabled
+            ? <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20"><span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />live</span>
+            : <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground border border-border">off</span>}
+          {(template.subject || template.headline || template.introText) &&
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">custom</span>}
+        </div>
+        <p className="text-xs text-muted-foreground/60 font-mono truncate">{template.trigger}</p>
+      </div>
+      {template.canDisable && <Switch checked={template.enabled} onCheckedChange={onToggle} className="shrink-0" />}
+      <Button variant="outline" size="sm" className="shrink-0 h-7 px-3 text-xs gap-1.5" onClick={onEdit}>
+        <Pencil className="w-3 h-3" /> Edit
+      </Button>
+    </div>
+  );
+}
+
 function EmailsTab() {
   const qc = useQueryClient();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [edited, setEdited] = useState<Partial<BillingDefaults>>({});
 
-  const { data: defaults, isLoading } = useQuery({
+  const { data: templates, isLoading: templatesLoading } = useQuery({
+    queryKey: ["admin-email-templates"],
+    queryFn: getEmailTemplates,
+  } as any);
+
+  const { data: defaults, isLoading: defaultsLoading } = useQuery({
     queryKey: ["admin-billing-defaults"],
     queryFn: getAdminBillingDefaults,
   } as any);
@@ -3486,7 +3666,7 @@ function EmailsTab() {
   const { mutate: saveDefs, isPending } = useMutation({
     mutationFn: (updates: Partial<BillingDefaults>) => saveAdminBillingDefaults(updates),
     onSuccess: () => {
-      toast.success("Email settings saved.");
+      toast.success("Threshold saved.");
       setEdited({});
       qc.invalidateQueries({ queryKey: ["admin-billing-defaults"] });
     },
@@ -3506,100 +3686,66 @@ function EmailsTab() {
     ...Object.fromEntries(Object.entries(edited).filter(([, v]) => v !== undefined)),
   } as BillingDefaults;
 
-  if (isLoading) return <div className="h-32 rounded-xl border border-border/40 animate-pulse" />;
+  const allTemplates: EmailTemplate[] = (templates as any) ?? [];
+  const editingTemplate = allTemplates.find(t => t.id === editingId) ?? null;
+
+  if (templatesLoading || defaultsLoading) return <TabSkeleton />;
+
+  const liveCount = allTemplates.filter(t => t.enabled).length;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h3 className="text-sm font-semibold">Email Settings</h3>
+        <h3 className="text-sm font-semibold">Automated Email System</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Configure automated emails sent to users. Triggers use{" "}
-          <code className="bg-secondary px-1 rounded text-xs">Resend</code> via{" "}
+          {liveCount} of {allTemplates.length} emails active &middot; sent via{" "}
+          <code className="bg-secondary px-1 rounded text-xs">Resend</code> &middot;{" "}
           <code className="bg-secondary px-1 rounded text-xs">send.litigant-ai.com</code>.
+          Click <strong>Edit</strong> on any email to customise its subject, headline, and body — or save and switch between named versions.
         </p>
       </div>
 
-      {/* Email inventory */}
+      {/* Email list */}
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-        <div className="px-5 py-4 bg-muted/20">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Emails</p>
+        <div className="px-5 py-3 bg-muted/20 flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">All Emails</p>
+          <p className="text-xs text-muted-foreground">{liveCount} / {allTemplates.length} active</p>
         </div>
-
-        {[
-          {
-            label: "Verification email",
-            trigger: "On signup — sent automatically",
-            desc: "Branded verify link with signup bonus credit count. Falls back to Firebase sender.",
-            status: "live",
-          },
-          {
-            label: "Welcome email",
-            trigger: "When user clicks 'I have verified' on the verify page",
-            desc: "Sent exactly once per user after email verification is confirmed. Has open-dashboard and top-up CTAs.",
-            status: "live",
-          },
-          {
-            label: "Low-credits warning",
-            trigger: `When balance drops below credit alert threshold (currently ${current.emailCreditWarningThreshold} credits)`,
-            desc: "At most once per 24 hours per user. Amber-themed with top-up link.",
-            status: "live",
-          },
-          {
-            label: "Session complete",
-            trigger: "After each session — only if user has opted in",
-            desc: "User preference saved in Firestore (notifySessionComplete). Has direct link to session results.",
-            status: "live",
-          },
-          {
-            label: "Password reset",
-            trigger: "When user submits Forgot Password form",
-            desc: "Rate limited 3/hr per email, 10/15 min per IP. Always returns success to prevent enumeration.",
-            status: "live",
-          },
-        ].map(({ label, trigger, desc, status }) => (
-          <div key={label} className="px-5 py-4 flex items-start justify-between gap-6">
-            <div className="space-y-1 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium">{label}</p>
-                {status === "live" && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                    live
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{desc}</p>
-              <p className="text-xs text-muted-foreground/60 font-mono">{trigger}</p>
-            </div>
-          </div>
+        {allTemplates.map(template => (
+          <EmailRow
+            key={template.id}
+            template={template}
+            onEdit={() => { setEditingId(template.id); setSheetOpen(true); }}
+            onToggle={(enabled) => {
+              qc.setQueryData(["admin-email-templates"], (old: any) =>
+                Array.isArray(old) ? old.map((t: EmailTemplate) => t.id === template.id ? { ...t, enabled } : t) : old
+              );
+              updateEmailTemplate(template.id, { enabled })
+                .then(() => qc.invalidateQueries({ queryKey: ["admin-email-templates"] }))
+                .catch((e: Error) => toast.error(e.message));
+            }}
+          />
         ))}
       </div>
 
       {/* Credit alert threshold */}
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-        <div className="px-5 py-4 bg-muted/20">
+        <div className="px-5 py-3 bg-muted/20">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Credit Alert Threshold</p>
         </div>
         <div className="flex items-center justify-between px-5 py-4 gap-6">
           <div className="space-y-0.5 flex-1">
-            <p className="text-sm font-medium">Send warning when balance falls below</p>
+            <p className="text-sm font-medium">Send low-credits warning when balance falls below</p>
             <p className="text-xs text-muted-foreground">
-              A low-credits email fires once per 24 hours when a user's balance drops below this value after a session.
-              Set to 0 to disable the warning email entirely.
+              Fires at most once per 24 hours per user. Set to 0 to disable the low-credits email entirely.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <input
-              type="number"
-              min={0}
-              max={10000}
+              type="number" min={0} max={10000}
               value={current.emailCreditWarningThreshold}
-              onChange={(e) =>
-                setEdited((prev) => ({
-                  ...prev,
-                  emailCreditWarningThreshold: parseInt(e.target.value) || 0,
-                }))
-              }
+              onChange={(e) => setEdited(prev => ({ ...prev, emailCreditWarningThreshold: parseInt(e.target.value) || 0 }))}
               className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
             />
             <span className="text-xs text-muted-foreground">credits</span>
@@ -3613,8 +3759,20 @@ function EmailsTab() {
         size="sm"
         className="bg-primary hover:bg-primary/90 text-primary-foreground"
       >
-        {isPending ? <><Loader2 className="w-3 h-3 animate-spin mr-1.5" />Saving…</> : "Save changes"}
+        {isPending ? <><Loader2 className="w-3 h-3 animate-spin mr-1.5" />Saving…</> : "Save threshold"}
       </Button>
+
+      {/* Edit sheet */}
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setEditingId(null); }}>
+        <SheetContent className="w-[540px] sm:max-w-[540px] flex flex-col gap-0 p-0 overflow-hidden">
+          {editingTemplate && (
+            <EmailEditPanel
+              template={editingTemplate}
+              onSaved={() => qc.invalidateQueries({ queryKey: ["admin-email-templates"] })}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -10,7 +10,19 @@ import {
   sendAccountSuspendedEmail,
   runReengagementCampaign,
   isResendConfigured,
+  renderTemplatePreview,
 } from "../lib/emailService.js";
+import {
+  EMAIL_TEMPLATE_IDS,
+  EMAIL_TEMPLATE_META,
+  getTemplateConfig,
+  saveTemplateConfig,
+  listTemplateVersions,
+  saveTemplateVersion,
+  activateTemplateVersion,
+  deleteTemplateVersion,
+  type EmailTemplateId,
+} from "../lib/emailTemplateStore.js";
 import {
   getAdminPricingTable,
   saveMultiplierOverride,
@@ -440,6 +452,163 @@ router.post("/admin/send-reengagement", requireAdmin, async (req: any, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+// ── Email template management ─────────────────────────────────────────────────
+
+/**
+ * GET /admin/email-templates
+ * Returns all 11 template IDs with their metadata + current active config.
+ */
+router.get("/admin/email-templates", requireAdmin, async (_req, res) => {
+  try {
+    const configs = await Promise.all(
+      EMAIL_TEMPLATE_IDS.map(async (id) => {
+        const config = await getTemplateConfig(id);
+        const meta = EMAIL_TEMPLATE_META[id];
+        return {
+          id,
+          label: meta.label,
+          trigger: meta.trigger,
+          tokens: meta.tokens,
+          canDisable: meta.canDisable,
+          defaultSubject: meta.defaultSubject,
+          defaultHeadline: meta.defaultHeadline,
+          defaultIntroText: meta.defaultIntroText,
+          enabled: config.enabled,
+          subject: config.subject,
+          headline: config.headline,
+          introText: config.introText,
+          updatedAt: config.updatedAt,
+          updatedBy: config.updatedBy,
+        };
+      })
+    );
+    return res.json({ templates: configs });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/email-templates/:id
+ * Update the active config for a template (subject, headline, introText, enabled).
+ */
+router.patch("/admin/email-templates/:id", requireAdmin, async (req: any, res) => {
+  const id = req.params["id"] as EmailTemplateId;
+  if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
+    return res.status(400).json({ error: "Unknown template ID" });
+  }
+  const { enabled, subject, headline, introText } = req.body as {
+    enabled?: boolean; subject?: string; headline?: string; introText?: string;
+  };
+  try {
+    await saveTemplateConfig(id, { enabled, subject, headline, introText }, req.adminUid as string);
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /admin/email-templates/:id/preview
+ * Returns the rendered HTML for the template using sample data.
+ * Accepts optional query params: subject, headline, introText for live preview.
+ */
+router.get("/admin/email-templates/:id/preview", requireAdmin, async (req: any, res) => {
+  const id = req.params["id"] as EmailTemplateId;
+  if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
+    return res.status(400).json({ error: "Unknown template ID" });
+  }
+  const { headline, introText } = req.query as { headline?: string; introText?: string };
+  try {
+    const html = renderTemplatePreview(id, { headline, introText });
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    return res.send(html);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /admin/email-templates/:id/versions
+ * List all saved versions for a template (newest first, max 20).
+ */
+router.get("/admin/email-templates/:id/versions", requireAdmin, async (req: any, res) => {
+  const id = req.params["id"] as EmailTemplateId;
+  if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
+    return res.status(400).json({ error: "Unknown template ID" });
+  }
+  try {
+    const versions = await listTemplateVersions(id);
+    return res.json({ versions });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /admin/email-templates/:id/versions
+ * Save the current active config as a named version snapshot.
+ * Body: { versionName: string }
+ */
+router.post("/admin/email-templates/:id/versions", requireAdmin, async (req: any, res) => {
+  const id = req.params["id"] as EmailTemplateId;
+  if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
+    return res.status(400).json({ error: "Unknown template ID" });
+  }
+  const { versionName } = req.body as { versionName?: string };
+  if (!versionName?.trim()) {
+    return res.status(400).json({ error: "versionName is required" });
+  }
+  try {
+    const versionId = await saveTemplateVersion(id, versionName.trim(), req.adminUid as string);
+    return res.json({ success: true, versionId });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /admin/email-templates/:id/versions/:versionId/activate
+ * Copy the version's content into the active template config.
+ */
+router.post(
+  "/admin/email-templates/:id/versions/:versionId/activate",
+  requireAdmin,
+  async (req: any, res) => {
+    const { id, versionId } = req.params as { id: EmailTemplateId; versionId: string };
+    if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
+      return res.status(400).json({ error: "Unknown template ID" });
+    }
+    try {
+      await activateTemplateVersion(id, versionId, req.adminUid as string);
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(err.message === "Version not found" ? 404 : 500).json({ error: err.message });
+    }
+  }
+);
+
+/**
+ * DELETE /admin/email-templates/:id/versions/:versionId
+ */
+router.delete(
+  "/admin/email-templates/:id/versions/:versionId",
+  requireAdmin,
+  async (req: any, res) => {
+    const { id, versionId } = req.params as { id: EmailTemplateId; versionId: string };
+    if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
+      return res.status(400).json({ error: "Unknown template ID" });
+    }
+    try {
+      await deleteTemplateVersion(id, versionId);
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 // ── Sessions ──────────────────────────────────────────────────────────────────
 
