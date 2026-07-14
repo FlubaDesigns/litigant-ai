@@ -554,7 +554,7 @@ function NotificationsTab({ user }: { user: User }) {
   return (
     <div className="space-y-6 max-w-md">
       <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
-        Email notifications will be sent to <strong>{user.email}</strong>. Firebase email delivery requires a configured sender — these preferences are stored now and will take effect once email is wired.
+        Email notifications will be sent to <strong>{user.email}</strong>. Your preferences are saved and applied to all transactional emails from Litigant AI.
       </div>
 
       <div className="space-y-4">

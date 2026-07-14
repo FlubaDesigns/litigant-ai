@@ -69,6 +69,12 @@ router.patch("/billing/auto-refill", async (req, res) => {
   if (typeof enabled !== "boolean") {
     return res.status(400).json({ error: "enabled (boolean) is required" });
   }
+  if (thresholdCredits !== undefined && (typeof thresholdCredits !== "number" || !Number.isInteger(thresholdCredits) || thresholdCredits < 1 || thresholdCredits > 50_000)) {
+    return res.status(400).json({ error: "thresholdCredits must be an integer between 1 and 50,000" });
+  }
+  if (warningThresholdCredits !== undefined && (typeof warningThresholdCredits !== "number" || !Number.isInteger(warningThresholdCredits) || warningThresholdCredits < 1 || warningThresholdCredits > 50_000)) {
+    return res.status(400).json({ error: "warningThresholdCredits must be an integer between 1 and 50,000" });
+  }
   if (dollarAmount !== undefined && (typeof dollarAmount !== "number" || dollarAmount < 1 || dollarAmount > 500)) {
     return res.status(400).json({ error: "dollarAmount must be a number between 1 and 500" });
   }
@@ -185,7 +191,6 @@ router.post("/billing/checkout", async (req, res) => {
   }
 
   const origin =
-    (req.headers["origin"] as string | undefined) ||
     (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
@@ -233,7 +238,6 @@ router.post("/billing/checkout/custom", async (req, res) => {
   const creditAmount = roundedDollars * CREDITS_PER_DOLLAR;
 
   const origin =
-    (req.headers["origin"] as string | undefined) ||
     (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
