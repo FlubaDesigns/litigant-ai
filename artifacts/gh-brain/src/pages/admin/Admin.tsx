@@ -157,8 +157,7 @@ function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
         <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
-            Firebase is not configured — admin data is unavailable in dev mode. Stats will show zeros.
-            Connect Firebase to see real data.
+            Firebase is not configured — connect it to see real admin data.
           </span>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -346,7 +345,7 @@ function ChecklistTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Firebase not configured — checklist state can't be saved in dev mode.
+        Firebase is not configured — checklist state cannot be saved.
       </div>
     );
   }
@@ -1375,7 +1374,7 @@ function CreditPacksTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Firebase not configured — credit pack config unavailable in dev mode.
+        Failed to load credit pack config — the server returned an error.
       </div>
     );
   }
@@ -2143,7 +2142,7 @@ function SystemHealthTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Firebase not configured — system health data is unavailable in dev mode.</span>
+        <span>Failed to load system health data — the server returned an error. Check the Cloud Run logs.</span>
       </div>
     );
   }
@@ -2227,7 +2226,7 @@ function ApiUsageTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Firebase not configured — API usage data unavailable in dev mode.</span>
+        <span>Failed to load API usage data — the server returned an error.</span>
       </div>
     );
   }
@@ -2327,7 +2326,7 @@ function ErrorLogsTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Firebase not configured — error logs unavailable in dev mode.</span>
+        <span>Failed to load error logs — the server returned an error.</span>
       </div>
     );
   }
@@ -2403,7 +2402,7 @@ function AbuseFlagsTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Firebase not configured — abuse flag data unavailable in dev mode.</span>
+        <span>Failed to load abuse flag data — the server returned an error.</span>
       </div>
     );
   }
@@ -2606,7 +2605,7 @@ function ApiKeysTab() {
       {isError && (
         <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          Firebase not configured — API key management unavailable in dev mode. Keys can still be set via environment variables.
+          Failed to load API keys — the server returned an error.
         </div>
       )}
 
@@ -3388,7 +3387,7 @@ function AiStudioTab() {
     );
   }
 
-  const { models, disabledProviders, customProviders } = data;
+  const { models = [], disabledProviders = [], customProviders = [] } = data ?? {};
   const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending;
   const enabledCount = models.filter((m) => m.enabled).length;
 
@@ -3485,7 +3484,7 @@ function PricingTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Firebase not configured — pricing config unavailable in dev mode.
+        Failed to load pricing config — the server returned an error.
       </div>
     );
   }

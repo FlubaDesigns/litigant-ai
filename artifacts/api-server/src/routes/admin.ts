@@ -194,21 +194,34 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
 
     const [
       userCount, sessionCount, txCount,
-      recentSessions, errorSessions, feedbackCount, sessions7d,
+      recentSessions, feedbackCount, sessions7d,
     ] = await Promise.all([
       db.collection("users").count().get(),
       db.collection("sessions").count().get(),
       db.collection("credit_transactions").count().get(),
       db.collection("sessions").where("createdAt", ">=", last24h).count().get(),
-      db.collection("sessions").where("status", "==", "error").where("createdAt", ">=", last7d).count().get(),
       db.collection("feedback").where("createdAt", ">=", last7d).count().get(),
       // Scoped to the same 7-day window as errorSessions so the error rate
       // reflects recent behaviour rather than dividing by the all-time total.
       db.collection("sessions").where("createdAt", ">=", last7d).count().get(),
     ]);
 
+    // This query needs a composite index (status + createdAt).
+    // Run it separately so a missing index doesn't crash the whole endpoint.
+    let errorCount7d = 0;
+    try {
+      const errorSessions = await db
+        .collection("sessions")
+        .where("status", "==", "error")
+        .where("createdAt", ">=", last7d)
+        .count()
+        .get();
+      errorCount7d = errorSessions.data().count;
+    } catch {
+      // Composite index not yet created — error count unavailable but rest of page works.
+    }
+
     const sessionCount7d = sessions7d.data().count;
-    const errorCount7d   = errorSessions.data().count;
 
     return res.json({
       status: "ok",
@@ -225,8 +238,6 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
         errorSessions: errorCount7d,
         feedbackEntries: feedbackCount.data().count,
         // Denominator is 7-day session total, not lifetime total.
-        // Using the lifetime total would trend the rate toward zero as the
-        // product ages, masking real spikes in recent error counts.
         errorRate: sessionCount7d > 0
           ? ((errorCount7d / sessionCount7d) * 100).toFixed(1)
           : "0.0",
@@ -527,17 +538,18 @@ router.get("/admin/api-usage", requireAdmin, async (_req, res) => {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   try {
+    // Single-field index only (createdAt) — filter type in-memory to avoid composite index requirement.
     const usageSnap = await db
       .collection("credit_transactions")
-      .where("type", "==", "usage")
       .where("createdAt", ">=", since)
       .orderBy("createdAt", "desc")
-      .limit(500)
+      .limit(1000)
       .get();
 
     const byDay: Record<string, { date: string; sessions: number; creditsUsed: number }> = {};
     for (const doc of usageSnap.docs) {
       const data = doc.data();
+      if ((data["type"] as string) !== "usage") continue; // filter in-memory
       const date =
         data["createdAt"]?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "unknown";
       if (!byDay[date]) byDay[date] = { date, sessions: 0, creditsUsed: 0 };
@@ -597,17 +609,20 @@ router.get("/admin/error-logs", requireAdmin, async (req, res) => {
       /* api_logs may not exist */
     }
 
-    // Sessions with error status are always a useful error signal
+    // Single-field index only (createdAt) — filter status in-memory to avoid composite index requirement.
     const failedSnap = await db
       .collection("sessions")
-      .where("status", "==", "error")
       .orderBy("createdAt", "desc")
-      .limit(20)
+      .limit(200)
       .get();
+
+    const errorSessions = failedSnap.docs
+      .filter((d) => d.data()["status"] === "error")
+      .slice(0, 20);
 
     return res.json({
       logs,
-      failedSessions: failedSnap.docs.map((d) => ({
+      failedSessions: errorSessions.map((d) => ({
         ...serializeDoc(d),
         _type: "session_error",
       })),
@@ -626,16 +641,20 @@ router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
   const limit = Math.min(Number(req.query["limit"]) || 50, 200);
 
   try {
+    // Single-field index only (createdAt) — filter rating in-memory to avoid composite index requirement.
     const snap = await db
       .collection("feedback")
-      .where("rating", "in", ["bad", "warn"])
       .orderBy("createdAt", "desc")
-      .limit(limit)
+      .limit(limit * 10)
       .get();
 
+    const flagDocs = snap.docs
+      .filter((d) => ["bad", "warn"].includes(d.data()["rating"] as string))
+      .slice(0, limit);
+
     return res.json({
-      flags: snap.docs.map((d) => serializeDoc(d)),
-      totalCount: snap.size,
+      flags: flagDocs.map((d) => serializeDoc(d)),
+      totalCount: flagDocs.length,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
