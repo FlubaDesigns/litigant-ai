@@ -8,7 +8,7 @@
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
 - [Signup bonus & personas](signup-config.md) — signup bonus = 500 credits ($1.67 actual Opus cost); 10 litigant personas wired in brainEngine.ts getRoles()
 - [Cloud Run deployment](cloud-run-deployment.md) — GitHub Actions auto-deploys on push to main; SA key rotation: never paste in chat/commit to repo; attach as file only
-- [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
+- [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); app.ts MUST mount router at BOTH /api AND /api-server/api for Replit dev routing.
 - [Cloud Run env vars](cloud-run-env.md) — ALWAYS use `node scripts/deploy-cloudrun.mjs`; NEVER `--env-vars-file scripts/cloud-run-env.yaml` (placeholders wipe real secrets every time).
 - [Canonical cost calibration](cost-calibration.md) — single source for session cost estimates; self-calibrates from last 50 sessions; FIXED_STAGE_PRIOR until 5 sessions accumulate.
 - [API schema drift crashes frontend](api-schema-drift.md) — live Cloud Run API may lag behind; estimateCredits and any API-driven computation must use optional chaining + fallbacks.

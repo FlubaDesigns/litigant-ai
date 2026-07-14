@@ -475,6 +475,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding: 7px var(--gutter);
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
 }
 .sz-control-stats {
   display: flex;
@@ -483,14 +486,22 @@
   padding: 4px var(--gutter) 6px;
   overflow-x: auto;
   border-top: 1px solid #111;
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Zone 2: Your Court */
 .sz-court {
   flex-shrink: 0;
-  padding: 8px var(--gutter);
   background: rgba(2, 8, 2, 0.9);
   border-bottom: 1px solid #1a1a1a;
+}
+.sz-court-inner {
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 8px var(--gutter);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -503,6 +514,9 @@
   padding: 6px var(--gutter);
   background: rgba(2, 8, 2, 0.7);
   border-bottom: 1px solid #111;
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
 }
 .sz-court-summary-text {
   font-size: 11px;

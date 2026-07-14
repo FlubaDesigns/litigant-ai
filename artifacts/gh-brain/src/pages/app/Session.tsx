@@ -1049,6 +1049,8 @@ export default function SessionPage() {
   const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, loadCompleteSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades, addCaseFile, removeCaseFile } = brainSession;
   const [, navigate] = useLocation();
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   const [configOpen, setConfigOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -1442,7 +1444,7 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="session-bg">
+    <div className="session-bg main">
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -1544,6 +1546,7 @@ export default function SessionPage() {
       ══════════════════════════════════════════════════════ */}
       {isIdle ? (
         <div className="sz-court">
+        <div className="sz-court-inner">
           {(() => {
             const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
             const namedSeats = [
@@ -1633,6 +1636,7 @@ export default function SessionPage() {
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
           </div>
+        </div>{/* sz-court-inner */}
         </div>
       ) : (
         <div className="sz-court-summary">
