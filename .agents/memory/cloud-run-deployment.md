@@ -3,7 +3,12 @@ name: Cloud Run deployment
 description: How to deploy the api-server to Cloud Run with a new Docker image.
 ---
 
-**Full deploy flow (all three steps required for a code change):**
+**Preferred deploy method: GitHub Actions**
+Push to `main` on GitHub → triggers `.github/workflows/deploy-cloudrun.yml` → auto-deploys env vars to Cloud Run. All 13 secrets are stored in GitHub Secrets (pushed via GitHub Secrets API).
+
+**Manual deploy (env-var-only change, no code change):** just run `node scripts/deploy-cloudrun.mjs` directly — no Docker rebuild needed. The script reads all secrets from Replit env vars. Requires valid `FIREBASE_SERVICE_ACCOUNT_JSON` in Replit Secrets.
+
+**Full deploy flow (code change requires new Docker image):**
 
 ```bash
 # Step 1 — Bundle TypeScript → firebase-functions/lib/server.mjs
@@ -22,10 +27,10 @@ node scripts/deploy-cloudrun.mjs
 
 **CRITICAL — Timestamped image tag:** Always use a fresh `deploy-<timestamp>` tag. Cloud Run will NOT create a new revision if the image reference is identical.
 
-**Env-var-only change** (no code change): just run `node scripts/deploy-cloudrun.mjs` directly — no Docker rebuild needed. The script reads all secrets from Replit env vars.
-
 **Routes entry point:** `app-firebase.ts` imports `./routes/index-firebase.ts` (NOT `index.ts`). New routes must be in both or they won't reach Cloud Run.
 
 **Current image:** `gcr.io/litigant-ai/api:deploy-1784007865` (July 14, 2026)
+
+**SA key rotation:** Never share SA JSON in chat or commit to repo — GitHub secret scanning will detect it and Google auto-disables the key within minutes. Always attach as a file and push to GitHub Secrets via API. `attached_assets/` is gitignored to prevent accidental commits.
 
 **Why:** Firebase Functions buildpack ignores npm start/Procfile entirely; we build a standalone Express server and deploy it as a plain Docker container on Cloud Run.

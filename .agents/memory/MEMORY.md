@@ -7,7 +7,7 @@
 - [Admin bootstrap](admin-bootstrap.md) — POST /admin/set-claim is master-secret gated (no Bearer token); user must sign out/in after claim is set; ADMIN_MASTER_SECRET env var required
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
 - [Signup bonus & personas](signup-config.md) — signup bonus = 500 credits ($1.67 actual Opus cost); 10 litigant personas wired in brainEngine.ts getRoles()
-- [Cloud Run deployment](cloud-run-deployment.md) — use Docker + Cloud Build API to deploy; timestamped image tag required to force new revision; index-firebase.ts is the Cloud Run routes entry point.
+- [Cloud Run deployment](cloud-run-deployment.md) — GitHub Actions auto-deploys on push to main; SA key rotation: never paste in chat/commit to repo; attach as file only
 - [Cloud Run path prefix](cloud-run-prefix.md) — Firebase Hosting rewrites pass full path (/api-server/…); must use a wrapper Express app to strip prefix BEFORE inner app routes.
 - [Cloud Run env vars](cloud-run-env.md) — ALWAYS use `node scripts/deploy-cloudrun.mjs`; NEVER `--env-vars-file scripts/cloud-run-env.yaml` (placeholders wipe real secrets every time).
 - [Canonical cost calibration](cost-calibration.md) — single source for session cost estimates; self-calibrates from last 50 sessions; FIXED_STAGE_PRIOR until 5 sessions accumulate.
@@ -17,3 +17,4 @@
 - [Email system](email-system.md) — 5 live transactional emails; welcome/low-credits/session-complete added Jul 2026; credit threshold admin-configurable via billingDefaults.
 - [Pre-pipeline cap gate](pre-pipeline-cap-gate.md) — credit cap now blocks BEFORE fixed pipeline; `pausedPrePipeline` result + `paused_pre_pipeline` SSE; resume via `resumeWithFixedPipeline:true`.
 - [Cloud Run env update safety](cloud-run-env-update.md) — never --set-env-vars with a single key; always --env-vars-file with full set
+- [SA key security](sa-key-security.md) — never paste SA JSON in chat or commit to repo; Google auto-disables keys detected in public repos within minutes; always attach as file and push via GitHub Secrets API; attached_assets/ is now gitignored
