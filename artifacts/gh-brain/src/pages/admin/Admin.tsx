@@ -10,7 +10,7 @@ import {
   AlertTriangle, TrendingUp, Database, Server, BarChart2,
   AlertCircle, HeartCrack, ThumbsDown, DollarSign, RotateCcw,
   ChevronDown, ChevronUp, SlidersHorizontal, Package, Plus, Trash2, ListChecks, Bot,
-  ScrollText, RotateCcw as ResetIcon, Pencil,
+  ScrollText, RotateCcw as ResetIcon, Pencil, Mail,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
   | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys"
-  | "checklist" | "ai-studio" | "seat-orders";
+  | "checklist" | "ai-studio" | "seat-orders" | "emails";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
@@ -79,6 +79,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "limits",       label: "Limits",          icon: SlidersHorizontal },
   { id: "flags",        label: "Feature Flags",   icon: Flag },
   { id: "templates",    label: "Templates",       icon: LayoutTemplate },
+  { id: "emails",       label: "Emails",          icon: Mail },
 ];
 
 function formatDate(iso?: string | null) {
@@ -1785,6 +1786,7 @@ function BillingDefaultsSection() {
     defaultThresholdCredits: 100,
     defaultWarningThresholdCredits: 200,
     signupBonusCredits: 500,
+    emailCreditWarningThreshold: 100,
   };
   const current: BillingDefaults = {
     ...(defaults ?? BILLING_FALLBACK),
@@ -3470,6 +3472,153 @@ function AiStudioTab() {
   );
 }
 
+// ─── Emails Tab ──────────────────────────────────────────────────────────────
+
+function EmailsTab() {
+  const qc = useQueryClient();
+  const [edited, setEdited] = useState<Partial<BillingDefaults>>({});
+
+  const { data: defaults, isLoading } = useQuery({
+    queryKey: ["admin-billing-defaults"],
+    queryFn: getAdminBillingDefaults,
+  } as any);
+
+  const { mutate: saveDefs, isPending } = useMutation({
+    mutationFn: (updates: Partial<BillingDefaults>) => saveAdminBillingDefaults(updates),
+    onSuccess: () => {
+      toast.success("Email settings saved.");
+      setEdited({});
+      qc.invalidateQueries({ queryKey: ["admin-billing-defaults"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const EMAIL_FALLBACK: BillingDefaults = {
+    autoRefillAmounts: [10, 20, 50, 100, 200],
+    defaultAutoRefillAmount: 20,
+    defaultThresholdCredits: 100,
+    defaultWarningThresholdCredits: 200,
+    signupBonusCredits: 500,
+    emailCreditWarningThreshold: 100,
+  };
+  const current: BillingDefaults = {
+    ...(defaults ?? EMAIL_FALLBACK),
+    ...Object.fromEntries(Object.entries(edited).filter(([, v]) => v !== undefined)),
+  } as BillingDefaults;
+
+  if (isLoading) return <div className="h-32 rounded-xl border border-border/40 animate-pulse" />;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold">Email Settings</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Configure automated emails sent to users. Triggers use{" "}
+          <code className="bg-secondary px-1 rounded text-xs">Resend</code> via{" "}
+          <code className="bg-secondary px-1 rounded text-xs">send.litigant-ai.com</code>.
+        </p>
+      </div>
+
+      {/* Email inventory */}
+      <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
+        <div className="px-5 py-4 bg-muted/20">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Emails</p>
+        </div>
+
+        {[
+          {
+            label: "Verification email",
+            trigger: "On signup — sent automatically",
+            desc: "Branded verify link with signup bonus credit count. Falls back to Firebase sender.",
+            status: "live",
+          },
+          {
+            label: "Welcome email",
+            trigger: "When user clicks 'I have verified' on the verify page",
+            desc: "Sent exactly once per user after email verification is confirmed. Has open-dashboard and top-up CTAs.",
+            status: "live",
+          },
+          {
+            label: "Low-credits warning",
+            trigger: `When balance drops below credit alert threshold (currently ${current.emailCreditWarningThreshold} credits)`,
+            desc: "At most once per 24 hours per user. Amber-themed with top-up link.",
+            status: "live",
+          },
+          {
+            label: "Session complete",
+            trigger: "After each session — only if user has opted in",
+            desc: "User preference saved in Firestore (notifySessionComplete). Has direct link to session results.",
+            status: "live",
+          },
+          {
+            label: "Password reset",
+            trigger: "When user submits Forgot Password form",
+            desc: "Rate limited 3/hr per email, 10/15 min per IP. Always returns success to prevent enumeration.",
+            status: "live",
+          },
+        ].map(({ label, trigger, desc, status }) => (
+          <div key={label} className="px-5 py-4 flex items-start justify-between gap-6">
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{label}</p>
+                {status === "live" && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                    live
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{desc}</p>
+              <p className="text-xs text-muted-foreground/60 font-mono">{trigger}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Credit alert threshold */}
+      <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
+        <div className="px-5 py-4 bg-muted/20">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Credit Alert Threshold</p>
+        </div>
+        <div className="flex items-center justify-between px-5 py-4 gap-6">
+          <div className="space-y-0.5 flex-1">
+            <p className="text-sm font-medium">Send warning when balance falls below</p>
+            <p className="text-xs text-muted-foreground">
+              A low-credits email fires once per 24 hours when a user's balance drops below this value after a session.
+              Set to 0 to disable the warning email entirely.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <input
+              type="number"
+              min={0}
+              max={10000}
+              value={current.emailCreditWarningThreshold}
+              onChange={(e) =>
+                setEdited((prev) => ({
+                  ...prev,
+                  emailCreditWarningThreshold: parseInt(e.target.value) || 0,
+                }))
+              }
+              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+            <span className="text-xs text-muted-foreground">credits</span>
+          </div>
+        </div>
+      </div>
+
+      <Button
+        onClick={() => saveDefs(edited)}
+        disabled={isPending || Object.keys(edited).length === 0}
+        size="sm"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+      >
+        {isPending ? <><Loader2 className="w-3 h-3 animate-spin mr-1.5" />Saving…</> : "Save changes"}
+      </Button>
+    </div>
+  );
+}
+
 function PricingTab() {
   const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery({
@@ -3685,6 +3834,7 @@ export default function AdminPage() {
           {activeTab === "limits"       && <LimitsTab />}
           {activeTab === "flags"        && <FeatureFlagsTab />}
           {activeTab === "templates"    && <TemplatesTab />}
+          {activeTab === "emails"       && <EmailsTab />}
         </motion.div>
       </div>
     </div>

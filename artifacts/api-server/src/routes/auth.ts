@@ -3,7 +3,7 @@ import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { grantSignupBonus } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
-import { sendVerificationEmail, sendPasswordResetEmail, isResendConfigured } from "../lib/emailService.js";
+import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail, isResendConfigured } from "../lib/emailService.js";
 
 const router = Router();
 
@@ -132,6 +132,52 @@ router.post("/auth/provision", async (req, res) => {
   } catch (err: any) {
     console.error("[Auth] provision error:", err.message);
     return res.status(500).json({ error: "Provisioning failed" });
+  }
+});
+
+/**
+ * POST /auth/welcome
+ *
+ * Sends the post-verification welcome email exactly once per user.
+ * Called by the frontend when the user confirms their email is verified.
+ * Idempotent — guarded by a `welcomeEmailSent` flag on the user doc.
+ */
+router.post("/auth/welcome", async (req, res) => {
+  const authHeader = req.headers["authorization"] as string | undefined;
+  if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) return res.status(401).json({ error: "Unauthorized" });
+
+  if (!isFirebaseConfigured()) return res.json({ sent: false, reason: "firebase_not_configured" });
+  const db = getFirestoreDb();
+  if (!db) return res.json({ sent: false, reason: "firestore_unavailable" });
+
+  const uid = decoded.uid;
+  const userRef = db.collection("users").doc(uid);
+
+  try {
+    const snap = await userRef.get();
+    if (snap.data()?.welcomeEmailSent) {
+      return res.json({ sent: false, reason: "already_sent" });
+    }
+
+    // Mark before sending so concurrent calls can't double-send
+    await userRef.update({ welcomeEmailSent: true, updatedAt: FieldValue.serverTimestamp() });
+
+    try {
+      await sendWelcomeEmail(uid);
+    } catch (emailErr: any) {
+      // Roll back the flag so a retry can attempt re-send
+      await userRef.update({ welcomeEmailSent: false }).catch(() => {});
+      console.error("[Auth] welcome email failed:", emailErr.message);
+      return res.status(502).json({ error: "Failed to send welcome email" });
+    }
+
+    return res.json({ sent: true });
+  } catch (err: any) {
+    console.error("[Auth] /auth/welcome error:", err.message);
+    return res.status(500).json({ error: "Internal error" });
   }
 });
 

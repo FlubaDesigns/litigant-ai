@@ -12,6 +12,8 @@ export interface BillingDefaults {
   defaultWarningThresholdCredits: number;
   /** Credits granted to every new user on first verified sign-in */
   signupBonusCredits: number;
+  /** Balance below which a low-credits warning email is sent (admin-configurable) */
+  emailCreditWarningThreshold: number;
 }
 
 const STATIC_DEFAULTS: BillingDefaults = {
@@ -20,6 +22,7 @@ const STATIC_DEFAULTS: BillingDefaults = {
   defaultThresholdCredits: 100,
   defaultWarningThresholdCredits: 200,
   signupBonusCredits: 500,
+  emailCreditWarningThreshold: 100,
 };
 
 let _cache: BillingDefaults | null = null;
@@ -79,12 +82,19 @@ export async function getBillingDefaults(): Promise<BillingDefaults> {
         ? data.signupBonusCredits
         : STATIC_DEFAULTS.signupBonusCredits;
 
+    const emailCreditWarningThreshold =
+      isPositiveInt(data.emailCreditWarningThreshold) &&
+      data.emailCreditWarningThreshold <= 100_000
+        ? data.emailCreditWarningThreshold
+        : STATIC_DEFAULTS.emailCreditWarningThreshold;
+
     const merged: BillingDefaults = {
       autoRefillAmounts,
       defaultAutoRefillAmount,
       defaultThresholdCredits,
       defaultWarningThresholdCredits,
       signupBonusCredits,
+      emailCreditWarningThreshold,
     };
     _cache = merged;
     _cacheExpiry = now + CACHE_TTL_MS;

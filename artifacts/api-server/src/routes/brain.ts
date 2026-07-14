@@ -39,6 +39,7 @@ import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixed
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
+import { sendLowCreditsEmail, sendSessionCompleteEmail, isResendConfigured } from "../lib/emailService.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
 
 const router = Router();
@@ -494,14 +495,44 @@ router.post("/run-brain", async (req, res) => {
           console.error("[brain] Failed to update token usage on session:", e);
         }
 
-        // Auto-refill: check if user's balance has dropped below their threshold
-        // and trigger a Square payment link if so (non-fatal)
+        // Auto-refill + post-session email notifications (all non-fatal)
         try {
           const userSnap = await db.collection("users").doc(uid).get();
-          const newBalance = (userSnap.data()?.creditBalance as number) ?? 0;
+          const userData = userSnap.data() ?? {};
+          const newBalance = (userData.creditBalance as number) ?? 0;
+
           await checkAndTriggerAutoRefill(uid, newBalance, createAutoRefillUrl);
+
+          if (isResendConfigured()) {
+            const billingDefaults = await getBillingDefaults();
+            const emailThreshold = billingDefaults.emailCreditWarningThreshold;
+
+            // Low-credits warning — send at most once per 24 hours
+            if (newBalance < emailThreshold) {
+              const lastSentMs = (userData.lowCreditEmailSentAt as number | undefined) ?? 0;
+              const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+              if (lastSentMs < twentyFourHoursAgo) {
+                sendLowCreditsEmail(uid, newBalance, emailThreshold)
+                  .then(() =>
+                    db.collection("users").doc(uid).update({
+                      lowCreditEmailSentAt: Date.now(),
+                    })
+                  )
+                  .catch((e) => console.error("[brain] Low-credits email failed (non-fatal):", e));
+              }
+            }
+
+            // Session complete notification — only if user opted in
+            if (userData.notifySessionComplete === true && result.sessionId) {
+              const sessionTitle = rebuttalContext
+                ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
+                : question.slice(0, 80);
+              sendSessionCompleteEmail(uid, result.sessionId, sessionTitle, actualCost)
+                .catch((e) => console.error("[brain] Session-complete email failed (non-fatal):", e));
+            }
+          }
         } catch (e) {
-          console.error("[brain] Auto-refill check failed (non-fatal):", e);
+          console.error("[brain] Post-session notifications failed (non-fatal):", e);
         }
 
         // Write session_turns subcollection

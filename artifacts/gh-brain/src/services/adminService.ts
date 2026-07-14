@@ -529,6 +529,7 @@ export interface BillingDefaults {
   defaultThresholdCredits: number;
   defaultWarningThresholdCredits: number;
   signupBonusCredits: number;
+  emailCreditWarningThreshold: number;
 }
 
 export interface AiStudioModel {

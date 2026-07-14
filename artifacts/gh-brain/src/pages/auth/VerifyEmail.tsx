@@ -23,6 +23,13 @@ export default function VerifyEmailPage() {
     try {
       await reload(user);
       if (user.emailVerified) {
+        // Fire welcome email exactly once (idempotent on server)
+        user.getIdToken().then((token) =>
+          fetch(
+            `${(import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api"}/auth/welcome`,
+            { method: "POST", headers: { Authorization: `Bearer ${token}` } }
+          )
+        ).catch(() => {});
         setLocation(next);
       } else {
         toast.error("Email not yet verified — please click the link in your inbox.");

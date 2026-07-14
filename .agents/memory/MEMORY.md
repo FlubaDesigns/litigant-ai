@@ -13,5 +13,6 @@
 - [Canonical cost calibration](cost-calibration.md) — single source for session cost estimates; self-calibrates from last 50 sessions; FIXED_STAGE_PRIOR until 5 sessions accumulate.
 - [API schema drift crashes frontend](api-schema-drift.md) — live Cloud Run API may lag behind; estimateCredits and any API-driven computation must use optional chaining + fallbacks.
 - [Firebase deploy — always do it](firebase-deploy-always.md) — ALWAYS build + deploy gh-brain to Firebase after every frontend change, no exceptions.
+- [Email system](email-system.md) — 5 live transactional emails; welcome/low-credits/session-complete added Jul 2026; credit threshold admin-configurable via billingDefaults.
 - [Pre-pipeline cap gate](pre-pipeline-cap-gate.md) — credit cap now blocks BEFORE fixed pipeline; `pausedPrePipeline` result + `paused_pre_pipeline` SSE; resume via `resumeWithFixedPipeline:true`.
 - [Cloud Run env update safety](cloud-run-env-update.md) — never --set-env-vars with a single key; always --env-vars-file with full set
