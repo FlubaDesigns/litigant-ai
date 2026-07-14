@@ -7,7 +7,9 @@ let app: App | null = null;
 export function initFirebaseAdmin(): void {
   if (getApps().length > 0) return;
 
-  const serviceAccount = process.env["FIREBASE_SERVICE_ACCOUNT"];
+  const serviceAccount = process.env["FIREBASE_SERVICE_ACCOUNT"] ||
+    process.env["FIREBASE_SERVICE_ACCOUNT_JSON_V2"] ||
+    process.env["FIREBASE_SERVICE_ACCOUNT_JSON"];
   const projectId = process.env["FIREBASE_PROJECT_ID"];
 
   if (serviceAccount) {

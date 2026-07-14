@@ -1,7 +1,7 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 
-const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON!);
+const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_V2 || process.env.FIREBASE_SERVICE_ACCOUNT_JSON!);
 initializeApp({ credential: cert(sa) });
 
 const email = process.argv[2];

@@ -24,7 +24,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 
 const required = {
-  sa:        process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+  sa:        process.env.FIREBASE_SERVICE_ACCOUNT_JSON_V2 || process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
   anthropic: process.env.ANTHROPIC_API_KEY,
   project:   process.env.VITE_FIREBASE_PROJECT_ID,
 };
