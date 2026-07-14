@@ -27,6 +27,7 @@
 import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getBillingDefaults } from "./billingDefaultsConfig.js";
+import { sendAutoRefillTriggeredEmail, isResendConfigured } from "./emailService.js";
 
 /**
  * All valid credit movement categories.
@@ -330,6 +331,11 @@ export async function checkAndTriggerAutoRefill(
       },
       { merge: true }
     );
+
+    if (isResendConfigured()) {
+      sendAutoRefillTriggeredEmail(uid, newBalance, url, autoRefill.dollarAmount)
+        .catch((e) => console.error("[CreditLedger] Auto-refill email failed (non-fatal):", e));
+    }
   } catch (err) {
     console.error("[CreditLedger] checkAndTriggerAutoRefill error:", err);
   }

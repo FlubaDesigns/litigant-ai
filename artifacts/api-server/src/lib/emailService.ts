@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { getAuth } from "firebase-admin/auth";
-import { isFirebaseConfigured } from "./firebaseAdmin.js";
+import { isFirebaseConfigured, getFirestoreDb } from "./firebaseAdmin.js";
 import { getBillingDefaults } from "./billingDefaultsConfig.js";
 
 let resend: Resend | null = null;
@@ -19,12 +19,7 @@ const APP_URL = `https://${process.env["APP_DOMAIN"] ?? "litigant-ai.com"}`;
 
 /**
  * Escapes the five HTML-significant characters before interpolating
- * user-controlled text into a raw HTML email template.
- *
- * displayName has no content restriction beyond a 2-character minimum
- * (see Register.tsx) and is never sanitized before reaching here — without
- * this, a display name like "<img src=x onerror=...>" would be inserted
- * verbatim into the email HTML this function builds.
+ * user-controlled text into email HTML.
  */
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) =>
@@ -32,40 +27,66 @@ function escapeHtml(value: string): string {
   );
 }
 
-function verificationTemplate(link: string, displayName?: string, bonusCredits = 500): string {
-  const name = escapeHtml(displayName ?? "Operator");
+// ── Shared layout primitives ──────────────────────────────────────────────────
+
+function baseTemplate({
+  badge,
+  badgeColor = "#00c853",
+  headline,
+  body,
+  footerExtra = "",
+}: {
+  badge: string;
+  badgeColor?: string;
+  headline: string;
+  body: string;
+  footerExtra?: string;
+}): string {
+  const year = new Date().getFullYear();
   return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0a0a0a;padding:48px 16px;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
+      <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="background:#111;border:1px solid #222;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
+
+        <!-- Header -->
         <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
-            <table cellpadding="0" cellspacing="0">
+          <td style="padding:26px 40px;border-bottom:1px solid #1a1a1a;">
+            <table cellpadding="0" cellspacing="0" role="presentation">
               <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
-                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
+                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;vertical-align:middle;"></td>
+                <td style="padding-left:10px;font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.2px;vertical-align:middle;">Litigant AI</td>
               </tr>
             </table>
           </td>
         </tr>
+
+        <!-- Body -->
         <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Clearance Verification</p>
-            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Verify your access,<br>${name}.</h1>
-            <p style="margin:0 0 32px;font-size:15px;color:#888;line-height:1.6;">A verification request was initiated for your Litigant AI account. Confirm your identity to activate full system access and unlock your <strong style="color:#fff;">${bonusCredits} free credits</strong> to get started.</p>
-            <a href="${link}" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">Verify Access →</a>
-            <p style="margin:32px 0 0;font-size:12px;color:#555;line-height:1.6;">If you didn't create an account, you can safely ignore this message. This link expires in 24 hours.</p>
-            <p style="margin:16px 0 0;font-size:11px;color:#444;">Or copy this link: <span style="color:#666;word-break:break-all;">${link}</span></p>
+          <td style="padding:40px 40px 36px;">
+            <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:2.5px;color:${badgeColor};text-transform:uppercase;">${badge}</p>
+            <h1 style="margin:0 0 24px;font-size:26px;font-weight:700;color:#fff;line-height:1.25;letter-spacing:-0.3px;">${headline}</h1>
+            ${body}
           </td>
         </tr>
+
+        <!-- Footer -->
         <tr>
-          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${APP_URL}" style="color:#555;text-decoration:none;">litigant-ai.com</a></p>
+          <td style="padding:20px 40px;border-top:1px solid #1a1a1a;">
+            <p style="margin:0;font-size:11px;color:#444;line-height:1.6;">
+              &copy; ${year} Litigant AI &nbsp;&middot;&nbsp;
+              <a href="${APP_URL}" style="color:#555;text-decoration:none;">litigant-ai.com</a>
+              ${footerExtra ? `&nbsp;&middot;&nbsp; ${footerExtra}` : ""}
+            </p>
           </td>
         </tr>
+
       </table>
     </td></tr>
   </table>
@@ -73,192 +94,311 @@ function verificationTemplate(link: string, displayName?: string, bonusCredits =
 </html>`;
 }
 
-function passwordResetTemplate(link: string, displayName?: string): string {
-  const name = escapeHtml(displayName ?? "Operator");
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
-        <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
-                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Security Alert</p>
-            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Reset your<br>credentials.</h1>
-            <p style="margin:0 0 32px;font-size:15px;color:#888;line-height:1.6;">A password reset was requested for your Litigant AI account (${name}). Click below to set a new password.</p>
-            <a href="${link}" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">Reset Password →</a>
-            <p style="margin:32px 0 0;font-size:12px;color:#555;line-height:1.6;">If you didn't request this, your account is safe — ignore this email. This link expires in 1 hour.</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${APP_URL}" style="color:#555;text-decoration:none;">litigant-ai.com</a></p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+function btn(text: string, url: string, bg = "#00c853", fg = "#000"): string {
+  return `<a href="${url}" style="display:inline-block;background:${bg};color:${fg};font-size:14px;font-weight:700;letter-spacing:0.3px;text-decoration:none;padding:13px 30px;border-radius:8px;">${text} &rarr;</a>`;
 }
 
-function welcomeTemplate(displayName: string, appUrl: string): string {
-  const name = escapeHtml(displayName);
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
-        <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
-                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Access Granted</p>
-            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Welcome aboard,<br>${name}.</h1>
-            <p style="margin:0 0 24px;font-size:15px;color:#888;line-height:1.6;">Your account is verified and your credits are loaded. You're ready to put the adversarial reasoning engine to work.</p>
-            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;width:100%;">
-              <tr>
-                <td style="padding:16px 20px;border-right:1px solid #1a1a1a;width:50%;">
-                  <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Start a session</p>
-                  <p style="margin:0;font-size:13px;color:#aaa;">Ask your first legal question and see the engine argue both sides.</p>
-                </td>
-                <td style="padding:16px 20px;width:50%;">
-                  <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Top up credits</p>
-                  <p style="margin:0;font-size:13px;color:#aaa;">Credits never expire. Add more whenever you need them.</p>
-                </td>
-              </tr>
-            </table>
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding-right:12px;">
-                  <a href="${appUrl}/app" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 28px;border-radius:8px;">Open Dashboard →</a>
-                </td>
-                <td>
-                  <a href="${appUrl}/billing" style="display:inline-block;background:transparent;color:#888;font-size:14px;font-weight:600;letter-spacing:0.3px;text-decoration:none;padding:14px 28px;border-radius:8px;border:1px solid #333;">Top Up</a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${appUrl}" style="color:#555;text-decoration:none;">litigant-ai.com</a></p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+function btnOutline(text: string, url: string): string {
+  return `<a href="${url}" style="display:inline-block;background:transparent;color:#777;font-size:14px;font-weight:600;letter-spacing:0.3px;text-decoration:none;padding:13px 30px;border-radius:8px;border:1px solid #2a2a2a;">${text}</a>`;
 }
 
-function lowCreditsTemplate(displayName: string, balance: number, threshold: number, topUpUrl: string, appUrl: string): string {
-  const name = escapeHtml(displayName);
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
-        <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
-                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#f59e0b;text-transform:uppercase;">Credit Alert</p>
-            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Running low,<br>${name}.</h1>
-            <p style="margin:0 0 24px;font-size:15px;color:#888;line-height:1.6;">Your balance has dropped to <strong style="color:#f59e0b;">${balance} credits</strong> — below your alert threshold of ${threshold}. Top up now to keep your sessions running without interruption.</p>
-            <div style="background:#0a0a0a;border:1px solid #2a1a00;border-radius:8px;padding:16px 20px;margin:0 0 32px;">
-              <p style="margin:0;font-size:13px;color:#f59e0b;">Credits never expire — add them any time and use them at your own pace.</p>
-            </div>
-            <a href="${topUpUrl}" style="display:inline-block;background:#f59e0b;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">Top Up Credits →</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${appUrl}" style="color:#555;text-decoration:none;">litigant-ai.com</a> · You're receiving this because your balance crossed your alert threshold.</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+function paragraph(html: string): string {
+  return `<p style="margin:0 0 22px;font-size:15px;color:#888;line-height:1.7;">${html}</p>`;
 }
 
-function sessionCompleteTemplate(displayName: string, sessionTitle: string, creditsUsed: number, sessionUrl: string, appUrl: string): string {
-  const name = escapeHtml(displayName);
-  const title = escapeHtml(sessionTitle);
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
+function callout(html: string, accentColor = "#00c853"): string {
+  return `<div style="background:#0d0d0d;border:1px solid ${accentColor}30;border-left:3px solid ${accentColor};border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 28px;">
+  <p style="margin:0;font-size:13px;color:#888;line-height:1.6;">${html}</p>
+</div>`;
+}
+
+function infoTable(rows: { label: string; value: string; color?: string }[]): string {
+  const cells = rows.map(({ label, value, color = "#fff" }, i) => {
+    const isLast = i === rows.length - 1;
+    return `<tr>
+      <td style="padding:16px 22px;${isLast ? "" : "border-bottom:1px solid #1a1a1a;"}">
+        <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
+          <tr>
+            <td style="font-size:12px;color:#555;">${label}</td>
+            <td align="right" style="font-size:15px;font-weight:600;color:${color};">${value}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>`;
+  }).join("");
+  return `<table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">${cells}</table>`;
+}
+
+// ── 1. Email verification ─────────────────────────────────────────────────────
+
+function verificationTemplate(link: string, name: string, bonusCredits: number): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "Email Verification",
+    headline: `Verify your access,<br>${safeName}.`,
+    body: `
+      ${paragraph(`A verification request was initiated for your Litigant AI account. Confirm your email to activate full access and unlock your <strong style="color:#fff;">${bonusCredits} free credits</strong>.`)}
+      ${btn(link ? "Verify my email" : "Verify my email", link)}
+      <p style="margin:24px 0 0;font-size:12px;color:#555;line-height:1.6;">
+        If you didn't create this account, you can safely ignore this email. This link expires in 24 hours.<br>
+        <span style="word-break:break-all;color:#444;">Or copy: ${link}</span>
+      </p>
+    `,
+    footerExtra: "You received this because an account was created with your email address.",
+  });
+}
+
+// ── 2. Password reset ─────────────────────────────────────────────────────────
+
+function passwordResetTemplate(link: string, name: string): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "Security",
+    headline: "Password reset<br>requested.",
+    body: `
+      ${paragraph(`Hi ${safeName}, a password reset was requested for your Litigant AI account. Click below to choose a new password.`)}
+      ${btn(link ? "Reset my password" : "Reset my password", link)}
+      ${callout("If you didn't request this, your account is safe — you can ignore this email. No changes have been made.")}
+      <p style="margin:0;font-size:12px;color:#555;">This link expires in 1 hour.</p>
+    `,
+    footerExtra: "You received this because a password reset was requested for your account.",
+  });
+}
+
+// ── 3. Welcome (post-verification) ───────────────────────────────────────────
+
+function welcomeTemplate(name: string): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "Access Granted",
+    headline: `Welcome aboard,<br>${safeName}.`,
+    body: `
+      ${paragraph("Your account is verified and your credits are loaded. You're all set to put the adversarial reasoning engine to work.")}
+      <table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">
         <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
-                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
-              </tr>
-            </table>
+          <td style="padding:18px 22px;border-bottom:1px solid #1a1a1a;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Run a session</p>
+            <p style="margin:0;font-size:13px;color:#888;">Submit a legal question and watch both sides argue it out.</p>
           </td>
         </tr>
         <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Analysis Complete</p>
-            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Your session<br>is ready.</h1>
-            <p style="margin:0 0 24px;font-size:15px;color:#888;line-height:1.6;">Hey ${name}, the adversarial reasoning engine has finished analysing your query.</p>
-            <div style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:16px 20px;margin:0 0 32px;">
-              <p style="margin:0 0 6px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Session</p>
-              <p style="margin:0 0 12px;font-size:14px;color:#fff;font-weight:600;">${title}</p>
-              <p style="margin:0;font-size:12px;color:#555;">${creditsUsed} credits used</p>
-            </div>
-            <a href="${sessionUrl}" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">View Results →</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${appUrl}" style="color:#555;text-decoration:none;">litigant-ai.com</a> · You can disable session notifications in your <a href="${appUrl}/settings" style="color:#555;text-decoration:none;">account settings</a>.</p>
+          <td style="padding:18px 22px;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Top up credits</p>
+            <p style="margin:0;font-size:13px;color:#888;">Credits never expire — add more whenever you need them.</p>
           </td>
         </tr>
       </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+        <td style="padding-right:12px;">${btn("Open dashboard", `${APP_URL}/app`)}</td>
+        <td>${btnOutline("Top up", `${APP_URL}/billing`)}</td>
+      </tr></table>
+    `,
+  });
 }
+
+// ── 4. Low-credits warning ────────────────────────────────────────────────────
+
+function lowCreditsTemplate(name: string, balance: number, threshold: number): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "Credit Alert",
+    badgeColor: "#f59e0b",
+    headline: `Running low,<br>${safeName}.`,
+    body: `
+      ${paragraph(`Your balance has dropped to <strong style="color:#f59e0b;">${balance.toLocaleString()} credits</strong> — below your alert threshold of ${threshold.toLocaleString()}. Top up to keep your sessions running without interruption.`)}
+      ${callout("Credits never expire — add them any time and use them at your own pace.", "#f59e0b")}
+      ${btn("Top up credits", `${APP_URL}/billing`, "#f59e0b", "#000")}
+    `,
+    footerExtra: "You received this because your balance crossed your configured alert threshold.",
+  });
+}
+
+// ── 5. Session complete ───────────────────────────────────────────────────────
+
+function sessionCompleteTemplate(name: string, sessionTitle: string, creditsUsed: number, sessionUrl: string): string {
+  const safeName = escapeHtml(name);
+  const safeTitle = escapeHtml(sessionTitle);
+  return baseTemplate({
+    badge: "Analysis Complete",
+    headline: "Your session<br>is ready.",
+    body: `
+      ${paragraph(`Hey ${safeName}, the adversarial reasoning engine has finished analysing your query.`)}
+      ${infoTable([
+        { label: "Session", value: safeTitle },
+        { label: "Credits used", value: creditsUsed.toLocaleString(), color: "#888" },
+      ])}
+      ${btn("View results", sessionUrl)}
+    `,
+    footerExtra: `You can disable session notifications in your <a href="${APP_URL}/settings" style="color:#555;text-decoration:none;">account settings</a>.`,
+  });
+}
+
+// ── 6. Payment receipt (manual purchase) ─────────────────────────────────────
+
+function paymentReceiptTemplate(
+  name: string,
+  creditsAdded: number,
+  amountPaid: string,
+  newBalance: number
+): string {
+  const safeName = escapeHtml(name);
+  const now = new Date().toLocaleString("en-US", {
+    month: "long", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  });
+  return baseTemplate({
+    badge: "Payment Confirmed",
+    headline: `Credits loaded,<br>${safeName}.`,
+    body: `
+      ${paragraph("Your payment went through and your credits are ready to use.")}
+      ${infoTable([
+        { label: "Amount charged", value: amountPaid },
+        { label: "Credits added", value: `+${creditsAdded.toLocaleString()}`, color: "#00c853" },
+        { label: "New balance", value: `${newBalance.toLocaleString()} credits` },
+        { label: "Date", value: now, color: "#888" },
+      ])}
+      ${btn("Start a session", `${APP_URL}/app`)}
+    `,
+    footerExtra: "Keep this email as your purchase receipt.",
+  });
+}
+
+// ── 7. Auto-refill triggered ──────────────────────────────────────────────────
+
+function autoRefillTriggeredTemplate(
+  name: string,
+  balance: number,
+  topUpUrl: string,
+  dollarAmount: number
+): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "Auto Top-Up Ready",
+    badgeColor: "#f59e0b",
+    headline: `Top-up prepared,<br>${safeName}.`,
+    body: `
+      ${paragraph(`Your balance has dropped to <strong style="color:#f59e0b;">${balance.toLocaleString()} credits</strong>, triggering your auto top-up. A $${dollarAmount} checkout has been prepared — click below to complete it and reload your credits instantly.`)}
+      ${callout("This checkout link is unique to you and expires after 24 hours.", "#f59e0b")}
+      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+        <td style="padding-right:12px;">${btn("Complete top-up", topUpUrl, "#f59e0b", "#000")}</td>
+        <td>${btnOutline("Manage billing", `${APP_URL}/billing`)}</td>
+      </tr></table>
+    `,
+    footerExtra: "You received this because your balance crossed your auto top-up threshold.",
+  });
+}
+
+// ── 8. Account suspended ──────────────────────────────────────────────────────
+
+function accountSuspendedTemplate(name: string, reason?: string): string {
+  const safeName = escapeHtml(name);
+  const safeReason = reason ? escapeHtml(reason) : null;
+  return baseTemplate({
+    badge: "Account Notice",
+    badgeColor: "#ef4444",
+    headline: `Your account<br>has been suspended.`,
+    body: `
+      ${paragraph(`Hi ${safeName}, your Litigant AI account has been suspended and you will not be able to sign in.`)}
+      ${safeReason
+        ? infoTable([{ label: "Reason", value: safeReason, color: "#888" }])
+        : ""}
+      ${callout("If you believe this is a mistake, please contact our support team and we'll review your account.", "#ef4444")}
+      ${btn("Contact support", `mailto:support@litigant-ai.com`, "#ef4444", "#fff")}
+    `,
+    footerExtra: "This notice was sent to the email address associated with your account.",
+  });
+}
+
+// ── 9. Re-engagement (14 days inactive) ──────────────────────────────────────
+
+function reengagementTemplate(name: string, creditBalance: number): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "We Miss You",
+    headline: `Still here for you,<br>${safeName}.`,
+    body: `
+      ${paragraph(`You have <strong style="color:#fff;">${creditBalance.toLocaleString()} credits</strong> waiting in your account. Pick up where you left off — the adversarial reasoning engine is ready when you are.`)}
+      <table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">
+        <tr>
+          <td style="padding:18px 22px;border-bottom:1px solid #1a1a1a;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Case analysis</p>
+            <p style="margin:0;font-size:13px;color:#888;">Submit a brief or case summary and get both sides argued in full.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 22px;border-bottom:1px solid #1a1a1a;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Strategy review</p>
+            <p style="margin:0;font-size:13px;color:#888;">Test your arguments before filing — find the weaknesses first.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 22px;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Research</p>
+            <p style="margin:0;font-size:13px;color:#888;">Rapid legal reasoning on any question, jurisdiction, or doctrine.</p>
+          </td>
+        </tr>
+      </table>
+      ${btn("Return to dashboard", `${APP_URL}/app`)}
+    `,
+    footerExtra: `<a href="${APP_URL}/settings" style="color:#444;text-decoration:none;">Unsubscribe from re-engagement emails</a>`,
+  });
+}
+
+// ── 10. First session milestone ───────────────────────────────────────────────
+
+function firstSessionTemplate(name: string, sessionTitle: string, sessionUrl: string): string {
+  const safeName = escapeHtml(name);
+  const safeTitle = escapeHtml(sessionTitle);
+  return baseTemplate({
+    badge: "First Session Complete",
+    headline: `You just ran your<br>first session.`,
+    body: `
+      ${paragraph(`Nice work, ${safeName}. The adversarial reasoning engine has processed your first query — both sides have been argued. Your results are waiting.`)}
+      ${infoTable([{ label: "Session", value: safeTitle }])}
+      ${paragraph(`A few things worth knowing as you continue:`)}
+      <table cellpadding="0" cellspacing="0" role="presentation" style="width:100%;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;margin:0 0 28px;">
+        <tr>
+          <td style="padding:16px 22px;border-bottom:1px solid #1a1a1a;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Rebuttal rounds</p>
+            <p style="margin:0;font-size:13px;color:#888;">From inside a session you can challenge the answer and trigger a full rebuttal — useful for stress-testing arguments.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 22px;">
+            <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">Session history</p>
+            <p style="margin:0;font-size:13px;color:#888;">Every session is saved. You can review, share, or export transcripts from your dashboard.</p>
+          </td>
+        </tr>
+      </table>
+      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+        <td style="padding-right:12px;">${btn("View my results", sessionUrl)}</td>
+        <td>${btnOutline("Back to dashboard", `${APP_URL}/app`)}</td>
+      </tr></table>
+    `,
+  });
+}
+
+// ── 11. Zero credits ──────────────────────────────────────────────────────────
+
+function zeroCreditsTemplate(name: string): string {
+  const safeName = escapeHtml(name);
+  return baseTemplate({
+    badge: "Out of Credits",
+    badgeColor: "#ef4444",
+    headline: `You're out of<br>credits, ${safeName}.`,
+    body: `
+      ${paragraph("Your credit balance has hit zero. You won't be able to run new sessions until you top up.")}
+      ${callout("Credits never expire once added — top up any amount and start again immediately.", "#ef4444")}
+      <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+        <td style="padding-right:12px;">${btn("Top up now", `${APP_URL}/billing`, "#ef4444", "#fff")}</td>
+        <td>${btnOutline("View plans", `${APP_URL}/billing`)}</td>
+      </tr></table>
+    `,
+    footerExtra: "You received this because your credit balance reached zero.",
+  });
+}
+
+// ── Send functions ────────────────────────────────────────────────────────────
 
 export async function sendVerificationEmail(uid: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
@@ -269,12 +409,11 @@ export async function sendVerificationEmail(uid: string): Promise<void> {
   const link = await getAuth().generateEmailVerificationLink(user.email!, {
     url: `${APP_URL}/login?verified=1`,
   });
-  const r = getResend();
-  const { error } = await r.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: user.email!,
     subject: "Verify your Litigant AI access",
-    html: verificationTemplate(link, user.displayName ?? undefined, billingDefaults.signupBonusCredits ?? 500),
+    html: verificationTemplate(link, user.displayName ?? "Operator", billingDefaults.signupBonusCredits),
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
 }
@@ -284,13 +423,12 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
   const link = await getAuth().generatePasswordResetLink(email, {
     url: `${APP_URL}/login?reset=1`,
   });
-  let displayName: string | undefined;
+  let displayName = "Operator";
   try {
     const user = await getAuth().getUserByEmail(email);
-    displayName = user.displayName ?? undefined;
+    displayName = user.displayName ?? displayName;
   } catch { /* user not found — still send */ }
-  const r = getResend();
-  const { error } = await r.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Reset your Litigant AI password",
@@ -302,12 +440,11 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
 export async function sendWelcomeEmail(uid: string): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const r = getResend();
-  const { error } = await r.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: user.email!,
     subject: "Welcome to Litigant AI — you're in",
-    html: welcomeTemplate(user.displayName ?? "Operator", APP_URL),
+    html: welcomeTemplate(user.displayName ?? "Operator"),
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
 }
@@ -315,13 +452,11 @@ export async function sendWelcomeEmail(uid: string): Promise<void> {
 export async function sendLowCreditsEmail(uid: string, balance: number, threshold: number): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const topUpUrl = `${APP_URL}/billing`;
-  const r = getResend();
-  const { error } = await r.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: user.email!,
-    subject: `Credit alert — ${balance} credits remaining`,
-    html: lowCreditsTemplate(user.displayName ?? "Operator", balance, threshold, topUpUrl, APP_URL),
+    subject: `Credit alert — ${balance.toLocaleString()} credits remaining`,
+    html: lowCreditsTemplate(user.displayName ?? "Operator", balance, threshold),
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
 }
@@ -334,109 +469,18 @@ export async function sendSessionCompleteEmail(
 ): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const sessionUrl = `${APP_URL}/app/session/${sessionId}`;
-  const r = getResend();
-  const { error } = await r.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: user.email!,
     subject: "Your analysis is ready",
-    html: sessionCompleteTemplate(user.displayName ?? "Operator", title, creditsUsed, sessionUrl, APP_URL),
+    html: sessionCompleteTemplate(
+      user.displayName ?? "Operator",
+      title,
+      creditsUsed,
+      `${APP_URL}/app/session/${sessionId}`
+    ),
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
-}
-
-function paymentReceiptTemplate(
-  displayName: string,
-  creditsAdded: number,
-  amountPaid: string,
-  newBalance: number,
-  appUrl: string
-): string {
-  const name = escapeHtml(displayName);
-  const now = new Date().toLocaleString("en-US", {
-    month: "long", day: "numeric", year: "numeric",
-    hour: "numeric", minute: "2-digit", timeZoneName: "short",
-  });
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#111;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;max-width:560px;width:100%;">
-        <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #1a1a1a;">
-            <table cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="background:#00c853;width:8px;height:8px;border-radius:50%;"></td>
-                <td style="padding-left:10px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">Litigant AI</td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:2px;color:#00c853;text-transform:uppercase;">Payment Confirmed</p>
-            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;color:#fff;line-height:1.2;">Credits loaded,<br>${name}.</h1>
-            <p style="margin:0 0 32px;font-size:15px;color:#888;line-height:1.6;">Your payment went through and your credits are ready to use.</p>
-
-            <table cellpadding="0" cellspacing="0" style="width:100%;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;margin:0 0 32px;">
-              <tr>
-                <td style="padding:20px 24px;border-bottom:1px solid #1a1a1a;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td style="font-size:13px;color:#555;">Amount charged</td>
-                      <td align="right" style="font-size:16px;font-weight:700;color:#fff;">${amountPaid}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:20px 24px;border-bottom:1px solid #1a1a1a;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td style="font-size:13px;color:#555;">Credits added</td>
-                      <td align="right" style="font-size:16px;font-weight:700;color:#00c853;">+${creditsAdded.toLocaleString()}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:20px 24px;border-bottom:1px solid #1a1a1a;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td style="font-size:13px;color:#555;">New balance</td>
-                      <td align="right" style="font-size:16px;font-weight:700;color:#fff;">${newBalance.toLocaleString()} credits</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:20px 24px;">
-                  <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                      <td style="font-size:13px;color:#555;">Date</td>
-                      <td align="right" style="font-size:13px;color:#666;">${now}</td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <p style="margin:0 0 24px;font-size:13px;color:#555;line-height:1.6;">Credits never expire — use them whenever you need them.</p>
-            <a href="${appUrl}/app" style="display:inline-block;background:#00c853;color:#000;font-size:14px;font-weight:700;letter-spacing:0.5px;text-decoration:none;padding:14px 32px;border-radius:8px;">Start a session →</a>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:24px 40px;border-top:1px solid #1a1a1a;">
-            <p style="margin:0;font-size:11px;color:#444;">© ${new Date().getFullYear()} Litigant AI · <a href="${appUrl}" style="color:#555;text-decoration:none;">litigant-ai.com</a> · This is a receipt for your credit purchase. Keep it for your records.</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
 }
 
 export async function sendPaymentReceiptEmail(
@@ -447,21 +491,150 @@ export async function sendPaymentReceiptEmail(
 ): Promise<void> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  const amountPaid = `$${(amountPaidCents / 100).toFixed(2)}`;
-  const r = getResend();
-  const { error } = await r.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: user.email!,
-    subject: `Receipt — ${creditsAdded.toLocaleString()} credits added to your account`,
+    subject: `Receipt — ${creditsAdded.toLocaleString()} credits added`,
     html: paymentReceiptTemplate(
       user.displayName ?? "Operator",
       creditsAdded,
-      amountPaid,
-      newBalance,
-      APP_URL
+      `$${(amountPaidCents / 100).toFixed(2)}`,
+      newBalance
     ),
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+export async function sendAutoRefillTriggeredEmail(
+  uid: string,
+  balance: number,
+  topUpUrl: string,
+  dollarAmount: number
+): Promise<void> {
+  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
+  const user = await getAuth().getUser(uid);
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to: user.email!,
+    subject: `Auto top-up ready — complete your $${dollarAmount} reload`,
+    html: autoRefillTriggeredTemplate(
+      user.displayName ?? "Operator",
+      balance,
+      topUpUrl,
+      dollarAmount
+    ),
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+export async function sendAccountSuspendedEmail(uid: string, reason?: string): Promise<void> {
+  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
+  const user = await getAuth().getUser(uid);
+  if (!user.email) return;
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to: user.email,
+    subject: "Your Litigant AI account has been suspended",
+    html: accountSuspendedTemplate(user.displayName ?? "Operator", reason),
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+export async function sendReengagementEmail(
+  uid: string,
+  creditBalance: number
+): Promise<void> {
+  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
+  const user = await getAuth().getUser(uid);
+  if (!user.email) return;
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to: user.email,
+    subject: `You have ${creditBalance.toLocaleString()} credits waiting`,
+    html: reengagementTemplate(user.displayName ?? "Operator", creditBalance),
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+export async function sendFirstSessionEmail(
+  uid: string,
+  sessionId: string,
+  title: string
+): Promise<void> {
+  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
+  const user = await getAuth().getUser(uid);
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to: user.email!,
+    subject: "Your first session is ready",
+    html: firstSessionTemplate(
+      user.displayName ?? "Operator",
+      title,
+      `${APP_URL}/app/session/${sessionId}`
+    ),
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+export async function sendZeroCreditsEmail(uid: string): Promise<void> {
+  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
+  const user = await getAuth().getUser(uid);
+  const { error } = await getResend().emails.send({
+    from: FROM,
+    to: user.email!,
+    subject: "You're out of credits — top up to continue",
+    html: zeroCreditsTemplate(user.displayName ?? "Operator"),
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+/**
+ * Sends re-engagement emails to users who:
+ *  - have creditBalance > 0
+ *  - have not had a session in the last `inactiveDays` days
+ *  - have not received a re-engagement email in the last `inactiveDays` days
+ * Returns the number of emails sent.
+ */
+export async function runReengagementCampaign(inactiveDays = 14): Promise<number> {
+  if (!isFirebaseConfigured()) return 0;
+  const db = getFirestoreDb();
+  if (!db) return 0;
+
+  const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000);
+  const cutoffMs = cutoff.getTime();
+
+  const snap = await db
+    .collection("users")
+    .where("creditBalance", ">", 0)
+    .get();
+
+  let sent = 0;
+
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    const uid = doc.id;
+
+    // Skip if they've been active recently
+    const lastSessionMs = (data["lastSessionAt"] as number | undefined) ?? 0;
+    if (lastSessionMs > cutoffMs) continue;
+
+    // Skip if already re-engaged recently
+    const lastReengagedMs = (data["reengagementEmailSentAt"] as number | undefined) ?? 0;
+    if (lastReengagedMs > cutoffMs) continue;
+
+    // Skip banned users
+    if (data["banned"]) continue;
+
+    try {
+      await sendReengagementEmail(uid, data["creditBalance"] as number);
+      await doc.ref.update({ reengagementEmailSentAt: Date.now() });
+      sent++;
+    } catch (e: any) {
+      console.error(`[Reengagement] Failed for uid=${uid}: ${e.message}`);
+    }
+  }
+
+  return sent;
 }
 
 export function isResendConfigured(): boolean {

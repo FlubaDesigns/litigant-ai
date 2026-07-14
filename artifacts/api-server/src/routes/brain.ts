@@ -39,7 +39,13 @@ import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixed
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
-import { sendLowCreditsEmail, sendSessionCompleteEmail, isResendConfigured } from "../lib/emailService.js";
+import {
+  sendLowCreditsEmail,
+  sendSessionCompleteEmail,
+  sendFirstSessionEmail,
+  sendZeroCreditsEmail,
+  isResendConfigured,
+} from "../lib/emailService.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
 
 const router = Router();
@@ -522,15 +528,41 @@ router.post("/run-brain", async (req, res) => {
               }
             }
 
+            const sessionTitle = rebuttalContext
+              ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
+              : question.slice(0, 80);
+
             // Session complete notification — only if user opted in
             if (userData.notifySessionComplete === true && result.sessionId) {
-              const sessionTitle = rebuttalContext
-                ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
-                : question.slice(0, 80);
               sendSessionCompleteEmail(uid, result.sessionId, sessionTitle, actualCost)
                 .catch((e) => console.error("[brain] Session-complete email failed (non-fatal):", e));
             }
+
+            // First session milestone — fires exactly once per account
+            if (!userData.firstSessionEmailSent && result.sessionId) {
+              sendFirstSessionEmail(uid, result.sessionId, sessionTitle)
+                .then(() =>
+                  db.collection("users").doc(uid).update({ firstSessionEmailSent: true })
+                )
+                .catch((e) => console.error("[brain] First-session email failed (non-fatal):", e));
+            }
+
+            // Zero-credits alert — send at most once per 24 hours
+            if (newBalance <= 0) {
+              const lastZeroMs = (userData.zeroCreditsEmailSentAt as number | undefined) ?? 0;
+              if (Date.now() - lastZeroMs > 24 * 60 * 60 * 1000) {
+                sendZeroCreditsEmail(uid)
+                  .then(() =>
+                    db.collection("users").doc(uid).update({ zeroCreditsEmailSentAt: Date.now() })
+                  )
+                  .catch((e) => console.error("[brain] Zero-credits email failed (non-fatal):", e));
+              }
+            }
           }
+
+          // Update lastSessionAt so re-engagement campaign has accurate data
+          db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
+            .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
         } catch (e) {
           console.error("[brain] Post-session notifications failed (non-fatal):", e);
         }

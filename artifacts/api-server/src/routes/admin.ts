@@ -7,6 +7,11 @@ import { getAuth } from "firebase-admin/auth";
 import { getBillingDefaults, saveBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import { getChecklist, setChecklistItemChecked } from "../lib/checklistConfig.js";
 import {
+  sendAccountSuspendedEmail,
+  runReengagementCampaign,
+  isResendConfigured,
+} from "../lib/emailService.js";
+import {
   getAdminPricingTable,
   saveMultiplierOverride,
   resetMultiplierToDefault,
@@ -404,11 +409,33 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
       authWarning = `Firestore flag was set, but Firebase Auth account update failed: ${authErr.message}. The user can still sign in.`;
     }
 
+    // Send suspension email (fire-and-forget, non-fatal)
+    if (banned && isResendConfigured()) {
+      sendAccountSuspendedEmail(req.params["uid"]!, reason)
+        .catch((e) => console.error("[admin] Account-suspended email failed (non-fatal):", e));
+    }
+
     return res.json({
       success: true,
       banned,
       ...(authWarning ? { authWarning } : {}),
     });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /admin/send-reengagement
+ * Triggers the re-engagement email campaign for users inactive for ≥ N days.
+ * Designed to be called by Cloud Scheduler (daily cron). Falls back to the
+ * default of 14 days if `inactiveDays` is not supplied in the body.
+ */
+router.post("/admin/send-reengagement", requireAdmin, async (req: any, res) => {
+  const inactiveDays = Number(req.body?.inactiveDays) || 14;
+  try {
+    const sent = await runReengagementCampaign(inactiveDays);
+    return res.json({ success: true, emailsSent: sent, inactiveDays });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
