@@ -1,7 +1,21 @@
+import * as Sentry from "@sentry/node";
 import express, { type Express } from "express";
 import cors from "cors";
 import router from "./routes/index-firebase.js";
 import { initFirebaseAdmin } from "./lib/firebaseAdmin.js";
+
+// Initialise Sentry before any other setup so it can capture startup errors.
+// No-op when SENTRY_DSN is unset (local dev, staging without monitoring).
+if (process.env["SENTRY_DSN"]) {
+  Sentry.init({
+    dsn: process.env["SENTRY_DSN"],
+    environment: process.env["NODE_ENV"] ?? "production",
+    // Capture 5% of transactions for performance monitoring — low overhead.
+    tracesSampleRate: 0.05,
+    // Always capture 100% of errors.
+    sampleRate: 1.0,
+  });
+}
 
 initFirebaseAdmin();
 
@@ -55,5 +69,10 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// Sentry error handler must come after routes and before any other error middleware.
+if (process.env["SENTRY_DSN"]) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 export default app;
