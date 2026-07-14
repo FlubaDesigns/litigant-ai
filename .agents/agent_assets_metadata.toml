@@ -215,3 +215,9 @@ id = "g01eVJaemOOPojPLlZ6iJ"
 uri = "file://downloads/litigant-ai-full-site.zip"
 type = "unspecified"
 title = "Litigant AI — full site (Finding B closed, all 5 findings resolved)"
+
+[[outputs]]
+id = "ziBYO3UEw6w3hhTz5Vt35"
+uri = "file://litigant-ai-source.tar.gz"
+type = "unspecified"
+title = "Litigant AI — Complete Source (tar.gz)"
