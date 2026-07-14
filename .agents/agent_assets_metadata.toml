@@ -227,3 +227,9 @@ id = "HzVxZUVHnHUQBQthlNuDI"
 uri = "file://litigant-ai-source.zip"
 type = "unspecified"
 title = "Litigant AI — Complete Source (with Firestore Rules + Cloud Run)"
+
+[[outputs]]
+id = "F8QE8Pyf3EUpyXatEUHv3"
+uri = "file://downloads/litigant-ai.zip"
+type = "unspecified"
+title = "litigant-ai.zip — full source (32MB)"
