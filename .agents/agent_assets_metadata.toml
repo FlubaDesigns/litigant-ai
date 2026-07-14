@@ -221,3 +221,9 @@ id = "ziBYO3UEw6w3hhTz5Vt35"
 uri = "file://litigant-ai-source.tar.gz"
 type = "unspecified"
 title = "Litigant AI — Complete Source (tar.gz)"
+
+[[outputs]]
+id = "HzVxZUVHnHUQBQthlNuDI"
+uri = "file://litigant-ai-source.zip"
+type = "unspecified"
+title = "Litigant AI — Complete Source Code"
