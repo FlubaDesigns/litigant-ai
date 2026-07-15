@@ -11,8 +11,7 @@ export default function TermsPage() {
         <section className="section">
           <div className="main-inner">
             <div className="row">
-              <div className="layout__center">
-                <div className="prose-page">
+              <div className="prose-page">
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" />
           Back to home
@@ -142,8 +141,7 @@ export default function TermsPage() {
           <span>© 2026 Litigant AI. All rights reserved.</span>
           <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy →</Link>
         </div>
-                </div>{/* /prose-page */}
-              </div>{/* /layout__center */}
+              </div>{/* /prose-page */}
             </div>{/* /row */}
           </div>{/* /main-inner */}
         </section>
