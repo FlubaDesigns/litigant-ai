@@ -767,7 +767,6 @@ export default function SettingsPage() {
       <SiteHeader variant="app" />
       <main>
       <div className="main-inner">
-      <section className="section">
       <div className="row">
         <div className="flex items-center gap-2 mb-8" style={{ paddingTop: "var(--sv)" }}>
           <Settings className="w-5 h-5 text-primary" />
@@ -818,7 +817,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>{/* /row */}
-      </section>
     </div>
       </main>
       <SiteFooter variant="app" />

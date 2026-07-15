@@ -583,7 +583,6 @@ export default function HistoryPage() {
       <SiteHeader variant="app" />
       <main>
       <div className="main-inner">
-      <section className="section">
 
         {/* ── Page hero ── */}
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -730,7 +729,6 @@ export default function HistoryPage() {
             )}
           </>
         )}
-      </section>
       </div>
 
       {/* Session detail sheet */}

@@ -260,7 +260,6 @@ export default function TemplatesPage() {
       <SiteHeader variant="app" />
       <main>
         <div className="main-inner">
-          <section className="section">
 
             {/* ── Page header ── */}
             <div className="row" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -369,7 +368,6 @@ export default function TemplatesPage() {
               </AnimatePresence>
             </div>
 
-          </section>
         </div>
       </main>
       <SiteFooter variant="app" />
