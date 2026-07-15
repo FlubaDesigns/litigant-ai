@@ -10,8 +10,13 @@ export interface ToolBenefit {
 
 export interface ToolSampleOutput {
   scenario: string;
+  question: string;
   confidence: number;
+  creditsUsed: number;
+  rounds: number;
+  litigants: number;
   verdict: string;
+  caveats: string;
   debateSnippet: string;
   debateRole: string;
 }
