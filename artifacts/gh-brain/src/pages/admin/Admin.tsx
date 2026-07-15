@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearch, useLocation } from "wouter";
-import { SiteHeader } from "@/components/SiteHeader";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -3919,7 +3918,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <SiteHeader variant="app" />
       <div className="flex flex-1">
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-52 shrink-0 border-r border-border bg-card/40 py-6 px-3 gap-1">

@@ -21,7 +21,6 @@ import {
   type ProviderInfo, type ModelCreditInfo, type CalibrationStats,
 } from "@/services/providerService";
 import { useLimits } from "@/hooks/useLimits";
-import { SiteHeader } from "@/components/SiteHeader";
 import type { SeatAssignment } from "@/data/seatTypes";
 import { toast } from "sonner";
 import { ConfigPanel } from "./session/ConfigPanel";
@@ -414,8 +413,6 @@ export default function SessionPage() {
 
   return (
     <div className="session-bg">
-      <SiteHeader variant="app" />
-
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">

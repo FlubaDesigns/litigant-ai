@@ -6,8 +6,6 @@ import {
   Stethoscope, Scale, Search, FlaskConical, Zap, ChevronRight,
   LayoutTemplate, SearchX,
 } from "lucide-react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -257,7 +255,6 @@ export default function TemplatesPage() {
 
   return (
     <div className="app-page">
-      <SiteHeader variant="app" />
       <main>
         <div className="main-inner">
 
@@ -370,7 +367,6 @@ export default function TemplatesPage() {
 
         </div>
       </main>
-      <SiteFooter variant="app" />
 
       {/* ── Detail sheet ── */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>

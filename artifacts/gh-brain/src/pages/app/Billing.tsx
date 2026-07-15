@@ -1,6 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, CreditCard, History, AlertTriangle,
@@ -611,7 +609,6 @@ export default function BillingPage() {
 
   return (
     <div className="app-page">
-      <SiteHeader variant="app" />
       <main>
       <div className="main-inner">
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -985,7 +982,6 @@ export default function BillingPage() {
         </div>{/* /row */}
     </div>
       </main>
-      <SiteFooter variant="app" />
     </div>
   );
 }

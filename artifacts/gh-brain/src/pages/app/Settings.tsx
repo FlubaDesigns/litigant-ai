@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import {
   Settings, User as UserIcon, Sliders, AlertTriangle, Save,
   Eye, EyeOff, Download, Loader2, Shield, Check, Bell,
@@ -764,7 +762,6 @@ export default function SettingsPage() {
 
   return (
     <div className="app-page">
-      <SiteHeader variant="app" />
       <main>
       <div className="main-inner">
       <div className="row" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -819,7 +816,6 @@ export default function SettingsPage() {
       </div>{/* /row */}
     </div>
       </main>
-      <SiteFooter variant="app" />
     </div>
   );
 }
