@@ -33,162 +33,121 @@ function FAQ({ q, a }: { q: string; a: string }) {
 
 function DocumentPreview({ sample }: { sample: ToolSampleOutput }) {
   const confColor =
-    sample.confidence >= 80 ? "#39f70a" :
-    sample.confidence >= 60 ? "#f59e0b" : "#ef4444";
+    sample.confidence >= 80 ? "#00a83a" :
+    sample.confidence >= 60 ? "#b45309" : "#b91c1c";
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/[0.07]"
-      style={{ background: "#0a0f0a" }}
-    >
-      {/* App bar */}
+    /* Outer container — dark page background so the white doc "floats" */
+    <div className="rounded-xl overflow-hidden bg-zinc-900 p-6 sm:p-10 shadow-2xl shadow-black/60">
+      {/* The white document page */}
       <div
-        className="flex items-center gap-3 px-4 h-10 border-b"
-        style={{ background: "#080d08", borderColor: "rgba(255,255,255,0.06)" }}
+        className="mx-auto w-full max-w-2xl rounded shadow-[0_4px_32px_rgba(0,0,0,0.35)]"
+        style={{
+          background: "#ffffff",
+          color: "#111111",
+          fontFamily: "system-ui, sans-serif",
+          fontSize: "13px",
+          lineHeight: "1.65",
+        }}
       >
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1e2a1e" }} />
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1e2a1e" }} />
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1e2a1e" }} />
-        </div>
+        {/* Letterhead */}
         <div
-          className="flex-1 mx-2 h-5 rounded-md flex items-center px-3 gap-2"
-          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <Brain className="w-2.5 h-2.5 shrink-0" style={{ color: "#39f70a" }} />
-          <span className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.25)" }}>
-            litigant-ai.web.app/report/···
-          </span>
-        </div>
-        <span
-          className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded"
           style={{
-            color: "rgba(255,255,255,0.3)",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            padding: "28px 36px 20px",
+            borderBottom: "2px solid #00c853",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
           }}
         >
-          Sample Output
-        </span>
-      </div>
-
-      {/* Report content */}
-      <div className="p-6 space-y-5">
-
-        {/* Question put on trial */}
-        <div
-          className="rounded-xl p-4"
-          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-        >
-          <p
-            className="text-[9px] font-mono uppercase tracking-widest mb-2"
-            style={{ color: "rgba(255,255,255,0.3)" }}
-          >
-            Question put on trial
-          </p>
-          <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
-            {sample.question}
-          </p>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: "15px", letterSpacing: "0.06em", color: "#111" }}>
+              LITIGANT<span style={{ color: "#00c853" }}>·</span>AI
+            </div>
+            <div style={{ fontSize: "10px", color: "#888", marginTop: 2, fontFamily: "monospace" }}>
+              Put AI to the question!
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "10px", color: "#aaa", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Session Report
+            </div>
+            <div style={{ fontSize: "10px", color: "#ccc", marginTop: 2 }}>
+              {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+            </div>
+          </div>
         </div>
 
-        {/* Meta strip */}
-        <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-          <span
-            className="flex items-center gap-1.5 text-xs font-mono font-semibold"
-            style={{ color: confColor }}
-          >
-            <Target className="w-3 h-3" />
-            {sample.confidence}% confidence
-          </span>
-          <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
-            <Zap className="w-3 h-3" />
-            {sample.creditsUsed} credits
-          </span>
-          <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
-            <RotateCcw className="w-3 h-3" />
-            {sample.rounds} rounds
-          </span>
-          <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
-            <Users className="w-3 h-3" />
-            {sample.litigants} litigants
-          </span>
-        </div>
+        {/* Body */}
+        <div style={{ padding: "24px 36px 32px" }}>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+          {/* Question */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: "9px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#999", marginBottom: 6 }}>
+              Question put on trial
+            </div>
+            <div style={{ background: "#f7f7f7", borderRadius: 6, padding: "12px 14px", color: "#222", fontSize: "12.5px", lineHeight: 1.6 }}>
+              {sample.question}
+            </div>
+          </div>
 
-        {/* Verdict */}
-        <div className="space-y-2">
-          <p
-            className="text-[9px] font-mono uppercase tracking-widest"
-            style={{ color: "#39f70a" }}
-          >
-            Verdict
-          </p>
-          <div
-            className="rounded-xl p-4"
-            style={{
-              background: "rgba(57,247,10,0.04)",
-              border: "1px solid rgba(57,247,10,0.15)",
-            }}
-          >
-            <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
+          {/* Meta strip */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", marginBottom: 22, fontSize: "11px", color: "#666" }}>
+            <span>
+              Confidence:&nbsp;
+              <span style={{ fontWeight: 700, color: confColor }}>
+                {sample.confidence}%
+              </span>
+            </span>
+            <span>Credits used: <strong style={{ color: "#333" }}>{sample.creditsUsed}</strong></span>
+            <span>Rounds: <strong style={{ color: "#333" }}>{sample.rounds}</strong></span>
+            <span>Litigants: <strong style={{ color: "#333" }}>{sample.litigants}</strong></span>
+          </div>
+
+          <div style={{ borderTop: "1px solid #e5e5e5", marginBottom: 22 }} />
+
+          {/* Verdict */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: "9px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#00a83a", marginBottom: 8, fontWeight: 700 }}>
+              Verdict
+            </div>
+            <div style={{ borderLeft: "3px solid #00c853", paddingLeft: 14, color: "#1a1a1a", fontSize: "12.5px", lineHeight: 1.7 }}>
               {sample.verdict}
-            </p>
+            </div>
           </div>
-        </div>
 
-        {/* Caveats */}
-        <div className="space-y-2">
-          <p
-            className="text-[9px] font-mono uppercase tracking-widest"
-            style={{ color: "#f59e0b" }}
-          >
-            Caveats &amp; Limitations
-          </p>
-          <div
-            className="rounded-xl p-4"
-            style={{
-              background: "rgba(245,158,11,0.04)",
-              border: "1px solid rgba(245,158,11,0.15)",
-            }}
-          >
-            <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
+          {/* Caveats */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: "9px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#b45309", marginBottom: 8, fontWeight: 700 }}>
+              Caveats &amp; Limitations
+            </div>
+            <div style={{ borderLeft: "3px solid #f59e0b", paddingLeft: 14, color: "#444", fontSize: "12px", lineHeight: 1.65 }}>
               {sample.caveats}
-            </p>
+            </div>
           </div>
-        </div>
 
-        {/* Debate snippet */}
-        <div className="space-y-2">
-          <p
-            className="text-[9px] font-mono uppercase tracking-widest"
-            style={{ color: "rgba(255,255,255,0.25)" }}
-          >
-            Debate notes
-          </p>
-          <div
-            className="rounded-xl p-4"
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <p
-              className="text-[9px] font-mono uppercase tracking-widest mb-2"
-              style={{ color: "rgba(245,158,11,0.55)" }}
-            >
-              {sample.debateRole}
-            </p>
-            <p
-              className="text-sm leading-relaxed italic"
-              style={{ color: "rgba(255,255,255,0.5)" }}
-            >
-              "{sample.debateSnippet}"
-            </p>
+          {/* Debate notes */}
+          <div>
+            <div style={{ fontSize: "9px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "#999", marginBottom: 8 }}>
+              Debate notes
+            </div>
+            <div style={{ background: "#f7f7f7", borderRadius: 6, padding: "12px 14px" }}>
+              <div style={{ fontSize: "9px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", color: "#b45309", marginBottom: 6 }}>
+                {sample.debateRole}
+              </div>
+              <div style={{ color: "#555", fontSize: "12px", fontStyle: "italic", lineHeight: 1.65 }}>
+                "{sample.debateSnippet}"
+              </div>
+            </div>
           </div>
-        </div>
 
+          {/* Footer */}
+          <div style={{ marginTop: 28, paddingTop: 16, borderTop: "1px solid #ebebeb", fontSize: "10px", color: "#bbb", textAlign: "center" }}>
+            Generated by Litigant AI — litigant-ai.web.app
+          </div>
+
+        </div>
       </div>
     </div>
   );
