@@ -22,7 +22,6 @@ import {
   type ProviderInfo, type ModelCreditInfo, type CalibrationStats,
 } from "@/services/providerService";
 import { useLimits } from "@/hooks/useLimits";
-import type { SeatAssignment } from "@/data/seatTypes";
 import { toast } from "sonner";
 import { ConfigPanel } from "./session/ConfigPanel";
 import { SessionConfigure } from "./session/SessionConfigure";
