@@ -479,55 +479,6 @@ export default function SessionPage() {
       <main>
         <div className="main-inner">
 
-          {/* ── Row 1: Control Board ── */}
-          <div className="row">
-            <div className="sz-control-nav layout__split-2">
-              <button onClick={() => setConfigOpen(true)} className="session-nav-btn">⚙ Configure</button>
-              <button onClick={() => navigate("/history")} className="session-nav-btn">📂 Sessions</button>
-              {isRunning && (
-                <button onClick={handleStop} className="session-nav-btn session-nav-btn--full session-nav-btn--stop">⏹ Stop Trial</button>
-              )}
-              {(isComplete || isError) && (
-                <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">↺ New Trial</button>
-              )}
-            </div>
-            <div className="session-stats-bar">
-              <span className="session-stats-item">
-                <span className="session-stats-key">{hasDebt ? "Debt" : "Balance"}</span>
-                <span className={cn("session-stats-val", hasDebt ? "session-stats-val--critical" : creditsCritical ? "session-stats-val--critical" : creditsLow ? "session-stats-val--low" : "")}>
-                  {hasDebt ? `${Math.abs(credits).toLocaleString()} cr owed` : `${credits.toLocaleString()} cr`}
-                </span>
-              </span>
-              <span className="session-stats-sep" />
-              <span className="session-stats-item">
-                <span className="session-stats-key">Used</span>
-                <span className="session-stats-val">{state.creditsUsed}</span>
-              </span>
-              <span className="session-stats-sep" />
-              <span
-                className="session-stats-item"
-                title={
-                  calibration?.isCalibrated
-                    ? `Calibrated from ${calibration.sessionCount} of your sessions`
-                    : calibration
-                    ? `Using default estimate — run ${calibration.minSessions - calibration.sessionCount} more session${calibration.minSessions - calibration.sessionCount === 1 ? "" : "s"} to personalise`
-                    : "Credit estimate"
-                }
-              >
-                <span className="session-stats-key">Est{calibration?.isCalibrated ? " ✦" : ""}</span>
-                <span className="session-stats-val">~{estimatedCredits}</span>
-              </span>
-              <span className="session-stats-sep" />
-              <span className="session-stats-item">
-                <span className="session-stats-key">Litigants</span>
-                <span className="session-stats-val">{state.config.litigantCount}</span>
-              </span>
-              {insufficientCredits && (
-                <button onClick={() => navigate("/billing")} className="session-stats-topup">Top up →</button>
-              )}
-            </div>
-          </div>
-
           {/* ── Rows 2 + 3: Phase views ── */}
           {isIdle && (
             <SessionConfigure

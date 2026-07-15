@@ -533,9 +533,8 @@ main > .row:last-child  { padding-bottom: var(--sv); }
    boxes, dialog lines, activity log, nav strip, meters, status cards.
    ─────────────────────────────────────────────────────────────────── */
 
-/* Page root — full-screen flex column, same pattern as app-page */
+/* Page root — flex column inside AppLayout (AppLayout owns min-h-screen) */
 .session-bg {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: #000;
