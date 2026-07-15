@@ -45,11 +45,24 @@
 
 
 /* ── PAGE WRAPPER ────────────────────────────────────────────────────
+   .stage      : applied to <body> — the universal page surface.
+                 Every page sits on this. Provides base bg/color,
+                 full-height flex column so header + main + footer
+                 stack correctly.
    .app-page   : standard authenticated page root (sticky header/footer).
    .main       : full-width page root. Clears the fixed header.
    .main-inner : inner wrapper — max-width + horizontal gutters.
                  Used on app/auth/legal pages that need both layers.
    ─────────────────────────────────────────────────────────────────── */
+.stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+
 .app-page {
   min-height: 100vh;
   display: flex;
