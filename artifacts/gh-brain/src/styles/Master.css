@@ -194,6 +194,9 @@ main > .row:last-child  { padding-bottom: var(--sv); }
    layout__split-2-1  2fr 1fr         (wide-left)
    layout__split-1-2  1fr 2fr         (wide-right)
    layout__split-3-2  3fr 2fr         (hero: copy + visual)
+   layout__auto       auto-fill card grid — cols wrap at 280px min
+   layout__center     single centred column — forms, auth, reading
+   layout__sidebar    fixed 240px sidebar + fluid main content
    ─────────────────────────────────────────────────────────────────── */
 [class*="layout__"] {
   display: grid;
@@ -220,6 +223,36 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 
 @media (min-width: 1024px) {
   .layout__split-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Auto-fill card grid — number of columns determined by available space */
+.layout__auto {
+  display: grid;
+  gap: var(--col-gap);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.layout__auto > * { min-width: 0; }
+
+/* Centred single column — forms, auth pages, reading content */
+.layout__center {
+  width: 100%;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Fixed sidebar + fluid content — collapses to single col on mobile */
+.layout__sidebar {
+  display: grid;
+  gap: var(--col-gap);
+  grid-template-columns: 1fr;
+}
+
+.layout__sidebar > * { min-width: 0; }
+
+@media (min-width: 768px) {
+  .layout__sidebar { grid-template-columns: 240px 1fr; }
 }
 
 
