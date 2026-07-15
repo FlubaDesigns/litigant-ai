@@ -58,114 +58,110 @@ export default function TermsPage() {
           </div>
         </section>
 
-        {/* ── Prose content ── */}
+        {/* ── Numbered sections — one row each ── */}
         <section className="section">
           <div className="main-inner">
+
             <div className="row">
-              <div className="prose-page">
-                <div className="prose prose-invert prose-sm max-w-none space-y-8">
+              <h2 className="text-lg font-semibold text-foreground mb-3">1. The Service</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Litigant AI provides an adversarial AI reasoning engine that simulates multiple AI "litigants" debating a question and returning a verdict. The service is intended for entertainment, intellectual exploration, research, and critical thinking exercises. It is not a law firm, financial advisory, medical practice, or professional services firm of any kind.
+              </p>
+            </div>
 
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">1. The Service</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Litigant AI provides an adversarial AI reasoning engine that simulates multiple AI "litigants" debating a question and returning a verdict. The service is intended for entertainment, intellectual exploration, research, and critical thinking exercises. It is not a law firm, financial advisory, medical practice, or professional services firm of any kind.
-                    </p>
-                  </section>
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">2. Eligibility</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                You must be at least 13 years old to use this service. By using Litigant AI, you represent that you meet this requirement and have the legal capacity to enter into these Terms.
+              </p>
+            </div>
 
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">2. Eligibility</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      You must be at least 13 years old to use this service. By using Litigant AI, you represent that you meet this requirement and have the legal capacity to enter into these Terms.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">3. Credits and Payments</h2>
-                    <div className="space-y-3 text-muted-foreground leading-relaxed">
-                      <p>Litigant AI operates on a pay-as-you-go credit system. Credits are consumed when you run AI sessions.</p>
-                      <p>Credits are non-refundable except where required by applicable law. Credits have no cash value and cannot be transferred between accounts.</p>
-                      <p>Prices are displayed in USD. Payments are processed securely through Square. We reserve the right to change credit pricing with reasonable notice.</p>
-                      <p>Welcome bonus credits are provided at signup at our discretion and may be modified or discontinued at any time.</p>
-                    </div>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">4. Acceptable Use</h2>
-                    <p className="text-muted-foreground leading-relaxed mb-3">You agree not to use Litigant AI to:</p>
-                    <ul className="space-y-2 text-muted-foreground leading-relaxed list-disc list-inside">
-                      <li>Generate content that is illegal, harassing, threatening, or defamatory</li>
-                      <li>Attempt to circumvent credit usage, access controls, or rate limits</li>
-                      <li>Scrape, reverse-engineer, or reproduce the service in a competing product</li>
-                      <li>Submit content that infringes third-party intellectual property rights</li>
-                      <li>Present AI-generated outputs as actual professional advice to third parties without appropriate disclosure</li>
-                      <li>Use the service in any way that violates applicable laws or regulations</li>
-                    </ul>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">5. Disclaimer of Warranties</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR THAT OUTPUTS WILL BE ACCURATE, COMPLETE, OR SUITABLE FOR ANY PURPOSE. AI-GENERATED OUTPUTS ARE PROBABILISTIC AND MAY BE INCORRECT, BIASED, OR INCOMPLETE.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">6. Limitation of Liability</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      TO THE MAXIMUM EXTENT PERMITTED BY LAW, LITIGANT AI AND ITS OPERATORS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE SERVICE, INCLUDING BUT NOT LIMITED TO DAMAGES ARISING FROM RELIANCE ON AI-GENERATED OUTPUTS. OUR TOTAL LIABILITY TO YOU SHALL NOT EXCEED THE AMOUNT YOU PAID FOR CREDITS IN THE 30 DAYS PRECEDING THE CLAIM.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">7. Intellectual Property</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      You retain ownership of the questions and prompts you submit. You grant us a limited license to process your inputs to provide the service. AI-generated outputs are provided to you for your personal use. The Litigant AI platform, branding, and underlying technology remain our property.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">8. Termination</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      We reserve the right to suspend or terminate accounts that violate these Terms, abuse the service, or engage in fraudulent activity. You may delete your account at any time through Settings. Unused credits are forfeited upon termination for cause.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">9. Third-Party AI Providers</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Litigant AI uses third-party AI models (OpenAI, Anthropic, Google, xAI) to generate responses. We are not responsible for the content, accuracy, or behavior of these models. Your use of the service is also subject to the terms of these providers.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">10. Changes to Terms</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      We may update these Terms at any time. Material changes will be communicated via email or in-app notice. Continued use of the service after changes take effect constitutes acceptance of the updated Terms.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">11. Governing Law</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      These Terms are governed by the laws of the United States. Any disputes shall be resolved through binding arbitration or in the courts of the applicable jurisdiction, to the extent permitted by law.
-                    </p>
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold text-foreground mb-3">12. Contact</h2>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Questions about these Terms? Contact us at <span className="text-primary">info@litigant-ai.com</span>.
-                    </p>
-                  </section>
-
-                </div>
-
-                <div className="mt-12 pt-8 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                  <span>© 2026 Litigant AI. All rights reserved.</span>
-                  <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy →</Link>
-                </div>
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">3. Credits and Payments</h2>
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p>Litigant AI operates on a pay-as-you-go credit system. Credits are consumed when you run AI sessions.</p>
+                <p>Credits are non-refundable except where required by applicable law. Credits have no cash value and cannot be transferred between accounts.</p>
+                <p>Prices are displayed in USD. Payments are processed securely through Square. We reserve the right to change credit pricing with reasonable notice.</p>
+                <p>Welcome bonus credits are provided at signup at our discretion and may be modified or discontinued at any time.</p>
               </div>
             </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">4. Acceptable Use</h2>
+              <p className="text-muted-foreground leading-relaxed mb-3">You agree not to use Litigant AI to:</p>
+              <ul className="space-y-2 text-muted-foreground leading-relaxed list-disc list-inside">
+                <li>Generate content that is illegal, harassing, threatening, or defamatory</li>
+                <li>Attempt to circumvent credit usage, access controls, or rate limits</li>
+                <li>Scrape, reverse-engineer, or reproduce the service in a competing product</li>
+                <li>Submit content that infringes third-party intellectual property rights</li>
+                <li>Present AI-generated outputs as actual professional advice to third parties without appropriate disclosure</li>
+                <li>Use the service in any way that violates applicable laws or regulations</li>
+              </ul>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">5. Disclaimer of Warranties</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR THAT OUTPUTS WILL BE ACCURATE, COMPLETE, OR SUITABLE FOR ANY PURPOSE. AI-GENERATED OUTPUTS ARE PROBABILISTIC AND MAY BE INCORRECT, BIASED, OR INCOMPLETE.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">6. Limitation of Liability</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                TO THE MAXIMUM EXTENT PERMITTED BY LAW, LITIGANT AI AND ITS OPERATORS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE SERVICE, INCLUDING BUT NOT LIMITED TO DAMAGES ARISING FROM RELIANCE ON AI-GENERATED OUTPUTS. OUR TOTAL LIABILITY TO YOU SHALL NOT EXCEED THE AMOUNT YOU PAID FOR CREDITS IN THE 30 DAYS PRECEDING THE CLAIM.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">7. Intellectual Property</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                You retain ownership of the questions and prompts you submit. You grant us a limited license to process your inputs to provide the service. AI-generated outputs are provided to you for your personal use. The Litigant AI platform, branding, and underlying technology remain our property.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">8. Termination</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                We reserve the right to suspend or terminate accounts that violate these Terms, abuse the service, or engage in fraudulent activity. You may delete your account at any time through Settings. Unused credits are forfeited upon termination for cause.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">9. Third-Party AI Providers</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Litigant AI uses third-party AI models (OpenAI, Anthropic, Google, xAI) to generate responses. We are not responsible for the content, accuracy, or behavior of these models. Your use of the service is also subject to the terms of these providers.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">10. Changes to Terms</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                We may update these Terms at any time. Material changes will be communicated via email or in-app notice. Continued use of the service after changes take effect constitutes acceptance of the updated Terms.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">11. Governing Law</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                These Terms are governed by the laws of the United States. Any disputes shall be resolved through binding arbitration or in the courts of the applicable jurisdiction, to the extent permitted by law.
+              </p>
+            </div>
+
+            <div className="row">
+              <h2 className="text-lg font-semibold text-foreground mb-3">12. Contact</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                Questions about these Terms? Contact us at <span className="text-primary">info@litigant-ai.com</span>.
+              </p>
+            </div>
+
+            <div className="row">
+              <div className="pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                <span>© 2026 Litigant AI. All rights reserved.</span>
+                <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy →</Link>
+              </div>
+            </div>
+
           </div>
         </section>
 
