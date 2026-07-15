@@ -773,7 +773,7 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-6">
+        <div className="layout__split-1-2">
           {/* Sidebar */}
           <nav className="sm:w-48 shrink-0">
             <div className="flex sm:flex-col gap-1">

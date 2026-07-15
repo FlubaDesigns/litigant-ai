@@ -643,9 +643,10 @@ export default function BillingPage() {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="row">
+        <div className="layout__split-1-2">
           {/* ── Left column ─────────────────────────────────── */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="space-y-6">
             <CreditBalanceCard balance={balance} plan={plan} />
 
             <PlanLimitsCard plan={plan} />
@@ -751,7 +752,7 @@ export default function BillingPage() {
           </div>
 
           {/* ── Right column ────────────────────────────────── */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
 
             {/* Custom Top-Up */}
             <div className="rounded-xl border border-border/60 bg-card/50 p-5">
@@ -980,7 +981,8 @@ export default function BillingPage() {
               </AnimatePresence>
             </div>
           </div>
-        </div>
+        </div>{/* /layout__split-1-2 */}
+        </div>{/* /row */}
     </div>
       </main>
       <SiteFooter variant="app" />

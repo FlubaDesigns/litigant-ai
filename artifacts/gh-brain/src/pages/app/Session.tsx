@@ -1498,7 +1498,7 @@ export default function SessionPage() {
 
       {/* ── Row 1: Control Board ── */}
       <div className="row">
-        <div className="sz-control-nav">
+        <div className="sz-control-nav layout__split-2">
           <button onClick={() => setConfigOpen(true)} className="session-nav-btn">⚙ Configure</button>
           <button onClick={() => navigate("/history")} className="session-nav-btn">📂 Sessions</button>
           {isRunning && (

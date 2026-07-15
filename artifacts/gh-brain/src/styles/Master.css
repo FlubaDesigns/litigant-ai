@@ -468,8 +468,6 @@
 
 /* Zone 1: Control Board */
 .sz-control-nav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding: 7px 0;
 }

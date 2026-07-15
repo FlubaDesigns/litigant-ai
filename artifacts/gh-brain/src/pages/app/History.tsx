@@ -608,8 +608,8 @@ export default function HistoryPage() {
         </div>
 
         {/* Tabs + search */}
-        <div className="row flex-wrap" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.25rem" }}
-             data-sm-row="true">
+        <div className="row">
+          <div className="layout__split-2">
           <div className="flex items-center gap-1 bg-card/60 border border-border/60 rounded-lg p-1">
             {(["all", "starred", "archived"] as TabView[]).map((t) => (
               <button
@@ -657,7 +657,8 @@ export default function HistoryPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>{/* /layout__split-2 */}
+        </div>{/* /row */}
 
         {/* List */}
         {loading ? (
