@@ -52,7 +52,7 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="auth-shell bg-background relative overflow-hidden">
+    <div className="auth-shell">
       <div className="auth-glow" />
 
       <div className="auth-inner">

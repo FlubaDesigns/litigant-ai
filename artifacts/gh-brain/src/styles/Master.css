@@ -480,6 +480,9 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   align-items: center;
   justify-content: center;
   padding: var(--sv) var(--gutter);
+  background: hsl(var(--background));
+  position: relative;
+  overflow: hidden;
 }
 
 .auth-card {
