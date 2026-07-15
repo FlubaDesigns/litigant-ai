@@ -472,15 +472,18 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 
 
 /* ── AUTH PAGES ──────────────────────────────────────────────────────
-   .auth-shell: centered single-column layout for sign-in / register.
+   Backbone pattern: body.stage > #root > main.auth-main > .row > .layout__center
+
+   .auth-main  : <main> variant — fills vertical space and centres its
+                 single .row child. No header or footer on auth pages.
+   .auth-glow  : optional decorative radial blur blob (positioned abs).
    ─────────────────────────────────────────────────────────────────── */
-.auth-shell {
-  min-height: 100vh;
+.auth-main {
+  flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  padding: var(--sv) var(--gutter);
-  background: hsl(var(--background));
+  padding: var(--sv) 0;
   position: relative;
   overflow: hidden;
 }
@@ -504,25 +507,11 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 }
 
 
-/* ── AUTH GLOW + INNER ───────────────────────────────────────────────
-   Used by SignIn, Register, ForgotPassword, VerifyEmail.
-   .auth-glow  : centred radial blur blob behind the card.
-   .auth-inner : max-width card-column wrapper, stacks above the glow.
+/* ── AUTH GLOW ───────────────────────────────────────────────────────
+   Decorative blur blob — sits behind the form card.
    ─────────────────────────────────────────────────────────────────── */
 .auth-glow {
   display: none;
-}
-
-.auth-inner {
-  width: 100%;
-  max-width: 440px;
-  padding: 2rem;
-  position: relative;
-  z-index: 10;
-}
-
-.auth-inner--wide {
-  max-width: 528px;
 }
 
 

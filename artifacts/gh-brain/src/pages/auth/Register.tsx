@@ -72,10 +72,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-shell">
+    <main className="auth-main">
       <div className="auth-glow" />
 
-      <div className="auth-inner auth-inner--wide">
+      <div className="row"><div className="layout__center">
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity">
             <img src="/logo.png" alt="Litigant AI" className="w-9 h-9" />
@@ -219,7 +219,7 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
-      </div>
-    </div>
+      </div></div>
+    </main>
   );
 }
