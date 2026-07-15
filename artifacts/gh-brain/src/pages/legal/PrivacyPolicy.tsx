@@ -31,17 +31,9 @@ export default function PrivacyPolicyPage() {
               <div className="layout__split-2-1">
                 <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-5">
                   <p className="text-sm text-amber-300 font-semibold mb-1">Entertainment Purposes Only</p>
-                  <p className="text-sm text-amber-200/80 mb-5">
+                  <p className="text-sm text-amber-200/80">
                     Litigant AI is an entertainment and exploratory reasoning tool. It is <strong>not a law firm, financial advisor, medical provider, or professional services firm</strong>. Nothing produced by this service constitutes legal, financial, medical, or professional advice of any kind. See our Terms of Service for the full disclaimer.
                   </p>
-                  <div className="flex flex-wrap gap-4">
-                    <Link href="/terms" className="text-sm text-primary hover:underline">
-                      Terms of Service →
-                    </Link>
-                    <a href="mailto:info@litigant-ai.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      Contact us →
-                    </a>
-                  </div>
                 </div>
                 <div className="hero-img-col">
                   <img

@@ -42,15 +42,7 @@ export default function TermsPage() {
                     </div>
                   </div>
                   <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-200/70 leading-relaxed">
-                    <p className="mb-4">By creating an account or using Litigant AI, you agree to these Terms.</p>
-                    <div className="flex flex-wrap gap-4">
-                      <Link href="/privacy" className="text-sm text-primary hover:underline">
-                        Privacy Policy →
-                      </Link>
-                      <a href="mailto:info@litigant-ai.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        Contact us →
-                      </a>
-                    </div>
+                    By creating an account or using Litigant AI, you agree to these Terms.
                   </div>
                 </div>
                 <div className="hero-img-col">
