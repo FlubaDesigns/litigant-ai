@@ -610,9 +610,9 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="app-page">
       <SiteHeader variant="app" />
-      <main className="flex-1">
+      <main>
       <div className="main-inner">
       <section className="section">
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>

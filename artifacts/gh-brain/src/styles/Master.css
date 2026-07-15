@@ -45,10 +45,22 @@
 
 
 /* ── PAGE WRAPPER ────────────────────────────────────────────────────
+   .app-page   : standard authenticated page root (sticky header/footer).
    .main       : full-width page root. Clears the fixed header.
    .main-inner : inner wrapper — max-width + horizontal gutters.
                  Used on app/auth/legal pages that need both layers.
    ─────────────────────────────────────────────────────────────────── */
+.app-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+.app-page > main {
+  flex: 1;
+}
+
 .main {
   padding-top: var(--main-offset);
   min-height: 100vh;
