@@ -31,6 +31,7 @@ import TermsPage from "@/pages/legal/Terms";
 // Shared
 import ShareReportPage from "@/pages/ShareReport";
 import NotFoundPage from "@/pages/not-found";
+import BackbonePage from "@/pages/Backbone";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +112,9 @@ function AppRoutes() {
           <SettingsPage />
         </ProtectedRoute>
       </Route>
+
+      {/* Dev reference */}
+      <Route path="/backbone" component={BackbonePage} />
 
       {/* Admin */}
       <Route path="/admin">
