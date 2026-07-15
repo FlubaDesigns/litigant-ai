@@ -565,7 +565,7 @@ export default function HistoryPage() {
 
   if (!firebaseReady || !user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div className="page-center">
         <History className="w-12 h-12 text-muted-foreground/30 mb-4" />
         <h2 className="text-lg font-semibold mb-2">Session history unavailable</h2>
         <p className="text-muted-foreground text-sm max-w-sm">

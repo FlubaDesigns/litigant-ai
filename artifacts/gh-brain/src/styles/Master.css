@@ -226,6 +226,31 @@
 .items-start { align-items: flex-start; }
 
 
+/* ── PAGE-LEVEL UTILITIES ────────────────────────────────────────────
+   .page-center : full-page centered fallback — used for loading,
+                  error, and unauthenticated states that render
+                  without the normal app-page > main > main-inner tree.
+   .nav-stack   : vertical nav list (sidebar tabs).
+   ─────────────────────────────────────────────────────────────────── */
+.page-center {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gutter);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  text-align: center;
+}
+
+.nav-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+
 /* ── TYPOGRAPHY HELPERS ──────────────────────────────────────────────
    .eyebrow      : small all-caps label above section headings
    .section-title: section h2 (fluid type)

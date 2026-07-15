@@ -576,7 +576,7 @@ export default function BillingPage() {
 
   if (!firebaseReady) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <div className="page-center">
         <div className="text-center max-w-sm">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <CreditCard className="w-6 h-6 text-primary" />
@@ -592,7 +592,7 @@ export default function BillingPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <div className="page-center">
         <div className="text-center max-w-sm">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <CreditCard className="w-6 h-6 text-primary" />
@@ -644,7 +644,7 @@ export default function BillingPage() {
         )}
 
         <div className="row">
-        <div className="layout__split-1-2">
+          <div className="layout__split-1-2">
           {/* ── Left column ─────────────────────────────────── */}
           <div className="space-y-6">
             <CreditBalanceCard balance={balance} plan={plan} />
@@ -981,7 +981,7 @@ export default function BillingPage() {
               </AnimatePresence>
             </div>
           </div>
-        </div>{/* /layout__split-1-2 */}
+          </div>{/* /layout__split-1-2 */}
         </div>{/* /row */}
     </div>
       </main>

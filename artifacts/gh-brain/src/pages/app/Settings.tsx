@@ -749,7 +749,7 @@ export default function SettingsPage() {
 
   if (!firebaseReady || !user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div className="page-center">
         <Settings className="w-12 h-12 text-muted-foreground/30 mb-4" />
         <h2 className="text-lg font-semibold mb-2">Settings unavailable</h2>
         <p className="text-muted-foreground text-sm max-w-sm">
@@ -767,16 +767,16 @@ export default function SettingsPage() {
       <SiteHeader variant="app" />
       <main>
       <div className="main-inner">
-      <div className="row">
-        <div className="flex items-center gap-2 mb-8" style={{ paddingTop: "var(--sv)" }}>
+      <div className="row" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
+        <div className="flex-row">
           <Settings className="w-5 h-5 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         </div>
 
         <div className="layout__split-1-2">
           {/* Sidebar */}
-          <nav className="sm:w-48 shrink-0">
-            <div className="flex sm:flex-col gap-1">
+          <nav>
+            <div className="nav-stack">
               {TABS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
