@@ -315,7 +315,7 @@ export default function LandingPage() {
   const [openTemplate, setOpenTemplate] = useState<number>(0);
 
   return (
-    <div className="min-h-screen bg-[#080808] text-white selection:bg-white/10">
+    <div>
 
       {/* ── Navbar (shared SiteHeader — edit SiteHeader.tsx to update everywhere) ── */}
       <SiteHeader variant="landing" />
