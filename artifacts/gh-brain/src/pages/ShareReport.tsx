@@ -175,8 +175,6 @@ export default function ShareReportPage() {
       <section className="section">
       <div className="main-inner">
       <div className="row">
-      <div className="space-y-8">
-        {/* Question */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -194,8 +192,6 @@ export default function ShareReportPage() {
               <p className="text-base leading-relaxed">{report.question}</p>
             </div>
           )}
-
-          {/* Meta row */}
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-mono">
             {typeof report.confidence === "number" && report.confidence > 0 && (
               <span className={cn("flex items-center gap-1 font-semibold", confidenceColor)}>
@@ -251,29 +247,29 @@ export default function ShareReportPage() {
             )}
           </div>
         </motion.div>
+      </div>
 
-        <Separator />
-
-        {/* Final Answer */}
-        {report.finalAnswer && (
-          <motion.section
+      {/* Verdict */}
+      {report.finalAnswer && (
+        <div className="row">
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
             className="space-y-3"
           >
-            <h2 className="text-xs font-mono text-primary uppercase tracking-widest">
-              Verdict
-            </h2>
+            <h2 className="text-xs font-mono text-primary uppercase tracking-widest">Verdict</h2>
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
               <MarkdownBlock text={report.finalAnswer} />
             </div>
-          </motion.section>
-        )}
+          </motion.div>
+        </div>
+      )}
 
-        {/* Caveats */}
-        {report.caveats && (
-          <motion.section
+      {/* Caveats */}
+      {report.caveats && (
+        <div className="row">
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
@@ -285,12 +281,14 @@ export default function ShareReportPage() {
             <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
               <MarkdownBlock text={report.caveats} />
             </div>
-          </motion.section>
-        )}
+          </motion.div>
+        </div>
+      )}
 
-        {/* Artifacts */}
-        {report.artifacts && (
-          <motion.section
+      {/* Artifacts */}
+      {report.artifacts && (
+        <div className="row">
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
@@ -302,56 +300,56 @@ export default function ShareReportPage() {
             <div className="rounded-xl border border-border bg-card p-4">
               <MarkdownBlock text={report.artifacts} />
             </div>
-          </motion.section>
-        )}
+          </motion.div>
+        </div>
+      )}
 
-        {/* Debate Toggle */}
-        {report.debateNotes && (
-          <div className="space-y-2">
-            <button
-              onClick={() => setShowDebate((p) => !p)}
-              className="flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+      {/* Debate notes toggle */}
+      {report.debateNotes && (
+        <div className="row">
+          <button
+            onClick={() => setShowDebate((p) => !p)}
+            className="flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors w-full text-left mb-2"
+          >
+            {showDebate ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showDebate ? "Hide" : "Show"} debate notes
+          </button>
+          {showDebate && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="rounded-xl border border-border bg-card/50 p-5"
             >
-              {showDebate ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              {showDebate ? "Hide" : "Show"} debate notes
-            </button>
-            {showDebate && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="rounded-xl border border-border bg-card/50 p-5"
-              >
-                <MarkdownBlock text={report.debateNotes} />
-              </motion.div>
-            )}
-          </div>
-        )}
+              <MarkdownBlock text={report.debateNotes} />
+            </motion.div>
+          )}
+        </div>
+      )}
 
-        {/* Transcript Toggle */}
-        {report.transcript && (
-          <div className="space-y-2">
-            <button
-              onClick={() => setShowTranscript((p) => !p)}
-              className="flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+      {/* Transcript toggle */}
+      {report.transcript && (
+        <div className="row">
+          <button
+            onClick={() => setShowTranscript((p) => !p)}
+            className="flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors w-full text-left mb-2"
+          >
+            {showTranscript ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showTranscript ? "Hide" : "Show"} full transcript
+          </button>
+          {showTranscript && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="rounded-xl border border-border bg-card/50 p-5 max-h-96 overflow-y-auto"
             >
-              {showTranscript ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              {showTranscript ? "Hide" : "Show"} full transcript
-            </button>
-            {showTranscript && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="rounded-xl border border-border bg-card/50 p-5 max-h-96 overflow-y-auto"
-              >
-                <MarkdownBlock text={report.transcript} />
-              </motion.div>
-            )}
-          </div>
-        )}
+              <MarkdownBlock text={report.transcript} />
+            </motion.div>
+          )}
+        </div>
+      )}
 
-        <Separator />
-
-        {/* CTA */}
+      {/* CTA */}
+      <div className="row">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -380,12 +378,15 @@ export default function ShareReportPage() {
             {`No credit card required · ${signupBonus} free credits on signup`}
           </p>
         </motion.div>
+      </div>
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-muted-foreground font-mono pb-8">
+      {/* Footer note */}
+      <div className="row">
+        <p className="text-center text-xs text-muted-foreground font-mono">
           Litigant AI outputs are not legal, financial, or medical advice.
         </p>
       </div>
+
       </div>
       </div>
       </section>
