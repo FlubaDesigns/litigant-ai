@@ -534,7 +534,7 @@ export default function LandingPage() {
             </div>{/* /left accordion col */}
 
             {/* ── Right: live demo player ── */}
-            <div className="hero-img-col flex-col gap-0 pt-0 justify-start" style={{alignItems:"stretch"}}>
+            <div className="hero-img-col relative overflow-hidden">
               <LandingDemoPlayer />
             </div>{/* /right visual col */}
 

@@ -216,7 +216,7 @@ export default function LandingDemoPlayer() {
   }, [activeTurn, doneTurns]);
 
   return (
-    <div className="w-full max-w-[480px] mx-auto h-full">
+    <div className="absolute inset-0">
       <div className="demo-shell">
 
         {/* Header bar */}
