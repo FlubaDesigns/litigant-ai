@@ -159,6 +159,9 @@
   margin-top: calc(var(--sv) * 0.55);
 }
 
+main > .row:first-child { padding-top: var(--sv); }
+main > .row:last-child  { padding-bottom: var(--sv); }
+
 
 /* ── HERO IMAGE COLUMN ───────────────────────────────────────────────
    .hero-img-col: decorative grid column — hidden on mobile,
