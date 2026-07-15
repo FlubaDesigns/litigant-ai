@@ -388,7 +388,6 @@ export default function ShareReportPage() {
       </div>
 
       </div>
-      </div>
       </section>
       </main>
     </div>

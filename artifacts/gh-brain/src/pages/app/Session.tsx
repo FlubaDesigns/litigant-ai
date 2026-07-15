@@ -1,84 +1,39 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType } from "docx";
-import jsPDF from "jspdf";
 import { motion } from "framer-motion";
 import {
-  Brain, Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
-  Stethoscope, Scale, Search, FlaskConical, Settings2, Play, Square,
-  ThumbsUp, ThumbsDown, AlertTriangle, Copy, Download,
-  Zap, Target, RotateCcw, CheckCircle2, Sparkles, MessageSquare, X,
-  Printer, Package, ShoppingCart, Cpu, LayoutTemplate, Shuffle,
-  ChevronRight, Gavel, HelpCircle, GraduationCap, DollarSign,
-  Check, Shield, ShieldOff, Users, Swords, Link2, User, Layers, List,
+  Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
+  Stethoscope, Scale, Search, FlaskConical, AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { applyPdfTrimGuard, buildPdfToastActions } from "@/lib/pdfExport";
-import { useBrainSession, type FeedItem } from "@/hooks/useBrainSession";
+import { buildPdfToastActions } from "@/lib/pdfExport";
+import { buildMarkdown, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
+import { useBrainSession } from "@/hooks/useBrainSession";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
-import type { CourtConfig, ProviderName } from "@/data/templates";
+import type { CourtConfig } from "@/data/templates";
 import { submitFeedback } from "@/services/feedbackService";
-import { saveUserConfig, type UserProfile } from "@/services/firestoreService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation } from "wouter";
 import {
-  getProviders, getCalibration, PROVIDER_LABELS, PROVIDER_ICONS, estimateCredits,
-  type ProviderInfo, type ModelInfo, type ModelCreditInfo, type CalibrationStats,
+  getProviders, getCalibration, estimateCredits,
+  type ProviderInfo, type ModelCreditInfo, type CalibrationStats,
 } from "@/services/providerService";
 import { useLimits } from "@/hooks/useLimits";
-import { Input } from "@/components/ui/input";
-import { CourtDiagram } from "@/components/CourtDiagram";
-import { SeatInspector } from "@/components/SeatInspector";
-import { CaseFileSection } from "@/components/CaseFileSection";
 import { SiteHeader } from "@/components/SiteHeader";
-import { makeDefaultSeatMap, SEAT_PURPOSES, getSeatAIShortName } from "@/data/seatTypes";
 import type { SeatAssignment } from "@/data/seatTypes";
+import { toast } from "sonner";
+import { ConfigPanel } from "./session/ConfigPanel";
+import { SessionConfigure } from "./session/SessionConfigure";
+import { SessionCourt } from "./session/SessionCourt";
+import { SessionDiagram } from "./session/SessionDiagram";
 
-// ── Icon map ──────────────────────────────────────────────────────────────────
+// ── Icon map (used by TemplateCard) ───────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
   Stethoscope, Scale, Search, FlaskConical,
 };
-
-// ── Role colours ──────────────────────────────────────────────────────────────
-const ROLE_COLORS: Record<string, string> = {
-  Orchestrator: "text-yellow-400 border-yellow-400/30 bg-yellow-400/5",
-  Verdict: "text-primary border-primary/30 bg-primary/5",
-  Advocate: "text-blue-400 border-blue-400/30 bg-blue-400/5",
-  Skeptic: "text-red-400 border-red-400/30 bg-red-400/5",
-  "Devil's Advocate": "text-orange-400 border-orange-400/30 bg-orange-400/5",
-  Empiricist: "text-purple-400 border-purple-400/30 bg-purple-400/5",
-  Questioner: "text-cyan-400 border-cyan-400/30 bg-cyan-400/5",
-  Defender: "text-green-400 border-green-400/30 bg-green-400/5",
-  Synthesizer: "text-primary border-primary/30 bg-primary/5",
-  Logician: "text-indigo-400 border-indigo-400/30 bg-indigo-400/5",
-  Analyst: "text-blue-400 border-blue-400/30 bg-blue-400/5",
-  Contrarian: "text-orange-400 border-orange-400/30 bg-orange-400/5",
-  Realist: "text-gray-400 border-gray-400/30 bg-gray-400/5",
-  Futurist: "text-violet-400 border-violet-400/30 bg-violet-400/5",
-  Critic: "text-red-400 border-red-400/30 bg-red-400/5",
-  "Balanced Reviewer": "text-teal-400 border-teal-400/30 bg-teal-400/5",
-  "Standards Expert": "text-amber-400 border-amber-400/30 bg-amber-400/5",
-};
-
-function getRoleStyle(role: string) {
-  return ROLE_COLORS[role] ?? "text-muted-foreground border-border/50 bg-muted/10";
-}
 
 // ── TemplateCard ──────────────────────────────────────────────────────────────
 function TemplateCard({ template, onClick }: { template: Template; onClick: () => void }) {
@@ -110,923 +65,12 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
   );
 }
 
-// ── V29 field wrapper ─────────────────────────────────────────────────────────
-function V29Field({
-  label, desc, tooltip, children,
-}: { label: string; desc?: string; tooltip?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5">
-        <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">{label}</div>
-        {tooltip && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                tabIndex={-1}
-                className="text-primary/40 hover:text-primary/80 transition-colors"
-                aria-label={`More info about ${label}`}
-              >
-                <HelpCircle className="w-3 h-3" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
-              {tooltip}
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
-      {children}
-      {desc && <p className="text-[11px] text-muted-foreground/70 leading-relaxed">{desc}</p>}
-    </div>
-  );
-}
-
-function V29OptionCard({
-  selected, onClick, icon: Icon, label, description, tag,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  icon: React.ElementType;
-  label: string;
-  description: string;
-  tag?: string | null;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "relative w-full text-left rounded-lg border p-3 transition-all duration-150",
-        "hover:border-primary/60 hover:bg-primary/5",
-        selected
-          ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-          : "border-border/60 bg-card/40"
-      )}
-    >
-      {tag && (
-        <span className="absolute top-2 right-2 text-[9px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-          {tag}
-        </span>
-      )}
-      <div className="flex items-start gap-2.5">
-        <div className={cn("mt-0.5 shrink-0 rounded-md p-1.5", selected ? "bg-primary/20" : "bg-muted/50")}>
-          <Icon className={cn("w-3.5 h-3.5", selected ? "text-primary" : "text-muted-foreground")} />
-        </div>
-        <div className={cn("min-w-0", tag ? "pr-12" : "pr-1")}>
-          <div className="font-semibold text-xs flex items-center gap-1.5">
-            {label}
-            {selected && <Check className="w-3 h-3 text-primary shrink-0" />}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{description}</p>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-const V29_SELECT = "bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 focus:border-primary h-10";
-
-// ── ConfigPanel ───────────────────────────────────────────────────────────────
-function ConfigPanel({
-  open, onClose, config, onChange, uid, onboardingComplete, isAdmin,
-}: {
-  open: boolean;
-  onClose: () => void;
-  config: CourtConfig;
-  onChange: (c: Partial<CourtConfig>) => void;
-  uid?: string;
-  onboardingComplete?: boolean;
-  isAdmin?: boolean;
-}) {
-  const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
-  const [atBottom, setAtBottom] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const hasChanges = useRef(false);
-  // Always-current config: updated synchronously on every handleChange call
-  // (can't rely on useEffect for configRef because React flushes async)
-  const latestConfigRef = useRef<CourtConfig>(config);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => { latestConfigRef.current = config; }, [config]);
-
-  useEffect(() => {
-    if (open) {
-      hasChanges.current = false;
-      setSaveState("idle");
-      getProviders().then((p) => setAvailableProviders(p.providers));
-    }
-  }, [open]);
-
-  async function doSave(showToast = false): Promise<boolean> {
-    if (!uid || !onboardingComplete) return false;
-    setSaveState("saving");
-    try {
-      const c = latestConfigRef.current;
-      const rawSettings = {
-        conscience: c.conscience, outputScope: c.outputScope,
-        debateMode: c.debateMode, aiReasoning: c.aiReasoning,
-        outputStrategy: c.outputStrategy, format: c.format,
-        artifactType: c.artifactType, confidenceTarget: c.confidenceTarget,
-        maxIterations: c.maxIterations, maxCredits: c.maxCredits,
-        litigantCount: c.litigantCount,
-        responseMode: c.responseMode, outputFormat: c.outputFormat,
-        provider: c.provider, model: c.model,
-        intelligenceLevel: c.intelligenceLevel,
-      };
-      const settings = Object.fromEntries(
-        Object.entries(rawSettings).filter(([, v]) => v !== undefined)
-      ) as UserProfile["defaultSettings"];
-      await saveUserConfig(uid, settings);
-      hasChanges.current = false;
-      setSaveState("saved");
-      if (showToast) toast.success("Settings saved to your profile");
-      setTimeout(() => setSaveState("idle"), 2000);
-      return true;
-    } catch (err) {
-      console.error("[Session] saveUserConfig failed:", err);
-      setSaveState("idle");
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Could not save: ${msg}`);
-      return false;
-    }
-  }
-
-  function handleSheetScroll() {
-    const el = scrollRef.current;
-    if (!el) return;
-    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 24);
-  }
-
-  // Wrap onChange — sync ref immediately so doSave always reads latest values
-  function handleChange(partial: Partial<CourtConfig>) {
-    latestConfigRef.current = { ...latestConfigRef.current, ...partial };
-    hasChanges.current = true;
-    onChange(partial);
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => doSave(false), 1500);
-  }
-
-  const selectedProvider = availableProviders.find((p) => p.name === config.provider)
-    ?? availableProviders[0];
-
-  const selectedModel: ModelInfo | undefined = selectedProvider?.models.find(
-    (m) => m.id === (config.model ?? selectedProvider.defaultModel)
-  ) ?? selectedProvider?.models[0];
-
-  const credBase = selectedModel?.creditInfo
-    ? estimateCredits(selectedModel.creditInfo, config.litigantCount, config.maxIterations, config.responseMode)
-    : config.litigantCount * config.maxIterations * 3 + 6;
-  const credLow = credBase;
-  const credHigh = credBase + (config.conscience ? 1 : 0) + Math.ceil(credBase * 0.4);
-
-  const confidenceLabel = {
-    80: "80% Fast", 90: "90% Standard", 95: "95% Deep", 99: "99% Maximum",
-  }[config.confidenceTarget as 80 | 90 | 95 | 99] ?? `${config.confidenceTarget}%`;
-
-  // On close: flush any pending debounce and save if there are unsaved changes
-  async function handleClose() {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    if (hasChanges.current) await doSave(false);
-    onClose();
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={(o) => !o && handleClose()}>
-      <SheetContent
-        side="right"
-        className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 p-0 flex flex-col"
-      >
-        <div
-          ref={scrollRef}
-          onScroll={handleSheetScroll}
-          className="overflow-y-auto flex-1"
-        >
-        <TooltipProvider delayDuration={150}>
-        <div className="px-5 py-5 space-y-5">
-          {/* Header */}
-          <SheetHeader className="pb-0">
-            <SheetTitle className="text-xl font-bold text-primary tracking-tight">
-              Mission Briefing
-            </SheetTitle>
-          </SheetHeader>
-
-          {/* 1. CONSCIENCE */}
-          <V29Field
-            label="Conscience"
-            tooltip="Conscience is a governing mandate — a fixed block of instructions appended directly to every seat's system prompt, not a separate filter that reviews output afterward. Its current version (Canon v2, Execution-Honest) tells every AI, before it writes a single word: state what the evidence actually shows even if uncomfortable; never assert something it can't substantiate, and admit it doesn't know when that's true; never give a diplomatic non-answer to dodge conflict; explicitly name what information is missing; and report honestly if its own reasoning led somewhere unexpected, rather than reverse-engineering an argument to fit a conclusion. So it shapes how each seat reasons from the first token, not just what gets shown after. It costs a small credit surcharge (+1 Cr) because it adds to every prompt. When OFF, seats get no such mandate and respond however the base model naturally would — which can be more evasive, hedged, or unwilling to state hard conclusions plainly. An admin can update the exact wording of this mandate at any time without a code deploy."
-          >
-            <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => handleChange({ conscience: v === "on" })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="on" label="Conscience ON">
-                  <span className="text-xs text-muted-foreground">Seats mandated to state evidence honestly and admit uncertainty. +1 Cr</span>
-                </SelectItem>
-                <SelectItem value="off" label="Conscience OFF">
-                  <span className="text-xs text-muted-foreground">No governing mandate — seats respond however the base model naturally would.</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* 2. DEBATE MODE */}
-          <V29Field
-            label="Debate Mode"
-            tooltip="Sets how the seats treat each other's arguments. Adversarial: each seat actively challenges others, hunts for contradictions, and attacks weak reasoning — good for pressure-testing an idea. Collaborative: seats build on each other's points and work toward synthesis rather than confrontation — good for exploring or refining an idea together."
-          >
-            <Select value={config.debateMode} onValueChange={(v) => handleChange({ debateMode: v as CourtConfig["debateMode"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="adversarial" label="Adversarial">
-                  <span className="text-xs text-muted-foreground">Seats challenge and attack weak arguments. Best for stress-testing.</span>
-                </SelectItem>
-                <SelectItem value="collaborative" label="Collaborative">
-                  <span className="text-xs text-muted-foreground">Seats build on each other toward a shared conclusion.</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* 3. AI REASONING */}
-          <V29Field
-            label="AI Reasoning"
-            tooltip="Controls whether seats hear each other. Independent: each AI only sees its own prior turns, never the other seats' responses — faster and cheaper, good for gathering distinct unbiased takes. Chain: each AI reads the entire transcript so far before responding, enabling real cross-examination and rebuttal — richer, but costs significantly more credits since every seat re-reads a growing transcript every round."
-          >
-            <Select value={config.aiReasoning} onValueChange={(v) => handleChange({ aiReasoning: v as CourtConfig["aiReasoning"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="independent" label="Independent">
-                  <span className="text-xs text-muted-foreground">Each AI builds on its own turns only. Faster and cheaper.</span>
-                </SelectItem>
-                <SelectItem value="chain" label="Chain">
-                  <span className="text-xs text-muted-foreground">Each AI reads the full transcript before responding. Uses more credits.</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* DELIVERABLE TOGGLE */}
-          <div className="flex items-center gap-2 pt-1">
-            <div className="text-[9px] font-bold tracking-widest uppercase text-primary/40">Deliverable</div>
-            <div className="flex-1 border-t border-primary/10" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {(["none", "artifact"] as const).map((mode) => {
-              const active = mode === "none" ? config.artifactType === "none" : config.artifactType !== "none";
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => handleChange({ artifactType: mode === "none" ? "none" : "auto" })}
-                  className={cn("rounded-md border py-2 text-xs font-medium transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/50 hover:border-primary/40")}
-                >
-                  {mode === "none" ? "Screen Only" : "Screen + Artifact"}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 4. RESPONSE VIEW — primary output structure pick */}
-          <V29Field
-            label="Response View"
-            tooltip="Determines what gets built from the debate. Moderator Consensus: a moderator seat reads all arguments and writes one synthesized answer. Individual Responses: shows each AI's answer separately with no synthesis. Consensus + Individual: shows both the synthesis and every individual response."
-          >
-            <Select value={config.outputStrategy} onValueChange={(v) => handleChange({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="moderator-consensus" label="Moderator Consensus">
-                  <span className="text-xs text-muted-foreground">A moderator seat reads all arguments and writes one synthesized answer.</span>
-                </SelectItem>
-                <SelectItem value="individual" label="Individual Responses">
-                  <span className="text-xs text-muted-foreground">Each AI's answer shown separately with no synthesis.</span>
-                </SelectItem>
-                <SelectItem value="consensus+individual" label="Consensus + Individual">
-                  <span className="text-xs text-muted-foreground">Both the synthesized answer and every individual seat's response.</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* 5. RESPONSE MODE — only relevant when Moderator Consensus is chosen */}
-          {config.outputStrategy === "moderator-consensus" && (
-            <V29Field
-              label="Response Mode"
-              tooltip="When using Moderator Consensus, choose whether to also show each seat's individual response alongside the synthesis, or show the synthesis only."
-            >
-              <Select value={config.outputScope} onValueChange={(v) => handleChange({ outputScope: v as CourtConfig["outputScope"] })}>
-                <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="consensus" label="Consensus Only">
-                    <span className="text-xs text-muted-foreground">Show the synthesized answer only — individual seat responses hidden.</span>
-                  </SelectItem>
-                  <SelectItem value="all-voices" label="All Voices">
-                    <span className="text-xs text-muted-foreground">Show the synthesis plus every seat's full reasoning alongside it.</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </V29Field>
-          )}
-
-          {/* FORMAT + ARTIFACT TYPE — only when Screen + Artifact */}
-          {config.artifactType !== "none" && (
-            <>
-              <V29Field
-                label="Format"
-                tooltip="The file format used when your output is downloaded or exported. Text: plain .txt. Markdown: headings and bullets preserved (.md). JSON: structured data for piping into other tools. Word: download as a .docx Word document. PDF: download as a real PDF file."
-              >
-                <Select value={config.format} onValueChange={(v) => handleChange({ format: v as CourtConfig["format"] })}>
-                  <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="markdown">Markdown</SelectItem>
-                    <SelectItem value="json">JSON</SelectItem>
-                    <SelectItem value="docx">Word (.docx)</SelectItem>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                  </SelectContent>
-                </Select>
-              </V29Field>
-
-              <V29Field
-                label="Artifact Type"
-                tooltip="The concrete deliverable the Builder seat produces once the debate concludes. Auto lets the Architect seat infer the best format from your question. Choosing a specific type forces the Builder to always produce that structure regardless of how the debate goes."
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: "auto", label: "Auto", desc: "Architect infers the best deliverable format from your question." },
-                    { value: "report", label: "Report", desc: "Structured document with sections, findings, and recommendations." },
-                    { value: "memo", label: "Decision Memo", desc: "Concise format for capturing a decision and its rationale." },
-                    { value: "business-plan", label: "Business Plan", desc: "Full plan with executive summary, market analysis, and financials." },
-                    { value: "risk-matrix", label: "Risk Matrix", desc: "Identifies risks by likelihood, impact, and mitigation strategy." },
-                    { value: "contract-review", label: "Contract Review", desc: "Flags key clauses, obligations, and risks in legal agreements." },
-                    { value: "technical-spec", label: "Technical Spec", desc: "Engineering spec with requirements, architecture, and design." },
-                    { value: "pitch-deck", label: "Pitch Deck", desc: "Slide-ready narrative with problem, solution, and ask." },
-                    { value: "legal-brief", label: "Legal Brief", desc: "Argument structure with citations, reasoning, and conclusion." },
-                    { value: "blog-post", label: "Blog Post", desc: "Engaging long-form content with intro, body, and call to action." },
-                    { value: "code", label: "Code", desc: "Working code with inline comments and usage examples." },
-                    { value: "landing-page", label: "Landing Page", desc: "Conversion-focused copy with headline, benefits, and CTA." },
-                  ].map(({ value, label, desc }) => {
-                    const active = (config.artifactType ?? "auto") === value;
-                    return (
-                      <div key={value} className={cn("flex items-center rounded-md border text-xs transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}>
-                        <button
-                          type="button"
-                          className="flex-1 text-left px-3 py-2.5 leading-snug font-medium"
-                          onClick={() => handleChange({ artifactType: value as CourtConfig["artifactType"] })}
-                        >
-                          {label}
-                        </button>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button type="button" className="px-2 py-2.5 text-primary/30 hover:text-primary/70 transition-colors" aria-label={`About ${label}`}>
-                              <HelpCircle className="w-3.5 h-3.5" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent side="top" align="end" className="max-w-[260px] text-[12px] leading-relaxed p-4">
-                            <p className="font-semibold mb-1.5">{label}</p>
-                            {desc}
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    );
-                  })}
-                </div>
-              </V29Field>
-            </>
-          )}
-
-          {/* CONFIDENCE TARGET */}
-          <V29Field
-            label="Confidence Target"
-            tooltip="How rigorous the debate needs to be before the court stops and delivers an answer. Fast (80%) accepts a quicker, less exhaustive pass. Standard (90%) is a balanced default. Deep (95%) and Maximum (99%) push seats to keep iterating and challenging until confidence is very high — higher targets take longer and use more credits since more rounds may run."
-          >
-            <Select value={String(config.confidenceTarget)} onValueChange={(v) => handleChange({ confidenceTarget: Number(v) })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="80">80% Fast</SelectItem>
-                <SelectItem value="90">90% Standard</SelectItem>
-                <SelectItem value="95">95% Deep</SelectItem>
-                <SelectItem value="99">99% Maximum</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* MAXIMUM ITERATIONS */}
-          <V29Field
-            label="Maximum Iterations"
-            tooltip="The maximum number of debate rounds the court is allowed to run before it must stop and produce a result, even if the Confidence Target hasn't been reached yet. More iterations allow deeper back-and-forth but use more credits — this is a hard ceiling that caps runaway sessions."
-          >
-            <Select value={String(config.maxIterations)} onValueChange={(v) => handleChange({ maxIterations: Number(v) })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="3">3</SelectItem>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* MAXIMUM CREDITS */}
-          <V29Field
-            label="Maximum Credits"
-            tooltip="A hard spending cap for this session. If a run is on track to exceed this many credits, it stops early rather than continuing to spend. This protects you from an unexpectedly expensive session — set it higher if you want the court to run as long as it needs, or lower to strictly control cost."
-          >
-            <Select value={String(config.maxCredits)} onValueChange={(v) => handleChange({ maxCredits: Number(v) })}>
-              <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="100">100</SelectItem>
-                <SelectItem value="250">250</SelectItem>
-                <SelectItem value="500">500</SelectItem>
-                <SelectItem value="1000">1 000</SelectItem>
-                <SelectItem value="2500">2 500</SelectItem>
-              </SelectContent>
-            </Select>
-          </V29Field>
-
-          {/* INTELLIGENCE SLIDER */}
-          <div className="space-y-3 pt-1 border-t border-primary/10">
-            <div className="flex items-center gap-1.5">
-              <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Intelligence</div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button type="button" tabIndex={-1} className="text-primary/40 hover:text-primary/80 transition-colors" aria-label="More info about Intelligence">
-                    <HelpCircle className="w-3 h-3" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
-                  Controls AI capability across all seats. Left is more economical; right uses the strongest available models. Each seat can be tuned individually from the courtroom diagram.
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="flex items-center gap-3">
-              <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={config.intelligenceLevel ?? 50}
-                onChange={(e) => handleChange({ intelligenceLevel: Number(e.target.value), provider: undefined, model: undefined })}
-                className="flex-1 cursor-pointer"
-                style={{ accentColor: "hsl(var(--primary, 120 100% 50%))" }}
-              />
-              <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0" />
-            </div>
-          </div>
-
-          {/* ESTIMATED RUN COST */}
-          <div className="rounded-lg border border-primary/25 bg-primary/5 p-4 space-y-1">
-            <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
-            <div className="text-2xl font-bold text-primary">{credLow}–{credHigh} Credits</div>
-            <div className="text-xs text-muted-foreground leading-relaxed">
-              Based on {config.litigantCount} litigants, {config.debateMode} mode,{" "}
-              {confidenceLabel}{config.conscience ? " + conscience gate (+1 Cr)" : ""}.
-            </div>
-          </div>
-
-          {/* FOOTER */}
-          <div className="flex flex-col gap-2 pb-2">
-            <Button
-              onClick={async () => { const saved = await doSave(true); if (saved) setTimeout(onClose, 700); }}
-              disabled={saveState === "saving"}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-            >
-              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : "Save Settings"}
-            </Button>
-            {onboardingComplete
-              ? <p className="text-[11px] text-muted-foreground/50 text-center">Changes also save automatically as you go</p>
-              : uid && <p className="text-[11px] text-muted-foreground/50 text-center">Complete onboarding to persist settings</p>
-            }
-          </div>
-        </div>
-        </TooltipProvider>
-        </div>{/* end scroll wrapper */}
-        {!atBottom && (
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#060e06] to-transparent" />
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-// ── RuntimeControl ────────────────────────────────────────────────────────────
-function RuntimeControl({
-  starting, current, used, round, maxRound, cap,
-}: {
-  starting: number; current: number; used: number;
-  round: number; maxRound: number; cap: number;
-}) {
-  const cells = [
-    { label: "STARTING", value: String(starting), color: "text-white" },
-    { label: "CURRENT",  value: String(current),  color: current < 10 ? "text-red-400" : current < 30 ? "text-yellow-400" : "text-primary" },
-    { label: "USED",     value: String(used),      color: "text-white" },
-    { label: "ROUND",    value: `${round} / ${maxRound}`, color: "text-white" },
-    { label: "CREDIT CAP", value: cap > 0 ? `~${cap}` : "—", color: "text-muted-foreground" },
-  ];
-  return (
-    <div className="rounded-lg border border-primary/20 overflow-hidden">
-      <div className="px-3 py-1.5 border-b border-primary/10 bg-primary/5">
-        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Runtime Control</span>
-      </div>
-      <div className="grid grid-cols-2 gap-px bg-primary/10">
-        {cells.map(({ label, value, color }) => (
-          <div key={label} className="bg-[#070f07] px-3 py-2">
-            <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-0.5">{label}</div>
-            <div className={cn("text-[15px] font-bold font-mono leading-none", color)}>{value}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── V29 Conversation helpers ──────────────────────────────────────────────────
-
-const PROVIDER_SHORT: Record<string, string> = {
-  anthropic: "Claude", openai: "GPT", grok: "Grok", gemini: "Gemini",
-};
-
-// Roles that are NOT litigants — defined by exclusion so any new persona
-// added to brainEngine.ts is automatically treated as a litigant turn.
-const NON_LITIGANT_ROLES = new Set(["Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict"]);
-function isLitigantRole(role: string) {
-  return role !== "You" && !NON_LITIGANT_ROLES.has(role);
-}
-function isOrchestratorRole(role: string) {
-  return role === "Orchestrator" || role === "Verdict" || role === "Moderator";
-}
-
-// A single dialog line — matches V29 .dialog-line exactly
-function DialogLine({ item, adversarial }: { item: FeedItem; adversarial?: boolean }) {
-  const isYou = item.role === "You";
-  const isLit = isLitigantRole(item.role);
-
-  // Determine colors
-  let borderColor: string;
-  let speakerColor: string;
-  let bgStyle: React.CSSProperties;
-
-  if (isYou) {
-    borderColor = "#4a9eff";
-    speakerColor = "#4a9eff";
-    bgStyle = { background: "rgba(0,120,255,.08)" };
-  } else if (isLit) {
-    borderColor = adversarial ? "#c84040" : "#7ab87a";
-    speakerColor = adversarial ? "#ff9a9a" : "#7ab87a";
-    bgStyle = { background: "rgba(0,0,0,.12)" };
-  } else {
-    // Orchestrator / Moderator / Verdict
-    borderColor = "#7ab87a";
-    speakerColor = "#7ab87a";
-    bgStyle = { background: "rgba(0,0,0,.15)" };
-  }
-
-  // Extract disclosure header from "[Seat | Model | …]\n" pattern
-  let disclosure = "";
-  let body = item.content;
-  if (!isYou && !isLit && body.startsWith("[")) {
-    const nl = body.indexOf("\n");
-    if (nl > -1) { disclosure = body.slice(0, nl + 1); body = body.slice(nl + 1); }
-  }
-
-  const providerShort = item.provider ? (PROVIDER_SHORT[item.provider] ?? null) : null;
-  const speakerLabel = `${item.role}${isLit && adversarial ? " ⚔" : ""}${providerShort ? ` · ${providerShort}` : ""}`;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.16 }}
-      style={{ ...bgStyle, borderLeft: `3px solid ${borderColor}`, borderRadius: 8, marginBottom: 8, padding: "6px 8px", lineHeight: 1.5, fontSize: 14 }}
-    >
-      <span style={{ fontWeight: 800, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 2, color: speakerColor }}>
-        {speakerLabel}
-        {item.round > 0 && item.round < 99 && (
-          <span className="dialog-round">R{item.round}</span>
-        )}
-        {!item.isComplete && (
-          <span className="dialog-typing">
-            {[0, 130, 260].map((d) => (
-              <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce inline-block" style={{ animationDelay: `${d}ms` }} />
-            ))}
-          </span>
-        )}
-      </span>
-      {disclosure && (
-        <span className="dialog-disclosure">
-          {disclosure.trim()}
-        </span>
-      )}
-      {body || (!item.isComplete ? "" : <span className="dialog-nocontent">No content.</span>)}
-    </motion.div>
-  );
-}
-
-// Litigant Voices box — collapsible, shown only in All Voices mode
-function LitigantVoicesBox({
-  items, adversarial, scrollRef,
-}: { items: FeedItem[]; adversarial: boolean; scrollRef?: React.RefObject<HTMLDivElement> }) {
-  const [open, setOpen] = useState(true);
-
-  function handleSave() {
-    const lines = items.filter(f => f.content).map(f =>
-      `${f.role.toUpperCase()}\n${f.content}\n`
-    ).join("\n---\n\n");
-    if (!lines) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob(["Litigant Voices Export\n\n" + lines], { type: "text/plain" }));
-    a.download = `LitigantVoices_${Date.now()}.txt`;
-    a.click();
-  }
-
-  return (
-    <div className="sbox sbox--lit">
-      {/* Header */}
-      <div className="sbox-hd sbox-hd--lit">
-        <div className="sbox-hd-left">
-          <span className="sbox-label sbox-label--lit">Litigant Voices</span>
-          {adversarial && <span className="adv-badge">⚔ ADV</span>}
-        </div>
-        <div className="sbox-hd-right">
-          <button onClick={handleSave} title="Export" className="sbox-btn sbox-btn--lit">⬇</button>
-          <button onClick={() => setOpen(v => !v)} className="sbox-btn sbox-btn--lit">
-            {open ? "▼" : "▶"}
-          </button>
-        </div>
-      </div>
-      {/* Body */}
-      {open && (
-        <div ref={scrollRef} className="sbox-bd sbox-bd--lit">
-          {items.length === 0 ? (
-            <div className="sbox-empty">Waiting for litigant debate…</div>
-          ) : (
-            items.map(item => <DialogLine key={item.id} item={item} adversarial={adversarial} />)
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Orchestrator / Consensus box — always open
-function OrchestratorBox({
-  question, items, scrollRef,
-}: { question: string; items: FeedItem[]; scrollRef?: React.RefObject<HTMLDivElement> }) {
-  function handleSave() {
-    const youLine = `YOU\n${question}\n`;
-    const lines = items.filter(f => f.content).map(f =>
-      `${f.role.toUpperCase()}\n${f.content}\n`
-    ).join("\n---\n\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob(["Litigant AI — Conversation Export\n\n" + youLine + "\n---\n\n" + lines], { type: "text/plain" }));
-    a.download = `LitigantAI_${Date.now()}.txt`;
-    a.click();
-  }
-
-  function handlePrint() { window.print(); }
-
-  const youItem: FeedItem = { id: "you", role: "You", provider: "", content: question, round: 0, timestamp: 0, isComplete: true };
-
-  return (
-    <div className="sbox sbox--orch">
-      {/* Header */}
-      <div className="sbox-hd sbox-hd--orch">
-        <span className="sbox-label sbox-label--orch">Orchestrator / Consensus</span>
-        <div className="sbox-hd-right--orch">
-          <button onClick={handleSave} title="Save" className="sbox-btn sbox-btn--orch">⬇</button>
-          <button onClick={handlePrint} title="Print" className="sbox-btn sbox-btn--orch">🖨</button>
-        </div>
-      </div>
-      {/* Body */}
-      <div ref={scrollRef} className="sbox-bd sbox-bd--orch">
-        {question && <DialogLine key="you" item={youItem} />}
-        {items.map(item => <DialogLine key={item.id} item={item} />)}
-        {items.length === 0 && question && (
-          <div className="sbox-empty sbox-empty--mt">Courtroom assembling…</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Export helpers ─────────────────────────────────────────────────────────────
-function buildMarkdown(state: ReturnType<typeof useBrainSession>["state"]): string {
-  return [
-    `# Litigant AI Session Report`,
-    ``,
-    `**Question:** ${state.question}`,
-    state.template ? `**Template:** ${state.template.title}` : null,
-    `**Confidence:** ${state.confidence}%`,
-    `**Credits Used:** ${state.creditsUsed}`,
-    `**Date:** ${new Date().toLocaleDateString()}`,
-    ``,
-    `---`,
-    ``,
-    `## Final Answer`,
-    ``,
-    state.finalAnswer || "_No final answer generated._",
-    ``,
-    `---`,
-    ``,
-    `## Artifacts`,
-    ``,
-    state.artifacts || "_No artifacts generated._",
-    ``,
-    `---`,
-    ``,
-    `## Debate Notes`,
-    ``,
-    state.debateNotes || "_No debate notes._",
-    ``,
-    `---`,
-    ``,
-    `## Sources & Caveats`,
-    ``,
-    state.caveats,
-    ``,
-    `---`,
-    `*Generated by Litigant AI — Don't just ask AI. Put the question on trial.*`,
-  ].filter(Boolean).join("\n");
-}
-
-function exportPDF(state: ReturnType<typeof useBrainSession>["state"], w: Window): void {
-  // Every value interpolated below comes from user input (question) or
-  // AI-generated text that can echo back attacker-supplied content.
-  // Building raw HTML via document.write() without escaping is a DOM XSS
-  // vector — a crafted question like "<script>...</script>" surviving into
-  // the model's output would execute in this popup window, which shares the
-  // page's origin and Firebase Auth session context.
-  const esc = (s: unknown): string =>
-    String(s ?? "").replace(/[&<>"']/g, (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
-    );
-
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Litigant AI Session — ${esc(state.question.slice(0, 60))}</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; color: #111; line-height: 1.6; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
-    .meta { color: #666; font-size: 0.85rem; margin-bottom: 1.5rem; }
-    pre { background: #f5f5f5; padding: 1rem; border-radius: 6px; white-space: pre-wrap; font-size: 0.8rem; }
-    .badge { display: inline-block; background: #00c853; color: #000; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
-    @media print { body { margin: 20px; } }
-  </style>
-</head>
-<body>
-  <h1>Litigant AI Session Report</h1>
-  <div class="meta">
-    <strong>Question:</strong> ${esc(state.question)}<br/>
-    ${state.template ? `<strong>Template:</strong> ${esc(state.template.title)}<br/>` : ""}
-    <strong>Confidence:</strong> <span class="badge">${esc(state.confidence)}%</span>
-    &nbsp; <strong>Credits:</strong> ${esc(state.creditsUsed)}
-    &nbsp; <strong>Date:</strong> ${esc(new Date().toLocaleDateString())}
-  </div>
-  <h2>Final Answer</h2>
-  <pre>${esc(state.finalAnswer || "No final answer generated.")}</pre>
-  ${state.artifacts ? `<h2>Artifacts</h2><pre>${esc(state.artifacts)}</pre>` : ""}
-  <h2>Debate Notes</h2>
-  <pre>${esc(state.debateNotes || "No debate notes.")}</pre>
-  <h2>Sources &amp; Caveats</h2>
-  <pre>${esc(state.caveats)}</pre>
-  <p style="margin-top:2rem;color:#999;font-size:0.75rem;">Generated by Litigant AI — Don't just ask AI. Put the question on trial.</p>
-</body>
-</html>`;
-
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(() => { w.print(); }, 400);
-}
-
-type SessionState = ReturnType<typeof useBrainSession>["state"];
-
-async function exportDocx(state: SessionState): Promise<void> {
-  const sections: Paragraph[] = [
-    new Paragraph({ text: "Litigant AI Session Report", heading: HeadingLevel.HEADING_1 }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Question: ", bold: true }),
-        new TextRun({ text: state.question }),
-      ],
-    }),
-    ...(state.template
-      ? [new Paragraph({ children: [new TextRun({ text: "Template: ", bold: true }), new TextRun({ text: state.template.title })] })]
-      : []),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Confidence: ", bold: true }),
-        new TextRun({ text: `${state.confidence}%` }),
-        new TextRun({ text: "   Credits Used: ", bold: true }),
-        new TextRun({ text: String(state.creditsUsed) }),
-        new TextRun({ text: "   Date: ", bold: true }),
-        new TextRun({ text: new Date().toLocaleDateString() }),
-      ],
-    }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ text: "Final Answer", heading: HeadingLevel.HEADING_2 }),
-    ...(state.finalAnswer || "No final answer generated.")
-      .split("\n")
-      .map((line) => new Paragraph({ text: line, alignment: AlignmentType.LEFT })),
-    new Paragraph({ text: "" }),
-    new Paragraph({ text: "Artifacts", heading: HeadingLevel.HEADING_2 }),
-    ...(state.artifacts || "No artifacts generated.")
-      .split("\n")
-      .map((line) => new Paragraph({ text: line })),
-    new Paragraph({ text: "" }),
-    new Paragraph({ text: "Debate Notes", heading: HeadingLevel.HEADING_2 }),
-    ...(state.debateNotes || "No debate notes.")
-      .split("\n")
-      .map((line) => new Paragraph({ text: line })),
-    new Paragraph({ text: "" }),
-    new Paragraph({ text: "Sources & Caveats", heading: HeadingLevel.HEADING_2 }),
-    ...(state.caveats || "")
-      .split("\n")
-      .map((line) => new Paragraph({ text: line })),
-    new Paragraph({ text: "" }),
-    new Paragraph({
-      children: [new TextRun({ text: "Generated by Litigant AI — Don't just ask AI. Put the question on trial.", italics: true, color: "888888" })],
-    }),
-  ];
-
-  const doc = new Document({ sections: [{ children: sections }] });
-  const blob = await Packer.toBlob(doc);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `brain-session-${Date.now()}.docx`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function exportJsPdf(state: SessionState): { wasTrimmed: boolean } {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  const maxW = pageW - margin * 2;
-  let y = 20;
-  let wasTrimmed = false;
-
-  function addText(text: string, opts: { fontSize?: number; bold?: boolean; color?: string; newline?: number } = {}) {
-    const { fontSize = 11, bold = false, color = "111111", newline = 6 } = opts;
-    const { safeText, wasTrimmed: trimmed } = applyPdfTrimGuard(text);
-    if (trimmed) wasTrimmed = true;
-    doc.setFontSize(fontSize);
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.setTextColor(parseInt(color.slice(0, 2), 16), parseInt(color.slice(2, 4), 16), parseInt(color.slice(4, 6), 16));
-    const lines = doc.splitTextToSize(safeText, maxW) as string[];
-    lines.forEach((line: string) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.text(line, margin, y);
-      y += newline;
-    });
-    y += 1;
-  }
-
-  function addHeading(text: string) {
-    y += 4;
-    addText(text, { fontSize: 14, bold: true, newline: 8 });
-    doc.setDrawColor(180, 180, 180);
-    doc.line(margin, y - 2, pageW - margin, y - 2);
-    y += 3;
-  }
-
-  addText("Litigant AI Session Report", { fontSize: 18, bold: true, newline: 10 });
-  addText(`Question: ${state.question}`, { bold: false, newline: 6 });
-  if (state.template) addText(`Template: ${state.template.title}`, { newline: 6 });
-  addText(`Confidence: ${state.confidence}%   Credits Used: ${state.creditsUsed}   Date: ${new Date().toLocaleDateString()}`, { color: "666666", newline: 6 });
-
-  addHeading("Final Answer");
-  addText(state.finalAnswer || "No final answer generated.", { newline: 5 });
-
-  if (state.artifacts) {
-    addHeading("Artifacts");
-    addText(state.artifacts, { newline: 5 });
-  }
-
-  addHeading("Debate Notes");
-  addText(state.debateNotes || "No debate notes.", { newline: 5 });
-
-  addHeading("Sources & Caveats");
-  addText(state.caveats || "", { newline: 5 });
-
-  y += 6;
-  addText("Generated by Litigant AI — Don't just ask AI. Put the question on trial.", { fontSize: 9, color: "999999" });
-
-  doc.save(`brain-session-${Date.now()}.pdf`);
-  return { wasTrimmed };
-}
-
-// ── Main page ──────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function SessionPage() {
   const { user, userProfile, isAdmin } = useAuth();
   const { credits, plan } = useUserProfile();
   const savedConfig = userProfile?.defaultSettings
     ? {
-        // Core settings
         litigantCount:    userProfile.defaultSettings.litigantCount ?? 3,
         confidenceTarget: userProfile.defaultSettings.confidenceTarget ?? 80,
         maxIterations:    userProfile.defaultSettings.maxIterations ?? 2,
@@ -1034,7 +78,6 @@ export default function SessionPage() {
         outputFormat:     (userProfile.defaultSettings.outputFormat as CourtConfig["outputFormat"]) ?? "report",
         provider:         (userProfile.defaultSettings.provider as CourtConfig["provider"]) ?? undefined,
         model:            userProfile.defaultSettings.model ?? undefined,
-        // V29 Mission Briefing fields
         conscience:       userProfile.defaultSettings.conscience ?? true,
         aiReasoning:      (userProfile.defaultSettings.aiReasoning as CourtConfig["aiReasoning"]) ?? "chain",
         debateMode:       (userProfile.defaultSettings.debateMode as CourtConfig["debateMode"]) ?? "adversarial",
@@ -1046,12 +89,20 @@ export default function SessionPage() {
         artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
       }
     : undefined;
+
   const brainSession = useBrainSession(savedConfig);
-  const { state, run, stop, reset, acceptPartial, continueSession, loadPausedSession, loadCompleteSession, submitRebuttal, setQuestion, setTemplate, setConfig, setSeatAI, applyFeedbackGrades, addCaseFile, removeCaseFile } = brainSession;
+  const {
+    state, run, stop, reset, acceptPartial, continueSession,
+    loadPausedSession, loadCompleteSession, submitRebuttal,
+    setQuestion, setTemplate, setConfig, setSeatAI,
+    applyFeedbackGrades, addCaseFile, removeCaseFile,
+  } = brainSession;
+
   const [, navigate] = useLocation();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
+  // ── UI state ────────────────────────────────────────────────────────────────
   const [configOpen, setConfigOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -1064,15 +115,17 @@ export default function SessionPage() {
   const [calibration, setCalibration] = useState<CalibrationStats | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(false);
   const [allProviders, setAllProviders] = useState<ProviderInfo[]>([]);
+  const [toolBanner, setToolBanner] = useState<string | null>(null);
+  const [newPipelineCap, setNewPipelineCap] = useState<number>(0);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityLogRef = useRef<HTMLDivElement>(null);
 
-  // Load providers once — used for SeatInspector and credit estimation
+  // ── Effects ─────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     getProviders().then((data) => setAllProviders(data.providers)).catch(() => {});
   }, []);
 
-  // Load provider credit info for accurate session cost estimate
   useEffect(() => {
     getProviders().then((data) => {
       const prov = data.providers.find((p) => p.name === state.config.provider) ?? data.providers[0];
@@ -1081,7 +134,6 @@ export default function SessionPage() {
     }).catch(() => {});
   }, [state.config.provider, state.config.model]);
 
-  // Load per-user calibration stats — makes the credit estimate improve with each session run
   useEffect(() => {
     if (!user) { setCalibration(null); return; }
     user.getIdToken().then((token) => getCalibration(token)).then((cal) => {
@@ -1089,13 +141,9 @@ export default function SessionPage() {
     }).catch(() => {});
   }, [user]);
 
-  // Reset field values when template changes
-  useEffect(() => {
-    setFieldValues({});
-  }, [state.template?.id]);
+  useEffect(() => { setFieldValues({}); }, [state.template?.id]);
 
-  // Dev-only test helper: exposes window.__testPdfExport(finalAnswer) so
-  // Playwright tests can inject a completed session state and verify PDF export.
+  // Dev-only test helper for Playwright PDF export tests
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const _dispatch = (brainSession as any)._dispatch;
@@ -1106,14 +154,9 @@ export default function SessionPage() {
       _dispatch({
         type: "SESSION_DONE",
         payload: {
-          confidence: 85,
-          creditsUsed: 3,
-          finalAnswer,
-          debateNotes: "Test debate notes.",
-          transcript: "Test transcript.",
-          caveats: "Test caveats.",
-          artifacts: "",
-          sessionId: "test-session",
+          confidence: 85, creditsUsed: 3, finalAnswer,
+          debateNotes: "Test debate notes.", transcript: "Test transcript.",
+          caveats: "Test caveats.", artifacts: "", sessionId: "test-session",
         },
       });
     };
@@ -1121,8 +164,6 @@ export default function SessionPage() {
   });
 
   // Pre-select template from ?templateId= URL param
-  const [toolBanner, setToolBanner] = useState<string | null>(null);
-  const [newPipelineCap, setNewPipelineCap] = useState<number>(0);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tid = params.get("templateId");
@@ -1136,7 +177,7 @@ export default function SessionPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Prefill from history Re-run / Resume (written to sessionStorage by History page)
+  // Prefill from history Re-run / Resume
   useEffect(() => {
     if (state.phase !== "idle") return;
     const raw = sessionStorage.getItem("litigant_prefill");
@@ -1164,49 +205,68 @@ export default function SessionPage() {
         setQuestion(prefill.question);
       } else if (prefill.mode === "load" && prefill.sessionId) {
         loadCompleteSession({
-          question: prefill.question,
-          config: {},
-          sessionId: prefill.sessionId,
-          confidence: prefill.confidence ?? 0,
-          creditsUsed: prefill.creditsUsed ?? 0,
-          finalAnswer: prefill.finalAnswer ?? "",
-          debateNotes: prefill.debateNotes ?? "",
-          transcript: prefill.transcript ?? "",
-          caveats: prefill.caveats ?? "",
+          question: prefill.question, config: {}, sessionId: prefill.sessionId,
+          confidence: prefill.confidence ?? 0, creditsUsed: prefill.creditsUsed ?? 0,
+          finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
+          transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
           artifacts: prefill.artifacts ?? "",
         });
       } else if (prefill.mode === "resume" && prefill.sessionId) {
         loadPausedSession({
-          question: prefill.question,
-          config: {},
-          sessionId: prefill.sessionId,
-          confidence: prefill.confidence ?? 0,
-          creditsUsed: prefill.creditsUsed ?? 0,
-          finalAnswer: prefill.finalAnswer ?? "",
-          debateNotes: prefill.debateNotes ?? "",
-          transcript: prefill.transcript ?? "",
-          caveats: prefill.caveats ?? "",
+          question: prefill.question, config: {}, sessionId: prefill.sessionId,
+          confidence: prefill.confidence ?? 0, creditsUsed: prefill.creditsUsed ?? 0,
+          finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
+          transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
           artifacts: prefill.artifacts ?? "",
         });
       }
     } catch { /* ignore malformed payload */ }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-scroll runtime feed
   useEffect(() => {
     if (feedRef.current && state.phase === "running") {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
   }, [state.runtimeFeed, state.phase]);
 
-  // Auto-scroll activity log
   useEffect(() => {
     if (activityLogRef.current && activityLogOpen) {
       activityLogRef.current.scrollTop = activityLogRef.current.scrollHeight;
     }
   }, [state.activityLog, activityLogOpen]);
 
-  /** Assemble a structured question from template input field values */
+  // ── Computed values ──────────────────────────────────────────────────────────
+
+  const { maxLitigants, overdraftLimit } = useLimits();
+  const overdraftFlag = useFeatureFlag("creditOverdraft");
+
+  const isRunning  = state.phase === "running";
+  const isPaused   = state.phase === "paused";
+  const isComplete = state.phase === "complete";
+  const isError    = state.phase === "error";
+  const isIdle     = state.phase === "idle";
+
+  const effectiveCreditInfo = selectedCreditInfo && calibration?.isCalibrated
+    ? { ...selectedCreditInfo, fixedStagePrior: calibration.fixedStage }
+    : selectedCreditInfo;
+
+  const estimatedCredits = effectiveCreditInfo
+    ? estimateCredits(effectiveCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
+    : state.config.litigantCount * state.config.maxIterations * 3 + 6;
+
+  const estimatedCreditsHigh = estimatedCredits + (state.config.conscience ? 1 : 0) + Math.ceil(estimatedCredits * 0.4);
+
+  const creditsCritical    = credits < 10;
+  const creditsLow         = credits < 50 && !creditsCritical;
+  const hasDebt            = credits < 0;
+  const overdraftAvailable = overdraftFlag && credits > -overdraftLimit;
+  const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh && !overdraftAvailable;
+
+  const filteredTemplates =
+    activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+
   function assembleFieldQuestion(): string {
     if (!state.template || state.template.inputFields.length === 0) return state.question;
     return state.template.inputFields
@@ -1217,7 +277,7 @@ export default function SessionPage() {
 
   async function handleRun() {
     const hasFields = state.template && state.template.inputFields.length > 0;
-    let effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
+    const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
 
     if (hasFields) {
       const missing = state.template!.inputFields.filter((f) => f.required && !fieldValues[f.id]?.trim());
@@ -1245,10 +305,17 @@ export default function SessionPage() {
     await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined);
   }
 
-  function handleReset() {
-    reset();
+  async function handleOverdraftConfirm() {
+    setOverdraftDialogOpen(false);
+    const hasFields = state.template && state.template.inputFields.length > 0;
+    const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
     setFeedbackGiven(null);
+    await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined, { overdraft: true });
   }
+
+  function handleReset() { reset(); setFeedbackGiven(null); }
+
+  function handleStop() { stop(); toast.info("Session stopped. Partial results are shown below."); }
 
   function handleCopyMarkdown() {
     navigator.clipboard.writeText(buildMarkdown(state));
@@ -1258,45 +325,31 @@ export default function SessionPage() {
   const handleDownload = useCallback(async () => {
     const fmt = state.config.format ?? "markdown";
     if (fmt === "docx") {
-      try {
-        await exportDocx(state);
-        toast.success("Word document downloaded.");
-      } catch {
-        toast.error("Failed to generate .docx file.");
-      }
+      try { await exportDocx(state); toast.success("Word document downloaded."); }
+      catch { toast.error("Failed to generate .docx file."); }
       return;
     }
     if (fmt === "pdf") {
       try {
         const { wasTrimmed } = exportJsPdf(state);
-        const actions = buildPdfToastActions(wasTrimmed);
-        for (const action of actions) {
+        for (const action of buildPdfToastActions(wasTrimmed)) {
           if (action.type === "success") toast.success(action.message);
           else toast.warning(action.message);
         }
-      } catch {
-        toast.error("Failed to generate PDF.");
-      }
+      } catch { toast.error("Failed to generate PDF."); }
       return;
     }
     if (fmt === "json") {
       const payload = {
-        question: state.question,
-        template: state.template?.title ?? null,
-        confidence: state.confidence,
-        creditsUsed: state.creditsUsed,
-        date: new Date().toISOString(),
-        finalAnswer: state.finalAnswer,
-        artifacts: state.artifacts,
-        debateNotes: state.debateNotes,
-        caveats: state.caveats,
+        question: state.question, template: state.template?.title ?? null,
+        confidence: state.confidence, creditsUsed: state.creditsUsed,
+        date: new Date().toISOString(), finalAnswer: state.finalAnswer,
+        artifacts: state.artifacts, debateNotes: state.debateNotes, caveats: state.caveats,
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `brain-session-${Date.now()}.json`;
-      a.click();
+      a.href = url; a.download = `brain-session-${Date.now()}.json`; a.click();
       URL.revokeObjectURL(url);
       toast.success("JSON downloaded.");
       return;
@@ -1305,36 +358,23 @@ export default function SessionPage() {
       const blob = new Blob([buildMarkdown(state).replace(/[#*_`]/g, "")], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `brain-session-${Date.now()}.txt`;
-      a.click();
+      a.href = url; a.download = `brain-session-${Date.now()}.txt`; a.click();
       URL.revokeObjectURL(url);
       toast.success("Text file downloaded.");
       return;
     }
-    // Default: markdown
     const blob = new Blob([buildMarkdown(state)], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `brain-session-${Date.now()}.md`;
-    a.click();
+    a.href = url; a.download = `brain-session-${Date.now()}.md`; a.click();
     URL.revokeObjectURL(url);
     toast.success("Report downloaded.");
   }, [state]);
 
   function handleExportPDF() {
     const w = window.open("", "_blank");
-    if (!w) {
-      toast.error("Popup blocked — allow popups for this site to print/save as PDF.");
-      return;
-    }
+    if (!w) { toast.error("Popup blocked — allow popups for this site to print/save as PDF."); return; }
     exportPDF(state, w);
-  }
-
-  function handleStop() {
-    stop();
-    toast.info("Session stopped. Partial results are shown below.");
   }
 
   async function handleFeedback(rating: "good" | "bad" | "warn") {
@@ -1351,9 +391,7 @@ export default function SessionPage() {
         rating,
       });
       toast.success("Feedback recorded — grades updated.");
-    } catch {
-      toast.error("Failed to save feedback.");
-    }
+    } catch { toast.error("Failed to save feedback."); }
   }
 
   function handleSeatClick(seatId: string, litIndex?: number) {
@@ -1364,89 +402,20 @@ export default function SessionPage() {
     setSeatAI(seatId, assignment, litIndex);
   }
 
-  const { maxLitigants, overdraftLimit } = useLimits();
-  const overdraftFlag = useFeatureFlag("creditOverdraft");
-
   function handleAddLitigant() {
-    const next = Math.min(state.config.litigantCount + 1, maxLitigants);
-    setConfig({ litigantCount: next });
+    setConfig({ litigantCount: Math.min(state.config.litigantCount + 1, maxLitigants) });
   }
 
   function handleRemoveLitigant() {
-    const next = Math.max(state.config.litigantCount - 1, 2);
-    setConfig({ litigantCount: next });
+    setConfig({ litigantCount: Math.max(state.config.litigantCount - 1, 2) });
   }
 
-  const isRunning = state.phase === "running";
-  const isPaused = state.phase === "paused";
-  const isComplete = state.phase === "complete";
-  const isError = state.phase === "error";
-  const isIdle = state.phase === "idle";
-
-  // When calibrated, override the hardcoded fixedStagePrior with the user's own history averages
-  const effectiveCreditInfo = selectedCreditInfo && calibration?.isCalibrated
-    ? { ...selectedCreditInfo, fixedStagePrior: calibration.fixedStage }
-    : selectedCreditInfo;
-
-  const estimatedCredits = effectiveCreditInfo
-    ? estimateCredits(effectiveCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
-    : state.config.litigantCount * state.config.maxIterations * 3 + 6;
-  // Padded high-end estimate (mirrors ConfigPanel's credHigh formula); used for all credit gates
-  // so the UI's displayed safety margin actually protects the credit system.
-  const estimatedCreditsHigh = estimatedCredits + (state.config.conscience ? 1 : 0) + Math.ceil(estimatedCredits * 0.4);
-
-  // Live credit health — from Firestore via useUserProfile (updates as backend deducts)
-  const creditsCritical = credits < 10;
-  const creditsLow = credits < 50 && !creditsCritical;
-  const hasDebt = credits < 0;
-  const overdraftAvailable = overdraftFlag && credits > -overdraftLimit;
-  // Hard block only when overdraft is not available; overdraft path shows confirmation instead
-  const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh && !overdraftAvailable;
-
-  const filteredTemplates =
-    activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
-
-  // Activity log renderer (shared across idle/running/complete)
-  function ActivityLogSection() {
-    return (
-      <div className="actlog">
-        <button onClick={() => setActivityLogOpen((v) => !v)} className="actlog-hd">
-          <span className="actlog-hd-label">
-            Activity Log
-            {isRunning && [0, 120, 240].map((d) => (
-              <span key={d} className="w-1 h-1 rounded-full bg-primary animate-bounce inline-block" style={{ animationDelay: `${d}ms` }} />
-            ))}
-          </span>
-          <span className="actlog-chevron">{activityLogOpen ? "▼" : "▶"}</span>
-        </button>
-        {activityLogOpen && (
-          <div ref={activityLogRef} className="actlog-bd">
-            {state.activityLog.map((entry, i) => {
-              const col = entry.startsWith("[Courtroom]") ? "#7ab87a"
-                : entry.startsWith("[Orchestrator]") ? "#d4b75a"
-                : entry.startsWith("[Moderator]") ? "#6ab4c0"
-                : entry.startsWith("[System]") ? "#5a5a5a"
-                : "#7ab87a";
-              return <div key={i} className="actlog-entry" style={{ color: col }}>{entry}</div>;
-            })}
-            {state.activityLog.length === 0 && <div className="actlog-entry" style={{ color: "#3a5a3a" }}>Waiting…</div>}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  async function handleOverdraftConfirm() {
-    setOverdraftDialogOpen(false);
-    const hasFields = state.template && state.template.inputFields.length > 0;
-    const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
-    setFeedbackGiven(null);
-    await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined, { overdraft: true });
-  }
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="session-bg">
       <SiteHeader variant="app" />
+
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -1480,6 +449,7 @@ export default function SessionPage() {
         </div>
       )}
 
+      {/* ── Mission Briefing sheet ── */}
       <ConfigPanel
         open={configOpen}
         onClose={() => setConfigOpen(false)}
@@ -1491,693 +461,146 @@ export default function SessionPage() {
       />
 
       {/* ══════════════════════════════════════════════════════
-          MAIN — backbone: main > main-inner > row > layout > content
+          MAIN — backbone: main > main-inner > row
       ══════════════════════════════════════════════════════ */}
       <main>
-      <div className="main-inner">
+        <div className="main-inner">
 
-      {/* ── Row 1: Control Board ── */}
-      <div className="row">
-        <div className="sz-control-nav layout__split-2">
-          <button onClick={() => setConfigOpen(true)} className="session-nav-btn">⚙ Configure</button>
-          <button onClick={() => navigate("/history")} className="session-nav-btn">📂 Sessions</button>
-          {isRunning && (
-            <button onClick={handleStop} className="session-nav-btn session-nav-btn--full session-nav-btn--stop">⏹ Stop Trial</button>
-          )}
-          {(isComplete || isError) && (
-            <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">↺ New Trial</button>
-          )}
-        </div>
-        <div className="session-stats-bar">
-          <span className="session-stats-item">
-            <span className="session-stats-key">{hasDebt ? "Debt" : "Balance"}</span>
-            <span className={cn("session-stats-val", hasDebt ? "session-stats-val--critical" : creditsCritical ? "session-stats-val--critical" : creditsLow ? "session-stats-val--low" : "")}>
-              {hasDebt ? `${Math.abs(credits).toLocaleString()} cr owed` : `${credits.toLocaleString()} cr`}
-            </span>
-          </span>
-          <span className="session-stats-sep" />
-          <span className="session-stats-item">
-            <span className="session-stats-key">Used</span>
-            <span className="session-stats-val">{state.creditsUsed}</span>
-          </span>
-          <span className="session-stats-sep" />
-          <span className="session-stats-item" title={
-            calibration?.isCalibrated
-              ? `Calibrated from ${calibration.sessionCount} of your sessions`
-              : calibration
-                ? `Using default estimate — run ${calibration.minSessions - calibration.sessionCount} more session${calibration.minSessions - calibration.sessionCount === 1 ? "" : "s"} to personalise`
-                : "Credit estimate"
-          }>
-            <span className="session-stats-key">
-              Est{calibration?.isCalibrated ? " ✦" : ""}
-            </span>
-            <span className="session-stats-val">~{estimatedCredits}</span>
-          </span>
-          <span className="session-stats-sep" />
-          <span className="session-stats-item">
-            <span className="session-stats-key">Litigants</span>
-            <span className="session-stats-val">{state.config.litigantCount}</span>
-          </span>
-          {insufficientCredits && (
-            <button onClick={() => navigate("/billing")} className="session-stats-topup">Top up →</button>
-          )}
-        </div>
-      </div>{/* /row 1 */}
-
-      {/* ══════════════════════════════════════════════════════
-          ZONE 2 — YOUR COURT
-          AI knobs: litigants, mode, provider, confidence target
-          Expanded when idle · collapsed summary when running
-      ══════════════════════════════════════════════════════ */}
-      {/* ── Row 2: Your Court ── */}
-      <div className="row">
-      {isIdle ? (
-        <div className="sz-court">
-          {(() => {
-            const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
-            const namedSeats = [
-              { id: "orchestrator", icon: "🎙", purpose: "Talks to you. Delivers the final verdict." },
-              { id: "moderator",   icon: "⚖",  purpose: "Controls courtroom flow. Builds the briefing." },
-              { id: "architect",   icon: "📐", purpose: "Defines the artifact structure before building." },
-              { id: "builder",     icon: "🔨", purpose: "Builds the requested artifact or implementation." },
-              { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
-            ];
-            return (
-              <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
-                <AccordionItem value="your-court" className="border-b-0">
-                  <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
-                    <div className="flex items-center justify-between w-full mr-2">
-                      <div className="flex items-center gap-2">
-                        <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfigOpen(true); }}
-                        className="flex items-center gap-0.5 text-[11px] text-primary font-semibold hover:text-primary/80 transition-colors"
-                      >
-                        Configure <ChevronRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-3 pb-3 pt-0">
-                    <div className="flex flex-wrap gap-1.5 mb-3 pt-1">
-                      <div className="flex items-center gap-0 border border-primary/25 rounded-lg overflow-hidden bg-primary/5">
-                        <button onClick={handleRemoveLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount <= 2}>−</button>
-                        <span className="text-[11px] font-mono text-primary/90 px-2 select-none whitespace-nowrap">{state.config.litigantCount} litigants</span>
-                        <button onClick={handleAddLitigant} className="w-6 h-6 flex items-center justify-center text-primary/60 hover:text-primary hover:bg-primary/10 transition-colors text-sm font-bold leading-none" disabled={state.config.litigantCount >= maxLitigants}>+</button>
-                      </div>
-                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground capitalize">{state.config.debateMode}</span>
-                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.provider ? (PROVIDER_LABELS[state.config.provider as ProviderName] ?? state.config.provider) : "Default AI"}</span>
-                      <span className="px-2.5 py-1 border border-border/35 rounded-lg text-[11px] text-muted-foreground">{state.config.confidenceTarget}% target</span>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      {namedSeats.map(({ id, icon, purpose }) => {
-                        const assignment = (seatMap as unknown as Record<string, any>)[id];
-                        return (
-                          <div key={id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: id, litIndex: undefined })}>
-                            <span className="text-sm shrink-0">{icon}</span>
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-[11px] font-semibold text-foreground/80 capitalize">{id}</span>
-                              <span className="text-[10px] text-muted-foreground/50 truncate">{purpose}</span>
-                            </div>
-                            {assignment ? (
-                              <div className="flex items-center gap-1 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-primary/70 shrink-0" />
-                                <span className="text-[10px] font-medium text-primary/70 truncate max-w-[80px]">{assignment.name ?? "Custom"}</span>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/30 shrink-0">default</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {Array.from({ length: state.config.litigantCount }, (_, i) => {
-                        const seatId = `litigant_${i}`;
-                        const assignment = (seatMap as unknown as Record<string, any>)[seatId];
-                        return (
-                          <div key={seatId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/30 cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors" onClick={() => setInspectorSeat({ seatId: "litigant", litIndex: i })}>
-                            <span className="text-sm shrink-0">⚖</span>
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-[11px] font-semibold text-foreground/80">Litigant {i + 1}</span>
-                              <span className="text-[10px] text-muted-foreground/50 truncate">Argues one position in the courtroom.</span>
-                            </div>
-                            {assignment ? (
-                              <div className="flex items-center gap-1 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0" />
-                                <span className="text-[10px] font-medium text-amber-400/70 truncate max-w-[80px]">{assignment.name ?? "Custom"}</span>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/30 shrink-0">default</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            );
-          })()}
-          <div className="flex items-center gap-2 px-0.5">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
-          </div>
-        </div>
-      ) : (
-        <div className="sz-court-summary">
-          <Settings2 className="w-3 h-3 text-primary/40 shrink-0" />
-          <span className="sz-court-summary-text">
-            {state.config.litigantCount} litigants · {state.config.debateMode} · ~{estimatedCredits} cr
-          </span>
-        </div>
-      )}
-      </div>{/* /row 2 */}
-
-      {/* ══════════════════════════════════════════════════════
-          ZONE 3 — DIALOGUE
-          Question input (idle) · Conversation output (running/complete)
-      ══════════════════════════════════════════════════════ */}
-      {/* ── Row 3: Dialogue ── */}
-      <div className="row">
-      <div className="sz-dialogue">
-
-        {/* Tool page pre-load banner */}
-        {toolBanner && isIdle && (
-          <div className="session-tool-banner">
-            <LayoutTemplate style={{ width: 13, height: 13, color: "#7ab87a", flexShrink: 0 }} />
-            <span className="session-tool-banner-text">Pre-loaded: <strong>{toolBanner}</strong></span>
-            <button onClick={() => { setTemplate(null); setToolBanner(null); }} className="session-tool-banner-clear" title="Start fresh instead">✕</button>
-          </div>
-        )}
-
-        {/* Confidence + Credits meters — only while running/paused/complete */}
-        {!isIdle && (
-          <div className="session-meters">
-            <div>
-              <p className="session-meter-hd">
-                <span>Confidence</span>
-                <span className="session-meter-val" style={{ color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
-                  {state.confidence}% / {state.config.confidenceTarget}%
-                </span>
-              </p>
-              <div className="session-meter-track">
-                <div className="session-meter-fill" style={{ background: state.confidence >= state.config.confidenceTarget ? "#00c853" : "rgba(0,200,83,.55)", width: `${Math.min(100, (state.confidence / state.config.confidenceTarget) * 100)}%` }} />
-              </div>
-            </div>
-            <div>
-              <p className="session-meter-hd">
-                <span>Credits Used</span>
-                <span className="session-meter-val">{state.creditsUsed} / ~{estimatedCredits} est</span>
-              </p>
-              <div className="session-meter-track">
-                <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: `${Math.min(100, (state.creditsUsed / Math.max(estimatedCredits, 1)) * 100)}%` }} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Running/paused status badge */}
-        {isRunning && (
-          <div className="session-running-badge">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
-            ⚡ Brain is thinking…
-            {state.currentRound > 0 && state.currentRound < 99 && (
-              <span className="session-round-label">
-                Revolution {state.currentRound} / {state.config.maxIterations}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Paused decision card */}
-        {isPaused && state.pauseReason && (
-          <div className="session-pause-card">
-            <div className="session-pause-title">
-              {state.pauseReason === "credit_cap_pre_pipeline"
-                ? `⏸ Debate complete — credit cap hit before verdict pipeline`
-                : state.pauseReason === "credit_cap"
-                ? `⏸ Credit cap reached — ${Math.round(state.confidence)}% confidence`
-                : `⏸ ${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
-            </div>
-
-            {state.pauseReason === "credit_cap_pre_pipeline" ? (
-              <>
-                <div style={{ fontSize: 12, color: "#9ab89a", marginBottom: 10, lineHeight: 1.5 }}>
-                  The court has finished debating with <strong>{Math.round(state.confidence)}% confidence</strong>.
-                  The verdict pipeline (Moderator → Architect → Builder → Verdict) still needs to run.
-                  Raise your cap to allow it, or accept the debate transcript as-is.
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <label style={{ fontSize: 12, color: "#7ab87a", whiteSpace: "nowrap" }}>New credit cap</label>
-                  <input
-                    type="number"
-                    min={state.creditsUsed + 1}
-                    step={10}
-                    value={newPipelineCap || (state.config.maxCredits ?? 0) + 30}
-                    onChange={(e) => setNewPipelineCap(Math.max(state.creditsUsed + 1, Number(e.target.value)))}
-                    style={{
-                      width: 90, padding: "4px 8px", borderRadius: 7, border: "1px solid #2a4a2a",
-                      background: "#0d1f0d", color: "#eef7ee", fontSize: 13,
-                    }}
-                  />
-                  <span style={{ fontSize: 11, color: "#556655" }}>credits (you have {credits})</span>
-                </div>
-                <div className="session-pause-btns">
-                  {credits < 25 ? (
-                    <button onClick={() => navigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
-                  ) : (
-                    <button
-                      onClick={() => { void continueSession(newPipelineCap || (state.config.maxCredits ?? 0) + 30); }}
-                      className="session-pause-btn-primary"
-                    >
-                      Continue to verdict — {credits} cr
-                    </button>
-                  )}
-                  <button onClick={acceptPartial} className="session-pause-btn-secondary">Accept debate only</button>
-                </div>
-              </>
-            ) : (
-              <div className="session-pause-btns">
-                {credits === 0 ? (
-                  <button onClick={() => navigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
-                ) : (
-                  <button onClick={() => { void continueSession(); }} className="session-pause-btn-primary">Continue — {credits} cr</button>
-                )}
-                <button onClick={acceptPartial} className="session-pause-btn-secondary">Accept answer</button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Error state */}
-        {isError && (
-          <div style={{ background: "rgba(200,64,64,.08)", border: "1px solid rgba(200,64,64,.3)", borderRadius: 9, padding: "16px", textAlign: "center" }}>
-            <div style={{ fontSize: 14, color: "#ff6b6b", fontWeight: 700, marginBottom: 6 }}>Session Error</div>
-            <div style={{ fontSize: 12, color: "#9a5a5a", marginBottom: 10 }}>{state.errorMessage}</div>
-            <button onClick={handleReset} style={{ background: "transparent", border: "1px solid #c84040", borderRadius: 8, color: "#ff6b6b", padding: "6px 16px", cursor: "pointer", fontSize: 13 }}>Try Again</button>
-          </div>
-        )}
-
-        {/* V29 conversation boxes — shown when there's a question */}
-        {state.question && !isIdle && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
-              <LitigantVoicesBox
-                items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))}
-                adversarial={state.config.debateMode !== "collaborative"}
-              />
-            )}
-            <OrchestratorBox
-              question={state.question}
-              items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
-            />
-          </div>
-        )}
-
-        {/* Complete: feedback + export + output tabs */}
-        {isComplete && (
-          <>
-            {/* Feedback + export */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "6px 0" }}>
-              <span style={{ fontSize: 12, color: "#7ab87a" }}>Helpful?</span>
-              {(["good", "bad", "warn"] as const).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => handleFeedback(r)}
-                  disabled={feedbackGiven !== null}
-                  style={{
-                    width: 34, height: 34, borderRadius: 8, fontSize: 16,
-                    background: feedbackGiven === r ? "rgba(0,200,83,.15)" : "transparent",
-                    border: feedbackGiven === r ? "1px solid #00c853" : "1px solid #1d331d",
-                    cursor: feedbackGiven !== null ? "default" : "pointer", color: "#eef7ee",
-                  }}
-                >
-                  {r === "good" ? "👍" : r === "bad" ? "👎" : "⚠️"}
-                </button>
-              ))}
-              <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-                <button onClick={handleCopyMarkdown} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Copy</button>
-                <button onClick={handleDownload} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>
-                  {state.config.format === "docx" ? "DOCX" : state.config.format === "pdf" ? "PDF" : state.config.format === "json" ? "JSON" : state.config.format === "text" ? "TXT" : "MD"}
-                </button>
-                <button onClick={handleExportPDF} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Print</button>
-              </div>
-            </div>
-
-            {/* Output tabs */}
-            <Tabs defaultValue="answer">
-              <TabsList className="bg-black/30 border border-white/8 mb-2 flex-wrap h-auto gap-y-1">
-                <TabsTrigger value="answer" className="text-xs">Final Answer</TabsTrigger>
-                <TabsTrigger value="debate" className="text-xs">Debate</TabsTrigger>
-                <TabsTrigger value="transcript" className="text-xs">Transcript</TabsTrigger>
-                <TabsTrigger value="caveats" className="text-xs">Caveats</TabsTrigger>
-              </TabsList>
-              <TabsContent value="answer">
-                <div style={{ border: "1px solid rgba(0,200,83,.2)", borderRadius: 10, background: "rgba(0,200,83,.05)", padding: "14px" }}>
-                  <div style={{ fontSize: 11, color: "#00c853", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                    Verdict — {state.confidence}% confidence
-                  </div>
-                  <div style={{ fontSize: 14, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap" }}>
-                    {state.finalAnswer || "No final answer generated."}
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="debate">
-                <div style={{ border: "1px solid #1d331d", borderRadius: 10, padding: "14px", background: "rgba(0,0,0,.12)" }}>
-                  <div style={{ fontSize: 11, color: "#7ab87a", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Debate Notes</div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6, color: "#9aaa9a", whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
-                    {state.debateNotes || "No debate notes recorded."}
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="transcript">
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
-                    <LitigantVoicesBox items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))} adversarial={state.config.debateMode !== "collaborative"} />
-                  )}
-                  <OrchestratorBox question={state.question} items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))} />
-                </div>
-              </TabsContent>
-              <TabsContent value="caveats">
-                <div style={{ border: "1px solid rgba(243,210,106,.2)", borderRadius: 10, background: "rgba(243,210,106,.04)", padding: "14px" }}>
-                  <div style={{ fontSize: 11, color: "#f3d26a", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Sources & Caveats</div>
-                  <div style={{ fontSize: 14, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap", marginBottom: 10 }}>{state.caveats}</div>
-                  <div style={{ fontSize: 12, color: "#5a5a3a", borderTop: "1px solid rgba(243,210,106,.1)", paddingTop: 10 }}>
-                    Litigant AI provides AI-generated reasoning. Not legal, medical, financial, or professional advice.
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* ── Challenge the Verdict ── */}
-            <div style={{ border: "1px solid rgba(0,200,83,.25)", borderRadius: 10, background: "rgba(0,200,83,.03)", overflow: "hidden" }}>
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderBottom: "1px solid rgba(0,200,83,.12)", background: "rgba(0,200,83,.06)" }}>
-                <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#00c853" }}>
-                  ⚖ Challenge the Verdict
-                </span>
-                {state.rebuttalRound > 0 && (
-                  <span style={{ fontSize: 10, padding: "2px 8px", background: "rgba(0,200,83,.12)", border: "1px solid rgba(0,200,83,.3)", borderRadius: 20, color: "#7ab87a", fontWeight: 700, marginLeft: 4 }}>
-                    Rebuttal {state.rebuttalRound}
-                  </span>
-                )}
-                <span style={{ marginLeft: "auto", fontSize: 11, color: "#3a5a3a" }}>~{estimatedCredits} cr to reconvene</span>
-              </div>
-
-              {/* Past challenge trail */}
-              {state.rebuttals.length > 0 && (
-                <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(0,200,83,.08)", display: "flex", flexDirection: "column", gap: 5 }}>
-                  {state.rebuttals.map((r) => (
-                    <div key={r.round} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 11 }}>
-                      <span style={{ color: "#3a5a3a", fontWeight: 700, whiteSpace: "nowrap", minWidth: 28 }}>R{r.round}</span>
-                      <span style={{ color: "#5a7a5a", fontStyle: "italic" }}>
-                        "{r.challenge.length > 90 ? r.challenge.slice(0, 90) + "…" : r.challenge}"
-                      </span>
-                    </div>
-                  ))}
-                </div>
+          {/* ── Row 1: Control Board ── */}
+          <div className="row">
+            <div className="sz-control-nav layout__split-2">
+              <button onClick={() => setConfigOpen(true)} className="session-nav-btn">⚙ Configure</button>
+              <button onClick={() => navigate("/history")} className="session-nav-btn">📂 Sessions</button>
+              {isRunning && (
+                <button onClick={handleStop} className="session-nav-btn session-nav-btn--full session-nav-btn--stop">⏹ Stop Trial</button>
               )}
-
-              {/* Input */}
-              <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <textarea
-                  value={rebuttalChallenge}
-                  onChange={(e) => setRebuttalChallenge(e.target.value)}
-                  placeholder="What did the court miss? What assumption is wrong? State your objection and the court will reconvene…"
-                  rows={3}
-                  style={{ width: "100%", background: "#070f07", border: "1px solid rgba(0,200,83,.2)", borderRadius: 8, color: "#eef7ee", fontSize: 13, padding: "8px 10px", resize: "vertical", outline: "none", fontFamily: "inherit", lineHeight: 1.6 }}
-                  onFocus={(e) => { e.target.style.borderColor = "rgba(0,200,83,.5)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "rgba(0,200,83,.2)"; }}
-                />
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <button
-                    onClick={() => {
-                      const challenge = rebuttalChallenge.trim();
-                      if (!challenge) return;
-                      setRebuttalChallenge("");
-                      void submitRebuttal(challenge);
-                    }}
-                    disabled={!rebuttalChallenge.trim() || insufficientCredits}
-                    style={{
-                      flex: 1,
-                      padding: "10px 0",
-                      borderRadius: 8,
-                      background: rebuttalChallenge.trim() && !insufficientCredits ? "#00c853" : "rgba(0,200,83,.1)",
-                      color: rebuttalChallenge.trim() && !insufficientCredits ? "#000" : "#2a4a2a",
-                      fontSize: 13,
-                      fontWeight: 800,
-                      border: "none",
-                      cursor: rebuttalChallenge.trim() && !insufficientCredits ? "pointer" : "not-allowed",
-                      transition: "background .15s, color .15s",
-                    }}
-                  >
-                    ⚖ Reconvene the Court
-                  </button>
-                  <button
-                    onClick={handleReset}
-                    style={{ padding: "10px 14px", borderRadius: 8, background: "transparent", color: "#3a5a3a", fontSize: 12, border: "1px solid #1d331d", cursor: "pointer" }}
-                  >
-                    New Case
-                  </button>
-                </div>
-                {insufficientCredits && (
-                  <div style={{ fontSize: 11, color: "#c84040", textAlign: "center" }}>
-                    Not enough credits to reconvene.{" "}
-                    <button onClick={() => navigate("/billing")} style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: 11, textDecoration: "underline", padding: 0 }}>
-                      Top up
-                    </button>
-                  </div>
-                )}
-              </div>
+              {(isComplete || isError) && (
+                <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">↺ New Trial</button>
+              )}
             </div>
-          </>
-        )}
+            <div className="session-stats-bar">
+              <span className="session-stats-item">
+                <span className="session-stats-key">{hasDebt ? "Debt" : "Balance"}</span>
+                <span className={cn("session-stats-val", hasDebt ? "session-stats-val--critical" : creditsCritical ? "session-stats-val--critical" : creditsLow ? "session-stats-val--low" : "")}>
+                  {hasDebt ? `${Math.abs(credits).toLocaleString()} cr owed` : `${credits.toLocaleString()} cr`}
+                </span>
+              </span>
+              <span className="session-stats-sep" />
+              <span className="session-stats-item">
+                <span className="session-stats-key">Used</span>
+                <span className="session-stats-val">{state.creditsUsed}</span>
+              </span>
+              <span className="session-stats-sep" />
+              <span
+                className="session-stats-item"
+                title={
+                  calibration?.isCalibrated
+                    ? `Calibrated from ${calibration.sessionCount} of your sessions`
+                    : calibration
+                    ? `Using default estimate — run ${calibration.minSessions - calibration.sessionCount} more session${calibration.minSessions - calibration.sessionCount === 1 ? "" : "s"} to personalise`
+                    : "Credit estimate"
+                }
+              >
+                <span className="session-stats-key">Est{calibration?.isCalibrated ? " ✦" : ""}</span>
+                <span className="session-stats-val">~{estimatedCredits}</span>
+              </span>
+              <span className="session-stats-sep" />
+              <span className="session-stats-item">
+                <span className="session-stats-key">Litigants</span>
+                <span className="session-stats-val">{state.config.litigantCount}</span>
+              </span>
+              {insufficientCredits && (
+                <button onClick={() => navigate("/billing")} className="session-stats-topup">Top up →</button>
+              )}
+            </div>
+          </div>
 
-        {/* ── Idle: Get Started + Input ── */}
-        {isIdle && (
-          <div className="flex flex-col gap-3">
-
-            {/* ── Your Court accordion ── (kept for seatMap IIFE only – UI is in Zone 2) */}
-            {(() => {
-              const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
-              const namedSeats = [
-                { id: "orchestrator", icon: "🎙", purpose: "Talks to you. Delivers the final verdict." },
-                { id: "moderator",   icon: "⚖",  purpose: "Controls courtroom flow. Builds the briefing." },
-                { id: "architect",   icon: "📐", purpose: "Defines the artifact structure before building." },
-                { id: "builder",     icon: "🔨", purpose: "Builds the requested artifact or implementation." },
-                { id: "auditor",     icon: "🔍", purpose: "Final quality gate — decides what ships." },
-              ];
-              return null;
-            })()}
-
-            {/* Suggested prompts + template, collapsed into an accordion */}
-            <Accordion type="single" collapsible className="border border-border/20 rounded-xl px-3">
-              <AccordionItem value="get-started" className="border-b-0">
-                <AccordionTrigger className="py-2.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 hover:no-underline hover:text-muted-foreground">
-                  Get started
-                </AccordionTrigger>
-                <AccordionContent className="pt-0 pb-3">
-                  <div className="flex flex-col gap-1.5">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 px-0.5 mb-0.5">
-                      Try asking
-                    </div>
-                    {[
-                      "Is our go-to-market strategy viable for enterprise?",
-                      "Should we raise a Series A now or wait 12 months?",
-                      "Is this contract clause actually enforceable?",
-                      "Which of these two technical approaches is sounder?",
-                    ].map((prompt) => (
-                      <button
-                        key={prompt}
-                        onClick={() => setQuestion(prompt)}
-                        className="group text-left px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground border border-border/30 hover:border-primary/35 rounded-lg bg-transparent hover:bg-primary/5 transition-all"
-                      >
-                        <span className="text-primary/40 group-hover:text-primary/60 mr-1 transition-colors">"</span>
-                        {prompt}
-                        <span className="text-primary/40 group-hover:text-primary/60 transition-colors">"</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Template button */}
-                  <button
-                    onClick={() => setTemplateSheetOpen(true)}
-                    className="mt-2 flex items-center gap-3 p-3 border border-primary/20 rounded-xl hover:border-primary/45 hover:bg-primary/5 transition-all text-left group w-full"
-                    style={{ background: "rgba(0,200,83,.03)" }}
-                  >
-                    <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <LayoutTemplate className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-primary leading-none mb-0.5">Use a template</div>
-                      <div className="text-[11px] text-muted-foreground">{TEMPLATES.length} purpose-built trials</div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary/70 transition-colors shrink-0" />
-                  </button>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-
-            {/* Case File — attach documents or URLs before the session runs */}
-            <CaseFileSection
-              items={state.caseFile}
-              onAdd={addCaseFile}
-              onRemove={removeCaseFile}
-              getIdToken={() => user?.getIdToken() ?? Promise.resolve(undefined)}
+          {/* ── Rows 2 + 3: Phase views ── */}
+          {isIdle && (
+            <SessionConfigure
+              state={state}
+              maxLitigants={maxLitigants}
+              insufficientCredits={insufficientCredits}
+              estimatedCredits={estimatedCredits}
+              fieldValues={fieldValues}
+              setFieldValues={setFieldValues}
+              toolBanner={toolBanner}
+              user={user}
+              onSetQuestion={setQuestion}
+              onSetTemplate={setTemplate}
+              onSetConfig={setConfig}
+              onRun={handleRun}
+              onOpenConfig={() => setConfigOpen(true)}
+              onOpenTemplates={() => setTemplateSheetOpen(true)}
+              onAddLitigant={handleAddLitigant}
+              onRemoveLitigant={handleRemoveLitigant}
+              onSeatClick={handleSeatClick}
+              onClearToolBanner={() => setToolBanner(null)}
+              addCaseFile={addCaseFile}
+              removeCaseFile={removeCaseFile}
             />
+          )}
 
-          </div>
-        )}
-
-        {/* ── INPUT AREA ── */}
-        {(isIdle || isComplete) && (
-          <div className="flex flex-col gap-2 pt-1">
-            {state.template ? (
-              <div className="flex flex-col gap-2">
-                {/* Template header */}
-                <div className="flex items-center gap-2 px-0.5">
-                  <Gavel className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                  <span className="text-xs font-semibold text-primary/80">{state.template.title}</span>
-                  <button
-                    onClick={() => { setTemplate(null); setFieldValues({}); }}
-                    className="ml-auto flex items-center gap-1 px-2 py-1 rounded-md border border-border/30 hover:border-red-500/40 text-[11px] font-medium text-muted-foreground/70 hover:text-red-400 hover:bg-red-500/5 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                    Clear template
-                  </button>
-                </div>
-                {/* Template fields */}
-                {state.template.inputFields.map((field) => (
-                  <div key={field.id} className="flex items-center gap-2">
-                    <span className="text-[11px] text-primary/60 whitespace-nowrap w-20 shrink-0 font-medium">{field.label}</span>
-                    <Input
-                      type={field.type === "url" ? "url" : "text"}
-                      placeholder={field.placeholder}
-                      value={fieldValues[field.id] ?? ""}
-                      onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                      onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                      className="h-9 text-sm flex-1 focus-visible:ring-1 focus-visible:ring-primary/60"
-                      style={{ background: "#0d1a0d", border: "1px solid #1d331d", color: "#eef7ee" }}
-                    />
-                  </div>
-                ))}
-                <button
-                  onClick={handleRun}
-                  disabled={insufficientCredits}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm transition-all"
-                  style={{
-                    background: insufficientCredits ? "rgba(0,200,83,.15)" : "#00c853",
-                    color: insufficientCredits ? "rgba(0,200,83,.35)" : "#000",
-                    cursor: insufficientCredits ? "not-allowed" : "pointer",
-                  }}
-                >
-                  <Play className="w-4 h-4" />
-                  Run Trial
-                </button>
-              </div>
-            ) : isComplete ? null : (
-              <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <Textarea
-                    placeholder="Put your question on trial…"
-                    value={state.question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isRunning) handleRun(); } }}
-                    className="resize-none focus-visible:ring-1 focus-visible:ring-primary/60 text-sm leading-relaxed"
-                    style={{ minHeight: 96, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 12, color: "#eef7ee", padding: "12px 14px" }}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-muted-foreground/30 flex-1">Enter to run · Shift+Enter for new line</span>
-                  <button
-                    onClick={handleRun}
-                    disabled={!state.question.trim() || insufficientCredits}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shrink-0"
-                    style={{
-                      background: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.15)" : "#00c853",
-                      color: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.3)" : "#000",
-                      cursor: (!state.question.trim() || insufficientCredits) ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    <Play className="w-3.5 h-3.5" />
-                    Run Trial
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>{/* /sz-dialogue */}
-      </div>{/* /row 3 */}
-
-      {/* ══════════════════════════════════════════════════════
-          ZONE 4 — DIAGRAM
-          Runtime control (when active) + court diagram
-      ══════════════════════════════════════════════════════ */}
-      {/* ── Row 4: Diagram ── */}
-      <div className="row">
-      <div className="sz-diagram">
-        {!isIdle && (
-          <div className="sz-runtime">
-            <div className="sz-runtime-label">Runtime Control</div>
-            <RuntimeControl
-              starting={credits + state.creditsUsed}
-              current={credits}
-              used={state.creditsUsed}
-              round={state.currentRound}
-              maxRound={state.config.maxIterations}
-              cap={state.estimatedCredits}
+          {!isIdle && (
+            <SessionCourt
+              state={state}
+              credits={credits}
+              estimatedCredits={estimatedCredits}
+              newPipelineCap={newPipelineCap}
+              setNewPipelineCap={setNewPipelineCap}
+              insufficientCredits={insufficientCredits}
+              feedbackGiven={feedbackGiven}
+              rebuttalChallenge={rebuttalChallenge}
+              setRebuttalChallenge={setRebuttalChallenge}
+              fieldValues={fieldValues}
+              setFieldValues={setFieldValues}
+              isRunning={isRunning}
+              isPaused={isPaused}
+              isComplete={isComplete}
+              isError={isError}
+              onStop={handleStop}
+              onContinue={continueSession}
+              onAcceptPartial={acceptPartial}
+              onReset={handleReset}
+              onFeedback={handleFeedback}
+              onCopyMarkdown={handleCopyMarkdown}
+              onDownload={handleDownload}
+              onExportPDF={handleExportPDF}
+              onSubmitRebuttal={submitRebuttal}
+              onSetTemplate={setTemplate}
+              onSetFieldValues={(v) => setFieldValues(v)}
+              onRun={handleRun}
+              onNavigate={navigate}
             />
-            <ActivityLogSection />
-          </div>
-        )}
-        <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
-        <CourtDiagram
-          activeRole={state.activeRole}
-          activeAttempt={state.activeAttempt}
-          litigantCount={state.config.litigantCount}
-          running={isRunning}
-          confidence={state.confidence}
-          creditsUsed={state.creditsUsed}
-          estimatedCredits={state.estimatedCredits}
-          complete={isComplete}
-          seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
-          grades={state.grades}
-          onSeatClick={handleSeatClick}
-          onAddLitigant={!isRunning ? handleAddLitigant : undefined}
-          onRemoveLitigant={!isRunning ? handleRemoveLitigant : undefined}
-        />
-        {(isRunning || isComplete) && state.currentRound > 0 && state.currentRound < 99 && (
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-[10px] font-mono text-primary/80 pointer-events-none">
-            <span className={cn("w-1.5 h-1.5 rounded-full bg-primary", isRunning && "animate-pulse")} />
-            Revolution {state.currentRound} / {state.config.maxIterations}
-          </div>
-        )}
-        </div>{/* /diagram inner */}
+          )}
 
-        {inspectorSeat && (
-          <SeatInspector
-            seatId={inspectorSeat.seatId}
-            litIndex={inspectorSeat.litIndex}
-            seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
-            grades={state.grades}
-            providers={allProviders}
-            globalIntelligenceLevel={state.config.intelligenceLevel ?? 50}
-            onClose={() => setInspectorSeat(null)}
-            onUpdate={(seatId, assignment, li) => handleSeatUpdate(seatId, assignment, li)}
+          {/* ── Row 4: Diagram (always) ── */}
+          <SessionDiagram
+            state={state}
+            credits={credits}
+            isIdle={isIdle}
+            isRunning={isRunning}
+            isComplete={isComplete}
+            inspectorSeat={inspectorSeat}
+            allProviders={allProviders}
+            activityLogOpen={activityLogOpen}
+            setActivityLogOpen={setActivityLogOpen}
+            activityLogRef={activityLogRef}
+            onSeatClick={handleSeatClick}
+            onSeatUpdate={handleSeatUpdate}
+            onAddLitigant={handleAddLitigant}
+            onRemoveLitigant={handleRemoveLitigant}
+            onCloseInspector={() => setInspectorSeat(null)}
           />
-        )}
-      </div>{/* /sz-diagram */}
-      </div>{/* /row 4 */}
 
-      </div>{/* /main-inner */}
+        </div>
       </main>
 
+      {/* ── Template picker sheet ── */}
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
           <SheetHeader className="shrink-0 pb-3 border-b border-white/5">
             <SheetTitle className="text-sm flex items-center gap-2">
-              <LayoutTemplate className="w-4 h-4 text-primary" />
               Templates
             </SheetTitle>
           </SheetHeader>
