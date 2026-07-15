@@ -1,7 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
-import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -17,9 +16,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Shared site header — edit SiteHeader.tsx to update everywhere */}
-      <SiteHeader variant="app" />
-
       {/* Onboarding wizard — shown once after first login */}
       {showWizard && <OnboardingWizard onComplete={() => setWizardDismissed(true)} />}
 
