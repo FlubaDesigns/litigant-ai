@@ -132,6 +132,12 @@ uri = "file://artifacts/gh-brain/public/hero-option-b.png"
 type = "image"
 title = "professionals debating round table"
 
+[[generated]]
+id = "CXKyG4X1E-EVVKNkMC4Ir"
+uri = "file://artifacts/gh-brain/public/privacy-hero.png"
+type = "image"
+title = "privacy shield hero"
+
 [[outputs]]
 id = "oHu2SZNBZ0NyJBnLPlLe_"
 uri = "file://downloads/website.zip"
@@ -233,3 +239,9 @@ id = "F8QE8Pyf3EUpyXatEUHv3"
 uri = "file://downloads/litigant-ai.zip"
 type = "unspecified"
 title = "litigant-ai.zip — full source + README (15MB)"
+
+[[outputs]]
+id = "uO7H3YJkCF1eDd7zyLuUi"
+uri = "file://artifacts/gh-brain/public/privacy-hero.png"
+type = "image"
+title = "Privacy Policy hero image (600×600)"
