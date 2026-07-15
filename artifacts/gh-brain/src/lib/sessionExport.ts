@@ -196,7 +196,6 @@ export function exportJsPdf(state: SessionState): { wasTrimmed: boolean } {
   addSection("Debate Notes", state.debateNotes || "No debate notes.");
   addSection("Sources & Caveats", state.caveats || "");
 
-  const slug = state.question.slice(0, 40).replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  doc.save(`litigant-ai-${slug}-${Date.now()}.pdf`);
+  doc.save(`brain-session-${Date.now()}.pdf`);
   return { wasTrimmed };
 }
