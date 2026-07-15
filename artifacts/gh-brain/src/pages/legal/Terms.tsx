@@ -9,24 +9,28 @@ export default function TermsPage() {
       <SiteHeader variant="landing" />
       <main className="main">
 
-        {/* ── Header row: title + desktop image ── */}
+        {/* ── Header: title full-width, then disclaimers + image row ── */}
         <section className="section section--alt section--bordered">
           <div className="main-inner">
+
+            {/* Row 1: full-width title */}
+            <div className="row">
+              <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+                <ArrowLeft className="w-4 h-4" />
+                Back to home
+              </Link>
+              <div className="flex items-center gap-3 mb-2">
+                <Scale className="w-6 h-6 text-primary" />
+                <h1 className="text-2xl font-bold">Terms of Service</h1>
+              </div>
+              <p className="text-sm text-muted-foreground">Last updated: July 11, 2026</p>
+            </div>
+
+            {/* Row 2: disclaimers left, image right */}
             <div className="row">
               <div className="layout__split-2-1">
-
-                {/* Left: nav + title + disclaimers */}
-                <div>
-                  <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to home
-                  </Link>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Scale className="w-6 h-6 text-primary" />
-                    <h1 className="text-2xl font-bold">Terms of Service</h1>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-6">Last updated: July 11, 2026</p>
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-5 mb-4">
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-5">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                       <div>
@@ -38,11 +42,17 @@ export default function TermsPage() {
                     </div>
                   </div>
                   <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-200/70 leading-relaxed">
-                    By creating an account or using Litigant AI, you agree to these Terms.
+                    <p className="mb-4">By creating an account or using Litigant AI, you agree to these Terms.</p>
+                    <div className="flex flex-wrap gap-4">
+                      <Link href="/privacy" className="text-sm text-primary hover:underline">
+                        Privacy Policy →
+                      </Link>
+                      <a href="mailto:info@litigant-ai.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        Contact us →
+                      </a>
+                    </div>
                   </div>
                 </div>
-
-                {/* Right: image — tablet/desktop only via .hero-img-col */}
                 <div className="hero-img-col">
                   <img
                     src="/terms-hero.png"
@@ -50,9 +60,9 @@ export default function TermsPage() {
                     className="rounded-2xl border border-amber-400/20 w-full"
                   />
                 </div>
-
               </div>
             </div>
+
           </div>
         </section>
 

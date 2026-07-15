@@ -9,32 +9,40 @@ export default function PrivacyPolicyPage() {
       <SiteHeader variant="landing" />
       <main className="main">
 
-        {/* ── Header row: title + desktop image ── */}
+        {/* ── Header: title full-width, then disclaimer + image row ── */}
         <section className="section section--alt section--bordered">
           <div className="main-inner">
+
+            {/* Row 1: full-width title */}
+            <div className="row">
+              <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+                <ArrowLeft className="w-4 h-4" />
+                Back to home
+              </Link>
+              <div className="flex items-center gap-3 mb-2">
+                <Shield className="w-6 h-6 text-primary" />
+                <h1 className="text-2xl font-bold">Privacy Policy</h1>
+              </div>
+              <p className="text-sm text-muted-foreground">Last updated: July 11, 2026</p>
+            </div>
+
+            {/* Row 2: disclaimer left, image right */}
             <div className="row">
               <div className="layout__split-2-1">
-
-                {/* Left: nav + title + disclaimer */}
-                <div>
-                  <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to home
-                  </Link>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Shield className="w-6 h-6 text-primary" />
-                    <h1 className="text-2xl font-bold">Privacy Policy</h1>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-8">Last updated: July 11, 2026</p>
-                  <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-5">
-                    <p className="text-sm text-amber-300 font-semibold mb-1">Entertainment Purposes Only</p>
-                    <p className="text-sm text-amber-200/80">
-                      Litigant AI is an entertainment and exploratory reasoning tool. It is <strong>not a law firm, financial advisor, medical provider, or professional services firm</strong>. Nothing produced by this service constitutes legal, financial, medical, or professional advice of any kind. See our Terms of Service for the full disclaimer.
-                    </p>
+                <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-5">
+                  <p className="text-sm text-amber-300 font-semibold mb-1">Entertainment Purposes Only</p>
+                  <p className="text-sm text-amber-200/80 mb-5">
+                    Litigant AI is an entertainment and exploratory reasoning tool. It is <strong>not a law firm, financial advisor, medical provider, or professional services firm</strong>. Nothing produced by this service constitutes legal, financial, medical, or professional advice of any kind. See our Terms of Service for the full disclaimer.
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <Link href="/terms" className="text-sm text-primary hover:underline">
+                      Terms of Service →
+                    </Link>
+                    <a href="mailto:info@litigant-ai.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      Contact us →
+                    </a>
                   </div>
                 </div>
-
-                {/* Right: image — tablet/desktop only via .hero-img-col */}
                 <div className="hero-img-col">
                   <img
                     src="/privacy-hero.png"
@@ -42,9 +50,9 @@ export default function PrivacyPolicyPage() {
                     className="rounded-2xl border border-primary/20 w-full"
                   />
                 </div>
-
               </div>
             </div>
+
           </div>
         </section>
 
