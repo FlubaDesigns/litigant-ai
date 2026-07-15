@@ -8,6 +8,14 @@ export interface ToolBenefit {
   description: string;
 }
 
+export interface ToolSampleOutput {
+  scenario: string;
+  confidence: number;
+  verdict: string;
+  debateSnippet: string;
+  debateRole: string;
+}
+
 export interface ToolPage {
   slug: string;
   templateId: string;
@@ -22,6 +30,7 @@ export interface ToolPage {
   howItWorks: { step: string; title: string; desc: string }[];
   benefits: ToolBenefit[];
   outputSummary: string;
+  sampleOutput: ToolSampleOutput;
   faqs: ToolFAQ[];
   icon: string;
   image: string;
@@ -55,6 +64,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Investor-ready insights", description: "Know exactly what objections investors will raise — and have answers prepared." },
     ],
     outputSummary: "You receive a confidence-scored verdict covering market viability, financial sustainability, competitive positioning, and the top 3 risks — plus a full debate transcript showing how each AI model reasoned through your plan.",
+    sampleOutput: {
+      scenario: "NestPilot — AI-powered property management SaaS",
+      confidence: 62,
+      verdict: "NestPilot has genuine market demand in a fragmented space, but unit economics assumptions are optimistic. Customer acquisition cost is likely 3× projected given B2B sales cycles in real estate. The core product is defensible if the integrations moat is built fast — but the window is 12–18 months before established players move. Confidence in viability: 62%.",
+      debateSnippet: "The $40/unit/month pricing undercuts established players but leaves no margin for the sales team this model actually requires. Churn assumptions of 2% monthly are unsustainable without a dedicated customer success function from day one.",
+      debateRole: "Skeptic",
+    },
     faqs: [
       { q: "Is this a replacement for a business advisor?", a: "No — it's a thinking tool, not professional advice. Use it to identify questions to bring to your advisors and investors, not to replace them." },
       { q: "How detailed does my business plan need to be?", a: "Even a rough concept works. The more detail you provide, the sharper the analysis. You can always run it again as your plan evolves." },
@@ -87,6 +103,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Competitive comparison", description: "Benchmark your site's approach against what high-performing competitors typically do right." },
     ],
     outputSummary: "A prioritized finding report organized by impact — covering UX, content, conversion, and technical issues — with specific recommended fixes and a confidence score for each major conclusion.",
+    sampleOutput: {
+      scenario: "HarborCo Marine — B2B boat parts e-commerce",
+      confidence: 71,
+      verdict: "HarborCo's product catalogue is strong but the site is losing conversions at the cart stage. Trust signals are absent above the fold, and the mobile checkout flow has a critical drop-off after shipping selection. Three targeted fixes could recover an estimated 18–24% of abandoned sessions. Overall conversion readiness: 71%.",
+      debateSnippet: "There is no social proof visible until page four of the checkout funnel. A B2B buyer spending $8,000 on engine parts needs to see fleet client logos and industry certifications before they even look at pricing — not buried in the footer.",
+      debateRole: "Conversion Analyst",
+    },
     faqs: [
       { q: "Does Litigant AI actually browse my website?", a: "The AI analyzes the information you provide about the website, including the URL and your description of its goals and audience. For best results, describe key pages and paste critical copy." },
       { q: "Is this useful for landing pages, not just full websites?", a: "Yes — single landing pages are often the most valuable thing to audit since they have a single measurable goal. Many users specifically audit high-traffic landing pages." },
@@ -119,6 +142,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Competitive positioning", description: "Stress-test your differentiation claims against what competitors are already saying and doing." },
     ],
     outputSummary: "A structured marketing verdict covering channel fit, messaging effectiveness, audience alignment, and ROI realism — with specific recommendations ranked by expected impact.",
+    sampleOutput: {
+      scenario: "Bloomfield Bakery — artisan subscription boxes",
+      confidence: 58,
+      verdict: "Bloomfield's strategy is spread too thin across six channels with no dominant presence in any of them. Instagram is the highest-ROI channel by a significant margin given the product's visual appeal, but the current posting cadence of 3×/week won't achieve algorithmic traction. Consolidating to two channels would dramatically improve results. Overall strategy confidence: 58%.",
+      debateSnippet: "The email list of 1,200 subscribers is the most underutilized asset in this entire strategy. A monthly unboxing sequence alone could generate 15–20% of projected annual revenue at near-zero incremental cost — yet there is no email automation in the current plan.",
+      debateRole: "Devil's Advocate",
+    },
     faqs: [
       { q: "Can I use this for a campaign, not just an overall strategy?", a: "Yes — many users analyze specific campaign concepts, ad creative directions, or email sequences. Just describe the campaign and its goal." },
       { q: "Does it work for B2B and B2C?", a: "Absolutely. Specify your model in the input and the AI panel will tailor its critique accordingly." },
@@ -151,6 +181,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Maintainability scoring", description: "Readability, naming conventions, separation of concerns, and testability assessed against real-world standards." },
     ],
     outputSummary: "A severity-ranked technical findings report organized by domain (security, performance, architecture, maintainability) with specific line-level recommendations and an overall code health confidence score.",
+    sampleOutput: {
+      scenario: "Vaultly — open-source password manager API",
+      confidence: 44,
+      verdict: "Vaultly has a critical security vulnerability in its key derivation implementation — PBKDF2 iterations are set to 10,000 against a 2024 recommended minimum of 600,000. Three additional medium-severity issues were identified in the authentication layer. Overall code health: 44% — do not ship without addressing the critical findings.",
+      debateSnippet: "The authentication middleware does not validate JWT expiry server-side, relying solely on client-side checks. This is exploitable. Any session token older than 24 hours remains valid indefinitely until the user explicitly signs out — a session fixation risk in any shared or public device context.",
+      debateRole: "Security Auditor",
+    },
     faqs: [
       { q: "What languages and frameworks does it support?", a: "Any language you can describe or paste. TypeScript, Python, Go, Java, Rust, SQL, and more — just specify the language and framework in your input." },
       { q: "Can I use it for architecture decisions, not just code?", a: "Yes — architecture reviews (microservices vs monolith, database choice, API design) are one of the most popular use cases. Describe the decision and the AI panel will pressure-test it." },
@@ -183,6 +220,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Plain-language translation", description: "Legal jargon decoded into plain English so you understand exactly what you're agreeing to." },
     ],
     outputSummary: "A clause-by-clause risk report in plain English, with a severity ranking for each finding, specific negotiation scripts, and a summary of the top 3 things to address before signing.",
+    sampleOutput: {
+      scenario: "Apex Staffing Solutions — contractor services agreement",
+      confidence: 38,
+      verdict: "This contract heavily favours the agency across three critical dimensions: a 90-day exclusivity lock-in, uncapped liability exposure for the contractor, and a non-solicitation provision extending 24 months post-engagement. The auto-renewal clause in Section 8.3 is the most immediately dangerous. Do not sign without negotiating at least two of these points. Risk rating: High.",
+      debateSnippet: "Section 8.3 contains an automatic renewal clause that activates unless written notice is given 45 days before term end. This is commonly overlooked and represents a significant lock-in risk — most contractors miss the notice window on their first renewal cycle.",
+      debateRole: "Risk Analyst",
+    },
     faqs: [
       { q: "Is this legal advice?", a: "No. This is a thinking tool to help you ask better questions of your actual lawyer — not a replacement for legal counsel. Always consult a qualified attorney before signing significant contracts." },
       { q: "What types of contracts does it work for?", a: "Employment agreements, vendor contracts, NDAs, SaaS terms, real estate leases, partnership agreements, and more. The AI adapts its review to the contract type." },
@@ -215,6 +259,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Cognitive bias check", description: "Sunk cost, loss aversion, availability bias — AI reviewers flag where your framing might be distorting the picture." },
     ],
     outputSummary: "A structured decision analysis with a confidence-scored recommendation, pros and cons per option, key risks ranked by severity, second-order effects, and the top 3 factors that should most influence your choice.",
+    sampleOutput: {
+      scenario: "Accept VP of Product role vs. stay at early-stage startup",
+      confidence: 73,
+      verdict: "Taking the VP role is the stronger decision given current market conditions and the candidate's career stage. The equity upside at the startup is real, but dilution risk and a Series A timeline that has already slipped once make it a lower expected-value position. The VP role offers immediate compensation recovery and a platform to build the network needed for a future founding role. Confidence: 73%.",
+      debateSnippet: "The startup's Series A is eight months from closing by the founder's own timeline — and 60% of Series A timelines slip by at least that margin. If it slips again, the candidate joins at maximum internal stress with no vested equity buffer and reduced negotiating leverage.",
+      debateRole: "Devil's Advocate",
+    },
     faqs: [
       { q: "What kind of decisions is this best for?", a: "Career moves, business pivots, major purchases, relationship decisions, investment choices — any decision with real stakes and genuine uncertainty." },
       { q: "What if I have more than two options?", a: "The more options you describe, the richer the analysis. Litigant AI handles multi-option decisions well." },
@@ -247,6 +298,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Second opinion framing", description: "If you're considering a second opinion, AI helps you articulate exactly what you want the second doctor to evaluate." },
     ],
     outputSummary: "A prioritized question list organized by topic, plain-English explanations of relevant medical concepts, and a summary of key things to communicate clearly to your doctor during the appointment.",
+    sampleOutput: {
+      scenario: "Recurring migraines — first neurology consultation",
+      confidence: 81,
+      verdict: "The symptom pattern described — unilateral onset, 4–6 hour duration, photophobia, and monthly frequency — is consistent with episodic migraine with aura. Seven key questions were identified for the appointment, along with three diagnostic differentials to raise. The preparation also flags two red-flag symptoms to report immediately if they occur. Appointment readiness: 81%.",
+      debateSnippet: "Many patients leave their first neurology appointment without discussing preventive options. Given the described frequency (8+ days/month), prophylactic treatment is clinically indicated — ask specifically about beta-blockers, topiramate, and CGRP inhibitors before accepting an acute-only treatment plan.",
+      debateRole: "Patient Advocate",
+    },
     faqs: [
       { q: "Is this medical advice?", a: "Absolutely not. This is a preparation tool to help you have a better conversation with your qualified healthcare provider — not a diagnostic or treatment tool." },
       { q: "What types of appointments is this useful for?", a: "GP visits, specialist consultations, follow-ups after a diagnosis, pre-surgery discussions, mental health appointments, and more." },
@@ -279,6 +337,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "What to validate first", description: "Not all risks are equal. AI prioritizes which assumptions need real-world testing before you build anything." },
     ],
     outputSummary: "A confidence-scored build/no-build recommendation with a ranked list of core assumptions, the 3 biggest risks, specific validation experiments to run, and what a credible path to product-market fit looks like.",
+    sampleOutput: {
+      scenario: "SnapAudit — mobile receipt scanning for freelancers",
+      confidence: 55,
+      verdict: "SnapAudit solves a genuine pain point but faces a critical go-to-market challenge: the highest-value segment (restaurants, retail) already has receipt management built into their POS systems. The addressable market narrows significantly under scrutiny. The solo freelancer segment is reachable, but ARPU in that segment is likely $8–12/month — insufficient to support the described ML infrastructure. Verdict: validate pricing first before building. Confidence: 55%.",
+      debateSnippet: "The core assumption that 'freelancers hate manual expense entry' is correct — but the follow-on assumption that they'll pay $19/month to fix it is not supported. Every competing product at that price point has failed to retain freelancers past month two. The willingness-to-pay ceiling in this segment is closer to $7.",
+      debateRole: "Skeptic",
+    },
     faqs: [
       { q: "Is this for technical or non-technical founders?", a: "Both. You don't need to describe the technical architecture — focus on the problem, the customer, and the business model." },
       { q: "Can I use it for an existing product I want to pivot?", a: "Yes — pivot decisions are one of the highest-value use cases. Describe the current product and the pivot direction." },
@@ -311,6 +376,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Audience resonance", description: "Is the tone, vocabulary, and assumed knowledge calibrated correctly for your intended audience?" },
     ],
     outputSummary: "A prioritized editorial critique with specific passages called out, structural recommendations, argument integrity findings, and a confidence score on overall impact — organized by what to fix first.",
+    sampleOutput: {
+      scenario: "The Quiet Architect — debut literary thriller (chapters 1–4)",
+      confidence: 69,
+      verdict: "The manuscript has a compelling premise and genuinely original atmospheric writing in chapter one, but chapters 3–7 suffer from pacing issues that will cause agent rejections at the query stage. The protagonist's core motivation is unclear until chapter nine — this needs to surface by the end of chapter two. Overall impact confidence: 69%.",
+      debateSnippet: "The description of the building's geometry as a character device in the opening chapter is original and effective — but this voice completely disappears after chapter two and is replaced by more generic thriller pacing. The author is suppressing their strongest instinct. This is the single most important note in the review.",
+      debateRole: "Structural Critic",
+    },
     faqs: [
       { q: "Does this work for fiction as well as non-fiction?", a: "Both. For fiction, the analysis focuses on character, pacing, and narrative logic. For non-fiction, it emphasizes argument, evidence, and clarity." },
       { q: "How much do I need to share for a useful critique?", a: "At minimum, a substantial excerpt (500+ words) or a detailed chapter-by-chapter summary. The more context about your intended audience and goal, the sharper the feedback." },
@@ -334,7 +406,7 @@ export const TOOL_PAGES: ToolPage[] = [
     howItWorks: [
       { step: "01", title: "Describe your market position", desc: "Share your product, key competitors, your claimed differentiation, and the customers you're targeting." },
       { step: "02", title: "AI analysts attack your positioning", desc: "A competitive skeptic, market analyst, customer advocate, and threat modeler each examine your position from a different angle." },
-      { step: "03", title: "Get a positioning verdict", desc: "Receive a confidence-scored analysis of your moat strength, top competitive threats, and the gaps competitors could exploit." },
+      { step: "03", title: "Get a positioning verdict", desc: "Receive a confidence-scored assessment of your competitive moat, the top three threats, and specific recommendations for strengthening your position." },
     ],
     benefits: [
       { title: "Moat stress-test", description: "Why won't a better-funded competitor copy you? AI demands a credible answer — and flags weak defenses." },
@@ -343,6 +415,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Customer perspective check", description: "From the customer's point of view, how compelling is your differentiation really? AI plays devil's advocate." },
     ],
     outputSummary: "A confidence-scored competitive analysis covering moat strength, top three threats, positioning gaps versus key competitors, and specific recommendations for where to strengthen your position.",
+    sampleOutput: {
+      scenario: "Meridian Fitness — regional gym chain, 4 locations",
+      confidence: 66,
+      verdict: "Meridian is well-positioned against local independents but significantly vulnerable to the three national chains entering the region in Q1. Differentiation on equipment quality alone is insufficient — the boutique studio segment is capturing the high-LTV customers that Meridian's current positioning is missing entirely. A repositioning investment is needed before the nationals arrive. Moat strength: 66%.",
+      debateSnippet: "Planet Fitness's regional entry will compress Meridian's price-sensitive membership tier by 30–40% within 18 months. The correct strategic response is to move upmarket — not compete on price — but this requires a repositioning investment of approximately $180K across two flagship locations before Q4.",
+      debateRole: "Threat Modeler",
+    },
     faqs: [
       { q: "Do I need detailed competitor research to use this?", a: "No — share what you know and the AI will work with it. The more detail you provide, the sharper the analysis, but a rough overview is enough to get started." },
       { q: "Can this replace a full competitive analysis?", a: "No — it's a thinking tool, not market research. It helps you stress-test assumptions and find gaps in your reasoning, not substitute for primary research." },
@@ -375,6 +454,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Consistency check", description: "Does your argument contradict itself anywhere? AI finds logical inconsistencies before your opponent does." },
     ],
     outputSummary: "A ranked list of the strongest counterarguments to your position, an assessment of your argument's key vulnerabilities, and suggested responses — organized by how likely each objection is to come up.",
+    sampleOutput: {
+      scenario: "Universal Basic Income — Oxford-style debate, pro-UBI position",
+      confidence: 77,
+      verdict: "The strongest argument for UBI centres on automation displacement — this is where the evidence base is most robust and opponent rebuttals are weakest. The most dangerous counterargument is fiscal sustainability; prepare a response grounded in pilot cost data before stepping into the room. Overall debate readiness: 77%.",
+      debateSnippet: "The Finland pilot (2017–2018) is frequently cited but often misrepresented by both sides. The correct framing: it showed improved wellbeing and maintained employment levels, but was not designed to test macro-economic effects at scale. Know this distinction cold — it will be used against you if you cite it imprecisely.",
+      debateRole: "Preparation Analyst",
+    },
     faqs: [
       { q: "Does this work for negotiation as well as formal debate?", a: "Yes — the same adversarial analysis applies to salary negotiations, business deals, and persuasion scenarios, not just formal debates." },
       { q: "What if my argument is genuinely weak?", a: "Then you need to know that before you make it publicly. AI will tell you honestly — which is far better than finding out in the room." },
@@ -407,6 +493,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Confirmation bias detection", description: "Are you interpreting evidence to fit your conclusion? AI specifically looks for this pattern." },
     ],
     outputSummary: "A hypothesis strength assessment with confidence scoring, a list of hidden assumptions, the top alternative explanations, specific evidence that would confirm or falsify it, and methodological concerns to address.",
+    sampleOutput: {
+      scenario: "Hypothesis: remote work reduces engineering output",
+      confidence: 41,
+      verdict: "The hypothesis as stated is not supported by the available evidence. Output metrics show no statistically significant decline overall, but collaboration quality indicators and junior engineer development metrics show measurable degradation. The hypothesis needs refinement — the real finding is more specific and more actionable. Confidence in original hypothesis: 41%.",
+      debateSnippet: "The confounding variable is seniority. Senior engineers (5+ years experience) show equal or improved output remotely. Junior engineers (0–2 years) show a 23% reduction in code review participation and 31% longer time-to-first-meaningful-commit. This is a mentorship and onboarding problem, not a productivity problem — and it has a different solution.",
+      debateRole: "Skeptic",
+    },
     faqs: [
       { q: "Does this work for business hypotheses as well as scientific ones?", a: "Yes — product hypotheses, market assumptions, and strategic bets are just as valid as scientific claims." },
       { q: "What if my hypothesis is early stage and I don't have much evidence yet?", a: "That's the ideal time to use it. Stress-testing before you invest in gathering evidence is far cheaper than discovering a fatal flaw after." },
@@ -439,6 +532,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Audience calibration", description: "Is the report written at the right level for its intended audience? Are you explaining too much — or not enough?" },
     ],
     outputSummary: "A prioritized critique with logic gap findings, assumption map, evidence quality assessment, and structural recommendations — organized by what to fix before publication.",
+    sampleOutput: {
+      scenario: "Q3 Sales Performance Report — MidWest Logistics Co.",
+      confidence: 53,
+      verdict: "The Q3 report presents accurate data but draws misleading conclusions. The headline 12% revenue growth obscures a 31% decline in new customer acquisition, compensated entirely by upsells to the existing base — a pattern that signals pipeline exhaustion within two quarters if not addressed. The executive summary as written would concern an informed board member. Logical integrity: 53%.",
+      debateSnippet: "Page four presents average deal size as increasing — technically true, but it omits that the increase is driven by three non-recurring enterprise renewals. Strip those out and average deal size declined 8% quarter-on-quarter. That is the number leadership needs to see, not the blended figure currently in the headline.",
+      debateRole: "Logic Auditor",
+    },
     faqs: [
       { q: "Does this work for internal business reports as well as published research?", a: "Yes — board reports, strategy documents, investment memos, and research papers are all strong use cases." },
       { q: "How much of the report do I need to share?", a: "The more context the better. At minimum, the executive summary and key findings sections. Full text gives the sharpest critique." },
@@ -471,6 +571,13 @@ export const TOOL_PAGES: ToolPage[] = [
       { title: "Counterevidence surfacing", description: "What would falsify this finding? AI specifically looks for evidence that cuts the other way." },
     ],
     outputSummary: "A structured research synthesis with a consensus map, methodology quality assessment, practical implications, confidence scores per major finding, and a summary of the most important caveats.",
+    sampleOutput: {
+      scenario: "Sleep deprivation and cognitive performance — applied to shift work policy",
+      confidence: 84,
+      verdict: "The research base on sleep deprivation and cognitive performance is unusually consistent across methodologies and research groups. Even mild restriction (6 hours vs 8 hours nightly) produces measurable impairment in working memory and decision quality within four days. The consensus on this point is strong enough to inform policy. Evidence confidence: 84%.",
+      debateSnippet: "The most actionable and underappreciated finding: performance deficits after sleep restriction are not reliably self-reported. Subjects consistently rate their own impairment as minimal while objective measures show significant decline. This has direct implications for any organization relying on self-declaration for fatigue risk management — the policy is not working if it depends on workers recognising their own impairment.",
+      debateRole: "Practical Implications Analyst",
+    },
     faqs: [
       { q: "Does this work for business research as well as academic research?", a: "Yes — market research reports, industry analyses, and competitive intelligence are just as valid as academic papers." },
       { q: "Can I use it when I have conflicting sources?", a: "That's actually the ideal use case. Paste or summarize the conflicting evidence and the AI will analyze why they conflict and which is more reliable." },

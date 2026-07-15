@@ -1,13 +1,14 @@
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
-import { ChevronRight, Check, Zap, Shield, BarChart3 } from "lucide-react";
+import { ChevronRight, Check, Zap, Shield, BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getToolBySlug } from "@/data/toolPages";
+import { getToolBySlug, ToolSampleOutput } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { funnelTo } from "@/lib/funnel";
 import NotFoundPage from "@/pages/not-found";
 import { useState } from "react";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
+import { useAuth } from "@/contexts/AuthContext";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -27,13 +28,95 @@ function FAQ({ q, a }: { q: string; a: string }) {
   );
 }
 
+function ConfidenceMeter({ value }: { value: number }) {
+  const color = value >= 70 ? "#39f70a" : value >= 50 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${value}%`, background: color }}
+        />
+      </div>
+      <span className="text-xs font-mono font-bold shrink-0" style={{ color }}>
+        {value}%
+      </span>
+    </div>
+  );
+}
+
+function SampleOutputPreview({ sample }: { sample: ToolSampleOutput }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full text-left p-5 flex items-start justify-between gap-4 hover:bg-primary/10 transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-mono text-amber-500/70 uppercase tracking-widest mb-1">Sample Output</p>
+          <p className="text-sm font-semibold text-white mb-3">{sample.scenario}</p>
+          <ConfidenceMeter value={sample.confidence} />
+        </div>
+        <div className="shrink-0 mt-1 w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+          {expanded
+            ? <ChevronUp className="w-3.5 h-3.5 text-primary" />
+            : <ChevronDown className="w-3.5 h-3.5 text-primary" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ duration: 0.2 }}
+          className="overflow-hidden border-t border-primary/10"
+        >
+          <div className="p-5 space-y-4">
+            <div>
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">Verdict</p>
+              <p className="text-sm text-zinc-300 leading-relaxed">{sample.verdict}</p>
+            </div>
+            <div className="rounded-lg border border-white/8 bg-white/[0.03] p-4">
+              <p className="text-[10px] font-mono text-amber-500/60 uppercase tracking-widest mb-2">
+                {sample.debateRole}
+              </p>
+              <p className="text-xs text-zinc-400 leading-relaxed italic">"{sample.debateSnippet}"</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function useToolHrefs(templateId: string, user: ReturnType<typeof useAuth>["user"]) {
+  const templateDest = `/session?templateId=${templateId}`;
+  const sessionDest  = `/session`;
+  const creditsDest  = `/billing`;
+
+  if (user) {
+    return {
+      useTemplate:  templateDest,
+      askQuestion:  sessionDest,
+      getCredits:   creditsDest,
+    };
+  }
+
+  return {
+    useTemplate: funnelTo(templateDest).register,
+    askQuestion: funnelTo(sessionDest).register,
+    getCredits:  funnelTo(creditsDest).register,
+  };
+}
+
 export default function ToolPage() {
   const { signupBonusCredits: signupBonus } = usePublicConfig();
+  const { user } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const tool = getToolBySlug(slug);
-  const { register: registerHref, signIn: signInHref } = tool
-    ? funnelTo(`/session?templateId=${tool.templateId}`)
-    : { register: "/register", signIn: "/sign-in" };
+
+  const hrefs = useToolHrefs(tool?.templateId ?? "", user);
 
   usePageMeta({
     title: tool?.metaTitle ?? "Tool Not Found | Litigant AI",
@@ -101,14 +184,14 @@ export default function ToolPage() {
                   {tool.subheadline}
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <Link href={registerHref}>
+                  <Link href={hrefs.useTemplate}>
                     <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto">
                       {tool.ctaLabel} <ChevronRight className="w-4 h-4" />
                     </Button>
                   </Link>
-                  <Link href={signInHref}>
+                  <Link href={hrefs.askQuestion}>
                     <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                      Sign in
+                      Ask AI a question
                     </Button>
                   </Link>
                 </div>
@@ -139,8 +222,8 @@ export default function ToolPage() {
             <div className="row">
               <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
                 {[
-                  { icon: Zap, label: "GPT-4, Claude, Gemini & Grok" },
-                  { icon: Shield, label: "Multi-model adversarial debate" },
+                  { icon: Zap,       label: "Multi-model adversarial panel" },
+                  { icon: Shield,    label: "Competing AI perspectives" },
                   { icon: BarChart3, label: "Confidence-scored verdict" },
                 ].map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-1.5">
@@ -217,16 +300,15 @@ export default function ToolPage() {
           </div>
         </section>
 
-        {/* Output summary */}
+        {/* Sample output */}
         <section className="section">
           <div className="main-inner">
             <div className="row">
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
-                <h2 className="text-lg font-bold mb-3">What the output looks like</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
-                  {tool.outputSummary}
-                </p>
-              </div>
+              <h2 className="text-2xl font-bold text-center mb-6">What the output looks like</h2>
+              <p className="text-sm text-muted-foreground text-center mb-8 max-w-xl mx-auto">
+                {tool.outputSummary}
+              </p>
+              <SampleOutputPreview sample={tool.sampleOutput} />
             </div>
           </div>
         </section>
@@ -247,7 +329,7 @@ export default function ToolPage() {
           </div>
         </section>
 
-        {/* CTA */}
+        {/* Bottom CTA — three auth-aware buttons */}
         <section className="section text-center">
           <div className="main-inner">
             <div className="row">
@@ -255,17 +337,24 @@ export default function ToolPage() {
                 Ready to analyze your {tool.subject}?
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                {`${signupBonus} free credits on signup. No credit card required. Your first session takes less than 2 minutes.`}
+                {user
+                  ? "Your credits are ready. Pick how you want to start."
+                  : `${signupBonus} free credits on signup. No credit card required.`}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link href={registerHref}>
-                  <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto">
-                    {tool.ctaLabel} — it's free <ChevronRight className="w-4 h-4" />
+                <Link href={hrefs.useTemplate}>
+                  <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-black border-0">
+                    Use Template <ChevronRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Link href="/tools">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Browse all tools
+                <Link href={hrefs.askQuestion}>
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto font-semibold gap-2">
+                    Ask AI a Question <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link href={hrefs.getCredits}>
+                  <Button size="lg" variant="ghost" className="w-full sm:w-auto text-muted-foreground">
+                    Get Credits
                   </Button>
                 </Link>
               </div>
