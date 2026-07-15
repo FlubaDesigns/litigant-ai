@@ -34,7 +34,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  getAdminStats, listAdminUsers, getAdminUser, adjustUserCredits, banUser,
+  getAdminStats, listAdminUsers, getAdminUser, adjustUserCredits, banUser, setUserTestModel,
   listAdminSessions, getAdminSession, listAdminTransactions, issueRefund,
   getFeatureFlags, setFeatureFlag, getAdminLimits, setAdminLimit,
   getCreditPacks, createCreditPack, updateCreditPack, deactivateCreditPack,
@@ -665,9 +665,20 @@ function UserProfileSheet({
   onAdjust: (u: AdminUser) => void;
   onBan: (u: AdminUser) => void;
 }) {
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-user", uid],
     queryFn: () => getAdminUser(uid),
+  });
+
+  const testModelMutation = useMutation({
+    mutationFn: (opts: { provider: string; model: string } | null) =>
+      setUserTestModel(uid, opts),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-user", uid] });
+      toast.success("Test model updated");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update test model"),
   });
 
   const {
@@ -738,6 +749,46 @@ function UserProfileSheet({
                 <Ban className="w-3.5 h-3.5" />
                 {data.user.banned ? "Unban" : "Ban"}
               </Button>
+            </div>
+
+            {/* ── Test model override ── */}
+            <div className="rounded-lg border border-border bg-background p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Test Model</p>
+                  {data.user.testModel ? (
+                    <p className="text-sm font-semibold text-amber-400 mt-0.5">
+                      {data.user.testProvider} / {data.user.testModel}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-0.5">Not set — using defaults</p>
+                  )}
+                </div>
+                {data.user.testModel ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-amber-400 border-amber-400/40 hover:bg-amber-400/10"
+                    disabled={testModelMutation.isPending}
+                    onClick={() => testModelMutation.mutate(null)}
+                  >
+                    {testModelMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Clear"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-primary border-primary/40 hover:bg-primary/10"
+                    disabled={testModelMutation.isPending}
+                    onClick={() => testModelMutation.mutate({ provider: "gemini", model: "gemini-2.0-flash" })}
+                  >
+                    {testModelMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Enable gemini-2.0-flash"}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Forces all session seats to use this model. Clears on next session reset.
+              </p>
             </div>
 
             <div className="space-y-2">

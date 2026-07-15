@@ -438,6 +438,37 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
 });
 
 /**
+ * POST /admin/users/:uid/test-model
+ * Body: { provider: string, model: string } to enable, or {} to clear.
+ * Sets testProvider + testModel on the user's Firestore doc. The frontend
+ * reads these fields and forces all seat assignments to that model.
+ */
+router.post("/admin/users/:uid/test-model", requireAdmin, async (req: any, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+
+  const { provider, model } = req.body as { provider?: string; model?: string };
+
+  try {
+    if (provider && model) {
+      await db.collection("users").doc(req.params["uid"]!).set(
+        { testProvider: provider, testModel: model, updatedAt: FieldValue.serverTimestamp() },
+        { merge: true }
+      );
+      return res.json({ success: true, testProvider: provider, testModel: model });
+    } else {
+      await db.collection("users").doc(req.params["uid"]!).set(
+        { testProvider: FieldValue.delete(), testModel: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() },
+        { merge: true }
+      );
+      return res.json({ success: true, testProvider: null, testModel: null });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /admin/send-reengagement
  * Triggers the re-engagement email campaign for users inactive for ≥ N days.
  * Designed to be called by Cloud Scheduler (daily cron). Falls back to the

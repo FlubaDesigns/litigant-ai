@@ -12,6 +12,7 @@ import { useBrainSession } from "@/hooks/useBrainSession";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
 import type { CourtConfig } from "@/data/templates";
+import { makeDefaultSeatMap, type SeatAssignment } from "@/data/seatTypes";
 import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -68,6 +69,21 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
 export default function SessionPage() {
   const { user, userProfile, isAdmin } = useAuth();
   const { credits, plan } = useUserProfile();
+
+  // If admin has toggled a test model on this account, pre-build a seatMap
+  // so all seats run on that model instead of the default.
+  const testSeatMap = (userProfile?.testModel && userProfile?.testProvider)
+    ? (() => {
+        const count = userProfile.defaultSettings?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
+        const seat: SeatAssignment = { provider: userProfile.testProvider!, model: userProfile.testModel! };
+        return {
+          orchestrator: seat, moderator: seat, auditor: seat,
+          architect: seat, builder: seat,
+          litigants: Array.from({ length: count }, () => ({ ...seat })),
+        };
+      })()
+    : undefined;
+
   const savedConfig = userProfile?.defaultSettings
     ? {
         litigantCount:    userProfile.defaultSettings.litigantCount ?? 3,
@@ -86,6 +102,7 @@ export default function SessionPage() {
         outputPreference: "both" as CourtConfig["outputPreference"],
         format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? DEFAULT_CONFIG.format,
         artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
+        ...(testSeatMap ? { seatMap: testSeatMap } : {}),
       }
     : undefined;
 

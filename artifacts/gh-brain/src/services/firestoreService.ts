@@ -80,6 +80,9 @@ export interface UserProfile {
   };
   /** Server-written Square checkout URL; cleared by the client via deleteField() once consumed. */
   autoRefillCheckoutUrl?: string;
+  /** Admin-set test model override — forces all session seats to this model. */
+  testProvider?: string;
+  testModel?: string;
 }
 
 export async function saveUserConfig(

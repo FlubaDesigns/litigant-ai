@@ -27,6 +27,8 @@ export interface AdminUser {
   createdAt?: string;
   banned?: boolean;
   bannedReason?: string;
+  testProvider?: string;
+  testModel?: string;
 }
 
 export interface AdminSession {
@@ -96,6 +98,18 @@ export async function getAdminUser(uid: string): Promise<{
   const res = await adminFetch(`/admin/users/${uid}`);
   if (!res.ok) throw new Error("Failed to load user");
   return res.json();
+}
+
+export async function setUserTestModel(
+  uid: string,
+  opts: { provider: string; model: string } | null
+): Promise<void> {
+  const body = opts ? { provider: opts.provider, model: opts.model } : {};
+  const res = await adminFetch(`/admin/users/${uid}/test-model`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Failed to update test model");
 }
 
 export async function adjustUserCredits(
