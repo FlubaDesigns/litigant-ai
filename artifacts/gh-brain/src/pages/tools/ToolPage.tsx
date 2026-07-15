@@ -327,7 +327,7 @@ export default function ToolPage() {
               <h2 className="text-2xl font-bold text-center mb-10">What you get</h2>
             </div>
             <div className="row">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="layout__split-2">
                 {tool.benefits.map((b, i) => (
                   <motion.div
                     key={b.title}

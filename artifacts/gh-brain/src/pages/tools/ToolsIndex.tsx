@@ -110,7 +110,7 @@ export default function ToolsIndexPage() {
 
             {/* Tool grid */}
             <div className="row">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="layout__auto">
                 {filtered.map((tool, i) => {
                   const Icon = ICON_MAP[tool.icon] ?? Briefcase;
                   return (
