@@ -45,6 +45,7 @@ import { Input } from "@/components/ui/input";
 import { CourtDiagram } from "@/components/CourtDiagram";
 import { SeatInspector } from "@/components/SeatInspector";
 import { CaseFileSection } from "@/components/CaseFileSection";
+import { SiteHeader } from "@/components/SiteHeader";
 import { makeDefaultSeatMap, SEAT_PURPOSES, getSeatAIShortName } from "@/data/seatTypes";
 import type { SeatAssignment } from "@/data/seatTypes";
 
@@ -1444,7 +1445,8 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="session-bg main">
+    <div className="session-bg">
+      <SiteHeader variant="app" />
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -1489,10 +1491,13 @@ export default function SessionPage() {
       />
 
       {/* ══════════════════════════════════════════════════════
-          ZONE 1 — CONTROL BOARD
-          Nav actions + live credit/session stats
+          MAIN — backbone: main > main-inner > row > layout > content
       ══════════════════════════════════════════════════════ */}
-      <div className="sz-control">
+      <main>
+      <div className="main-inner">
+
+      {/* ── Row 1: Control Board ── */}
+      <div className="row">
         <div className="sz-control-nav">
           <button onClick={() => setConfigOpen(true)} className="session-nav-btn">⚙ Configure</button>
           <button onClick={() => navigate("/history")} className="session-nav-btn">📂 Sessions</button>
@@ -1503,7 +1508,7 @@ export default function SessionPage() {
             <button onClick={handleReset} className="session-nav-btn session-nav-btn--full session-nav-btn--reset">↺ New Trial</button>
           )}
         </div>
-        <div className="sz-control-stats">
+        <div className="session-stats-bar">
           <span className="session-stats-item">
             <span className="session-stats-key">{hasDebt ? "Debt" : "Balance"}</span>
             <span className={cn("session-stats-val", hasDebt ? "session-stats-val--critical" : creditsCritical ? "session-stats-val--critical" : creditsLow ? "session-stats-val--low" : "")}>
@@ -1537,16 +1542,17 @@ export default function SessionPage() {
             <button onClick={() => navigate("/billing")} className="session-stats-topup">Top up →</button>
           )}
         </div>
-      </div>
+      </div>{/* /row 1 */}
 
       {/* ══════════════════════════════════════════════════════
           ZONE 2 — YOUR COURT
           AI knobs: litigants, mode, provider, confidence target
           Expanded when idle · collapsed summary when running
       ══════════════════════════════════════════════════════ */}
+      {/* ── Row 2: Your Court ── */}
+      <div className="row">
       {isIdle ? (
         <div className="sz-court">
-        <div className="sz-court-inner">
           {(() => {
             const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
             const namedSeats = [
@@ -1636,7 +1642,6 @@ export default function SessionPage() {
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
             <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
           </div>
-        </div>{/* sz-court-inner */}
         </div>
       ) : (
         <div className="sz-court-summary">
@@ -1646,12 +1651,14 @@ export default function SessionPage() {
           </span>
         </div>
       )}
+      </div>{/* /row 2 */}
 
       {/* ══════════════════════════════════════════════════════
           ZONE 3 — DIALOGUE
           Question input (idle) · Conversation output (running/complete)
       ══════════════════════════════════════════════════════ */}
-      <section className="main-inner">
+      {/* ── Row 3: Dialogue ── */}
+      <div className="row">
       <div className="sz-dialogue">
 
         {/* Tool page pre-load banner */}
@@ -2100,12 +2107,15 @@ export default function SessionPage() {
             )}
           </div>
         )}
-      </div>
+      </div>{/* /sz-dialogue */}
+      </div>{/* /row 3 */}
 
       {/* ══════════════════════════════════════════════════════
           ZONE 4 — DIAGRAM
           Runtime control (when active) + court diagram
       ══════════════════════════════════════════════════════ */}
+      {/* ── Row 4: Diagram ── */}
+      <div className="row">
       <div className="sz-diagram">
         {!isIdle && (
           <div className="sz-runtime">
@@ -2158,8 +2168,10 @@ export default function SessionPage() {
           />
         )}
       </div>{/* /sz-diagram */}
+      </div>{/* /row 4 */}
 
-      </section>
+      </div>{/* /main-inner */}
+      </main>
 
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">

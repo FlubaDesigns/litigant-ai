@@ -448,75 +448,40 @@
 /* Page root — full-screen flex column, same pattern as Landing */
 .session-bg {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
   background: #000;
   color: #f4f4f5;
 }
 
-.session-bg .main-inner {
-  flex: 1;
-  padding-top: 0;
-  padding-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── 4-ZONE LAYOUT ──────────────────────────────────────── */
+/* ── ZONE STYLES (appearance only — backbone handles layout) ── */
 
 /* Zone 1: Control Board */
-.sz-control {
-  flex-shrink: 0;
-  background: rgba(6, 6, 6, 0.98);
-  border-bottom: 1px solid #1a1a1a;
-}
 .sz-control-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  padding: 7px var(--gutter);
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
+  padding: 7px 0;
 }
-.sz-control-stats {
+.session-stats-bar {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 4px var(--gutter) 6px;
+  padding: 4px 0 6px;
   overflow-x: auto;
   border-top: 1px solid #111;
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
 }
 
 /* Zone 2: Your Court */
 .sz-court {
-  flex-shrink: 0;
-  background: rgba(2, 8, 2, 0.9);
-  border-bottom: 1px solid #1a1a1a;
-}
-.sz-court-inner {
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
-  padding: 8px var(--gutter);
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 6px 0;
 }
 .sz-court-summary {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px var(--gutter);
-  background: rgba(2, 8, 2, 0.7);
-  border-bottom: 1px solid #111;
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
+  padding: 6px 0;
 }
 .sz-court-summary-text {
   font-size: 11px;
@@ -529,21 +494,22 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px var(--gutter);
+  padding: 10px 14px;
   border: 1px solid #27272a;
   border-radius: 12px;
-  margin: 8px 0;
   background: linear-gradient(160deg, rgba(18, 14, 8, 0.95), rgba(10, 10, 10, 0.95));
 }
 
 /* Zone 4: Diagram */
 .sz-diagram {
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .sz-runtime {
   border: 1px solid #1d331d;
   border-radius: 12px;
-  padding: 8px var(--gutter);
+  padding: 8px 12px;
   background: linear-gradient(160deg, rgba(14,26,14,.92), rgba(7,16,7,.92));
   display: flex;
   flex-direction: column;
