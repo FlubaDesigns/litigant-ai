@@ -482,11 +482,17 @@
    boxes, dialog lines, activity log, nav strip, meters, status cards.
    ─────────────────────────────────────────────────────────────────── */
 
-/* Page root — full-screen flex column, same pattern as Landing */
+/* Page root — full-screen flex column, same pattern as app-page */
 .session-bg {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #000;
   color: #f4f4f5;
+}
+
+.session-bg > main {
+  flex: 1;
 }
 
 /* ── ZONE STYLES (appearance only — backbone handles layout) ── */
