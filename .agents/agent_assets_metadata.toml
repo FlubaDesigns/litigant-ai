@@ -138,6 +138,12 @@ uri = "file://artifacts/gh-brain/public/privacy-hero.png"
 type = "image"
 title = "privacy shield hero"
 
+[[generated]]
+id = "LcQPv8wIhoZpWxPmhvBTV"
+uri = "file://artifacts/gh-brain/public/terms-hero.png"
+type = "image"
+title = "terms handshake hero amber"
+
 [[outputs]]
 id = "oHu2SZNBZ0NyJBnLPlLe_"
 uri = "file://downloads/website.zip"
@@ -245,3 +251,9 @@ id = "uO7H3YJkCF1eDd7zyLuUi"
 uri = "file://artifacts/gh-brain/public/privacy-hero.png"
 type = "image"
 title = "Privacy Policy hero image (600×600)"
+
+[[outputs]]
+id = "_56xPwbbF_MLuRyEYgfRI"
+uri = "file://artifacts/gh-brain/public/terms-hero.png"
+type = "image"
+title = "Terms of Service hero image — amber handshake"
