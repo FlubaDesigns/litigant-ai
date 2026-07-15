@@ -75,7 +75,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
                 className="hidden sm:block text-[11px] font-mono mt-0.5"
                 style={{ color: "hsl(108 94% 50% / 0.55)" }}
               >
-                Put <em>it</em> to the question.
+                Put <em>AI</em> to the question!
               </span>
             </div>
           </Link>

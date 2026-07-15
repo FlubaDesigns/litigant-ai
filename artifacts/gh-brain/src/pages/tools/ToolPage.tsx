@@ -1,6 +1,9 @@
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
-import { ChevronRight, Check, Zap, Shield, BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ChevronRight, Check, Zap, Shield, BarChart3,
+  Brain, Target, RotateCcw, Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getToolBySlug, ToolSampleOutput } from "@/data/toolPages";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -28,64 +31,165 @@ function FAQ({ q, a }: { q: string; a: string }) {
   );
 }
 
-function ConfidenceMeter({ value }: { value: number }) {
-  const color = value >= 70 ? "#39f70a" : value >= 50 ? "#f59e0b" : "#ef4444";
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${value}%`, background: color }}
-        />
-      </div>
-      <span className="text-xs font-mono font-bold shrink-0" style={{ color }}>
-        {value}%
-      </span>
-    </div>
-  );
-}
+function DocumentPreview({ sample }: { sample: ToolSampleOutput }) {
+  const confColor =
+    sample.confidence >= 80 ? "#39f70a" :
+    sample.confidence >= 60 ? "#f59e0b" : "#ef4444";
 
-function SampleOutputPreview({ sample }: { sample: ToolSampleOutput }) {
-  const [expanded, setExpanded] = useState(false);
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-5 flex items-start justify-between gap-4 hover:bg-primary/10 transition-colors"
+    <div
+      className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/[0.07]"
+      style={{ background: "#0a0f0a" }}
+    >
+      {/* App bar */}
+      <div
+        className="flex items-center gap-3 px-4 h-10 border-b"
+        style={{ background: "#080d08", borderColor: "rgba(255,255,255,0.06)" }}
       >
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-mono text-amber-500/70 uppercase tracking-widest mb-1">Sample Output</p>
-          <p className="text-sm font-semibold text-white mb-3">{sample.scenario}</p>
-          <ConfidenceMeter value={sample.confidence} />
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1e2a1e" }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1e2a1e" }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#1e2a1e" }} />
         </div>
-        <div className="shrink-0 mt-1 w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-          {expanded
-            ? <ChevronUp className="w-3.5 h-3.5 text-primary" />
-            : <ChevronDown className="w-3.5 h-3.5 text-primary" />}
-        </div>
-      </button>
-
-      {expanded && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden border-t border-primary/10"
+        <div
+          className="flex-1 mx-2 h-5 rounded-md flex items-center px-3 gap-2"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <div className="p-5 space-y-4">
-            <div>
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">Verdict</p>
-              <p className="text-sm text-zinc-300 leading-relaxed">{sample.verdict}</p>
-            </div>
-            <div className="rounded-lg border border-white/8 bg-white/[0.03] p-4">
-              <p className="text-[10px] font-mono text-amber-500/60 uppercase tracking-widest mb-2">
-                {sample.debateRole}
-              </p>
-              <p className="text-xs text-zinc-400 leading-relaxed italic">"{sample.debateSnippet}"</p>
-            </div>
+          <Brain className="w-2.5 h-2.5 shrink-0" style={{ color: "#39f70a" }} />
+          <span className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.25)" }}>
+            litigant-ai.web.app/report/···
+          </span>
+        </div>
+        <span
+          className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded"
+          style={{
+            color: "rgba(255,255,255,0.3)",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          Sample Output
+        </span>
+      </div>
+
+      {/* Report content */}
+      <div className="p-6 space-y-5">
+
+        {/* Question put on trial */}
+        <div
+          className="rounded-xl p-4"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          <p
+            className="text-[9px] font-mono uppercase tracking-widest mb-2"
+            style={{ color: "rgba(255,255,255,0.3)" }}
+          >
+            Question put on trial
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
+            {sample.question}
+          </p>
+        </div>
+
+        {/* Meta strip */}
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+          <span
+            className="flex items-center gap-1.5 text-xs font-mono font-semibold"
+            style={{ color: confColor }}
+          >
+            <Target className="w-3 h-3" />
+            {sample.confidence}% confidence
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
+            <Zap className="w-3 h-3" />
+            {sample.creditsUsed} credits
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
+            <RotateCcw className="w-3 h-3" />
+            {sample.rounds} rounds
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "rgba(255,255,255,0.3)" }}>
+            <Users className="w-3 h-3" />
+            {sample.litigants} litigants
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+
+        {/* Verdict */}
+        <div className="space-y-2">
+          <p
+            className="text-[9px] font-mono uppercase tracking-widest"
+            style={{ color: "#39f70a" }}
+          >
+            Verdict
+          </p>
+          <div
+            className="rounded-xl p-4"
+            style={{
+              background: "rgba(57,247,10,0.04)",
+              border: "1px solid rgba(57,247,10,0.15)",
+            }}
+          >
+            <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>
+              {sample.verdict}
+            </p>
           </div>
-        </motion.div>
-      )}
+        </div>
+
+        {/* Caveats */}
+        <div className="space-y-2">
+          <p
+            className="text-[9px] font-mono uppercase tracking-widest"
+            style={{ color: "#f59e0b" }}
+          >
+            Caveats &amp; Limitations
+          </p>
+          <div
+            className="rounded-xl p-4"
+            style={{
+              background: "rgba(245,158,11,0.04)",
+              border: "1px solid rgba(245,158,11,0.15)",
+            }}
+          >
+            <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
+              {sample.caveats}
+            </p>
+          </div>
+        </div>
+
+        {/* Debate snippet */}
+        <div className="space-y-2">
+          <p
+            className="text-[9px] font-mono uppercase tracking-widest"
+            style={{ color: "rgba(255,255,255,0.25)" }}
+          >
+            Debate notes
+          </p>
+          <div
+            className="rounded-xl p-4"
+            style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <p
+              className="text-[9px] font-mono uppercase tracking-widest mb-2"
+              style={{ color: "rgba(245,158,11,0.55)" }}
+            >
+              {sample.debateRole}
+            </p>
+            <p
+              className="text-sm leading-relaxed italic"
+              style={{ color: "rgba(255,255,255,0.5)" }}
+            >
+              "{sample.debateSnippet}"
+            </p>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
@@ -94,15 +198,9 @@ function useToolHrefs(templateId: string, user: ReturnType<typeof useAuth>["user
   const templateDest = `/session?templateId=${templateId}`;
   const sessionDest  = `/session`;
   const creditsDest  = `/billing`;
-
   if (user) {
-    return {
-      useTemplate:  templateDest,
-      askQuestion:  sessionDest,
-      getCredits:   creditsDest,
-    };
+    return { useTemplate: templateDest, askQuestion: sessionDest, getCredits: creditsDest };
   }
-
   return {
     useTemplate: funnelTo(templateDest).register,
     askQuestion: funnelTo(sessionDest).register,
@@ -115,7 +213,6 @@ export default function ToolPage() {
   const { user } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const tool = getToolBySlug(slug);
-
   const hrefs = useToolHrefs(tool?.templateId ?? "", user);
 
   usePageMeta({
@@ -151,10 +248,7 @@ export default function ToolPage() {
             "mainEntity": tool.faqs.map((faq) => ({
               "@type": "Question",
               "name": faq.q,
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": faq.a,
-              },
+              "acceptedAnswer": { "@type": "Answer", "text": faq.a },
             })),
           },
         ]
@@ -300,15 +394,15 @@ export default function ToolPage() {
           </div>
         </section>
 
-        {/* Sample output */}
+        {/* Sample output — static document preview */}
         <section className="section">
           <div className="main-inner">
             <div className="row">
-              <h2 className="text-2xl font-bold text-center mb-6">What the output looks like</h2>
+              <h2 className="text-2xl font-bold text-center mb-3">What you actually get back</h2>
               <p className="text-sm text-muted-foreground text-center mb-8 max-w-xl mx-auto">
                 {tool.outputSummary}
               </p>
-              <SampleOutputPreview sample={tool.sampleOutput} />
+              <DocumentPreview sample={tool.sampleOutput} />
             </div>
           </div>
         </section>
@@ -329,7 +423,7 @@ export default function ToolPage() {
           </div>
         </section>
 
-        {/* Bottom CTA — three auth-aware buttons */}
+        {/* Bottom CTAs */}
         <section className="section text-center">
           <div className="main-inner">
             <div className="row">
