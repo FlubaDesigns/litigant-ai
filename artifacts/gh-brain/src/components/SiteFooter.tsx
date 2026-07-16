@@ -3,7 +3,7 @@ import { Link } from "wouter";
 export function SiteFooter({ variant = "landing" }: { variant?: "landing" | "app" }) {
   return (
     <footer className={variant === "app" ? "border-t border-border py-4" : "border-t border-white/[0.06] py-10"}>
-      <div className="main-inner">
+      <div className="w-full px-6">
         <div className="row flex-between">
 
           {/* Brand */}

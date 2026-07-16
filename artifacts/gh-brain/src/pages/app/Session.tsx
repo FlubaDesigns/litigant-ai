@@ -477,7 +477,7 @@ export default function SessionPage() {
           MAIN — backbone: main > main-inner > row
       ══════════════════════════════════════════════════════ */}
       <main>
-        <div className="main-inner">
+        <div className="w-full px-4 sm:px-6">
 
           {/* ── Rows 2 + 3: Phase views ── */}
           {isIdle && (
