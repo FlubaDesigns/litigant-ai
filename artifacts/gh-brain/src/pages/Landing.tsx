@@ -407,7 +407,7 @@ export default function LandingPage() {
                 Every great decision deserves a trial.
               </p>
               <p className="text-base text-zinc-400 mb-10 max-w-xl leading-relaxed">
-                Put your toughest questions before a panel of AI models that genuinely disagree. Watch them argue, cross-examine, and deliver a confidence-scored verdict you can actually trust.
+                State your case to the litigants. Have them argue the point — or build the answer together. You're the boss. You decide.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href={isSignedIn ? "/session" : "/register"}>
