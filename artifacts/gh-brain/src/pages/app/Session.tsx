@@ -474,10 +474,9 @@ export default function SessionPage() {
       />
 
       {/* ══════════════════════════════════════════════════════
-          MAIN — backbone: main > main-inner > row
+          MAIN — backbone: main > row (page gutter already applied)
       ══════════════════════════════════════════════════════ */}
       <main>
-        <div className="w-full px-4 sm:px-6">
 
           {/* ── Rows 2 + 3: Phase views ── */}
           {isIdle && (
@@ -557,7 +556,6 @@ export default function SessionPage() {
             onCloseInspector={() => setInspectorSeat(null)}
           />
 
-        </div>
       </main>
 
       {/* ── Template picker sheet ── */}
