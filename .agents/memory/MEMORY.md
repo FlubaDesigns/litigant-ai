@@ -18,3 +18,4 @@
 - [Pre-pipeline cap gate](pre-pipeline-cap-gate.md) — credit cap now blocks BEFORE fixed pipeline; `pausedPrePipeline` result + `paused_pre_pipeline` SSE; resume via `resumeWithFixedPipeline:true`.
 - [Cloud Run env update safety](cloud-run-env-update.md) — never --set-env-vars with a single key; always --env-vars-file with full set
 - [SA key security](sa-key-security.md) — never paste SA JSON in chat or commit to repo; Google auto-disables keys detected in public repos within minutes; always attach as file and push via GitHub Secrets API; attached_assets/ is now gitignored
+- [Backbone layout reference](backbone-page.md) — Backbone.tsx is the canonical layout template; every page must follow app-page > SiteHeader + main(.row) + SiteFooter
