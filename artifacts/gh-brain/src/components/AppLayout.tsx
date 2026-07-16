@@ -16,18 +16,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     !wizardDismissed;
 
   return (
-    <div className="app-page">
+    <>
       {/* Shared site header — edit SiteHeader.tsx to update everywhere */}
       <SiteHeader variant="app" />
 
       {/* Onboarding wizard — shown once after first login */}
       {showWizard && <OnboardingWizard onComplete={() => setWizardDismissed(true)} />}
 
-      {/* Page content */}
+      {/* Page content — sits directly in #root, backbone: body.stage > #root > main */}
       <main>{children}</main>
 
       {/* Shared footer — edit SiteFooter.tsx to update everywhere */}
       <SiteFooter variant="app" />
-    </div>
+    </>
   );
 }
