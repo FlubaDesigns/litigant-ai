@@ -893,3 +893,186 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 /* ── SEAT INSPECTOR ──────────────────────────────────────────────── */
 .seat-inspector-backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
 .seat-inspector-sheet    { background: linear-gradient(160deg, #0e1a0e, #071007); max-width: 520px; margin: 0 auto; }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   BUTTON SYSTEM — canonical
+   .btn base → .btn--* variant modifiers → .btn--* size/layout helpers
+   Ported from BlastyBiz global-style, adapted to Litigant AI tokens.
+
+   Usage:
+     <button class="btn btn--primary">Label</button>
+     <button class="btn btn--cta btn--lg">Hero CTA</button>
+     <div class="btn-row btn-row--center"> ... </div>
+
+   Token mapping:
+     BlastyBiz --green        → hsl(var(--primary))
+     BlastyBiz --dark         → hsl(var(--primary-foreground))
+     BlastyBiz --light        → hsl(var(--foreground))
+     BlastyBiz --border       → hsl(var(--border))
+     BlastyBiz amber/warn     → hsl(38 92% 50%)   [site amber]
+     BlastyBiz --danger       → hsl(var(--destructive))
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Universal reset — applied to every known button class ─────── */
+.btn,
+.btn--cta {
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.btn:focus-visible,
+.btn--cta:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+.btn:disabled,
+.btn--cta:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  pointer-events: none;
+}
+
+/* ── .btn — base (ghost/outline by default) ────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  background: transparent;
+}
+.btn:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+/* ── Variants ──────────────────────────────────────────────────── */
+
+/* Primary — solid lime/green fill */
+.btn--primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+}
+.btn--primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px hsl(var(--primary) / 0.35);
+}
+
+/* CTA — amber fill, standalone (marketing/hero use) */
+.btn--cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 28px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: hsl(38 92% 50%);
+  color: #000;
+  border: none;
+  box-shadow: 0 4px 20px hsl(38 92% 50% / 0.35);
+}
+.btn--cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.07);
+  box-shadow: 0 8px 28px hsl(38 92% 50% / 0.5);
+}
+.btn--cta:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px hsl(38 92% 50% / 0.25);
+}
+
+/* Outline — border only, green on hover */
+.btn--outline {
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+.btn--outline:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+
+/* Ghost — no border */
+.btn--ghost {
+  border-color: transparent;
+  color: hsl(var(--muted-foreground));
+}
+.btn--ghost:hover {
+  border-color: transparent;
+  color: hsl(var(--foreground));
+}
+
+/* Green outline — primary-coloured border + text */
+.btn--green-out {
+  background: transparent;
+  border: 1px solid hsl(var(--primary) / 0.4);
+  color: hsl(var(--primary));
+}
+.btn--green-out:hover {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.06);
+}
+
+/* Danger */
+.btn--danger {
+  background: hsl(var(--destructive));
+  color: #fff;
+  border-color: hsl(var(--destructive));
+}
+.btn--danger:hover {
+  filter: brightness(0.88);
+  transform: translateY(-1px);
+}
+
+/* Warn — amber outline */
+.btn--warn {
+  background: transparent;
+  color: hsl(38 92% 50%);
+  border: 1px solid hsl(38 92% 50%);
+}
+.btn--warn:hover {
+  background: hsl(38 92% 50% / 0.1);
+}
+
+/* ── Size modifiers ────────────────────────────────────────────── */
+.btn--xs  { padding: 5px 10px;   font-size: 11px; }
+.btn--sm  { padding: 8px 14px;   font-size: 12px; }
+.btn--lg  { padding: 14px 32px;  font-size: 15px; }
+
+/* ── Layout modifiers ──────────────────────────────────────────── */
+.btn--block,
+.btn--full    { display: flex; width: 100%; justify-content: center; }
+
+/* Adaptive: full-width on mobile, auto on ≥600px */
+.btn--adaptive { display: flex; width: 100%; justify-content: center; }
+@media (min-width: 600px) {
+  .btn--adaptive { display: inline-flex; width: fit-content; }
+}
+
+.btn--inline  { display: inline-flex !important; width: auto !important; }
+
+/* ── Button row ────────────────────────────────────────────────── */
+.btn-row         { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn-row--center { justify-content: center; }
+
+
+/* ── UTILITY ────────────────────────────────────────────────────── */
+
+/* .center — centres block or inline-block elements + text */
+.center { text-align: center; margin-left: auto; margin-right: auto; }

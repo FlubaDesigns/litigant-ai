@@ -360,13 +360,10 @@ export default function LandingPage() {
               <p className="text-base text-zinc-400 mb-10 max-w-xl leading-relaxed">
                 State your case to the litigants. Have them argue the point — or build the answer together. You're the boss. You decide.
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="btn-row center">
                 <Link href={isSignedIn ? "/session" : "/register"}>
-                  <button
-                    className="h-11 px-7 text-sm font-bold tracking-wide transition-all inline-flex items-center gap-2"
-                    style={{background:'hsl(38 92% 50%)', color:'#000'}}
-                  >
-                    {isSignedIn ? "Open App" : `Start Free — ${signupBonus} credits`}
+                  <button className="btn btn--cta">
+                    {isSignedIn ? "Enter the Court" : `Start Free — ${signupBonus} credits`}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
@@ -674,21 +671,17 @@ export default function LandingPage() {
               <p className="text-zinc-500 mb-10 text-sm">
                 {`Start free. No credit card required. Your first ${signupBonus} credits are on us.`}
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
+              <div className="btn-row btn-row--center">
                 <Link href={isSignedIn ? "/session" : "/register"}>
-                  <button
-                    className="h-12 px-10 text-sm font-bold uppercase tracking-wide transition-all inline-flex items-center gap-2"
-                    style={{background:'hsl(38 92% 50%)', color:'#000'}}
-                  >
-                    {isSignedIn ? "Open App" : `Start Free — ${signupBonus} credits included`}
+                  <button className="btn btn--cta btn--lg">
+                    {isSignedIn ? "Enter the Court" : `Start Free — ${signupBonus} credits included`}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
                 {!isSignedIn && (
                   <Link href="/sign-in">
                     <button
-                      className="h-12 px-8 text-sm font-medium transition-colors border"
-                      style={{borderColor:'hsl(108 94% 50% / 0.35)', color:'hsl(108 94% 50%)'}}
+                      className="btn btn--green-out btn--lg"
                     >
                       Sign In
                     </button>
