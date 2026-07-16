@@ -428,7 +428,7 @@ export default function SessionPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="session-bg">
+    <>
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -473,12 +473,7 @@ export default function SessionPage() {
         isAdmin={isAdmin}
       />
 
-      {/* ══════════════════════════════════════════════════════
-          CONTENT — backbone rows live here; AppLayout owns <main>
-      ══════════════════════════════════════════════════════ */}
-      <div className="session-content">
-
-          {/* ── Rows 2 + 3: Phase views ── */}
+      {/* ── Rows 2 + 3: Phase views ── */}
           {isIdle && (
             <SessionConfigure
               state={state}
@@ -556,8 +551,6 @@ export default function SessionPage() {
             onCloseInspector={() => setInspectorSeat(null)}
           />
 
-      </div>
-
       {/* ── Template picker sheet ── */}
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
@@ -610,6 +603,6 @@ export default function SessionPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

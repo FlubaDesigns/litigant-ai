@@ -546,23 +546,6 @@ main > .row:last-child  { padding-bottom: var(--sv); }
    boxes, dialog lines, activity log, nav strip, meters, status cards.
    ─────────────────────────────────────────────────────────────────── */
 
-/* Page root — flex column inside AppLayout (AppLayout owns min-h-screen) */
-.session-bg {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  background: #000;
-  color: #f4f4f5;
-}
-
-.session-bg > .session-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
 /* ── ZONE STYLES (appearance only — backbone handles layout) ── */
 
 /* Zone 1: Your Court */
