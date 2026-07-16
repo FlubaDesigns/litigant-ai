@@ -12,14 +12,8 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
-import { TOOL_PAGES } from "@/data/toolPages";
 import { TEMPLATES } from "@/data/templates";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
-
-const TOOL_ICON_MAP: Record<string, React.ElementType> = {
-  Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
-  BookOpen, FlaskConical, Search, MessageSquare, Lightbulb,
-};
 
 const TEMPLATE_ICON_MAP: Record<string, React.ElementType> = {
   Briefcase, Globe, TrendingUp, Code2, FileText, Scale,
@@ -319,46 +313,6 @@ function BenchRow({
   );
 }
 
-function ToolRow({
-  tool, open, onToggle,
-}: {
-  tool: typeof TOOL_PAGES[0];
-  open: boolean;
-  onToggle: () => void;
-}) {
-  const Icon = TOOL_ICON_MAP[tool.icon] ?? Briefcase;
-  return (
-    <div className="border-b border-white/[0.07]">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-4 py-5 text-left group"
-      >
-        <Icon className="w-4 h-4 shrink-0 text-zinc-600 group-hover:text-white transition-colors" />
-        <span className="flex-1 text-sm font-medium text-white group-hover:text-white/70 transition-colors">
-          {tool.title}
-        </span>
-        {open
-          ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
-          : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
-      </button>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          transition={{ duration: 0.18 }}
-          className="overflow-hidden"
-        >
-          <div className="pb-5 pl-8 flex items-start justify-between gap-6">
-            <p className="text-sm text-zinc-500 leading-relaxed">{tool.metaDescription}</p>
-            <Link href={`/tools/${tool.slug}`} className="shrink-0 text-xs font-mono text-white/40 hover:text-white transition-colors whitespace-nowrap">
-              Try it →
-            </Link>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  );
-}
 
 // ── Landing Page ──────────────────────────────────────────────────────────────
 export default function LandingPage() {
@@ -377,8 +331,6 @@ export default function LandingPage() {
   const [openPanel, setOpenPanel] = useState<number | null>(null);
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
-  const [toolsOpen, setToolsOpen] = useState(false);
-  const [openTool, setOpenTool] = useState<number | null>(0);
   const [openTemplate, setOpenTemplate] = useState<number>(0);
 
   return (
@@ -534,7 +486,7 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Panel 3 — Templates */}
+            {/* Panel 3 — The Docket */}
             <div className="border-t border-white/[0.07]">
               <button
                 onClick={() => setOpenPanel(openPanel === 2 ? null : 2)}
@@ -542,6 +494,7 @@ export default function LandingPage() {
               >
                 <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">03</span>
                 <div className="flex-1">
+                  <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-1 uppercase">The Docket</p>
                   <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 2 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
                     Start From a Template
                   </span>
@@ -613,7 +566,7 @@ export default function LandingPage() {
         <section id="pricing" className="section border-t border-white/[0.06]">
           <div className="main-inner">
             <div className="row"><div className="max-w-3xl">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Docket</p>
+              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Pricing</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">Open a Case</h2>
               <p className="text-zinc-500 mt-3 text-sm">
                 Credits never expire. No subscriptions, no seat fees — pay for what you use.
@@ -673,51 +626,6 @@ export default function LandingPage() {
             </p>
             </div>{/* /row — pricing grid */}
 
-          </div>
-        </section>
-
-        {/* ── 8. Tools / Docket ── */}
-        <section id="tools" className="section border-t border-white/[0.06] bg-[#060606]">
-          <div className="main-inner">
-            <div className="row">
-            <div className="border-t border-white/[0.07]">
-              <button
-                onClick={() => setToolsOpen(!toolsOpen)}
-                className="w-full flex items-center gap-6 py-6 text-left group"
-              >
-                <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">⚖</span>
-                <div className="flex-1">
-                  <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-1 uppercase">The Docket</p>
-                  <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${toolsOpen ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
-                    Put It to the Question.
-                  </span>
-                  <span className="text-xs text-zinc-600 mt-0.5 block">14 purpose-built tools — each one a full AI courtroom for a specific domain.</span>
-                </div>
-                {toolsOpen
-                  ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-[#39f70a]/60 shrink-0 animate-pulse" />}
-              </button>
-              {toolsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="pb-8 pl-12 border-t border-white/[0.07]">
-                    {TOOL_PAGES.map((tool, i) => (
-                      <ToolRow
-                        key={tool.slug}
-                        tool={tool}
-                        open={openTool === i}
-                        onToggle={() => setOpenTool(openTool === i ? null : i)}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-            </div>{/* /row — tools accordion */}
           </div>
         </section>
 
