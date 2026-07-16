@@ -82,6 +82,13 @@
 
 .stage main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.row--grow {
+  flex: 1;
+  min-height: 0;
 }
 
 
@@ -583,6 +590,8 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+  min-height: 0;
 }
 .sz-runtime {
   border: 1px solid #1d331d;
