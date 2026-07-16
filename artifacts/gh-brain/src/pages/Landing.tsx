@@ -182,35 +182,67 @@ const PLANS = [
 
 // ── Accordion components ──────────────────────────────────────────────────────
 const AI_LABELS = [
-  { name: "GPT-4o",   color: "#10a37f" },
-  { name: "Claude",   color: "#d97757" },
-  { name: "Gemini",   color: "#4285f4" },
-  { name: "Grok",     color: "#e5e7eb" },
-  { name: "DeepSeek", color: "#7c5cfc" },
-  { name: "Mistral",  color: "#f97316" },
-  { name: "Llama",    color: "#0082fb" },
+  { name: "GPT-5",            color: "#10a37f" },
+  { name: "Claude Opus 4.5",  color: "#d97757" },
+  { name: "GPT-4o",           color: "#10a37f" },
+  { name: "Gemini 2.5 Pro",   color: "#4285f4" },
+  { name: "o3",               color: "#10a37f" },
+  { name: "Claude Sonnet 4.5",color: "#d97757" },
+  { name: "Grok 3",           color: "#e5e7eb" },
+  { name: "Gemini 2.5 Flash", color: "#4285f4" },
 ];
 
 function AINameRotator() {
-  const [index, setIndex] = useState(0);
+  const [label, setLabel] = useState<{ name: string; color: string } | null>(null);
+  const [done, setDone] = useState(false);
+
   useEffect(() => {
-    const id = setInterval(() => setIndex(i => (i + 1) % AI_LABELS.length), 2200);
-    return () => clearInterval(id);
+    // Slow → fast → slow slot-machine sequence (ms between each name swap)
+    const delays = [700, 520, 370, 240, 150, 95, 68, 52, 48, 52, 68, 95, 150, 240, 370, 520, 700];
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let step = 0;
+    let labelIdx = 0;
+
+    function tick() {
+      if (step >= delays.length) {
+        setDone(true);
+        return;
+      }
+      setLabel(AI_LABELS[labelIdx % AI_LABELS.length]);
+      labelIdx++;
+      step++;
+      timeoutId = setTimeout(tick, delays[step - 1]);
+    }
+
+    timeoutId = setTimeout(tick, 800);
+    return () => clearTimeout(timeoutId);
   }, []);
-  const current = AI_LABELS[index];
+
   return (
-    <span style={{ display: "inline-block", overflow: "hidden", verticalAlign: "bottom", minWidth: "5ch" }}>
+    <span style={{ display: "inline-block", verticalAlign: "bottom", minWidth: "8ch" }}>
       <AnimatePresence mode="wait">
-        <motion.span
-          key={index}
-          initial={{ x: -48, opacity: 0 }}
-          animate={{ x: 0,   opacity: 1 }}
-          exit={{   x:  48, opacity: 0 }}
-          transition={{ duration: 0.35, ease: "easeInOut" }}
-          style={{ display: "inline-block", color: current.color }}
-        >
-          {current.name}
-        </motion.span>
+        {done ? (
+          <motion.span
+            key="ai-final"
+            initial={{ scale: 0.55, opacity: 0 }}
+            animate={{ scale: 1,    opacity: 1 }}
+            transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
+            style={{ display: "inline-block", color: "hsl(38 92% 50%)" }}
+          >
+            AI
+          </motion.span>
+        ) : label ? (
+          <motion.span
+            key="reel"
+            exit={{ opacity: 0, scale: 0.75 }}
+            transition={{ duration: 0.18 }}
+            style={{ display: "inline-block", color: label.color }}
+          >
+            {label.name}
+          </motion.span>
+        ) : (
+          <motion.span key="blank" style={{ display: "inline-block", opacity: 0 }}>AI</motion.span>
+        )}
       </AnimatePresence>
     </span>
   );
