@@ -30,6 +30,21 @@ Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents
 - `scripts/build-release.py` — builds `downloads/litigant-ai-latest.zip` with completeness check + SHA-256
 - `docs/firebase-audit.md` — full inventory of all Firestore collections, Auth calls, Cloud Functions config
 
+## Backbone — layout system
+
+`Master.css` is the single source of structural layout. Key classes:
+
+- `.app-page` — page root (flex column, full height). Used by `AppLayout` and `Landing`.
+- `.main-inner` — max-width (`--max-w`) + horizontal gutters (`--gutter`). Use inside every section and the footer.
+- `.row` — block-level content grouper. `.row + .row` gets automatic top margin. Use to separate heading blocks from content blocks within a section.
+- `.section` — adds vertical rhythm (`--sv` padding-bottom). Add `border-t border-white/[0.06]` for dividers.
+- `.flex-between` — flex row, `justify-content: space-between`, `align-items: center`, `gap: 0.75rem`.
+- `.flex-row` — flex row, `align-items: center`, `gap: 0.5rem`.
+- `.layout__split-*` — named semantic grids (collapse to 1-col on mobile).
+- `.eyebrow` — small all-caps amber label above section headings.
+
+**AppLayout injects both header AND footer** — `SiteHeader` (variant="app") and `SiteFooter` (variant="app") are rendered by `AppLayout.tsx`. Pages inside `AppLayout` must not render their own header or footer. The landing page (`Landing.tsx`) renders its own `SiteHeader` (variant="landing") and `SiteFooter` (variant="landing") directly, since it lives outside AppLayout.
+
 ## Architecture decisions
 
 - All credit mutations go through `addCredits()` / `reserveCredits()` / `reconcileCredits()` — never raw `FieldValue.increment()`. Every call writes an immutable `credit_transactions` ledger entry.
