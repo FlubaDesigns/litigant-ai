@@ -79,14 +79,14 @@ function AppRoutes() {
       <Route path="/terms" component={TermsPage} />
 
       <Route path="/session">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <SessionPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       <Route path="/session/:sessionId">
-        <ProtectedRoute>
+        <ProtectedWithLayout>
           <SessionPage />
-        </ProtectedRoute>
+        </ProtectedWithLayout>
       </Route>
       {/* Public SEO tool pages */}
       <Route path="/tools" component={ToolsIndexPage} />
@@ -114,7 +114,9 @@ function AppRoutes() {
       </Route>
 
       {/* Dev reference */}
-      <Route path="/backbone" component={BackbonePage} />
+      <Route path="/backbone">
+        <AppLayout><BackbonePage /></AppLayout>
+      </Route>
 
       {/* Admin */}
       <Route path="/admin">

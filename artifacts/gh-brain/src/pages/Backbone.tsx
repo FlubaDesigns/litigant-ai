@@ -1,6 +1,3 @@
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
-
 function Block({ label, muted }: { label: string; muted?: boolean }) {
   return (
     <div style={{
@@ -42,8 +39,7 @@ function DemoRow({ label, children }: { label: string; children: React.ReactNode
 
 export default function BackbonePage() {
   return (
-    <div className="app-page">
-      <SiteHeader variant="app" />
+    <div>
       <main>
 
         {/* ── Row 1: Title ── */}
@@ -200,7 +196,6 @@ export default function BackbonePage() {
         </div>
 
       </main>
-      <SiteFooter variant="app" />
     </div>
   );
 }

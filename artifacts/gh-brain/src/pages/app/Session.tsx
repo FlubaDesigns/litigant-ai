@@ -5,8 +5,6 @@ import {
   Stethoscope, Scale, Search, FlaskConical, AlertTriangle,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import { cn } from "@/lib/utils";
 import { buildPdfToastActions } from "@/lib/pdfExport";
 import { buildMarkdown, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
@@ -430,8 +428,7 @@ export default function SessionPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="app-page session-bg">
-      <SiteHeader variant="app" />
+    <div className="session-bg">
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">

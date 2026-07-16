@@ -16,7 +16,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     !wizardDismissed;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="app-page">
       {/* Shared site header — edit SiteHeader.tsx to update everywhere */}
       <SiteHeader variant="app" />
 
@@ -24,7 +24,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {showWizard && <OnboardingWizard onComplete={() => setWizardDismissed(true)} />}
 
       {/* Page content */}
-      <main className="flex-1">{children}</main>
+      <main>{children}</main>
 
       {/* Shared footer — edit SiteFooter.tsx to update everywhere */}
       <SiteFooter variant="app" />
