@@ -219,7 +219,7 @@ function AINameRotator() {
   }, []);
 
   return (
-    <span style={{ display: "inline-block", verticalAlign: "bottom", minWidth: "8ch", whiteSpace: "nowrap" }}>
+    <span style={{ display: "inline-block", verticalAlign: "bottom", width: "6.5em", overflow: "hidden", whiteSpace: "nowrap" }}>
       <AnimatePresence mode="wait">
         {done ? (
           <motion.span
@@ -400,7 +400,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h1 className="font-['Playfair_Display'] text-4xl lg:text-6xl font-semibold text-white leading-[1.08] mb-3">
+              <h1 className="font-['Playfair_Display'] text-3xl lg:text-6xl font-semibold text-white leading-[1.08] mb-3">
                 Put <AINameRotator /><br />to the question!
               </h1>
               <p className="text-base font-semibold mb-8 tracking-wide" style={{color:'hsl(38 92% 50% / 0.75)'}}>
