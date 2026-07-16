@@ -127,7 +127,7 @@ export function SessionDiagram({
         )}
 
         {/* Court Diagram */}
-        <div className="shrink-0 relative" style={{ height: "clamp(200px, 60vw, 480px)" }}>
+        <div className="relative flex-1 min-h-0" style={{ minHeight: "clamp(200px, 60vw, 480px)" }}>
           <CourtDiagram
             activeRole={state.activeRole}
             activeAttempt={state.activeAttempt}
