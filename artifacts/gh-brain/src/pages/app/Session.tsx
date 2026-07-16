@@ -474,9 +474,9 @@ export default function SessionPage() {
       />
 
       {/* ══════════════════════════════════════════════════════
-          MAIN — backbone: main > row (page gutter already applied)
+          CONTENT — backbone rows live here; AppLayout owns <main>
       ══════════════════════════════════════════════════════ */}
-      <main>
+      <div className="session-content">
 
           {/* ── Rows 2 + 3: Phase views ── */}
           {isIdle && (
@@ -556,7 +556,7 @@ export default function SessionPage() {
             onCloseInspector={() => setInspectorSeat(null)}
           />
 
-      </main>
+      </div>
 
       {/* ── Template picker sheet ── */}
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>

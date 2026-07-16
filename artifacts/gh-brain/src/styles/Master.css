@@ -545,8 +545,10 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   color: #f4f4f5;
 }
 
-.session-bg > main {
+.session-bg > .session-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
