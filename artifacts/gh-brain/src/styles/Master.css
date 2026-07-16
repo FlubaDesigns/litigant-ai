@@ -107,13 +107,13 @@
   min-height: 100vh;
 }
 
+/* .main-inner — max-width centering only for sections with full-width bg stripes.
+   Horizontal gutters are on .row itself; do NOT add padding here. */
 .main-inner {
   width: 100%;
   max-width: var(--max-w);
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--gutter);
-  padding-right: var(--gutter);
 }
 
 
@@ -158,19 +158,26 @@
 
 
 /* ── ROW GROUPER ─────────────────────────────────────────────────────
-   .row : block-level content grouper. One job: separate a heading
-          block from a content/grid block inside the same section.
+   .row : block-level content grouper with built-in max-width + gutters.
+          Carries the horizontal rhythm of the page everywhere it appears.
           NOT a flex container — use .flex-row for inline alignment.
 
-   Pattern:
-     <section class="section">
-       <div class="main-inner">
-         <div class="row">  ← heading / eyebrow / description
-         <div class="row">  ← grid or content block
+   Backbone pattern (no main-inner needed):
+     body.stage > #root > main > .row   ← app pages
+     section.section > .row             ← landing / legal / tool sections
+     footer > .row.flex-between         ← footer rows
+
+   .row handles its own max-width and horizontal gutters so neither
+   main-inner nor any extra wrapper is needed inside main or footer.
    ─────────────────────────────────────────────────────────────────── */
 .row {
   display: block;
   width: 100%;
+  max-width: var(--max-w);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
 }
 
 .row + .row {

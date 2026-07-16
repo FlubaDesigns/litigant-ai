@@ -761,9 +761,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="app-page">
-      <main>
-      <div className="main-inner">
+    <>
       <div className="row" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
         <div className="flex-row">
           <Settings className="w-5 h-5 text-primary" />
@@ -814,8 +812,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>{/* /row */}
-    </div>
-      </main>
-    </div>
+    </>
   );
 }

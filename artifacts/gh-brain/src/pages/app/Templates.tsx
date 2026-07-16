@@ -254,9 +254,7 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="app-page">
-      <main>
-        <div className="main-inner">
+    <>
 
             {/* ── Page header ── */}
             <div className="row" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -365,8 +363,6 @@ export default function TemplatesPage() {
               </AnimatePresence>
             </div>
 
-        </div>
-      </main>
 
       {/* ── Detail sheet ── */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
@@ -383,6 +379,6 @@ export default function TemplatesPage() {
           )}
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

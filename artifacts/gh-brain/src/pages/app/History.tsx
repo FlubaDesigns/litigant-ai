@@ -577,9 +577,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="app-page">
-      <main>
-      <div className="main-inner">
+    <>
 
         {/* ── Page hero ── */}
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -727,7 +725,6 @@ export default function HistoryPage() {
             )}
           </>
         )}
-      </div>
 
       {/* Session detail sheet */}
       {detailSession && (
@@ -759,7 +756,6 @@ export default function HistoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </main>
-    </div>
+    </>
   );
 }

@@ -608,9 +608,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="app-page">
-      <main>
-      <div className="main-inner">
+    <>
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
           <div className="flex-row">
             <div style={{ width: 48, height: 48, borderRadius: 12, background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -980,9 +978,7 @@ export default function BillingPage() {
           </div>
           </div>{/* /layout__split-1-2 */}
         </div>{/* /row */}
-    </div>
-      </main>
-    </div>
+    </>
   );
 }
 
