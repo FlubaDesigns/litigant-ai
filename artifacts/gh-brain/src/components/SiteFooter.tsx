@@ -1,5 +1,7 @@
 import { Link } from "wouter";
 
+declare const __BUILD_TIME__: string;
+
 export function SiteFooter({ variant = "landing" }: { variant?: "landing" | "app" }) {
   return (
     <footer className={variant === "app" ? "border-t border-border py-4" : "border-t border-white/[0.06] py-10"}>
@@ -14,6 +16,11 @@ export function SiteFooter({ variant = "landing" }: { variant?: "landing" | "app
               <span style={{ color: "hsl(38 92% 50%)" }}>AI</span>
             </span>
             <span className="font-mono text-xs text-zinc-700">© {new Date().getFullYear()}</span>
+            {variant === "app" && (
+              <span className="font-mono text-[10px] text-zinc-800" title="Build timestamp">
+                v{new Date(__BUILD_TIME__).toISOString().replace("T", " ").slice(0, 16)}z
+              </span>
+            )}
           </div>
 
           {/* Disclaimer */}
