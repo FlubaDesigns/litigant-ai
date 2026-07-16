@@ -284,16 +284,14 @@ export function SessionConfigure({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <Textarea
-                    placeholder="Put your question on trial…"
-                    value={state.question}
-                    onChange={(e) => onSetQuestion(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onRun(); } }}
-                    className="resize-none focus-visible:ring-1 focus-visible:ring-primary/60 text-sm leading-relaxed"
-                    style={{ minHeight: 96, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 12, color: "#eef7ee", padding: "12px 14px" }}
-                  />
-                </div>
+                <Textarea
+                  placeholder="Put your question on trial…"
+                  value={state.question}
+                  onChange={(e) => onSetQuestion(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onRun(); } }}
+                  className="resize-none focus-visible:ring-1 focus-visible:ring-primary/60 text-sm leading-relaxed"
+                  style={{ minHeight: 96, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 12, color: "#eef7ee", padding: "12px 14px" }}
+                />
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-muted-foreground/30 flex-1">Enter to run · Shift+Enter for new line</span>
                   <button
