@@ -54,12 +54,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             : "h-14 border-white/[0.06] bg-[#080808]/90"
         )}
       >
-        <div
-          className={cn(
-            "h-full flex items-center justify-between gap-4 px-6",
-            variant === "app" ? "max-w-none" : "max-w-6xl mx-auto"
-          )}
-        >
+        <div className="row flex-between h-full">
           {/* ── Logo ── */}
           <Link
             href={variant === "app" ? "/session" : "/"}

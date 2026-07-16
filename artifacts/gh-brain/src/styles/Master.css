@@ -65,9 +65,6 @@
    .stage      : applied to <body> — universal surface · bg · flex-col
    .app-page   : page root rendered by AppLayout — flex-col, full height
    .main       : standalone full-width root (public pages with own header)
-   .main-inner : max-width + gutters wrapper — use ONLY inside <section>
-                 elements that need a full-width bg stripe. Never in
-                 <footer> or as a direct child of <main>.
    ─────────────────────────────────────────────────────────────────── */
 .stage {
   min-height: 100vh;
@@ -105,15 +102,6 @@
 .main {
   padding-top: var(--main-offset);
   min-height: 100vh;
-}
-
-/* .main-inner — max-width centering only for sections with full-width bg stripes.
-   Horizontal gutters are on .row itself; do NOT add padding here. */
-.main-inner {
-  width: 100%;
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
 }
 
 
@@ -162,13 +150,13 @@
           Carries the horizontal rhythm of the page everywhere it appears.
           NOT a flex container — use .flex-row for inline alignment.
 
-   Backbone pattern (no main-inner needed):
+   Backbone pattern:
      body.stage > #root > main > .row   ← app pages
      section.section > .row             ← landing / legal / tool sections
      footer > .row.flex-between         ← footer rows
 
-   .row handles its own max-width and horizontal gutters so neither
-   main-inner nor any extra wrapper is needed inside main or footer.
+   .row handles its own max-width and horizontal gutters — no extra
+   wrapper is needed inside main or footer.
    ─────────────────────────────────────────────────────────────────── */
 .row {
   display: block;
@@ -313,7 +301,7 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 /* ── PAGE-LEVEL UTILITIES ────────────────────────────────────────────
    .page-center : full-page centered fallback — used for loading,
                   error, and unauthenticated states that render
-                  without the normal app-page > main > main-inner tree.
+                  without the normal app-page > main > row tree.
    .nav-stack   : vertical nav list (sidebar tabs).
    ─────────────────────────────────────────────────────────────────── */
 .page-center {

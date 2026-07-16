@@ -343,7 +343,6 @@ export default function LandingPage() {
 
         {/* ── 1. Hero ── */}
         <section className="hero">
-          <div className="main-inner">
             <div className="row">
             <div className="layout__split-2-1">
             <div className="hero-text">
@@ -382,12 +381,10 @@ export default function LandingPage() {
             </div>
             </div>{/* /layout__split-2-1 */}
             </div>{/* /row */}
-          </div>
         </section>
 
         {/* ── 2–4. Three-panel accordion ── */}
         <section id="how-it-works" className="section border-t border-white/[0.06]">
-          <div className="main-inner">
             <div className="row">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Inside the Courtroom</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">
@@ -559,12 +556,10 @@ export default function LandingPage() {
             </div>{/* /layout__split-2-1 */}
             </div>{/* /row — accordion + visual */}
 
-          </div>
         </section>
 
         {/* ── 7. Pricing ── */}
         <section id="pricing" className="section border-t border-white/[0.06]">
-          <div className="main-inner">
             <div className="row"><div className="max-w-3xl">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Pricing</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">Open a Case</h2>
@@ -626,12 +621,10 @@ export default function LandingPage() {
             </p>
             </div>{/* /row — pricing grid */}
 
-          </div>
         </section>
 
         {/* ── 9. In the Field ── */}
         <section id="in-the-field" className="section border-t border-white/[0.06]">
-          <div className="main-inner">
             <div className="row"><div className="max-w-3xl">
               <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">In the Field</p>
               <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">What practitioners say</h2>
@@ -654,14 +647,12 @@ export default function LandingPage() {
               ))}
             </div>
             </div>
-          </div>
         </section>
 
         {/* ── 10. CTA ── */}
         <section className="section border-t border-white/[0.06] relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-white/[0.02] to-transparent pointer-events-none" />
-          <div className="main-inner relative z-10 text-center">
-            <div className="row">
+            <div className="row relative z-10 text-center">
             <div className="inline-flex items-start gap-3 p-4 border border-amber-500/20 bg-amber-500/[0.04] text-left text-xs text-amber-500/60 max-w-xl mx-auto">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500/50" />
               <span>
@@ -706,7 +697,6 @@ export default function LandingPage() {
               </div>
             </motion.div>
             </div>{/* /row — CTA motion */}
-          </div>
         </section>
 
       </main>

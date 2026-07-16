@@ -224,7 +224,6 @@ export default function ToolPage() {
 
         {/* Hero */}
         <section className="section text-center">
-          <div className="main-inner">
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
@@ -250,12 +249,10 @@ export default function ToolPage() {
                 </div>
               </motion.div>
             </div>
-          </div>
         </section>
 
         {/* Hero image */}
         <section className="section">
-          <div className="main-inner">
             <div className="row">
               <div className="rounded-2xl overflow-hidden border border-border/40 shadow-2xl shadow-black/40 aspect-video relative">
                 <img
@@ -266,12 +263,10 @@ export default function ToolPage() {
                 <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/5" />
               </div>
             </div>
-          </div>
         </section>
 
         {/* Credibility strip */}
         <section className="section section--bordered section--alt">
-          <div className="main-inner">
             <div className="row">
               <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
                 {[
@@ -286,12 +281,10 @@ export default function ToolPage() {
                 ))}
               </div>
             </div>
-          </div>
         </section>
 
         {/* How it works */}
         <section className="section">
-          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
             </div>
@@ -317,12 +310,10 @@ export default function ToolPage() {
                 ))}
               </div>
             </div>
-          </div>
         </section>
 
         {/* Benefits */}
         <section className="section section--bordered section--alt">
-          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-10">What you get</h2>
             </div>
@@ -350,12 +341,10 @@ export default function ToolPage() {
                 ))}
               </div>
             </div>
-          </div>
         </section>
 
         {/* Sample output — static document preview */}
         <section className="section">
-          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-3">What you actually get back</h2>
               <p className="text-sm text-muted-foreground text-center mb-8 max-w-xl mx-auto">
@@ -363,12 +352,10 @@ export default function ToolPage() {
               </p>
               <DocumentPreview sample={tool.sampleOutput} />
             </div>
-          </div>
         </section>
 
         {/* FAQ */}
         <section className="section section--bordered section--alt">
-          <div className="main-inner">
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-8">Questions</h2>
             </div>
@@ -379,12 +366,10 @@ export default function ToolPage() {
                 ))}
               </div>
             </div>
-          </div>
         </section>
 
         {/* Bottom CTAs */}
         <section className="section text-center">
-          <div className="main-inner">
             <div className="row">
               <h2 className="text-3xl font-bold mb-3">
                 Ready to analyze your {tool.subject}?
@@ -412,7 +397,6 @@ export default function ToolPage() {
                 </Link>
               </div>
             </div>
-          </div>
         </section>
 
       </main>

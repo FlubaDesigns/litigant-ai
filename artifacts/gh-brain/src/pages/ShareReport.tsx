@@ -173,7 +173,6 @@ export default function ShareReportPage() {
 
       <main className="main">
       <section className="section">
-      <div className="main-inner">
       <div className="row">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -387,7 +386,6 @@ export default function ShareReportPage() {
         </p>
       </div>
 
-      </div>
       </section>
       </main>
     </div>

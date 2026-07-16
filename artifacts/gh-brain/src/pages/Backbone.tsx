@@ -39,8 +39,7 @@ function DemoRow({ label, children }: { label: string; children: React.ReactNode
 
 export default function BackbonePage() {
   return (
-    <div>
-      <main>
+    <>
 
         {/* ── Row 1: Title ── */}
         <div className="row">
@@ -74,7 +73,7 @@ export default function BackbonePage() {
             <div style={{ paddingLeft: "4.5rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;div</span> <span style={{ color: "hsl(38 92% 50%)" }}>class="row flex-between"</span><span style={{ color: "hsl(var(--primary))" }}>&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← logo · nav · actions</span></div>
             <div style={{ paddingLeft: "3rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;main&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← injected by AppLayout · flex:1 · fills space between header + footer</span></div>
             <div style={{ paddingLeft: "4.5rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;div</span> <span style={{ color: "hsl(38 92% 50%)" }}>class="row"</span><span style={{ color: "hsl(var(--primary))" }}>&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← page rows go here directly · .row carries max-width + gutters</span></div>
-            <div style={{ paddingLeft: "4.5rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;div</span> <span style={{ color: "hsl(38 92% 50%)" }}>class="row"</span><span style={{ color: "hsl(var(--primary))" }}>&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← subsequent rows · no main-inner wrapper needed</span></div>
+            <div style={{ paddingLeft: "4.5rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;div</span> <span style={{ color: "hsl(38 92% 50%)" }}>class="row"</span><span style={{ color: "hsl(var(--primary))" }}>&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← subsequent rows · no outer wrapper needed</span></div>
             <div style={{ paddingLeft: "3rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;footer&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← injected by AppLayout · full width · natural height</span></div>
             <div style={{ paddingLeft: "4.5rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;div</span> <span style={{ color: "hsl(38 92% 50%)" }}>class="row flex-between"</span><span style={{ color: "hsl(var(--primary))" }}>&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← Row 1: brand · links</span></div>
             <div style={{ paddingLeft: "4.5rem" }}><span style={{ color: "hsl(var(--primary))" }}>&lt;div</span> <span style={{ color: "hsl(38 92% 50%)" }}>class="row"</span><span style={{ color: "hsl(var(--primary))" }}>&gt;</span> <span style={{ color: "hsl(var(--muted-foreground))" }}>← Row 2: disclaimer</span></div>
@@ -195,7 +194,6 @@ export default function BackbonePage() {
           </div>
         </div>
 
-      </main>
-    </div>
+    </>
   );
 }

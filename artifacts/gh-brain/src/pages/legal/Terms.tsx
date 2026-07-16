@@ -11,7 +11,6 @@ export default function TermsPage() {
 
         {/* ── Header: title full-width, then disclaimers + image row ── */}
         <section className="section section--alt section--bordered">
-          <div className="main-inner">
 
             {/* Row 1: full-width title */}
             <div className="row">
@@ -55,12 +54,10 @@ export default function TermsPage() {
               </div>
             </div>
 
-          </div>
         </section>
 
         {/* ── Numbered sections — one row each ── */}
         <section className="section">
-          <div className="main-inner">
 
             <div className="row">
               <h2 className="text-lg font-semibold text-foreground mb-3">1. The Service</h2>
@@ -162,7 +159,6 @@ export default function TermsPage() {
               </div>
             </div>
 
-          </div>
         </section>
 
       </main>
