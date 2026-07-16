@@ -48,10 +48,10 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
     <>
       <header
         className={cn(
-          "top-0 w-full z-50 border-b backdrop-blur-md",
+          "sticky top-0 w-full z-50 border-b backdrop-blur-md",
           variant === "app"
-            ? "sticky h-14 border-border bg-background/95"
-            : "fixed h-16 border-white/[0.06] bg-[#080808]/90"
+            ? "h-14 border-border bg-background/95"
+            : "h-14 border-white/[0.06] bg-[#080808]/90"
         )}
       >
         <div
@@ -252,7 +252,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
 
       {/* ── Landing mobile menu ── */}
       {variant === "landing" && mobileOpen && (
-        <div className="fixed top-16 left-0 right-0 z-40 md:hidden border-b border-white/[0.06] bg-[#0e0e0e] px-4 py-3 space-y-1">
+        <div className="fixed top-14 left-0 right-0 z-40 md:hidden border-b border-white/[0.06] bg-[#0e0e0e] px-4 py-3 space-y-1">
           {LANDING_NAV.map(({ href, label }) => (
             <a
               key={href}
