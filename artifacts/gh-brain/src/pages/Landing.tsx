@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import {
   Brain, Scale, ChevronRight, ChevronDown, ChevronUp, AlertTriangle,
@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
@@ -181,6 +181,41 @@ const PLANS = [
 ];
 
 // ── Accordion components ──────────────────────────────────────────────────────
+const AI_LABELS = [
+  { name: "GPT-4o",   color: "#10a37f" },
+  { name: "Claude",   color: "#d97757" },
+  { name: "Gemini",   color: "#4285f4" },
+  { name: "Grok",     color: "#e5e7eb" },
+  { name: "DeepSeek", color: "#7c5cfc" },
+  { name: "Mistral",  color: "#f97316" },
+  { name: "Llama",    color: "#0082fb" },
+];
+
+function AINameRotator() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIndex(i => (i + 1) % AI_LABELS.length), 2200);
+    return () => clearInterval(id);
+  }, []);
+  const current = AI_LABELS[index];
+  return (
+    <span style={{ display: "inline-block", overflow: "hidden", verticalAlign: "bottom", minWidth: "5ch" }}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={index}
+          initial={{ x: -48, opacity: 0 }}
+          animate={{ x: 0,   opacity: 1 }}
+          exit={{   x:  48, opacity: 0 }}
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          style={{ display: "inline-block", color: current.color }}
+        >
+          {current.name}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
 function HowItWorksRow({
   step, open, onToggle,
 }: {
@@ -333,13 +368,11 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h1 className="font-['Playfair_Display'] text-5xl lg:text-7xl font-semibold text-white leading-[1.08] mb-4">
-                Every great decision<br />deserves a trial.
+              <h1 className="font-['Playfair_Display'] text-5xl lg:text-7xl font-semibold text-white leading-[1.08] mb-3">
+                Put <AINameRotator /><br />to the question!
               </h1>
-              <p className="text-base font-semibold mb-8 tracking-wide">
-                Put <em style={{color:'hsl(108 94% 50%)'}}>it</em>{" "}
-                <span className="text-white">to the</span>{" "}
-                <span style={{color:'hsl(38 92% 50%)'}}>question!</span>
+              <p className="text-base font-semibold mb-8 tracking-wide" style={{color:'hsl(38 92% 50% / 0.75)'}}>
+                Every great decision deserves a trial.
               </p>
               <p className="text-base text-zinc-400 mb-10 max-w-xl leading-relaxed">
                 Put your toughest questions before a panel of AI models that genuinely disagree. Watch them argue, cross-examine, and deliver a confidence-scored verdict you can actually trust.
