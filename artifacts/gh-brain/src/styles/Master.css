@@ -77,6 +77,8 @@ html {
   flex-direction: column;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
 }
 
 
@@ -102,18 +104,6 @@ html {
 }
 
 
-.app-page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
-.app-page > main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
 
 
 .main {
@@ -181,8 +171,6 @@ html {
   max-width: var(--max-w);
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--gutter);
-  padding-right: var(--gutter);
 }
 
 .row + .row {
@@ -332,7 +320,7 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--gutter);
+  padding: var(--gutter) 0;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   text-align: center;
@@ -473,7 +461,7 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   max-width: 720px;
   margin-left: auto;
   margin-right: auto;
-  padding: var(--sv) var(--gutter);
+  padding: var(--sv) 0;
 }
 
 .prose-page h1 {

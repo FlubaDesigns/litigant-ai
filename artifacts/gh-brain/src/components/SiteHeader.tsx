@@ -77,7 +77,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
 
           {/* ── Desktop nav ── */}
           {variant === "app" ? (
-            <nav className="hidden md:flex items-center gap-1 ml-2 flex-1">
+            <nav className="hidden md:flex items-center gap-1 ml-2 flex-1 min-w-0">
               {APP_NAV.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}

@@ -334,7 +334,7 @@ export default function LandingPage() {
   const [openTemplate, setOpenTemplate] = useState<number>(0);
 
   return (
-    <div className="app-page">
+    <div>
 
       {/* ── Navbar (shared SiteHeader — edit SiteHeader.tsx to update everywhere) ── */}
       <SiteHeader variant="landing" />
