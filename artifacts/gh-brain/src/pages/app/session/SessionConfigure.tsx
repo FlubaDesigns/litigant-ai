@@ -162,10 +162,13 @@ export function SessionConfigure({
             </AccordionItem>
 
             <AccordionItem value="deliverable" className="border-t border-primary/15 border-b-0">
-              <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
+              <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
                 <div className="flex items-center gap-2">
                   <FileOutput className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</span>
+                  <div className="flex flex-col gap-0.5 text-left">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</span>
+                    <span className="text-[10px] text-primary/40 font-normal normal-case tracking-normal">Need a document or download?</span>
+                  </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-3 pt-0 space-y-3">
