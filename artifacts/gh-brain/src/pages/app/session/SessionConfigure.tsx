@@ -13,6 +13,7 @@ import type { CaseFileItem } from "@/hooks/useBrainSession";
 
 interface SessionConfigureProps {
   state: SessionState;
+  credits: number;
   maxLitigants: number;
   insufficientCredits: boolean;
   estimatedCredits: number;
@@ -44,6 +45,7 @@ const NAMED_SEATS = [
 
 export function SessionConfigure({
   state,
+  credits,
   maxLitigants,
   insufficientCredits,
   estimatedCredits,
@@ -249,10 +251,37 @@ export function SessionConfigure({
             </AccordionItem>
           </Accordion>
 
-          <div className="flex items-center gap-2 px-0.5">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Court Ready</span>
-          </div>
+          {/* Runtime preview */}
+          {(() => {
+            const modeLabel =
+              state.config.outputStrategy === "individual" ? "Individual"
+              : state.config.outputStrategy === "consensus+individual" ? "Combined"
+              : state.config.outputScope === "all-voices" ? "All Voices"
+              : "Consensus";
+            const cells = [
+              { label: "STARTING",   value: String(credits),                                           color: "text-white" },
+              { label: "CURRENT",    value: String(credits),                                           color: credits < 10 ? "text-red-400" : credits < 30 ? "text-yellow-400" : "text-primary" },
+              { label: "USED",       value: "0",                                                       color: "text-white" },
+              { label: "ROUND",      value: `0 / ${state.config.maxIterations}`,                       color: "text-white" },
+              { label: "CREDIT CAP", value: estimatedCredits > 0 ? `~${estimatedCredits}` : "—",       color: "text-muted-foreground" },
+              { label: "MODE",       value: modeLabel,                                                 color: "text-white" },
+            ];
+            return (
+              <div className="rounded-lg border border-primary/20 overflow-hidden">
+                <div className="px-3 py-1.5 border-b border-primary/10 bg-primary/5">
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Runtime Control</span>
+                </div>
+                <div className="grid grid-cols-2 gap-px bg-primary/10">
+                  {cells.map(({ label, value, color }) => (
+                    <div key={label} className="bg-[#070f07] px-3 py-2">
+                      <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-0.5">{label}</div>
+                      <div className={cn("text-[15px] font-bold font-mono leading-none", color)}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

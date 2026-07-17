@@ -514,6 +514,7 @@ export default function SessionPage() {
             {isIdle && (
               <SessionConfigure
                 state={state}
+                credits={credits}
                 maxLitigants={maxLitigants}
                 insufficientCredits={insufficientCredits}
                 estimatedCredits={estimatedCredits}
