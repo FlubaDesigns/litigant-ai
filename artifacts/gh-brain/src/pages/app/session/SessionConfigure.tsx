@@ -279,7 +279,6 @@ export function SessionConfigure({
                     </div>
                   ))}
                 </div>
-              </div>
               {/* Confidence + Credits meters */}
               <div className="session-meters px-3 py-2.5 border-t border-primary/10 bg-[#070f07]">
                 <div>
@@ -302,6 +301,7 @@ export function SessionConfigure({
                     <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: "0%" }} />
                   </div>
                 </div>
+              </div>
               </div>
             );
           })()}
