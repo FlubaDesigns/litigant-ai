@@ -473,6 +473,22 @@ export default function SessionPage() {
         isAdmin={isAdmin}
       />
 
+      {/* ── Row 1: Nav buttons ── */}
+      <div className="row row--full flex gap-2 pt-3 pb-1">
+        <button
+          onClick={() => setConfigOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+        >
+          ⚙ Configure
+        </button>
+        <button
+          onClick={() => navigate("/history")}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 bg-card/40 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+        >
+          📂 Sessions
+        </button>
+      </div>
+
       {/* ── Rows 2 + 3: Phase views ── */}
           {isIdle && (
             <SessionConfigure

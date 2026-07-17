@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { HelpCircle, DollarSign, GraduationCap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -183,14 +183,14 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
   }
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && handleClose()}>
-      <SheetContent side="right" className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 p-0 flex flex-col">
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="w-full max-w-lg bg-[#060e06] border border-primary/40 p-0 flex flex-col max-h-[90vh]">
         <div ref={scrollRef} onScroll={handleSheetScroll} className="overflow-y-auto flex-1">
           <TooltipProvider delayDuration={150}>
           <div className="px-5 py-5 space-y-5">
-            <SheetHeader className="pb-0">
-              <SheetTitle className="text-xl font-bold text-primary tracking-tight">Mission Briefing</SheetTitle>
-            </SheetHeader>
+            <DialogHeader className="pb-0">
+              <DialogTitle className="text-xl font-bold text-primary tracking-tight">Mission Briefing</DialogTitle>
+            </DialogHeader>
 
             {/* CONSCIENCE */}
             <V29Field
@@ -483,7 +483,7 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
         {!atBottom && (
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#060e06] to-transparent" />
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
