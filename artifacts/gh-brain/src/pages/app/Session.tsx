@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { buildPdfToastActions } from "@/lib/pdfExport";
 import { buildMarkdown, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
@@ -498,13 +499,15 @@ export default function SessionPage() {
             </div>
 
             {/* ── Deliverable section ── */}
-            <div className="space-y-3 pt-1">
+            <Accordion type="single" collapsible className="mt-2">
+              <AccordionItem value="deliverable" className="border border-primary/20 rounded-xl overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40">
+                  <h2 className="text-sm font-bold text-foreground/80 tracking-tight">Deliverable</h2>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4 pt-1">
+            <div className="space-y-3">
               {/* Screen Only / Screen + Artifact toggle */}
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="text-[9px] font-bold tracking-widest uppercase text-primary/40">Deliverable</div>
-                  <div className="flex-1 border-t border-primary/10" />
-                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {(["none", "artifact"] as const).map((mode) => {
                     const active = mode === "none" ? state.config.artifactType === "none" : state.config.artifactType !== "none";
@@ -600,6 +603,10 @@ export default function SessionPage() {
                 </>
               )}
             </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
             {isIdle && (
               <SessionConfigure
                 state={state}
