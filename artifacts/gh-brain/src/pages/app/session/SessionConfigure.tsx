@@ -1,4 +1,4 @@
-import { Settings2, LayoutTemplate, ChevronRight, Gavel, Play, X, FileOutput } from "lucide-react";
+import { Settings2, LayoutTemplate, ChevronRight, Gavel, Play, X, FileOutput, Briefcase } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -165,7 +165,7 @@ export function SessionConfigure({
 
             <AccordionItem value="deliverable" className="border-t border-primary/15 border-b-0">
               <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mr-2">
                   <FileOutput className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                   <div className="flex flex-col gap-0.5 text-left">
                     <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</span>
@@ -371,15 +371,32 @@ export function SessionConfigure({
                 </button>
               </AccordionContent>
             </AccordionItem>
-          </Accordion>
 
-          {/* Case File */}
-          <CaseFileSection
-            items={state.caseFile}
-            onAdd={addCaseFile}
-            onRemove={removeCaseFile}
-            getIdToken={() => user?.getIdToken() ?? Promise.resolve(undefined)}
-          />
+            <AccordionItem value="case-files" className="border-t border-primary/15 border-b-0">
+              <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                  <div className="flex flex-col gap-0.5 text-left">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">
+                      Case Files
+                      {state.caseFile.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[9px] font-bold">{state.caseFile.length}</span>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-primary/40 font-normal normal-case tracking-normal">Add documents to back up your argument</span>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 pt-1">
+                <CaseFileSection
+                  items={state.caseFile}
+                  onAdd={addCaseFile}
+                  onRemove={removeCaseFile}
+                  getIdToken={() => user?.getIdToken() ?? Promise.resolve(undefined)}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {/* Input area (idle) */}
           <div className="flex flex-col gap-2 pt-1">
