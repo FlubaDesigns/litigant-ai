@@ -280,6 +280,29 @@ export function SessionConfigure({
                   ))}
                 </div>
               </div>
+              {/* Confidence + Credits meters */}
+              <div className="session-meters px-3 py-2.5 border-t border-primary/10 bg-[#070f07]">
+                <div>
+                  <p className="session-meter-hd">
+                    <span>Confidence</span>
+                    <span className="session-meter-val" style={{ color: "#7ab87a" }}>
+                      0% / {state.config.confidenceTarget}%
+                    </span>
+                  </p>
+                  <div className="session-meter-track">
+                    <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.55)", width: "0%" }} />
+                  </div>
+                </div>
+                <div>
+                  <p className="session-meter-hd">
+                    <span>Credits Used</span>
+                    <span className="session-meter-val">0 / ~{estimatedCredits > 0 ? estimatedCredits : "—"} est</span>
+                  </p>
+                  <div className="session-meter-track">
+                    <div className="session-meter-fill" style={{ background: "rgba(0,200,83,.4)", width: "0%" }} />
+                  </div>
+                </div>
+              </div>
             );
           })()}
         </div>
