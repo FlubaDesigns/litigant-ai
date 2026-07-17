@@ -5,6 +5,7 @@ import {
   Stethoscope, Scale, Search, FlaskConical, AlertTriangle,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { buildPdfToastActions } from "@/lib/pdfExport";
 import { buildMarkdown, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
@@ -494,6 +495,110 @@ export default function SessionPage() {
               >
                 📂 Sessions
               </button>
+            </div>
+
+            {/* ── Deliverable section ── */}
+            <div className="space-y-3 pt-1">
+              {/* Screen Only / Screen + Artifact toggle */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="text-[9px] font-bold tracking-widest uppercase text-primary/40">Deliverable</div>
+                  <div className="flex-1 border-t border-primary/10" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["none", "artifact"] as const).map((mode) => {
+                    const active = mode === "none" ? state.config.artifactType === "none" : state.config.artifactType !== "none";
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setConfig({ artifactType: mode === "none" ? "none" : "auto" })}
+                        className={cn("rounded-md border py-2 text-xs font-medium transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/50 hover:border-primary/40")}
+                      >
+                        {mode === "none" ? "Screen Only" : "Screen + Artifact"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Response View */}
+              <div className="space-y-1.5">
+                <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Response View</div>
+                <Select value={state.config.outputStrategy} onValueChange={(v) => setConfig({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
+                  <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
+                    <SelectItem value="individual">Individual Responses</SelectItem>
+                    <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Response Mode — only when moderator-consensus */}
+              {state.config.outputStrategy === "moderator-consensus" && (
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Response Mode</div>
+                  <Select value={state.config.outputScope} onValueChange={(v) => setConfig({ outputScope: v as CourtConfig["outputScope"] })}>
+                    <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 h-10"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="consensus">Consensus Only</SelectItem>
+                      <SelectItem value="all-voices">All Voices</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Format + Artifact Type — only when Screen + Artifact */}
+              {state.config.artifactType !== "none" && (
+                <>
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Format</div>
+                    <Select value={state.config.format} onValueChange={(v) => setConfig({ format: v as CourtConfig["format"] })}>
+                      <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Text</SelectItem>
+                        <SelectItem value="markdown">Markdown</SelectItem>
+                        <SelectItem value="json">JSON</SelectItem>
+                        <SelectItem value="docx">Word (.docx)</SelectItem>
+                        <SelectItem value="pdf">PDF</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Artifact Type</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { value: "auto",            label: "Auto" },
+                        { value: "report",          label: "Report" },
+                        { value: "memo",            label: "Decision Memo" },
+                        { value: "business-plan",   label: "Business Plan" },
+                        { value: "risk-matrix",     label: "Risk Matrix" },
+                        { value: "contract-review", label: "Contract Review" },
+                        { value: "technical-spec",  label: "Technical Spec" },
+                        { value: "pitch-deck",      label: "Pitch Deck" },
+                        { value: "legal-brief",     label: "Legal Brief" },
+                        { value: "blog-post",       label: "Blog Post" },
+                        { value: "code",            label: "Code" },
+                        { value: "landing-page",    label: "Landing Page" },
+                      ].map(({ value, label }) => {
+                        const active = (state.config.artifactType ?? "auto") === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setConfig({ artifactType: value as CourtConfig["artifactType"] })}
+                            className={cn("rounded-md border px-3 py-2 text-xs font-medium text-left transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             {isIdle && (
               <SessionConfigure
