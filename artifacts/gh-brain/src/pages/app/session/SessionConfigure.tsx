@@ -1,7 +1,9 @@
 import { Settings2, LayoutTemplate, ChevronRight, Gavel, Play, X } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { CaseFileSection } from "@/components/CaseFileSection";
 import { makeDefaultSeatMap } from "@/data/seatTypes";
 import type { Template, CourtConfig } from "@/data/templates";
@@ -68,7 +70,7 @@ export function SessionConfigure({
       {/* ── Row 2: Your Court (idle accordion) ── */}
       <div className="row">
         <div className="sz-court">
-          <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
+          <Accordion type="multiple" className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
             <AccordionItem value="your-court" className="border-b-0">
               <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
                 <div className="flex items-center justify-between w-full mr-2">
@@ -153,6 +155,87 @@ export function SessionConfigure({
                     );
                   })}
                 </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="deliverable" className="border-t border-primary/15 border-b-0">
+              <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</h2>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 pt-0 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {(["none", "artifact"] as const).map((mode) => {
+                    const active = mode === "none" ? state.config.artifactType === "none" : state.config.artifactType !== "none";
+                    return (
+                      <button key={mode} type="button"
+                        onClick={() => onSetConfig({ artifactType: mode === "none" ? "none" : "auto" })}
+                        className={cn("rounded-md border py-2 text-xs font-medium transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/50 hover:border-primary/40")}
+                      >
+                        {mode === "none" ? "Screen Only" : "Screen + Artifact"}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Response View</div>
+                  <Select value={state.config.outputStrategy} onValueChange={(v) => onSetConfig({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
+                    <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-xs text-foreground hover:border-primary/60 h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
+                      <SelectItem value="individual">Individual Responses</SelectItem>
+                      <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {state.config.outputStrategy === "moderator-consensus" && (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Response Mode</div>
+                    <Select value={state.config.outputScope} onValueChange={(v) => onSetConfig({ outputScope: v as CourtConfig["outputScope"] })}>
+                      <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-xs text-foreground hover:border-primary/60 h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="consensus">Consensus Only</SelectItem>
+                        <SelectItem value="all-voices">All Voices</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {state.config.artifactType !== "none" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Format</div>
+                      <Select value={state.config.format} onValueChange={(v) => onSetConfig({ format: v as CourtConfig["format"] })}>
+                        <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-xs text-foreground hover:border-primary/60 h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Text</SelectItem>
+                          <SelectItem value="markdown">Markdown</SelectItem>
+                          <SelectItem value="json">JSON</SelectItem>
+                          <SelectItem value="docx">Word (.docx)</SelectItem>
+                          <SelectItem value="pdf">PDF</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Artifact Type</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["auto","report","memo","business-plan","risk-matrix","contract-review","technical-spec","pitch-deck","legal-brief","blog-post","code","landing-page"] as const).map((value) => {
+                          const labels: Record<string, string> = { auto:"Auto", report:"Report", memo:"Decision Memo", "business-plan":"Business Plan", "risk-matrix":"Risk Matrix", "contract-review":"Contract Review", "technical-spec":"Technical Spec", "pitch-deck":"Pitch Deck", "legal-brief":"Legal Brief", "blog-post":"Blog Post", code:"Code", "landing-page":"Landing Page" };
+                          const active = (state.config.artifactType ?? "auto") === value;
+                          return (
+                            <button key={value} type="button"
+                              onClick={() => onSetConfig({ artifactType: value as CourtConfig["artifactType"] })}
+                              className={cn("rounded-md border px-3 py-2 text-xs font-medium text-left transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}
+                            >
+                              {labels[value]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
