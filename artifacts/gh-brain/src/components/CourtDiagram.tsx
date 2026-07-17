@@ -166,11 +166,13 @@ interface CourtDiagramProps {
   confidence: number;
   creditsUsed: number;
   estimatedCredits: number;
+  conscience: boolean;
   seatMap?: SeatMapConfig;
   grades?: GradeMap;
   onSeatClick?: (seatId: string, litIndex?: number) => void;
   onAddLitigant?: () => void;
   onRemoveLitigant?: () => void;
+  onToggleConscience?: () => void;
 }
 
 export function CourtDiagram({
@@ -182,11 +184,13 @@ export function CourtDiagram({
   confidence,
   creditsUsed,
   estimatedCredits,
+  conscience,
   seatMap,
   grades,
   onSeatClick,
   onAddLitigant,
   onRemoveLitigant,
+  onToggleConscience,
 }: CourtDiagramProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const wakeRef = useRef<SVGPathElement>(null);
@@ -372,11 +376,62 @@ export function CourtDiagram({
   const litPts = courtroomPerimeterPoints(litigantCount);
   const creditPct = estimatedCredits > 0 ? Math.min(100, (creditsUsed / estimatedCredits) * 100) : 0;
 
+  const p = conscience ? {
+    primary:    "#00c853", bright: "#d7ff77", bright2: "#b6ff6a", secondary: "#00f06a", muted: "#7ab87a",
+    railFillA:  "rgba(0,200,83,.035)", railFillB: "rgba(0,200,83,.032)", railStroke: "rgba(183,255,119,.42)",
+    railOuterA: "rgba(215,255,119,.48)", guideRoute: "rgba(0,200,83,.16)", ctrlFill: "rgba(0,200,83,.08)",
+    bgRadial:   "radial-gradient(circle at top, #102010, #071007 56%, #020402)",
+    logicBorder:"#1d331d", logicBgA: "rgba(14,26,14,.92)", logicBgB: "rgba(7,16,7,.92)",
+    nodeStroke: "rgba(137,255,160,.9)", litStroke: "rgba(122,184,122,.95)",
+    seatAi: "#7ab87a", grade: "#d7ff77", litL: "#7ab87a",
+    pod0:"#315831", pod1:"#102510", pod2:"#020602",
+    podA0:"#d7ff77", podA1:"#1f4d1f", podA2:"#061006",
+    lit0:"#214421", lit1:"#0d220d", lit2:"#020602",
+    litA0:"#f4ffba", litA1:"#2b572b", litA2:"#051105",
+  } : {
+    primary:    "#f59e0b", bright: "#fde68a", bright2: "#fbbf24", secondary: "#fbbf24", muted: "#b45309",
+    railFillA:  "rgba(245,158,11,.035)", railFillB: "rgba(245,158,11,.032)", railStroke: "rgba(253,230,138,.42)",
+    railOuterA: "rgba(251,191,36,.48)", guideRoute: "rgba(245,158,11,.16)", ctrlFill: "rgba(245,158,11,.08)",
+    bgRadial:   "radial-gradient(circle at top, #1a1000, #0d0800 56%, #030100)",
+    logicBorder:"#331a00", logicBgA: "rgba(26,14,0,.92)", logicBgB: "rgba(13,8,0,.92)",
+    nodeStroke: "rgba(251,191,36,.9)", litStroke: "rgba(184,101,0,.95)",
+    seatAi: "#b45309", grade: "#fde68a", litL: "#b45309",
+    pod0:"#3d2a00", pod1:"#1a1000", pod2:"#030100",
+    podA0:"#fde68a", podA1:"#3d2200", podA2:"#100800",
+    lit0:"#2a1a00", lit1:"#120d00", lit2:"#030100",
+    litA0:"#fff3c4", litA1:"#4a2e00", litA2:"#0d0600",
+  };
+
   return (
     <div className="flex flex-col w-full select-none">
       {/* SVG Stage */}
       <div className="relative w-full overflow-hidden rounded-xl border border-[#1d331d]"
-        style={{ background: "radial-gradient(circle at top, #102010, #071007 56%, #020402)" }}>
+        style={{ background: p.bgRadial }}>
+        {/* Conscience toggle — upper left */}
+        <button
+          onClick={onToggleConscience}
+          title={conscience ? "Conscience ON — click to disable" : "Conscience OFF — click to enable"}
+          className="absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full border transition-all duration-300 cursor-pointer"
+          style={{
+            background: conscience ? "rgba(0,200,83,.12)" : "rgba(245,158,11,.12)",
+            borderColor: conscience ? "rgba(0,200,83,.4)" : "rgba(245,158,11,.4)",
+          }}
+        >
+          <span style={{ fontSize: 11, color: p.primary }}>⚡</span>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: p.primary }}>
+            {conscience ? "Conscience" : "Conscience"}
+          </span>
+          <span style={{
+            display: "inline-block", width: 24, height: 13, borderRadius: 7,
+            background: conscience ? p.primary : "#333",
+            position: "relative", transition: "background 0.3s",
+          }}>
+            <span style={{
+              position: "absolute", top: 2, left: conscience ? 12 : 2, width: 9, height: 9,
+              borderRadius: "50%", background: "#fff", transition: "left 0.3s",
+            }} />
+          </span>
+        </button>
         <svg
           ref={svgRef}
           viewBox="0 -20 1200 980"
@@ -386,85 +441,85 @@ export function CourtDiagram({
           <defs>
             {/* Gradients */}
             <linearGradient id="outerRailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"   stopColor="#d7ff77" stopOpacity=".92" />
-              <stop offset="40%"  stopColor="#00c853" stopOpacity=".88" />
-              <stop offset="100%" stopColor="#7ab87a" stopOpacity=".78" />
+              <stop offset="0%"   stopColor={p.bright}    stopOpacity=".92" />
+              <stop offset="40%"  stopColor={p.primary}   stopOpacity=".88" />
+              <stop offset="100%" stopColor={p.muted}     stopOpacity=".78" />
             </linearGradient>
             <linearGradient id="innerRailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"   stopColor="#00c853" stopOpacity=".85" />
-              <stop offset="100%" stopColor="#b6ff6a" stopOpacity=".70" />
+              <stop offset="0%"   stopColor={p.primary}   stopOpacity=".85" />
+              <stop offset="100%" stopColor={p.bright2}   stopOpacity=".70" />
             </linearGradient>
             <linearGradient id="meteorTailGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#00c853" stopOpacity=".02" />
-              <stop offset="38%"  stopColor="#00f06a" stopOpacity=".24" />
-              <stop offset="70%"  stopColor="#d7ff77" stopOpacity=".72" />
-              <stop offset="92%"  stopColor="#ffffff" stopOpacity="1"   />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity=".04" />
+              <stop offset="0%"   stopColor={p.primary}   stopOpacity=".02" />
+              <stop offset="38%"  stopColor={p.secondary} stopOpacity=".24" />
+              <stop offset="70%"  stopColor={p.bright}    stopOpacity=".72" />
+              <stop offset="92%"  stopColor="#ffffff"      stopOpacity="1"   />
+              <stop offset="100%" stopColor="#ffffff"      stopOpacity=".04" />
             </linearGradient>
             <linearGradient id="meteorCoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#d7ff77" stopOpacity=".08" />
-              <stop offset="68%"  stopColor="#ffffff" stopOpacity=".88" />
-              <stop offset="92%"  stopColor="#ffffff" stopOpacity="1"   />
-              <stop offset="100%" stopColor="#d7ff77" stopOpacity=".22" />
+              <stop offset="0%"   stopColor={p.bright}    stopOpacity=".08" />
+              <stop offset="68%"  stopColor="#ffffff"      stopOpacity=".88" />
+              <stop offset="92%"  stopColor="#ffffff"      stopOpacity="1"   />
+              <stop offset="100%" stopColor={p.bright}    stopOpacity=".22" />
             </linearGradient>
             <linearGradient id="wakeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#00c853" stopOpacity=".03" />
-              <stop offset="45%"  stopColor="#00f06a" stopOpacity=".24" />
-              <stop offset="82%"  stopColor="#d7ff77" stopOpacity=".42" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity=".05" />
+              <stop offset="0%"   stopColor={p.primary}   stopOpacity=".03" />
+              <stop offset="45%"  stopColor={p.secondary} stopOpacity=".24" />
+              <stop offset="82%"  stopColor={p.bright}    stopOpacity=".42" />
+              <stop offset="100%" stopColor="#ffffff"      stopOpacity=".05" />
             </linearGradient>
             <radialGradient id="nodePod" cx="35%" cy="28%" r="72%">
-              <stop offset="0%"   stopColor="#315831" />
-              <stop offset="45%"  stopColor="#102510" />
-              <stop offset="100%" stopColor="#020602" />
+              <stop offset="0%"   stopColor={p.pod0} />
+              <stop offset="45%"  stopColor={p.pod1} />
+              <stop offset="100%" stopColor={p.pod2} />
             </radialGradient>
             <radialGradient id="nodePodActive" cx="35%" cy="28%" r="72%">
-              <stop offset="0%"   stopColor="#d7ff77" />
-              <stop offset="36%"  stopColor="#1f4d1f" />
-              <stop offset="100%" stopColor="#061006" />
+              <stop offset="0%"   stopColor={p.podA0} />
+              <stop offset="36%"  stopColor={p.podA1} />
+              <stop offset="100%" stopColor={p.podA2} />
             </radialGradient>
             <radialGradient id="litPod" cx="35%" cy="28%" r="72%">
-              <stop offset="0%"   stopColor="#214421" />
-              <stop offset="55%"  stopColor="#0d220d" />
-              <stop offset="100%" stopColor="#020602" />
+              <stop offset="0%"   stopColor={p.lit0} />
+              <stop offset="55%"  stopColor={p.lit1} />
+              <stop offset="100%" stopColor={p.lit2} />
             </radialGradient>
             <radialGradient id="litPodActive" cx="35%" cy="28%" r="72%">
-              <stop offset="0%"   stopColor="#f4ffba" />
-              <stop offset="42%"  stopColor="#2b572b" />
-              <stop offset="100%" stopColor="#051105" />
+              <stop offset="0%"   stopColor={p.litA0} />
+              <stop offset="42%"  stopColor={p.litA1} />
+              <stop offset="100%" stopColor={p.litA2} />
             </radialGradient>
             {/* Filters */}
             <filter id="railDrop" x="-30%" y="-30%" width="160%" height="160%">
               <feDropShadow dx="0" dy="10" stdDeviation="7" floodColor="#000" floodOpacity=".8" />
             </filter>
             <filter id="railGlow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#00c853" floodOpacity=".65" />
+              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor={p.primary} floodOpacity=".65" />
               <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000" floodOpacity=".6" />
             </filter>
             <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#00c853" floodOpacity=".55" />
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor={p.primary} floodOpacity=".55" />
             </filter>
             <filter id="routeHaze" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#00c853" floodOpacity=".22" />
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={p.primary} floodOpacity=".22" />
             </filter>
             <filter id="wakeGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="9"  floodColor="#00c853" floodOpacity=".58" />
-              <feDropShadow dx="0" dy="0" stdDeviation="18" floodColor="#d7ff77" floodOpacity=".18" />
+              <feDropShadow dx="0" dy="0" stdDeviation="9"  floodColor={p.primary} floodOpacity=".58" />
+              <feDropShadow dx="0" dy="0" stdDeviation="18" floodColor={p.bright}  floodOpacity=".18" />
             </filter>
             <filter id="meteorGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="7"  floodColor="#d7ff77" floodOpacity=".95" />
-              <feDropShadow dx="0" dy="0" stdDeviation="15" floodColor="#00c853" floodOpacity=".55" />
+              <feDropShadow dx="0" dy="0" stdDeviation="7"  floodColor={p.bright}   floodOpacity=".95" />
+              <feDropShadow dx="0" dy="0" stdDeviation="15" floodColor={p.primary}  floodOpacity=".55" />
             </filter>
             <filter id="meteorCoreGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#ffffff" floodOpacity=".95" />
             </filter>
             <filter id="podShadow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000" floodOpacity=".8" />
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#00c853" floodOpacity=".35" />
+              <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000"      floodOpacity=".8"  />
+              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={p.primary} floodOpacity=".35" />
             </filter>
             <filter id="podHot" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor="#d7ff77" floodOpacity=".9" />
-              <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000" floodOpacity=".8" />
+              <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor={p.bright} floodOpacity=".9" />
+              <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000"     floodOpacity=".8" />
             </filter>
             {/* Route paths (for animation + guides) */}
             {Object.entries(ROUTE_PATHS).map(([id, d]) => (
@@ -477,24 +532,24 @@ export function CourtDiagram({
             <path d={OUTER_FRAME} stroke="#010401" strokeWidth={28} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".92" filter="url(#railDrop)" />
             <path d={OUTER_FRAME} stroke="url(#outerRailGrad)" strokeWidth={22} fill="none" strokeLinecap="round" strokeLinejoin="round" filter="url(#railGlow)" />
             <path d={OUTER_FRAME} stroke="rgba(0,0,0,.72)" strokeWidth={10} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".82" />
-            <path d={OUTER_FRAME} stroke="rgba(215,255,119,.48)" strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".70" filter="url(#softGlow)" />
-            <path d={INNER_FRAME} stroke="#030803" strokeWidth={22} fill="rgba(0,200,83,.035)" strokeLinecap="round" strokeLinejoin="round" filter="url(#softGlow)" />
-            <path d={INNER_FRAME} stroke="url(#innerRailGrad)" strokeWidth={14} fill="rgba(0,200,83,.032)" strokeLinecap="round" strokeLinejoin="round" filter="url(#softGlow)" />
-            <path d={INNER_FRAME} stroke="rgba(183,255,119,.42)" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".65" />
+            <path d={OUTER_FRAME} stroke={p.railOuterA} strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".70" filter="url(#softGlow)" />
+            <path d={INNER_FRAME} stroke="#030803" strokeWidth={22} fill={p.railFillA} strokeLinecap="round" strokeLinejoin="round" filter="url(#softGlow)" />
+            <path d={INNER_FRAME} stroke="url(#innerRailGrad)" strokeWidth={14} fill={p.railFillB} strokeLinecap="round" strokeLinejoin="round" filter="url(#softGlow)" />
+            <path d={INNER_FRAME} stroke={p.railStroke} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".65" />
           </g>
 
           {/* Permanent bridge: Moderator ↔ Courtroom */}
           <g>
-            <line x1={F.left + 52} y1={Y_MID} x2={C.left} y2={Y_MID} stroke="#010401" strokeWidth={24} strokeLinecap="round" />
-            <line x1={F.left + 52} y1={Y_MID} x2={C.left} y2={Y_MID} stroke="#00c853" strokeWidth={16} strokeLinecap="round" />
-            <line x1={F.left + 52} y1={Y_MID} x2={C.left} y2={Y_MID} stroke="#d7ff77" strokeWidth={5}  strokeLinecap="round" />
+            <line x1={F.left + 52} y1={Y_MID} x2={C.left} y2={Y_MID} stroke="#010401"   strokeWidth={24} strokeLinecap="round" />
+            <line x1={F.left + 52} y1={Y_MID} x2={C.left} y2={Y_MID} stroke={p.primary} strokeWidth={16} strokeLinecap="round" />
+            <line x1={F.left + 52} y1={Y_MID} x2={C.left} y2={Y_MID} stroke={p.bright}  strokeWidth={5}  strokeLinecap="round" />
           </g>
 
           {/* Guide routes (dashed) */}
           <g>
             {GUIDE_ROUTE_IDS.map((id) => (
               <use key={id} href={`#${id}`}
-                stroke="rgba(0,200,83,.16)" strokeWidth={5} fill="none"
+                stroke={p.guideRoute} strokeWidth={5} fill="none"
                 strokeDasharray="2 14" strokeLinecap="round" strokeLinejoin="round"
                 filter="url(#routeHaze)"
               />
@@ -521,7 +576,7 @@ export function CourtDiagram({
                     id={`seat-${id}`}
                     cx={s.x} cy={s.y} r={s.r}
                     fill={isActive ? "url(#nodePodActive)" : "url(#nodePod)"}
-                    stroke={isActive ? "#d7ff77" : "rgba(137,255,160,.9)"}
+                    stroke={isActive ? p.bright : p.nodeStroke}
                     strokeWidth={4}
                     filter={isActive ? "url(#podHot)" : "url(#podShadow)"}
                     style={{ transition: "filter 0.2s" }}
@@ -532,13 +587,13 @@ export function CourtDiagram({
                     {s.short}
                   </text>
                   {aiShort && (
-                    <text x={s.x} y={s.y + 28} textAnchor="middle" fill="#7ab87a" fontSize={9}
+                    <text x={s.x} y={s.y + 28} textAnchor="middle" fill={p.seatAi} fontSize={9}
                       style={{ pointerEvents: "none" }}>
                       {aiShort}
                     </text>
                   )}
                   {grade && (
-                    <text x={s.x} y={s.y + 40} textAnchor="middle" fill="#d7ff77" fontSize={9} fontWeight={800}
+                    <text x={s.x} y={s.y + 40} textAnchor="middle" fill={p.grade} fontSize={9} fontWeight={800}
                       style={{ pointerEvents: "none" }}>
                       {grade}
                     </text>
@@ -566,7 +621,7 @@ export function CourtDiagram({
                     id={`seat-litigant-${i}`}
                     cx={pt.x} cy={pt.y} r={30}
                     fill={hot ? "url(#litPodActive)" : "url(#litPod)"}
-                    stroke={hot ? "#d7ff77" : "rgba(122,184,122,.95)"}
+                    stroke={hot ? p.bright : p.litStroke}
                     strokeWidth={hot ? 4 : 3}
                     filter={hot ? "url(#podHot)" : "url(#podShadow)"}
                     style={{ transition: "filter 0.15s" }}
@@ -575,7 +630,7 @@ export function CourtDiagram({
                     style={{ pointerEvents: "none" }}>
                     {aiName}
                   </text>
-                  <text x={pt.x} y={pt.y + 13} textAnchor="middle" fill="#7ab87a" fontSize={9}
+                  <text x={pt.x} y={pt.y + 13} textAnchor="middle" fill={p.litL} fontSize={9}
                     style={{ pointerEvents: "none" }}>
                     L{i + 1}
                   </text>
@@ -594,7 +649,7 @@ export function CourtDiagram({
               <g>
                 <circle
                   cx={addX} cy={Y_MID} r={48}
-                  fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
+                  fill={p.ctrlFill} stroke={p.primary} strokeWidth={6}
                   onClick={onAddLitigant}
                   style={{ cursor: onAddLitigant ? "pointer" : "default" }}
                 />
@@ -602,7 +657,7 @@ export function CourtDiagram({
                 <line x1={addX} y1={Y_MID - 22} x2={addX} y2={Y_MID + 22} stroke="#ffffff" strokeWidth={8} strokeLinecap="round" style={{ pointerEvents: "none" }} />
                 <circle
                   cx={remX} cy={Y_MID} r={48}
-                  fill="rgba(0,200,83,.08)" stroke="#00c853" strokeWidth={6}
+                  fill={p.ctrlFill} stroke={p.primary} strokeWidth={6}
                   onClick={onRemoveLitigant}
                   style={{ cursor: onRemoveLitigant ? "pointer" : "default" }}
                 />
@@ -627,9 +682,9 @@ export function CourtDiagram({
         </svg>
 
         {/* Logic panel */}
-        <div className="mx-2 mb-2 px-3 py-2 rounded-lg border border-[#1d331d] text-xs"
-          style={{ background: "linear-gradient(160deg,rgba(14,26,14,.92),rgba(7,16,7,.92))" }}>
-          <div className="text-[9px] font-black uppercase tracking-widest text-[#00c853] mb-0.5">Logic Location</div>
+        <div className="mx-2 mb-2 px-3 py-2 rounded-lg border text-xs"
+          style={{ borderColor: p.logicBorder, background: `linear-gradient(160deg,${p.logicBgA},${p.logicBgB})` }}>
+          <div className="text-[9px] font-black uppercase tracking-widest mb-0.5" style={{ color: p.primary }}>Logic Location</div>
           <div className="text-[#eef7ee]">{logicText}</div>
         </div>
       </div>

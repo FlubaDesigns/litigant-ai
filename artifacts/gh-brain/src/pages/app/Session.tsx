@@ -584,6 +584,7 @@ export default function SessionPage() {
               onSeatClick={handleSeatClick}
               onAddLitigant={handleAddLitigant}
               onRemoveLitigant={handleRemoveLitigant}
+              onToggleConscience={() => setConfig({ conscience: !state.config.conscience })}
             />
           </div>
 

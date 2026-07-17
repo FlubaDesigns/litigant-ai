@@ -49,6 +49,7 @@ interface SessionDiagramProps {
   onSeatClick: (seatId: string, litIndex?: number) => void;
   onAddLitigant: () => void;
   onRemoveLitigant: () => void;
+  onToggleConscience: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ export function SessionDiagram({
   onSeatClick,
   onAddLitigant,
   onRemoveLitigant,
+  onToggleConscience,
 }: SessionDiagramProps) {
   const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
 
@@ -125,12 +127,14 @@ export function SessionDiagram({
             confidence={state.confidence}
             creditsUsed={state.creditsUsed}
             estimatedCredits={state.estimatedCredits}
+            conscience={state.config.conscience}
             complete={isComplete}
             seatMap={seatMap}
             grades={state.grades}
             onSeatClick={onSeatClick}
             onAddLitigant={!isRunning ? onAddLitigant : undefined}
             onRemoveLitigant={!isRunning ? onRemoveLitigant : undefined}
+            onToggleConscience={onToggleConscience}
           />
           {(isRunning || isComplete) && state.currentRound > 0 && state.currentRound < 99 && (
             <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-[10px] font-mono text-primary/80 pointer-events-none">
