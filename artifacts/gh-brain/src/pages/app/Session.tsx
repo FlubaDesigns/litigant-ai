@@ -595,7 +595,7 @@ export default function SessionPage() {
       {/* ── Get Started — full-width row (idle only) ── */}
       {isIdle && (
         <div className="row">
-          <div className="flex flex-col gap-3 py-2">
+          <div className="layout__center flex flex-col gap-3 py-2">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Get started</div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
