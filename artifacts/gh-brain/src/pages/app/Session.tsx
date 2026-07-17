@@ -489,83 +489,93 @@ export default function SessionPage() {
         </button>
       </div>
 
-      {/* ── Rows 2 + 3: Phase views ── */}
-          {isIdle && (
-            <SessionConfigure
-              state={state}
-              maxLitigants={maxLitigants}
-              insufficientCredits={insufficientCredits}
-              estimatedCredits={estimatedCredits}
-              fieldValues={fieldValues}
-              setFieldValues={setFieldValues}
-              toolBanner={toolBanner}
-              user={user}
-              onSetQuestion={setQuestion}
-              onSetTemplate={setTemplate}
-              onSetConfig={setConfig}
-              onRun={handleRun}
-              onOpenConfig={() => setConfigOpen(true)}
-              onOpenTemplates={() => setTemplateSheetOpen(true)}
-              onAddLitigant={handleAddLitigant}
-              onRemoveLitigant={handleRemoveLitigant}
-              onSeatClick={handleSeatClick}
-              onClearToolBanner={() => setToolBanner(null)}
-              addCaseFile={addCaseFile}
-              removeCaseFile={removeCaseFile}
-            />
-          )}
+      {/* ── 60/40 grid: phase content left, diagram right ── */}
+      <div className="row">
+        <div className="layout__split-3-2">
 
-          {!isIdle && (
-            <SessionCourt
+          {/* ── Left 60%: phase views ── */}
+          <div className="min-w-0">
+            {isIdle && (
+              <SessionConfigure
+                state={state}
+                maxLitigants={maxLitigants}
+                insufficientCredits={insufficientCredits}
+                estimatedCredits={estimatedCredits}
+                fieldValues={fieldValues}
+                setFieldValues={setFieldValues}
+                toolBanner={toolBanner}
+                user={user}
+                onSetQuestion={setQuestion}
+                onSetTemplate={setTemplate}
+                onSetConfig={setConfig}
+                onRun={handleRun}
+                onOpenConfig={() => setConfigOpen(true)}
+                onOpenTemplates={() => setTemplateSheetOpen(true)}
+                onAddLitigant={handleAddLitigant}
+                onRemoveLitigant={handleRemoveLitigant}
+                onSeatClick={handleSeatClick}
+                onClearToolBanner={() => setToolBanner(null)}
+                addCaseFile={addCaseFile}
+                removeCaseFile={removeCaseFile}
+              />
+            )}
+            {!isIdle && (
+              <SessionCourt
+                state={state}
+                credits={credits}
+                estimatedCredits={estimatedCredits}
+                newPipelineCap={newPipelineCap}
+                setNewPipelineCap={setNewPipelineCap}
+                insufficientCredits={insufficientCredits}
+                feedbackGiven={feedbackGiven}
+                rebuttalChallenge={rebuttalChallenge}
+                setRebuttalChallenge={setRebuttalChallenge}
+                fieldValues={fieldValues}
+                setFieldValues={setFieldValues}
+                isRunning={isRunning}
+                isPaused={isPaused}
+                isComplete={isComplete}
+                isError={isError}
+                onStop={handleStop}
+                onContinue={continueSession}
+                onAcceptPartial={acceptPartial}
+                onReset={handleReset}
+                onFeedback={handleFeedback}
+                onCopyMarkdown={handleCopyMarkdown}
+                onDownload={handleDownload}
+                onExportPDF={handleExportPDF}
+                onSubmitRebuttal={submitRebuttal}
+                onSetTemplate={setTemplate}
+                onSetFieldValues={(v) => setFieldValues(v)}
+                onRun={handleRun}
+                onNavigate={navigate}
+              />
+            )}
+          </div>
+
+          {/* ── Right 40%: diagram (always visible) ── */}
+          <div className="min-w-0">
+            <SessionDiagram
               state={state}
               credits={credits}
-              estimatedCredits={estimatedCredits}
-              newPipelineCap={newPipelineCap}
-              setNewPipelineCap={setNewPipelineCap}
-              insufficientCredits={insufficientCredits}
-              feedbackGiven={feedbackGiven}
-              rebuttalChallenge={rebuttalChallenge}
-              setRebuttalChallenge={setRebuttalChallenge}
-              fieldValues={fieldValues}
-              setFieldValues={setFieldValues}
+              isIdle={isIdle}
               isRunning={isRunning}
-              isPaused={isPaused}
               isComplete={isComplete}
-              isError={isError}
-              onStop={handleStop}
-              onContinue={continueSession}
-              onAcceptPartial={acceptPartial}
-              onReset={handleReset}
-              onFeedback={handleFeedback}
-              onCopyMarkdown={handleCopyMarkdown}
-              onDownload={handleDownload}
-              onExportPDF={handleExportPDF}
-              onSubmitRebuttal={submitRebuttal}
-              onSetTemplate={setTemplate}
-              onSetFieldValues={(v) => setFieldValues(v)}
-              onRun={handleRun}
-              onNavigate={navigate}
+              inspectorSeat={inspectorSeat}
+              allProviders={allProviders}
+              activityLogOpen={activityLogOpen}
+              setActivityLogOpen={setActivityLogOpen}
+              activityLogRef={activityLogRef}
+              onSeatClick={handleSeatClick}
+              onSeatUpdate={handleSeatUpdate}
+              onAddLitigant={handleAddLitigant}
+              onRemoveLitigant={handleRemoveLitigant}
+              onCloseInspector={() => setInspectorSeat(null)}
             />
-          )}
+          </div>
 
-          {/* ── Row 4: Diagram (always) ── */}
-          <SessionDiagram
-            state={state}
-            credits={credits}
-            isIdle={isIdle}
-            isRunning={isRunning}
-            isComplete={isComplete}
-            inspectorSeat={inspectorSeat}
-            allProviders={allProviders}
-            activityLogOpen={activityLogOpen}
-            setActivityLogOpen={setActivityLogOpen}
-            activityLogRef={activityLogRef}
-            onSeatClick={handleSeatClick}
-            onSeatUpdate={handleSeatUpdate}
-            onAddLitigant={handleAddLitigant}
-            onRemoveLitigant={handleRemoveLitigant}
-            onCloseInspector={() => setInspectorSeat(null)}
-          />
+        </div>
+      </div>
 
       {/* ── Template picker sheet ── */}
       <Sheet open={templateSheetOpen} onOpenChange={(o) => !o && setTemplateSheetOpen(false)}>
