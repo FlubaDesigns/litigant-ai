@@ -1,4 +1,4 @@
-import { Settings2, LayoutTemplate, ChevronRight, Gavel, Play, X } from "lucide-react";
+import { Settings2, LayoutTemplate, ChevronRight, Gavel, Play, X, FileOutput } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -160,7 +160,10 @@ export function SessionConfigure({
 
             <AccordionItem value="deliverable" className="border-t border-primary/15 border-b-0">
               <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</h2>
+                <div className="flex items-center gap-2">
+                  <FileOutput className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</span>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-3 pt-0 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
