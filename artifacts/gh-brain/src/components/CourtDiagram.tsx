@@ -419,7 +419,7 @@ export function CourtDiagram({
         >
           <span style={{ fontSize: 11, color: p.primary }}>⚡</span>
           <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: p.primary }}>
-            {conscience ? "Conscience" : "Conscience"}
+            {conscience ? "Conscience" : "Conscience Off"}
           </span>
           <span style={{
             display: "inline-block", width: 24, height: 13, borderRadius: 7,
