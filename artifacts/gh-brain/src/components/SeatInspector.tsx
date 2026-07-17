@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { X, DollarSign, GraduationCap } from "lucide-react";
+import { DollarSign, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   SEAT_PURPOSES,
   SEAT_DEFAULT_GRADES,
@@ -67,7 +68,6 @@ export function SeatInspector({
   onClose,
   onUpdate,
 }: SeatInspectorProps) {
-  const [open, setOpen] = useState(false);
   const [useMasterSettings, setUseMasterSettings] = useState(true);
   const [localLevel, setLocalLevel] = useState(50);
   const [localProvider, setLocalProvider] = useState("auto");
@@ -78,9 +78,6 @@ export function SeatInspector({
       setUseMasterSettings(assignment.useMasterSettings !== false);
       setLocalLevel(assignment.intelligenceLevel ?? globalIntelligenceLevel);
       setLocalProvider(assignment.provider ?? "auto");
-      requestAnimationFrame(() => setOpen(true));
-    } else {
-      setOpen(false);
     }
   }, [seatId, litIndex]);
 
@@ -103,7 +100,7 @@ export function SeatInspector({
     : null;
 
   function handleConfirm() {
-    if (!seatId) { handleClose(); return; }
+    if (!seatId) { onClose(); return; }
     const assignment: SeatAssignment = {
       provider: resolved?.provider ?? "anthropic",
       model: resolved?.model,
@@ -111,70 +108,31 @@ export function SeatInspector({
       intelligenceLevel: useMasterSettings ? undefined : localLevel,
     };
     onUpdate(seatId, assignment, litIndex);
-    handleClose();
-  }
-
-  function handleClose() {
-    setOpen(false);
-    setTimeout(onClose, 220);
+    onClose();
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={cn(
-          "fixed inset-0 z-40 transition-opacity duration-200 seat-inspector-backdrop",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-        onClick={handleClose}
-      />
-
-      {/* Bottom sheet */}
-      <div
-        className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 transition-transform duration-220 ease-out rounded-t-2xl border-t border-[#1d331d] seat-inspector-sheet",
-          open ? "translate-y-0" : "translate-y-full"
-        )}
-      >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-
-        <div className="px-5 pb-6 pt-2">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">{label}</h3>
-                <span className={cn(
-                  "text-[11px] font-bold px-2 py-0.5 rounded-full border",
-                  gradeColor(currentGrade)
-                )}>
-                  {currentGrade}
-                </span>
-              </div>
-              <p className="text-xs text-[#7ab87a] mt-0.5">{purpose}</p>
-            </div>
-            <button
-              onClick={handleClose}
-              className="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-white/70 transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+    <Dialog open={!!seatId} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="w-full max-w-sm bg-[#080f08] border border-primary/40 p-0 flex flex-col">
+        <DialogHeader className="px-5 pt-5 pb-0">
+          <div className="flex items-center gap-2.5">
+            <DialogTitle className="text-base font-bold text-white">{label}</DialogTitle>
+            <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full border", gradeColor(currentGrade))}>
+              {currentGrade}
+            </span>
           </div>
+          <p className="text-xs text-primary/60 mt-0.5">{purpose}</p>
+        </DialogHeader>
 
-          {/* Run history */}
-          <div className="mb-4 px-3 py-2 rounded-lg border border-[#1d331d] bg-black/20 text-xs text-[#7ab87a] font-mono">
+        <div className="px-5 pb-5 pt-4 space-y-3">
+          <div className="px-3 py-2 rounded-lg border border-primary/15 bg-black/20 text-xs text-primary/60 font-mono">
             {gradeSummary}
           </div>
 
-          {/* Master settings toggle */}
-          <div className="flex items-center justify-between mb-4 px-3 py-2.5 rounded-lg border border-[#1d331d] bg-black/20">
+          <div className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-primary/15 bg-black/20">
             <div>
               <div className="text-xs font-semibold text-white/80">Use session settings</div>
-              <div className="text-[10px] text-[#7ab87a] mt-0.5">
+              <div className="text-[10px] text-primary/50 mt-0.5">
                 {useMasterSettings
                   ? "Inherits intelligence level from the session"
                   : "Custom intelligence level for this seat"}
@@ -184,32 +142,28 @@ export function SeatInspector({
               type="button"
               onClick={() => setUseMasterSettings(!useMasterSettings)}
               className={cn(
-                "relative w-10 h-5.5 rounded-full transition-colors shrink-0",
-                useMasterSettings ? "bg-[#00c853]" : "bg-white/10"
+                "relative w-10 rounded-full transition-colors shrink-0",
+                useMasterSettings ? "bg-primary" : "bg-white/10"
               )}
               style={{ minWidth: "2.5rem", height: "1.375rem" }}
               aria-label="Toggle session settings"
             >
-              <span
-                className={cn(
-                  "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
-                  useMasterSettings ? "translate-x-5" : "translate-x-0.5"
-                )}
-              />
+              <span className={cn(
+                "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform",
+                useMasterSettings ? "translate-x-5" : "translate-x-0.5"
+              )} />
             </button>
           </div>
 
-          {/* Per-seat controls (only when not using master settings) */}
           {!useMasterSettings && (
-            <div className="space-y-3 mb-4">
-              {/* Provider dropdown */}
+            <div className="space-y-3">
               <div>
-                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold">Provider</div>
+                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-primary/60 font-bold">Provider</div>
                 <div className="relative">
                   <select
                     value={localProvider}
                     onChange={(e) => setLocalProvider(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-[#1d331d] bg-black/20 text-sm text-white/80 px-3.5 py-2.5 pr-8 focus:outline-none focus:border-[#00c853]/50"
+                    className="w-full appearance-none rounded-xl border border-primary/20 bg-black/20 text-sm text-white/80 px-3.5 py-2.5 pr-8 focus:outline-none focus:border-primary/50"
                   >
                     <option value="auto">Automatic (best match)</option>
                     {providers.map((p) => (
@@ -224,9 +178,8 @@ export function SeatInspector({
                 </div>
               </div>
 
-              {/* Intelligence slider */}
               <div>
-                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold">Intelligence</div>
+                <div className="mb-1.5 text-[10px] uppercase tracking-widest text-primary/60 font-bold">Intelligence</div>
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-4 h-4 text-white/30 shrink-0" />
                   <input
@@ -244,11 +197,8 @@ export function SeatInspector({
             </div>
           )}
 
-          {/* Resolved model preview */}
-          <div className="mb-4 px-3 py-2.5 rounded-lg border border-[#1d331d] bg-black/20">
-            <div className="text-[10px] uppercase tracking-widest text-[#7ab87a] font-bold mb-1">
-              Resolves to
-            </div>
+          <div className="px-3 py-2.5 rounded-lg border border-primary/15 bg-black/20">
+            <div className="text-[10px] uppercase tracking-widest text-primary/60 font-bold mb-1">Resolves to</div>
             {resolved ? (
               <div className="text-sm font-semibold text-white/80">{resolved.label}</div>
             ) : (
@@ -261,23 +211,22 @@ export function SeatInspector({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-1">
             <button
-              onClick={handleClose}
-              className="flex-1 h-10 rounded-xl border border-[#1d331d] text-sm text-white/50 hover:text-white/70 transition-colors"
+              onClick={onClose}
+              className="flex-1 h-10 rounded-xl border border-primary/20 text-sm text-white/50 hover:text-white/70 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              className="flex-1 h-10 rounded-xl text-sm font-bold transition-colors bg-[#00c853] text-[#071007]"
+              className="flex-1 h-10 rounded-xl text-sm font-bold transition-colors bg-primary text-[#071007]"
             >
               Apply
             </button>
           </div>
         </div>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -72,11 +72,14 @@ export function SessionConfigure({
         <div className="sz-court">
           <Accordion type="multiple" className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
             <AccordionItem value="your-court" className="border-b-0">
-              <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
+              <AccordionTrigger className="px-3 py-3 hover:no-underline hover:bg-primary/5 transition-colors [&>svg]:text-primary/40 [&>svg]:shrink-0">
                 <div className="flex items-center justify-between w-full mr-2">
                   <div className="flex items-center gap-2">
                     <Settings2 className="w-3.5 h-3.5 text-primary/60 shrink-0" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
+                    <div className="flex flex-col gap-0.5 text-left">
+                      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary/70">Your Court</span>
+                      <span className="text-[10px] text-primary/40 font-normal normal-case tracking-normal">Fine-tune the AI members of your court</span>
+                    </div>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenConfig(); }}

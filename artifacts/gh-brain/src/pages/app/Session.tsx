@@ -27,6 +27,7 @@ import { ConfigPanel } from "./session/ConfigPanel";
 import { SessionConfigure } from "./session/SessionConfigure";
 import { SessionCourt } from "./session/SessionCourt";
 import { SessionDiagram } from "./session/SessionDiagram";
+import { SeatInspector } from "@/components/SeatInspector";
 
 // ── Icon map (used by TemplateCard) ───────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -473,6 +474,20 @@ export default function SessionPage() {
         isAdmin={isAdmin}
       />
 
+      {/* ── Seat Inspector — top-level so fixed positioning escapes all containers ── */}
+      {inspectorSeat && (
+        <SeatInspector
+          seatId={inspectorSeat.seatId}
+          litIndex={inspectorSeat.litIndex}
+          seatMap={state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount)}
+          grades={state.grades}
+          providers={allProviders}
+          globalIntelligenceLevel={state.config.intelligenceLevel ?? 50}
+          onClose={() => setInspectorSeat(null)}
+          onUpdate={handleSeatUpdate}
+        />
+      )}
+
       {/* ── 60/40 grid: phase content left, diagram right ── */}
       <div className="row">
         <div className="layout__split-2-3">
@@ -562,16 +577,12 @@ export default function SessionPage() {
               isIdle={isIdle}
               isRunning={isRunning}
               isComplete={isComplete}
-              inspectorSeat={inspectorSeat}
-              allProviders={allProviders}
               activityLogOpen={activityLogOpen}
               setActivityLogOpen={setActivityLogOpen}
               activityLogRef={activityLogRef}
               onSeatClick={handleSeatClick}
-              onSeatUpdate={handleSeatUpdate}
               onAddLitigant={handleAddLitigant}
               onRemoveLitigant={handleRemoveLitigant}
-              onCloseInspector={() => setInspectorSeat(null)}
             />
           </div>
 

@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils";
 import { CourtDiagram } from "@/components/CourtDiagram";
-import { SeatInspector } from "@/components/SeatInspector";
 import { makeDefaultSeatMap } from "@/data/seatTypes";
-import type { SeatAssignment } from "@/data/seatTypes";
-import type { ProviderInfo } from "@/services/providerService";
 import type { SessionState } from "@/lib/sessionExport";
 
 // ── RuntimeControl (previously a top-level function in Session.tsx) ───────────
@@ -46,16 +43,12 @@ interface SessionDiagramProps {
   isIdle: boolean;
   isRunning: boolean;
   isComplete: boolean;
-  inspectorSeat: { seatId: string; litIndex?: number } | null;
-  allProviders: ProviderInfo[];
   activityLogOpen: boolean;
   setActivityLogOpen: (v: boolean) => void;
   activityLogRef: React.RefObject<HTMLDivElement | null>;
   onSeatClick: (seatId: string, litIndex?: number) => void;
-  onSeatUpdate: (seatId: string, assignment: SeatAssignment, litIndex?: number) => void;
   onAddLitigant: () => void;
   onRemoveLitigant: () => void;
-  onCloseInspector: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -66,16 +59,12 @@ export function SessionDiagram({
   isIdle,
   isRunning,
   isComplete,
-  inspectorSeat,
-  allProviders,
   activityLogOpen,
   setActivityLogOpen,
   activityLogRef,
   onSeatClick,
-  onSeatUpdate,
   onAddLitigant,
   onRemoveLitigant,
-  onCloseInspector,
 }: SessionDiagramProps) {
   const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
 
@@ -150,20 +139,6 @@ export function SessionDiagram({
             </div>
           )}
         </div>
-
-        {/* Seat Inspector */}
-        {inspectorSeat && (
-          <SeatInspector
-            seatId={inspectorSeat.seatId}
-            litIndex={inspectorSeat.litIndex}
-            seatMap={seatMap}
-            grades={state.grades}
-            providers={allProviders}
-            globalIntelligenceLevel={state.config.intelligenceLevel ?? 50}
-            onClose={onCloseInspector}
-            onUpdate={(seatId, assignment, li) => onSeatUpdate(seatId, assignment, li)}
-          />
-        )}
 
       </div>
     </div>
