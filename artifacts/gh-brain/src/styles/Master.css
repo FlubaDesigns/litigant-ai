@@ -229,6 +229,7 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   .layout__split-2-1 { grid-template-columns: 2fr 1fr; }
   .layout__split-1-2 { grid-template-columns: 1fr 2fr; }
   .layout__split-3-2 { grid-template-columns: 3fr 2fr; }
+  .layout__split-2-3 { grid-template-columns: 2fr 3fr; }
 }
 
 /* Tablet: 4-col → 2-col */

@@ -475,7 +475,7 @@ export default function SessionPage() {
 
       {/* ── 60/40 grid: phase content left, diagram right ── */}
       <div className="row">
-        <div className="layout__split-3-2">
+        <div className="layout__split-2-3">
 
           {/* ── Left 60%: nav buttons + phase views ── */}
           <div className="min-w-0">
