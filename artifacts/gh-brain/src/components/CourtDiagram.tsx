@@ -634,27 +634,6 @@ export function CourtDiagram({
         </div>
       </div>
 
-      {/* Meters */}
-      <div className="mt-2 px-1 space-y-1.5">
-        <div>
-          <div className="flex justify-between text-[10px] mb-0.5">
-            <span style={{ color: "#7ab87a" }}>Confidence</span>
-            <span style={{ color: "#b6ff6a", fontWeight: 800 }}>{confidence}%</span>
-          </div>
-          <div style={{ height: 8, background: "#222", borderRadius: 6, overflow: "hidden" }}>
-            <div style={{ width: `${confidence}%`, height: "100%", background: "#b6ff6a", transition: "width .4s" }} />
-          </div>
-        </div>
-        <div>
-          <div className="flex justify-between text-[10px] mb-0.5">
-            <span style={{ color: "#7ab87a" }}>Credits Used</span>
-            <span style={{ color: "#eef7ee", fontWeight: 800 }}>{creditsUsed}{estimatedCredits > 0 ? ` / ~${estimatedCredits}` : ""}</span>
-          </div>
-          <div style={{ height: 8, background: "#222", borderRadius: 6, overflow: "hidden" }}>
-            <div style={{ width: `${creditPct}%`, height: "100%", background: "#00c853", transition: "width .4s" }} />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
