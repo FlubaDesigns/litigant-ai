@@ -16,14 +16,13 @@
    --sv          : section vertical padding (responsive)
    --gutter      : horizontal page padding (responsive)
    --main-offset : fixed header height — all pages use this for padding-top
-   --max-w       : max content width
+   --max-w       : (removed)
    --col-gap     : gap between grid columns
    ─────────────────────────────────────────────────────────────────── */
 :root {
   --sv:          1.25rem;   /* 20px  — mobile  */
   --gutter:      1.25rem;   /* 20px  — mobile  */
   --main-offset: 4rem;      /* 64px  — matches h-16 fixed navbar */
-  --max-w:       1200px;
   --col-gap:     1.5rem;    /* 24px  — column gap */
 }
 
@@ -99,10 +98,6 @@ html {
   min-height: 0;
 }
 
-.row--full {
-  max-width: none;
-}
-
 
 
 
@@ -168,9 +163,6 @@ html {
 .row {
   display: block;
   width: 100%;
-  max-width: var(--max-w);
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .row + .row {

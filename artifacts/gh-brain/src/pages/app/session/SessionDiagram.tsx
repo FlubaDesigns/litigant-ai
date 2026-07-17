@@ -80,7 +80,7 @@ export function SessionDiagram({
   const seatMap = state.config.seatMap ?? makeDefaultSeatMap(state.config.litigantCount);
 
   return (
-    <div className="row row--grow row--full">
+    <div className="row row--grow">
       <div className="sz-diagram">
 
         {/* Runtime panel — hidden when idle */}

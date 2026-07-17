@@ -235,7 +235,7 @@ export function SessionCourt({
   return (
     <>
       {/* ── Row 2: Compact Court Summary ── */}
-      <div className="row row--full">
+      <div className="row">
         <div className="sz-court-summary">
           <Settings2 className="w-3 h-3 text-primary/40 shrink-0" />
           <span className="sz-court-summary-text">
@@ -245,7 +245,7 @@ export function SessionCourt({
       </div>
 
       {/* ── Row 3: Dialogue (non-idle) ── */}
-      <div className="row row--full">
+      <div className="row">
         <div className="sz-dialogue">
 
           {/* Confidence + Credits meters */}

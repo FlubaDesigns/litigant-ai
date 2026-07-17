@@ -474,7 +474,7 @@ export default function SessionPage() {
       />
 
       {/* ── Row 1: Nav buttons ── */}
-      <div className="row row--full flex flex-col sm:flex-row gap-2 pt-3 pb-1">
+      <div className="row flex flex-col sm:flex-row gap-2 pt-3 pb-1">
         <button
           onClick={() => setConfigOpen(true)}
           className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"

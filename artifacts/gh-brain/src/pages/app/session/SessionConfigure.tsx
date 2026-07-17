@@ -66,7 +66,7 @@ export function SessionConfigure({
   return (
     <>
       {/* ── Row 2: Your Court (idle accordion) ── */}
-      <div className="row row--full">
+      <div className="row">
         <div className="sz-court">
           <Accordion type="single" collapsible className="rounded-xl border border-primary/30 overflow-hidden" style={{ background: "rgba(0,200,83,.04)" }}>
             <AccordionItem value="your-court" className="border-b-0">
@@ -165,7 +165,7 @@ export function SessionConfigure({
       </div>
 
       {/* ── Row 3: Dialogue (idle) ── */}
-      <div className="row row--full">
+      <div className="row">
         <div className="sz-dialogue">
 
           {/* Tool banner */}
