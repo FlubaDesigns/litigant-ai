@@ -473,28 +473,28 @@ export default function SessionPage() {
         isAdmin={isAdmin}
       />
 
-      {/* ── Row 1: Nav buttons ── */}
-      <div className="row flex flex-col sm:flex-row gap-2 pt-3 pb-1">
-        <button
-          onClick={() => setConfigOpen(true)}
-          className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
-        >
-          ⚙ Configure
-        </button>
-        <button
-          onClick={() => navigate("/history")}
-          className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-border/40 bg-card/40 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors"
-        >
-          📂 Sessions
-        </button>
-      </div>
-
       {/* ── 60/40 grid: phase content left, diagram right ── */}
       <div className="row">
         <div className="layout__split-3-2">
 
-          {/* ── Left 60%: phase views ── */}
+          {/* ── Left 60%: nav buttons + phase views ── */}
           <div className="min-w-0">
+
+            {/* Nav buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-3 pb-1">
+              <button
+                onClick={() => setConfigOpen(true)}
+                className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+              >
+                ⚙ Configure
+              </button>
+              <button
+                onClick={() => navigate("/history")}
+                className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-border/40 bg-card/40 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+              >
+                📂 Sessions
+              </button>
+            </div>
             {isIdle && (
               <SessionConfigure
                 state={state}
