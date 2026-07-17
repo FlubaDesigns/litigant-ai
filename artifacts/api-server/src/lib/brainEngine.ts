@@ -231,7 +231,7 @@ async function resolveProvider(config: CourtConfig, forcedProvider?: string): Pr
     return createProviderAsync(requested, config.model);
   }
 
-  for (const fallback of ["openai", "anthropic", "grok", "gemini"]) {
+  for (const fallback of ["openai", "gemini", "grok", "anthropic"]) {
     if (configured.includes(fallback)) {
       return createProviderAsync(fallback, fallback === requested ? config.model : undefined);
     }
