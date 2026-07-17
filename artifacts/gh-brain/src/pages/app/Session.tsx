@@ -3,9 +3,11 @@ import { motion } from "framer-motion";
 import {
   Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
   Stethoscope, Scale, Search, FlaskConical, AlertTriangle,
-  LayoutTemplate, ChevronRight,
+  LayoutTemplate, Gavel, X, Play,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildPdfToastActions } from "@/lib/pdfExport";
 import { buildMarkdown, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
@@ -592,43 +594,97 @@ export default function SessionPage() {
         </div>
       </div>
 
-      {/* ── Get Started — full-width row (idle only) ── */}
+      {/* ── Dialogue box — full-width row (idle only) ── */}
       {isIdle && (
         <div className="row">
-          <div className="layout__center flex flex-col gap-3 py-2">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Get started</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
-                "Is our go-to-market strategy viable for enterprise?",
-                "Should we raise a Series A now or wait 12 months?",
-                "Is this contract clause actually enforceable?",
-                "Which of these two technical approaches is sounder?",
-              ].map((prompt) => (
+          <div className="layout__center">
+
+            {/* Tool banner */}
+            {toolBanner && (
+              <div className="session-tool-banner">
+                <LayoutTemplate style={{ width: 13, height: 13, color: "#7ab87a", flexShrink: 0 }} />
+                <span className="session-tool-banner-text">Pre-loaded: <strong>{toolBanner}</strong></span>
                 <button
-                  key={prompt}
-                  onClick={() => setQuestion(prompt)}
-                  className="group text-left px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground border border-border/30 hover:border-primary/35 rounded-lg bg-transparent hover:bg-primary/5 transition-all"
-                >
-                  <span className="text-primary/40 group-hover:text-primary/60 mr-1 transition-colors">"</span>
-                  {prompt}
-                  <span className="text-primary/40 group-hover:text-primary/60 transition-colors">"</span>
-                </button>
-              ))}
+                  onClick={() => { setTemplate(null); setToolBanner(null); }}
+                  className="session-tool-banner-clear"
+                  title="Start fresh instead"
+                >✕</button>
+              </div>
+            )}
+
+            {/* Input area */}
+            <div className="flex flex-col gap-2 pt-1">
+              {state.template ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 px-0.5">
+                    <Gavel className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                    <span className="text-xs font-semibold text-primary/80">{state.template.title}</span>
+                    <button
+                      onClick={() => { setTemplate(null); setFieldValues({}); }}
+                      className="ml-auto flex items-center gap-1 px-2 py-1 rounded-md border border-border/30 hover:border-red-500/40 text-[11px] font-medium text-muted-foreground/70 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Clear template
+                    </button>
+                  </div>
+                  {state.template.inputFields.map((field) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                      <span className="text-[11px] text-primary/60 whitespace-nowrap w-20 shrink-0 font-medium">{field.label}</span>
+                      <Input
+                        type={field.type === "url" ? "url" : "text"}
+                        placeholder={field.placeholder}
+                        value={fieldValues[field.id] ?? ""}
+                        onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
+                        className="h-9 text-sm flex-1 focus-visible:ring-1 focus-visible:ring-primary/60"
+                        style={{ background: "#0d1a0d", border: "1px solid #1d331d", color: "#eef7ee" }}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleRun}
+                    disabled={insufficientCredits}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm transition-all"
+                    style={{
+                      background: insufficientCredits ? "rgba(0,200,83,.15)" : "#00c853",
+                      color: insufficientCredits ? "rgba(0,200,83,.35)" : "#000",
+                      cursor: insufficientCredits ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <Play className="w-4 h-4" />
+                    Run Trial
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Textarea
+                    placeholder="Put your question on trial…"
+                    value={state.question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleRun(); } }}
+                    className="resize-none focus-visible:ring-1 focus-visible:ring-primary/60 text-sm leading-relaxed"
+                    style={{ minHeight: 96, background: "#0d1a0d", border: "1px solid #1d331d", borderRadius: 12, color: "#eef7ee", padding: "12px 14px" }}
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground/30 flex-1">Enter to run · Shift+Enter for new line</span>
+                    <button
+                      onClick={handleRun}
+                      disabled={!state.question.trim() || insufficientCredits}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shrink-0"
+                      style={{
+                        background: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.15)" : "#00c853",
+                        color: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.3)" : "#000",
+                        cursor: (!state.question.trim() || insufficientCredits) ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Run Trial
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <button
-              onClick={() => setTemplateSheetOpen(true)}
-              className="flex items-center gap-3 p-3 border border-primary/20 rounded-xl hover:border-primary/45 hover:bg-primary/5 transition-all text-left group w-full"
-              style={{ background: "rgba(0,200,83,.03)" }}
-            >
-              <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                <LayoutTemplate className="w-4 h-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-primary leading-none mb-0.5">Use a template</div>
-                <div className="text-[11px] text-muted-foreground">{TEMPLATES.length} purpose-built trials</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary/70 transition-colors shrink-0" />
-            </button>
+
           </div>
         </div>
       )}
