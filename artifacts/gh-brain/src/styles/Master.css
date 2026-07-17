@@ -97,6 +97,10 @@ html {
   min-height: 0;
 }
 
+.row--full {
+  max-width: none;
+}
+
 
 .app-page {
   min-height: 100vh;
