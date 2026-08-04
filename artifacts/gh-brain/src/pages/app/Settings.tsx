@@ -713,7 +713,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { user, removeAccount, firebaseReady } = useAuth();
+  const { user, logOut, firebaseReady } = useAuth();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<TabId>("profile");
   const [deleting, setDeleting] = useState(false);
@@ -722,26 +722,28 @@ export default function SettingsPage() {
     if (!user) return;
     setDeleting(true);
     try {
-      // Step 1: Delete all Firestore data server-side (sessions, session_turns, feedback, profile).
-      // This MUST succeed before we touch the auth account — if it fails we surface an error
-      // and leave the account intact so the user can retry.
+      // The backend DELETE /account endpoint handles everything in a single call:
+      //   1. Deletes all Firestore data (sessions, turns, transactions, profile, etc.)
+      //   2. Deletes the Firebase Auth user via the Admin SDK (no recent-login required)
+      //
+      // We sign out locally afterwards to clear the client session regardless of whether
+      // the server-side Auth deletion succeeded — a signed-out orphaned Auth account
+      // has no Firestore data and cannot re-provision credits (signup bonus is idempotent).
       const idToken = await user.getIdToken();
       await deleteAccount(idToken);
 
-      // Step 2: Only now delete the Firebase Auth user.
-      await removeAccount();
+      // Clear the local session — the Auth user was deleted server-side so the
+      // idToken is now invalid. signOut() clears Firebase's local state cleanly.
+      await logOut().catch(() => {});
+
       toast.success("Account deleted.");
       setLocation("/");
     } catch (err: any) {
       setDeleting(false);
-      if (err?.code === "auth/requires-recent-login") {
-        toast.error("Please sign out and sign back in before deleting your account.");
-      } else {
-        toast.error(
-          "Account deletion failed — your data has not been removed. Please try again or contact support.",
-          { description: err?.message }
-        );
-      }
+      toast.error(
+        "Account deletion failed — your data has not been removed. Please try again or contact support.",
+        { description: (err as any)?.message }
+      );
     }
   }
 

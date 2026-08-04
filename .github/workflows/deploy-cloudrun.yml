@@ -28,6 +28,9 @@ jobs:
 
       - name: Generate service YAML and deploy
         env:
+          # Provenance: inject the triggering commit SHA so the running container
+          # can prove which source built it. Verified in the step below.
+          GIT_SHA: ${{ github.sha }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.GCP_SA_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -42,3 +45,28 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
         run: node scripts/deploy-cloudrun.mjs
+
+      - name: Verify deployed image matches source commit
+        # Poll GET /api/version until it returns the current commit SHA or we time out.
+        # Cloud Run may take ~30 s to swap to the new revision; we allow 2 minutes.
+        # A mismatch here means the deploy script ran against a stale image — fail
+        # loudly so the discrepancy is caught in CI rather than discovered post-incident.
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          VERSION_URL: "https://api-781960492360.us-central1.run.app/api/version"
+        run: |
+          echo "Waiting for Cloud Run to serve commit ${EXPECTED_SHA}..."
+          for i in $(seq 1 12); do
+            DEPLOYED_SHA=$(curl -sf "${VERSION_URL}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || echo "")
+            echo "  Attempt ${i}/12 — deployed sha: '${DEPLOYED_SHA}'"
+            if [ "${DEPLOYED_SHA}" = "${EXPECTED_SHA}" ]; then
+              echo "✅ Provenance verified: deployed sha matches ${EXPECTED_SHA}"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "❌ Provenance check FAILED after 2 minutes."
+          echo "   Expected : ${EXPECTED_SHA}"
+          echo "   Deployed : ${DEPLOYED_SHA}"
+          echo "   The running Cloud Run revision may not match the source commit."
+          exit 1

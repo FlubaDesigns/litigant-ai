@@ -527,18 +527,77 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     runSucceeded = true;
     actualCost = result.creditsUsed;
 
-    // ── Post-run: reconcile credits + persist session ───────────────────────
+    // ── Post-run: credit settlement + persist session ──────────────────────
+    //
+    // IMPORTANT: each step is in its own try/catch so a Firestore failure in
+    // one stage can never silently skip a later stage. In particular, credit
+    // settlement (step 1) must not be skipped because session persistence
+    // (step 2) failed — the user was charged the estimated cost and any excess
+    // must be refunded regardless of whether the session doc write succeeded.
     if (db && uid) {
       const sessionRef = db.collection("sessions").doc(result.sessionId);
+      const sessionTitle = rebuttalContext
+        ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
+        : question.slice(0, 80);
 
+      // ── Step 1: Credit settlement ─────────────────────────────────────────
+      // Runs unconditionally. If this fails, the reservation made before the
+      // run expires naturally via the failure-refund path in the finally block.
+      if (!isAdminRun) {
+        try {
+          actualCost = await calculateLiveCredits(
+            result.model || "gpt-5",
+            result.tokenUsage.inputTokens,
+            result.tokenUsage.outputTokens
+          );
+
+          // Reconcile: actual < estimated → refund the difference
+          const refund = Math.max(0, estimatedCost - actualCost);
+          if (refund > 0) {
+            await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
+          }
+
+          // Reconcile: actual > estimated → charge the overage.
+          // The estimate converges to real cost over time via calibration but a
+          // gap can remain, so this is not a rare path.
+          if (actualCost > estimatedCost) {
+            const overage = actualCost - estimatedCost;
+            const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage")
+              .catch(() => false);
+            if (!overageCollected) {
+              // Balance insufficient — session already delivered, overage uncollectable.
+              // Write a zero-debit ledger entry so the shortfall appears in the audit trail.
+              console.warn(`[brain] overage uncollected uid=${uid} sessionId=${result.sessionId} overage=${overage}`);
+              db.collection("credit_transactions").add({
+                userId: uid,
+                type: "usage_shortfall",
+                amount: 0,
+                balanceAfter: null,
+                source: "brain_overage_uncollected",
+                sessionId: result.sessionId,
+                overage,
+                createdAt: FieldValue.serverTimestamp(),
+              }).catch((e) => console.error("[brain] failed to record overage shortfall:", e));
+            }
+          }
+        } catch (e) {
+          console.error("[brain] Credit settlement failed:", e);
+          // actualCost stays as result.creditsUsed (the pre-run estimate).
+          // The finally block will handle the full refund via brain_failure_refund
+          // only when runSucceeded is false — here it's true so we rely on the
+          // next deploy + manual reconciliation for any settlement gap.
+        }
+      }
+
+      // ── Step 2: Session document persistence ─────────────────────────────
+      // Non-fatal — the result was already streamed to the client and credits
+      // were already settled above. A failed write here means the session won't
+      // appear in the History page, but no financial data is lost.
       try {
-        // Persist the session document (no credit mutations here — handled in reconcile step)
         await sessionRef.set({
           sessionId: result.sessionId,
           userId: uid,
-          title: rebuttalContext
-            ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
-            : question.slice(0, 80),
+          title: sessionTitle,
           question,
           templateId: templateId ?? null,
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
@@ -559,11 +618,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           archived: false,
           shared: false,
           shareId: null,
-          // Case file metadata — names + urls only (content not stored in Firestore)
           ...(caseFile && caseFile.length > 0 ? {
             caseFileMeta: caseFile.map(({ id, type, name, url }) => ({ id, type, name, url: url ?? null })),
           } : {}),
-          // Rebuttal metadata — present only on challenge runs
           ...(rebuttalContext ? {
             isRebuttal: true,
             rebuttalRound: rebuttalContext.rebuttalRound,
@@ -573,133 +630,77 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         });
+      } catch (e) {
+        console.error("[brain] Session persistence failed (non-fatal):", e);
+      }
 
-            // Settle with real token-based cost using live (Firestore-backed) multiplier
-        if (!isAdminRun) {
-          actualCost = await calculateLiveCredits(
-            result.model || "gpt-5",
-            result.tokenUsage.inputTokens,
-            result.tokenUsage.outputTokens
-          );
+      // ── Step 3: Token usage + USD cost annotation ─────────────────────────
+      // Best-effort update — provides accurate cost telemetry in the dashboard.
+      try {
+        const rate = getModelRate(result.model || "gpt-5");
+        const costUSD = (result.tokenUsage.inputTokens / 1000) * rate.input
+                      + (result.tokenUsage.outputTokens / 1000) * rate.output;
+        await sessionRef.update({
+          inputTokens: result.tokenUsage.inputTokens,
+          outputTokens: result.tokenUsage.outputTokens,
+          costUSD: Math.round(costUSD * 100000) / 100000,
+          creditsUsed: actualCost,
+          model: result.model || "gpt-5",
+        });
+      } catch (e) {
+        console.error("[brain] Token usage annotation failed (non-fatal):", e);
+      }
 
-          // Reconcile: if actual < estimated, refund the difference
-          const refund = Math.max(0, estimatedCost - actualCost);
-          if (refund > 0) {
-            await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
-          }
-        }
-        // If actual > estimated, charge the overage.
-        // This path is not a rare edge case — the pre-run estimate converges to real cost
-        // over time via calibration (see creditEngine.ts) but a gap can remain.
-        if (!isAdminRun && actualCost > estimatedCost && uid) {
-          const overage = actualCost - estimatedCost;
-          const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage")
-            .catch(() => false);
-          if (!overageCollected) {
-            // Balance was insufficient — session already delivered, overage uncollectable.
-            // Log a warning and write a zero-debit ledger entry so the shortfall is visible
-            // in the audit trail rather than silently vanishing.
-            console.warn(
-              `[brain] overage uncollected uid=${uid} sessionId=${result.sessionId} overage=${overage}`
-            );
-            if (db) {
-              db.collection("credit_transactions").add({
-                userId: uid,
-                type: "usage_shortfall",
-                amount: 0,
-                balanceAfter: null,
-                source: "brain_overage_uncollected",
-                sessionId: result.sessionId,
-                overage,
-                createdAt: FieldValue.serverTimestamp(),
-              }).catch((e) => console.error("[brain] failed to record overage shortfall:", e));
-            }
-          }
-        }
+      // ── Step 4: Post-session notifications ───────────────────────────────
+      try {
+        const userSnap = await db.collection("users").doc(uid).get();
+        const userData = userSnap.data() ?? {};
+        const newBalance = (userData.creditBalance as number) ?? 0;
 
-        // Persist final token usage + USD cost to session doc (non-fatal)
-        try {
-          const rate = getModelRate(result.model || "gpt-5");
-          const costUSD = (result.tokenUsage.inputTokens / 1000) * rate.input
-                        + (result.tokenUsage.outputTokens / 1000) * rate.output;
-          await sessionRef.update({
-            inputTokens: result.tokenUsage.inputTokens,
-            outputTokens: result.tokenUsage.outputTokens,
-            costUSD: Math.round(costUSD * 100000) / 100000,
-            creditsUsed: actualCost,
-            model: result.model || "gpt-5",
-          });
-        } catch (e) {
-          console.error("[brain] Failed to update token usage on session:", e);
-        }
+        await checkAndTriggerAutoRefill(uid, newBalance, createAutoRefillUrl);
 
-        // Auto-refill + post-session email notifications (all non-fatal)
-        try {
-          const userSnap = await db.collection("users").doc(uid).get();
-          const userData = userSnap.data() ?? {};
-          const newBalance = (userData.creditBalance as number) ?? 0;
+        if (isResendConfigured()) {
+          const billingDefaults = await getBillingDefaults();
+          const emailThreshold = billingDefaults.emailCreditWarningThreshold;
 
-          await checkAndTriggerAutoRefill(uid, newBalance, createAutoRefillUrl);
-
-          if (isResendConfigured()) {
-            const billingDefaults = await getBillingDefaults();
-            const emailThreshold = billingDefaults.emailCreditWarningThreshold;
-
-            // Low-credits warning — send at most once per 24 hours
-            if (newBalance < emailThreshold) {
-              const lastSentMs = (userData.lowCreditEmailSentAt as number | undefined) ?? 0;
-              const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-              if (lastSentMs < twentyFourHoursAgo) {
-                sendLowCreditsEmail(uid, newBalance, emailThreshold)
-                  .then(() =>
-                    db.collection("users").doc(uid).update({
-                      lowCreditEmailSentAt: Date.now(),
-                    })
-                  )
-                  .catch((e) => console.error("[brain] Low-credits email failed (non-fatal):", e));
-              }
-            }
-
-            const sessionTitle = rebuttalContext
-              ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
-              : question.slice(0, 80);
-
-            // Session complete notification — only if user opted in
-            if (userData.notifySessionComplete === true && result.sessionId) {
-              sendSessionCompleteEmail(uid, result.sessionId, sessionTitle, actualCost)
-                .catch((e) => console.error("[brain] Session-complete email failed (non-fatal):", e));
-            }
-
-            // First session milestone — fires exactly once per account
-            if (!userData.firstSessionEmailSent && result.sessionId) {
-              sendFirstSessionEmail(uid, result.sessionId, sessionTitle)
-                .then(() =>
-                  db.collection("users").doc(uid).update({ firstSessionEmailSent: true })
-                )
-                .catch((e) => console.error("[brain] First-session email failed (non-fatal):", e));
-            }
-
-            // Zero-credits alert — send at most once per 24 hours
-            if (newBalance <= 0) {
-              const lastZeroMs = (userData.zeroCreditsEmailSentAt as number | undefined) ?? 0;
-              if (Date.now() - lastZeroMs > 24 * 60 * 60 * 1000) {
-                sendZeroCreditsEmail(uid)
-                  .then(() =>
-                    db.collection("users").doc(uid).update({ zeroCreditsEmailSentAt: Date.now() })
-                  )
-                  .catch((e) => console.error("[brain] Zero-credits email failed (non-fatal):", e));
-              }
+          if (newBalance < emailThreshold) {
+            const lastSentMs = (userData.lowCreditEmailSentAt as number | undefined) ?? 0;
+            if (lastSentMs < Date.now() - 24 * 60 * 60 * 1000) {
+              sendLowCreditsEmail(uid, newBalance, emailThreshold)
+                .then(() => db.collection("users").doc(uid).update({ lowCreditEmailSentAt: Date.now() }))
+                .catch((e) => console.error("[brain] Low-credits email failed (non-fatal):", e));
             }
           }
 
-          // Update lastSessionAt so re-engagement campaign has accurate data
-          db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
-            .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
-        } catch (e) {
-          console.error("[brain] Post-session notifications failed (non-fatal):", e);
+          if (userData.notifySessionComplete === true && result.sessionId) {
+            sendSessionCompleteEmail(uid, result.sessionId, sessionTitle, actualCost)
+              .catch((e) => console.error("[brain] Session-complete email failed (non-fatal):", e));
+          }
+
+          if (!userData.firstSessionEmailSent && result.sessionId) {
+            sendFirstSessionEmail(uid, result.sessionId, sessionTitle)
+              .then(() => db.collection("users").doc(uid).update({ firstSessionEmailSent: true }))
+              .catch((e) => console.error("[brain] First-session email failed (non-fatal):", e));
+          }
+
+          if (newBalance <= 0) {
+            const lastZeroMs = (userData.zeroCreditsEmailSentAt as number | undefined) ?? 0;
+            if (Date.now() - lastZeroMs > 24 * 60 * 60 * 1000) {
+              sendZeroCreditsEmail(uid)
+                .then(() => db.collection("users").doc(uid).update({ zeroCreditsEmailSentAt: Date.now() }))
+                .catch((e) => console.error("[brain] Zero-credits email failed (non-fatal):", e));
+            }
+          }
         }
 
-        // Write session_turns subcollection
+        db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
+          .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
+      } catch (e) {
+        console.error("[brain] Post-session notifications failed (non-fatal):", e);
+      }
+
+      // ── Step 5: session_turns subcollection ──────────────────────────────
+      try {
         const turnsCol = sessionRef.collection("session_turns");
         await Promise.all(
           result.turns.map((turn, idx) =>
@@ -713,8 +714,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           )
         );
       } catch (e) {
-        // Non-fatal — result already streamed; log for investigation
-        console.error("[brain] Firestore post-run write failed:", e);
+        console.error("[brain] session_turns write failed (non-fatal):", e);
       }
     }
   } catch (err: any) {

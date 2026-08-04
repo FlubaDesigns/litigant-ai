@@ -42,6 +42,13 @@ for (const v of optionalWarn) {
   if (!process.env[v]) console.warn(`WARN: ${v} is not set — ${v === "SENTRY_DSN" ? "error monitoring" : "emails/payments"} will be disabled in production.`);
 }
 
+// Provenance: the CI workflow injects GIT_SHA=${{ github.sha }} so the running
+// container can prove which source commit built it. DEPLOY_TIMESTAMP is set here
+// at deploy time. Both are surfaced by GET /api/version for post-deploy verification.
+const gitSha = process.env.GIT_SHA ?? "unknown";
+const deployTimestamp = new Date().toISOString();
+console.log(`Deploy provenance — sha: ${gitSha}  timestamp: ${deployTimestamp}`);
+
 function envEntry(name, value) {
   return `        - name: ${name}\n          value: ${JSON.stringify(value ?? "")}`;
 }
@@ -88,6 +95,8 @@ ${envEntry("SQUARE_LOCATION_ID", process.env.SQUARE_LOCATION_ID ?? "")}
 ${envEntry("SQUARE_WEBHOOK_SIGNATURE_KEY", process.env.SQUARE_WEBHOOK_SIGNATURE_KEY ?? "")}
 ${envEntry("SQUARE_ENVIRONMENT", process.env.SQUARE_ENVIRONMENT ?? "production")}
 ${envEntry("SENTRY_DSN", process.env.SENTRY_DSN ?? "")}
+${envEntry("DEPLOY_GIT_SHA", gitSha)}
+${envEntry("DEPLOY_TIMESTAMP", deployTimestamp)}
 `;
 
 // Private temp dir (random suffix, accessible only by owner) so the YAML
