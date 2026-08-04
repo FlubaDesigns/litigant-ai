@@ -3,6 +3,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import router from "./routes/index-firebase.js";
 import { initFirebaseAdmin } from "./lib/firebaseAdmin.js";
+import { securityHeaders } from "./lib/securityHeaders.js";
 
 // Initialise Sentry before any other setup so it can capture startup errors.
 // No-op when SENTRY_DSN is unset (local dev, staging without monitoring).
@@ -44,6 +45,7 @@ const allowedOrigins = [
     : []),
 ];
 
+app.use(securityHeaders);
 app.use(
   cors({
     origin: (origin, cb) => {

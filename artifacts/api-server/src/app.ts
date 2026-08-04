@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 import { initFirebaseAdmin } from "./lib/firebaseAdmin.js";
+import { securityHeaders } from "./lib/securityHeaders.js";
 
 initFirebaseAdmin();
 
@@ -27,6 +28,7 @@ app.use(
   }),
 );
 
+app.use(securityHeaders);
 app.use(cors());
 
 /**
