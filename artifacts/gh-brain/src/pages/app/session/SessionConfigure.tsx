@@ -55,6 +55,7 @@ export function SessionConfigure({
   user,
   onSetQuestion,
   onSetTemplate,
+  onSetConfig,
   onRun,
   onOpenConfig,
   onOpenTemplates,

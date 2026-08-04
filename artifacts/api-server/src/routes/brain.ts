@@ -277,17 +277,12 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     return;
   }
 
-  // Mint the real session ID server-side before any credit movement so the
-  // reservation, the run, and any failure-refund all reference the same ID.
-  // Previously this fell through to `sessionId ?? "pending"` / `?? "failed"`
-  // because the frontend never sends a sessionId on a new run — it only learns
-  // the ID from the "start" SSE event, which fires after reservation. That
-  // stamped every fresh reservation and failure-refund with the literal string
-  // "pending" or "failed", breaking ledger auditability.
-  // Resumed sessions still pass their existing sessionId from the client and
-  // we honor it, since that ID was already generated server-side on the original run.
-  const sessionId =
-    clientSessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  // Mint a fresh session ID server-side by default.
+  // New sessions always get a fresh server-minted ID — client-supplied IDs are
+  // never accepted for new runs. Resumed sessions may supply their existing ID
+  // via clientSessionId, but ownership is verified against the caller's uid
+  // AFTER the auth section below resolves uid (see "Resume ownership check").
+  let sessionId: string = crypto.randomUUID();
 
   const effectiveConfig: CourtConfig = {
     ...config,
@@ -342,6 +337,25 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     }
     uid = decoded.uid;
     isAdminRun = decoded.admin === true;
+
+    // ── Resume ownership check ────────────────────────────────────────────────
+    // If the client supplied an existing session ID for a genuine resume/rebuttal
+    // continuation, verify the caller actually owns that session before using it.
+    // New sessions (no clientSessionId) always keep the server-minted UUID above.
+    // Guests can never supply a session ID (they have no account), so this only
+    // runs for authenticated users.
+    if (clientSessionId && (continueFromTranscript?.length || resumeWithFixedPipeline) && db) {
+      try {
+        const existingSnap = await db.collection("sessions").doc(clientSessionId).get();
+        if (!existingSnap.exists || existingSnap.data()?.userId !== uid) {
+          res.status(403).json({ message: "Session not found or access denied." });
+          return;
+        }
+        sessionId = clientSessionId;
+      } catch {
+        // Firestore unavailable — keep the fresh server-minted ID (safe fallback)
+      }
+    }
 
     if (!isAdminRun) {
       // Resolve overdraft limit if user opted in
@@ -407,7 +421,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // Hard 10-minute timeout — aborts if client stays connected but session hangs
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
   const sessionTimer = setTimeout(() => {
-    console.warn("[brain] Session hard-timeout after 5 minutes — aborting.");
+    console.warn("[brain] Session hard-timeout after 10 minutes — aborting.");
     abortCtrl.abort();
   }, SESSION_TIMEOUT_MS);
 

@@ -125,6 +125,7 @@ export function runBrainSession(
           caseFile: request.caseFile,
           resumeWithFixedPipeline: request.resumeWithFixedPipeline,
           failoverProvider: request.failoverProvider,
+          overdraft: request.overdraft,
         }),
         signal,
       });

@@ -655,6 +655,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       config: effectiveConfig,
       templateId: s.template?.id,
       idToken,
+      sessionId: s.sessionId ?? undefined,
       continueFromTranscript: s.pauseTranscript,
       ...(isPrePipelinePause ? { resumeWithFixedPipeline: true } : {}),
     };
