@@ -37,7 +37,7 @@ export function isFirebaseConfigured(): boolean {
 
 export async function verifyIdToken(
   idToken: string
-): Promise<{ uid: string; email?: string; name?: string; admin?: boolean } | null> {
+): Promise<{ uid: string; email?: string; name?: string; admin?: boolean; emailVerified?: boolean } | null> {
   if (!isFirebaseConfigured()) return null;
   try {
     // checkRevoked: true makes Firebase reject tokens whose refresh tokens have
@@ -49,6 +49,9 @@ export async function verifyIdToken(
       email: decoded.email,
       name: decoded.name,
       admin: decoded["admin"] === true,
+      // email_verified is true for Google/Apple OAuth users automatically.
+      // Email+password users must complete the verification link before this is set.
+      emailVerified: decoded.email_verified === true,
     };
   } catch {
     return null;

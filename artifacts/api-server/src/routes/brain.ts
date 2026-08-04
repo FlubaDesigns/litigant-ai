@@ -106,31 +106,101 @@ function getClientIp(req: import("express").Request): string {
   return req.ip ?? req.socket.remoteAddress ?? "unknown";
 }
 
-async function hasGuestUsed(ip: string): Promise<boolean> {
+/**
+ * Atomically claim the guest free trial for an IP address.
+ *
+ * Uses Firestore document creation (.create()) as the atomic primitive —
+ * only the FIRST concurrent request that successfully creates the document
+ * may proceed. All subsequent .create() calls for the same key throw
+ * ALREADY_EXISTS (gRPC code 6), so the race window is closed entirely.
+ *
+ * The claim starts as status:"reserved" with a 2-hour expiry so that
+ * failed runs (provider error, client disconnect) don't permanently burn
+ * the trial. Once the session succeeds, confirmGuestSession() marks it
+ * status:"used" with no expiry.
+ *
+ * Returns true when the caller may proceed with the free trial.
+ * Returns false when the trial has already been used (or is actively
+ * reserved by a concurrent request that has not yet failed).
+ *
+ * On Firestore errors the function fails CLOSED — guest access is denied
+ * rather than granted, preventing a Firestore outage from handing out
+ * unlimited free runs.
+ */
+async function claimGuestSession(ip: string): Promise<boolean> {
+  const safeKey = ip.replace(/[./]/g, "_");
   const db = getFirestoreDb();
-  if (!db) return _guestMemoryFallback.has(ip);
+  if (!db) {
+    // Dev/test fallback — no Firestore configured
+    if (_guestMemoryFallback.has(ip)) return false;
+    _guestMemoryFallback.add(ip);
+    return true;
+  }
+  const ref = db.collection("guest_sessions").doc(safeKey);
   try {
-    const doc = await db.collection("guest_sessions").doc(ip.replace(/[./]/g, "_")).get();
-    return doc.exists;
-  } catch {
-    return _guestMemoryFallback.has(ip);
+    // .create() is atomic and fails immediately if the document already exists.
+    await ref.create({
+      ip,
+      status: "reserved",
+      reservedAt: new Date(),
+      // Expiry: if the run fails and confirmGuestSession is never called,
+      // the reservation lapses after 2 hours and the guest can retry.
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+    });
+    return true;
+  } catch (err: any) {
+    const isAlreadyExists = err?.code === 6 || err?.message?.includes("ALREADY_EXISTS");
+    if (!isAlreadyExists) {
+      // Firestore failure — fail closed so outages don't hand out free runs
+      console.error("[brain] claimGuestSession Firestore error — denying guest access:", err?.message);
+      return false;
+    }
+    // Document exists — check whether the existing reservation has expired
+    // (means a previous run failed and the 2-hour grace period has passed).
+    try {
+      const snap = await ref.get();
+      if (!snap.exists) return true; // shouldn't happen but safe to allow
+      const data = snap.data()!;
+      const status = data["status"] as string | undefined;
+      const expiresAt = data["expiresAt"] as { toDate?: () => Date } | Date | undefined;
+      const expiresMs = expiresAt instanceof Date
+        ? expiresAt.getTime()
+        : (expiresAt?.toDate?.()?.getTime() ?? Infinity);
+      if (status === "reserved" && expiresMs < Date.now()) {
+        // Stale reservation — overwrite it so this run can proceed.
+        await ref.set({
+          ip,
+          status: "reserved",
+          reservedAt: new Date(),
+          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+        });
+        return true;
+      }
+    } catch {
+      // Non-fatal — the primary ALREADY_EXISTS check already tells us to deny
+    }
+    return false;
   }
 }
 
-async function markGuestUsed(ip: string): Promise<void> {
-  const db = getFirestoreDb();
+/**
+ * Mark a guest session as permanently used after a successful run.
+ * Removes the expiry so the reservation cannot be reclaimed by lapse.
+ * Non-fatal — if this fails the reservation expires after 2 hours, which
+ * is acceptable; the guest gets one automatic retry in the worst case.
+ */
+async function confirmGuestSession(ip: string): Promise<void> {
   const safeKey = ip.replace(/[./]/g, "_");
-  if (!db) {
-    _guestMemoryFallback.add(ip);
-    return;
-  }
+  const db = getFirestoreDb();
+  if (!db) return; // memory fallback was already set in claimGuestSession
   try {
-    await db.collection("guest_sessions").doc(safeKey).set({
-      ip,
+    await db.collection("guest_sessions").doc(safeKey).update({
+      status: "used",
       usedAt: new Date(),
+      expiresAt: null, // permanent — lapse reclaim is no longer possible
     });
-  } catch {
-    _guestMemoryFallback.add(ip);
+  } catch (err: any) {
+    console.error("[brain] confirmGuestSession failed (non-fatal):", err?.message);
   }
 }
 
@@ -319,6 +389,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // ── Auth + credit reservation ─────────────────────────────────────────────
   let uid: string | null = null;
   let isAdminRun = false;
+  // Tracks whether a guest session was atomically claimed for this request.
+  // Set to the client IP when claimGuestSession() succeeds so that the finally
+  // block can permanently confirm the run (or let the reservation lapse on failure).
+  let guestIp: string | null = null;
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
 
@@ -393,9 +467,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     }
   } else {
     // Guest mode: one free session per IP, then require signup.
-    // Mark BEFORE starting so concurrent requests from the same IP can't both slip through.
+    // claimGuestSession uses Firestore .create() as an atomic lock so two
+    // concurrent requests from the same IP cannot both slip through.
     const ip = getClientIp(req);
-    if (await hasGuestUsed(ip)) {
+    const claimed = await claimGuestSession(ip);
+    if (!claimed) {
       const { signupBonusCredits } = await getBillingDefaults();
       res.status(402).json({
         message:
@@ -404,7 +480,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       });
       return;
     }
-    await markGuestUsed(ip);
+    // Store the IP so the finally block can permanently confirm the run on success
+    // or allow the 2-hour reservation to lapse naturally on failure.
+    guestIp = ip;
   }
 
   // ── SSE headers ────────────────────────────────────────────────────────────
@@ -414,9 +492,12 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
-  // Wire client disconnect → abort signal so server-side AI calls stop immediately
+  // Wire client disconnect → abort signal so server-side AI calls stop immediately.
+  // Must listen on `res` (the writable response stream), not `req` (the readable
+  // request stream). For SSE the request body is already fully consumed after
+  // header parsing; only the response "close" event fires when the client disconnects.
   const abortCtrl = new AbortController();
-  req.on("close", () => abortCtrl.abort());
+  res.on("close", () => abortCtrl.abort());
 
   // Hard 10-minute timeout — aborts if client stays connected but session hangs
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
@@ -646,6 +727,14 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     // If run failed and credits were reserved, refund the full reservation as a ledger entry
     if (!runSucceeded && !isAdminRun && uid && db) {
       await reconcileCredits(uid, estimatedCost, sessionId, "brain_failure_refund");
+    }
+
+    // Confirm the guest session on success so it's permanently locked.
+    // On failure, the 2-hour reservation lapses naturally — the guest gets a retry
+    // if the failure was on our side (provider error, timeout), but cannot replay
+    // a completed session by claiming the run "failed".
+    if (runSucceeded && guestIp) {
+      await confirmGuestSession(guestIp);
     }
 
     clearTimeout(sessionTimer);

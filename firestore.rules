@@ -4,14 +4,26 @@ service cloud.firestore {
 
     // Server-only fields on the user document. These must never be SET to a
     // new value directly from the client SDK — they are mutated exclusively
-    // by the backend (Admin SDK) via creditLedger.ts / admin.ts, which
-    // bypasses these rules entirely. Listing them here blocks the client-SDK
+    // by the backend (Admin SDK) via creditLedger.ts / admin.ts / brain.ts,
+    // which bypass these rules entirely. Listing them here blocks the client-SDK
     // write path for setting them.
+    //
+    // This uses an allowlist-by-exclusion approach: all fields listed here are
+    // server-owned. Any new server-owned field MUST be added here; otherwise a
+    // signed-in client can write it directly via the client SDK.
     function touchesProtectedUserFields() {
       let protectedFields = [
+        // Financial & plan state
         'creditBalance', 'plan', 'subscriptionStatus',
+        // Ban state
         'banned', 'bannedReason', 'bannedAt', 'bannedBy',
-        'autoRefill'
+        // Auto-refill config
+        'autoRefill',
+        // Email lifecycle / "send once" flags — clients must not reset these
+        // or they could re-trigger transactional emails at will.
+        'welcomeEmailSent', 'firstSessionEmailSent',
+        'lowCreditEmailSentAt', 'zeroCreditsEmailSentAt',
+        'lastSessionAt', 'reengagementEmailSentAt'
       ];
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedFields);
     }
@@ -36,8 +48,9 @@ service cloud.firestore {
     }
 
     // Users can read their own profile. Writes are allowed only for
-    // non-financial fields (displayName, defaultSettings, notifications, etc.) —
-    // creditBalance and plan/ban state can only change via the Admin SDK.
+    // non-financial, non-lifecycle fields (displayName, defaultSettings,
+    // notification preferences, etc.) — the fields listed in
+    // touchesProtectedUserFields() can only change via the Admin SDK.
     // The auto-refill checkout fields may be cleared by the client (see
     // setsAutoRefillCheckoutFields above) but never set to a new value.
     match /users/{userId} {
@@ -46,16 +59,22 @@ service cloud.firestore {
                     && !request.resource.data.keys().hasAny([
                          'creditBalance', 'plan', 'subscriptionStatus',
                          'banned', 'bannedReason', 'bannedAt', 'bannedBy',
-                         'autoRefill', 'autoRefillCheckoutUrl', 'autoRefillTriggeredAt'
+                         'autoRefill', 'autoRefillCheckoutUrl', 'autoRefillTriggeredAt',
+                         'welcomeEmailSent', 'firstSessionEmailSent',
+                         'lowCreditEmailSentAt', 'zeroCreditsEmailSentAt',
+                         'lastSessionAt', 'reengagementEmailSentAt'
                        ]);
       allow update: if request.auth != null && request.auth.uid == userId
                     && !touchesProtectedUserFields()
                     && !setsAutoRefillCheckoutFields();
     }
 
-    // Sessions: owner can read/write only. Shared-session access is handled
+    // Sessions: owner-only read/write. Shared-session access is handled
     // server-side via the Admin SDK (report.ts / sessions.ts), which bypasses
     // these rules entirely — no broad client-SDK read needed here.
+    // NOTE: The session rule uses resource.data.userId which is undefined on
+    // CREATE (the document doesn't exist yet) — this correctly denies client-side
+    // creates, since all sessions are written by the Admin SDK via brain.ts.
     match /sessions/{sessionId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
@@ -76,9 +95,9 @@ service cloud.firestore {
     }
 
     // Everything else (config/*, credit_transactions/*, payment_events/*,
-    // templates/*, system_config/*, guest_sessions/*, api_logs/*) is written
-    // and read exclusively by the backend via the Firebase Admin SDK, which
-    // bypasses these rules entirely.
+    // templates/*, system_config/*, guest_sessions/*, api_logs/*,
+    // email_templates/*) is written and read exclusively by the backend via
+    // the Firebase Admin SDK, which bypasses these rules entirely.
     match /{document=**} {
       allow read, write: if false;
     }

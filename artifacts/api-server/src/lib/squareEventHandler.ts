@@ -95,10 +95,14 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         return;
       }
 
+      // Deduplication key is the payment ID, not the event ID.
+      // Square can emit multiple distinct events for one payment (e.g. on retries);
+      // keying on event_id would grant credits again for each distinct event delivery.
+      // Keying on payment_<id> ensures exactly one grant per actual payment.
       const result = await addCredits(userId, creditAmount, "purchase", {
         source: "square_checkout",
         paymentId: payment.id as string,
-        idempotencyKey: event.event_id,
+        idempotencyKey: `payment_${payment.id as string}`,
       });
 
       if (result?.skipped) {

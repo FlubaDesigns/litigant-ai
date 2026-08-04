@@ -446,8 +446,11 @@ async function resolveTemplate(id: EmailTemplateId, vars: Record<string, string 
 }> {
   const meta   = EMAIL_TEMPLATE_META[id];
   const config = await getTemplateConfig(id);
-  const subject  = interpolate(config.subject  ?? meta.defaultSubject,  vars);
-  const headline = interpolate(config.headline ?? meta.defaultHeadline, vars);
+  // Strip CR/LF from subject to prevent email header injection
+  const subject  = interpolate(config.subject  ?? meta.defaultSubject,  vars).replace(/[\r\n]/g, " ");
+  // Escape headline HTML — it goes directly into an <h1> tag and may contain user-supplied
+  // display names. The preview path already escapes this correctly; the send path now matches.
+  const headline = escapeHtml(interpolate(config.headline ?? meta.defaultHeadline, vars));
   const intro    = interpolate(config.introText ?? meta.defaultIntroText, vars);
   return { enabled: config.enabled, subject, headline, intro };
 }

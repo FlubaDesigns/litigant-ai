@@ -36,11 +36,14 @@ router.post("/square/webhook", async (req, res) => {
   try {
     const event = JSON.parse(rawBody);
     await handleSquareEvent(event);
+    // Only acknowledge AFTER successful processing.
+    // Returning a non-2xx causes Square to retry the event, which is the
+    // correct behaviour for transient failures (Firestore outage, etc.).
+    res.status(200).json({ received: true });
   } catch (err: any) {
-    logger.warn({ err }, "Square event handler error (non-fatal)");
+    logger.error({ err }, "Square event handler error — returning 500 so Square retries");
+    res.status(500).json({ error: "Processing failed" });
   }
-
-  res.status(200).json({ received: true });
 });
 
 export default router;

@@ -51,12 +51,15 @@ const verifyByIpLimiter = makeRateLimiter({
  * Server-side equivalent of a Firebase Auth onCreate Cloud Function.
  * Called immediately after a user signs up or signs in for the first time.
  *
- * Atomically:
- *   1. Creates the user document in Firestore (if it does not already exist)
- *   2. Grants the 500-credit signup bonus (idempotent — fires at most once per user)
+ * Creates the user profile (if not already existing) inside a Firestore
+ * transaction so concurrent duplicate requests can't both create the document
+ * and clobber each other's credit balance.
  *
- * The client never controls the credit amount or grant logic — this endpoint is
- * the sole authority for initial provisioning.
+ * The signup bonus is only granted after email verification to prevent
+ * multi-account abuse. Google/Apple OAuth users are automatically verified
+ * by Firebase so they receive credits immediately. Email+password users
+ * must verify their address first; a subsequent provision call after
+ * verification will grant the bonus (grantSignupBonus is idempotent).
  */
 router.post("/auth/provision", async (req, res) => {
   const authHeader = req.headers["authorization"] as string | undefined;
@@ -96,38 +99,53 @@ router.post("/auth/provision", async (req, res) => {
   const sanitizedOrg     = organization?.trim().slice(0, 200) || null;
 
   try {
-    // Check if user doc already exists (returning user, not a new signup)
-    const existing = await userRef.get();
+    // Create the user profile inside a transaction so two concurrent provision
+    // calls for a brand-new UID can't both write creditBalance: 0 and then
+    // have the second .set() clobber the balance after grantSignupBonus ran.
+    let newUser = false;
+    await db.runTransaction(async (txn) => {
+      const snap = await txn.get(userRef);
+      if (!snap.exists) {
+        newUser = true;
+        txn.set(userRef, {
+          email:              decoded.email ?? "",
+          displayName:        decoded.name ?? decoded.email?.split("@")[0] ?? null,
+          role:               sanitizedRole,
+          organization:       sanitizedOrg,
+          plan:               "free",
+          creditBalance:      0,
+          subscriptionStatus: "none",
+          createdAt:          FieldValue.serverTimestamp(),
+          updatedAt:          FieldValue.serverTimestamp(),
+          defaultSettings: {
+            litigantCount:     3,
+            confidenceTarget:  80,
+            responseMode:      "balanced",
+            outputFormat:      "report",
+          },
+        });
+      }
+    });
 
-    if (!existing.exists) {
-      // New user — create profile with neutral defaults (no credit balance set here;
-      // grantSignupBonus writes it atomically via the credit ledger)
-      await userRef.set({
-        email:              decoded.email ?? "",
-        displayName:        decoded.name ?? decoded.email?.split("@")[0] ?? null,
-        role:               sanitizedRole,
-        organization:       sanitizedOrg,
-        plan:               "free",
-        creditBalance:      0,
-        subscriptionStatus: "none",
-        createdAt:          FieldValue.serverTimestamp(),
-        updatedAt:          FieldValue.serverTimestamp(),
-        defaultSettings: {
-          litigantCount:     3,
-          confidenceTarget:  80,
-          responseMode:      "balanced",
-          outputFormat:      "report",
-        },
-      });
+    // Grant signup bonus — only to verified accounts.
+    // Google/Apple OAuth users have emailVerified = true automatically.
+    // Email+password users must complete the verification link first;
+    // calling provision again after verification grants the bonus.
+    // grantSignupBonus is idempotent — whichever concurrent call wins
+    // the transaction above, only one bonus is ever applied.
+    let bonusGranted = false;
+    if (decoded.emailVerified !== false) {
+      // emailVerified may be undefined when Firebase isn't fully configured (dev mode);
+      // treat undefined as "not blocked" so dev environments still function.
+      const { skipped } = await grantSignupBonus(uid);
+      bonusGranted = !skipped;
     }
-
-    // Grant signup bonus — idempotent (at most once per user via idempotency key)
-    const { skipped } = await grantSignupBonus(uid);
 
     return res.json({
       provisioned: true,
-      newUser: !existing.exists,
-      bonusGranted: !skipped,
+      newUser,
+      bonusGranted,
+      ...(!decoded.emailVerified ? { reason: "email_not_verified" } : {}),
     });
   } catch (err: any) {
     console.error("[Auth] provision error:", err.message);
@@ -140,7 +158,11 @@ router.post("/auth/provision", async (req, res) => {
  *
  * Sends the post-verification welcome email exactly once per user.
  * Called by the frontend when the user confirms their email is verified.
- * Idempotent — guarded by a `welcomeEmailSent` flag on the user doc.
+ *
+ * Idempotent — uses a mark-then-send pattern with rollback on email failure.
+ * The mark update is serialized so concurrent calls from the same user
+ * (e.g. two tabs both noticing verification at once) don't double-send:
+ * one will find welcomeEmailSent already true and return "already_sent".
  */
 router.post("/auth/welcome", async (req, res) => {
   const authHeader = req.headers["authorization"] as string | undefined;
@@ -157,13 +179,24 @@ router.post("/auth/welcome", async (req, res) => {
   const userRef = db.collection("users").doc(uid);
 
   try {
-    const snap = await userRef.get();
-    if (snap.data()?.welcomeEmailSent) {
+    // Atomically claim the "send welcome email" slot via a transaction.
+    // Only the first concurrent call that sees welcomeEmailSent == false
+    // will write true and proceed to send; subsequent calls find it already
+    // set and return early. This eliminates the read-then-write race.
+    let shouldSend = false;
+    await db.runTransaction(async (txn) => {
+      const snap = await txn.get(userRef);
+      if (snap.data()?.welcomeEmailSent) {
+        shouldSend = false;
+        return;
+      }
+      txn.update(userRef, { welcomeEmailSent: true, updatedAt: FieldValue.serverTimestamp() });
+      shouldSend = true;
+    });
+
+    if (!shouldSend) {
       return res.json({ sent: false, reason: "already_sent" });
     }
-
-    // Mark before sending so concurrent calls can't double-send
-    await userRef.update({ welcomeEmailSent: true, updatedAt: FieldValue.serverTimestamp() });
 
     try {
       await sendWelcomeEmail(uid);

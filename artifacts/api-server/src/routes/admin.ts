@@ -1,6 +1,7 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
+import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { addCredits } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
@@ -66,6 +67,17 @@ import {
 
 const router = Router();
 
+// ── Bootstrap rate limiter ────────────────────────────────────────────────────
+// Applied to /admin/set-claim which is gated by master secret rather than
+// Bearer token. Rate-limiting prevents brute-force against the secret and
+// limits the damage from any credential exposure.
+const setClaimLimiter = makeRateLimiter({
+  keyFn: (req) => `set-claim:${req.ip ?? "unknown"}`,
+  limit: 5,
+  windowMs: 60 * 60 * 1000, // 5 attempts per hour per IP
+  message: "Too many admin setup requests. Please try again later.",
+});
+
 // ── Admin auth middleware ─────────────────────────────────────────────────────
 
 async function requireAdmin(req: any, res: any, next: any): Promise<void> {
@@ -109,7 +121,7 @@ function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot): Record<string, u
  * Sets admin: true custom claim on the target Firebase Auth user.
  * User must sign out and back in for the claim to appear in their ID token.
  */
-router.post("/admin/set-claim", async (req, res) => {
+router.post("/admin/set-claim", setClaimLimiter, async (req, res) => {
   const masterSecret = process.env["ADMIN_MASTER_SECRET"];
   if (!masterSecret) {
     return res.status(503).json({
@@ -530,10 +542,45 @@ router.patch("/admin/email-templates/:id", requireAdmin, async (req: any, res) =
     return res.status(400).json({ error: "Unknown template ID" });
   }
   const { enabled, subject, headline, introText } = req.body as {
-    enabled?: boolean; subject?: string; headline?: string; introText?: string;
+    enabled?: unknown; subject?: unknown; headline?: unknown; introText?: unknown;
   };
+
+  // Runtime bounds — admin-only doesn't eliminate the risk of malformed or
+  // oversized documents breaking email rendering downstream.
+  const MAX_SUBJECT   = 200;
+  const MAX_HEADLINE  = 200;
+  const MAX_INTRO     = 3000;
+
+  if (enabled !== undefined && typeof enabled !== "boolean") {
+    return res.status(400).json({ error: "enabled must be a boolean" });
+  }
+  if (subject !== undefined) {
+    if (typeof subject !== "string" || subject.length > MAX_SUBJECT) {
+      return res.status(400).json({ error: `subject must be a string under ${MAX_SUBJECT} characters` });
+    }
+  }
+  if (headline !== undefined) {
+    if (typeof headline !== "string" || headline.length > MAX_HEADLINE) {
+      return res.status(400).json({ error: `headline must be a string under ${MAX_HEADLINE} characters` });
+    }
+  }
+  if (introText !== undefined) {
+    if (typeof introText !== "string" || introText.length > MAX_INTRO) {
+      return res.status(400).json({ error: `introText must be a string under ${MAX_INTRO} characters` });
+    }
+  }
+
   try {
-    await saveTemplateConfig(id, { enabled, subject, headline, introText }, req.adminUid as string);
+    await saveTemplateConfig(
+      id,
+      {
+        ...(enabled !== undefined ? { enabled: enabled as boolean } : {}),
+        ...(subject !== undefined ? { subject: subject as string } : {}),
+        ...(headline !== undefined ? { headline: headline as string } : {}),
+        ...(introText !== undefined ? { introText: introText as string } : {}),
+      },
+      req.adminUid as string
+    );
     return res.json({ success: true });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });

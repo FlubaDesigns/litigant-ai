@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -62,23 +63,40 @@ router.get("/sessions", async (req, res) => {
   }
 });
 
+/**
+ * GET /sessions/:id
+ *
+ * Owner-only. Anonymous public access is exclusively through GET /report/:shareId,
+ * which requires the share token. This route never allows access based on the
+ * `shared` flag alone — knowing a raw session ID is not sufficient.
+ *
+ * Previously this route allowed any request to read a session when data.shared
+ * was true, with no share token required. Since session IDs were predictable
+ * (timestamp + short random), this was a meaningful exposure. Fixed: owner-only.
+ */
 router.get("/sessions/:id", async (req, res) => {
   const db = getFirestoreDb();
   if (!db) { res.status(404).json({ message: "Not found" }); return; }
 
-  let uid: string | null = null;
+  // Require authentication — no anonymous access via raw session ID
   const authHeader = req.headers["authorization"];
-  if (authHeader?.startsWith("Bearer ")) {
-    const decoded = await verifyIdToken(authHeader.slice(7));
-    if (decoded) uid = decoded.uid;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ message: "Unauthorized" }); return;
   }
+  const decoded = await verifyIdToken(authHeader.slice(7));
+  if (!decoded) {
+    res.status(401).json({ message: "Unauthorized" }); return;
+  }
+  const uid = decoded.uid;
 
   try {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
     if (!doc.exists) { res.status(404).json({ message: "Session not found" }); return; }
 
     const data = doc.data()!;
-    if (!data["shared"] && data["userId"] !== uid) {
+
+    // Strict owner check — no shared-flag bypass
+    if (data["userId"] !== uid) {
       res.status(403).json({ message: "Forbidden" }); return;
     }
 
@@ -108,40 +126,14 @@ router.get("/sessions/:id", async (req, res) => {
       }
     }
 
-    const isOwner = uid !== null && data["userId"] === uid;
-
-    if (isOwner) {
-      // Session owner: return full document (includes userId, config, credit detail, etc.)
-      res.json({
-        id: doc.id,
-        ...data,
-        transcript,
-        debateNotes,
-        createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
-        updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
-      });
-    } else {
-      // Anonymous shared viewer: apply the same public-field allowlist as
-      // GET /report/:shareId so that adding a new internal field to the session
-      // document never silently exposes it here without an explicit decision.
-      // userId is the primary field this guards today; any future internal
-      // fields (billing details, IP, etc.) are blocked by default.
-      const PUBLIC_SESSION_FIELDS = [
-        "sessionId", "title", "question", "templateId",
-        "confidence", "creditsUsed", "status",
-        "finalAnswer", "debateNotes", "transcript", "caveats", "artifacts",
-        "shared", "shareId",
-      ] as const;
-      const pub: Record<string, unknown> = { id: doc.id };
-      for (const f of PUBLIC_SESSION_FIELDS) {
-        if (data[f] !== undefined) pub[f] = data[f];
-      }
-      pub["transcript"]  = transcript;
-      pub["debateNotes"] = debateNotes;
-      pub["createdAt"]   = data["createdAt"]?.toDate?.()?.toISOString() ?? null;
-      pub["updatedAt"]   = data["updatedAt"]?.toDate?.()?.toISOString() ?? null;
-      res.json(pub);
-    }
+    res.json({
+      id: doc.id,
+      ...data,
+      transcript,
+      debateNotes,
+      createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
+      updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
+    });
   } catch (e: any) {
     res.status(500).json({ message: e?.message });
   }
@@ -169,6 +161,13 @@ router.delete("/sessions/:id", async (req, res) => {
   }
 });
 
+/**
+ * PATCH /sessions/:id
+ *
+ * Runtime-validated — rejects unexpected types, oversized strings, and unknown keys.
+ * When shared is set to false, shareId is cleared so re-sharing mints a fresh token
+ * and old leaked links remain permanently invalid.
+ */
 router.patch("/sessions/:id", async (req, res) => {
   const db = getFirestoreDb();
   const authHeader = req.headers["authorization"];
@@ -180,16 +179,45 @@ router.patch("/sessions/:id", async (req, res) => {
   // shareId is intentionally excluded from the accepted body — it is always
   // generated server-side via POST /sessions/:id/share to prevent spoofing.
   const { title, shared, starred, archived } = req.body as {
-    title?: string;
-    shared?: boolean;
-    starred?: boolean;
-    archived?: boolean;
+    title?: unknown;
+    shared?: unknown;
+    starred?: unknown;
+    archived?: unknown;
   };
+
   const updates: Record<string, unknown> = {};
-  if (title !== undefined) updates["title"] = title;
-  if (shared !== undefined) updates["shared"] = shared;
-  if (starred !== undefined) updates["starred"] = starred;
-  if (archived !== undefined) updates["archived"] = archived;
+
+  if (title !== undefined) {
+    if (typeof title !== "string") {
+      res.status(400).json({ message: "title must be a string" }); return;
+    }
+    updates["title"] = title.trim().slice(0, 200);
+  }
+  if (shared !== undefined) {
+    if (typeof shared !== "boolean") {
+      res.status(400).json({ message: "shared must be a boolean" }); return;
+    }
+    updates["shared"] = shared;
+    // When unsharing, clear the share token so re-sharing later can't reactivate
+    // a previously leaked link. The old shareId permanently stops working.
+    if (shared === false) updates["shareId"] = null;
+  }
+  if (starred !== undefined) {
+    if (typeof starred !== "boolean") {
+      res.status(400).json({ message: "starred must be a boolean" }); return;
+    }
+    updates["starred"] = starred;
+  }
+  if (archived !== undefined) {
+    if (typeof archived !== "boolean") {
+      res.status(400).json({ message: "archived must be a boolean" }); return;
+    }
+    updates["archived"] = archived;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ message: "No valid fields to update" }); return;
+  }
 
   try {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
@@ -201,7 +229,13 @@ router.patch("/sessions/:id", async (req, res) => {
   }
 });
 
-/** POST /sessions/:id/share — generate a server-side shareId and mark the session shared */
+/**
+ * POST /sessions/:id/share — generate a new shareId and mark the session shared.
+ *
+ * Always mints a fresh token — never reuses an existing shareId. This ensures
+ * that if a user unshares and later re-shares, the old link stays permanently
+ * dead and cannot be reactivated by anyone who had it.
+ */
 router.post("/sessions/:id/share", async (req, res) => {
   const db = getFirestoreDb();
   const authHeader = req.headers["authorization"];
@@ -214,9 +248,9 @@ router.post("/sessions/:id/share", async (req, res) => {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
     if (!doc.exists || doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
 
-    // Reuse existing shareId if already shared, otherwise generate a new one
-    const existingShareId = doc.data()!["shareId"] as string | undefined;
-    const shareId = existingShareId || crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    // Always mint a new shareId — never reuse the old one.
+    // This means re-sharing after an unshare gives a new URL, not the same one.
+    const shareId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
     await doc.ref.update({ shared: true, shareId });
     res.json({ success: true, shareId });
