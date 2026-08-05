@@ -135,7 +135,6 @@ export default function SessionPage() {
   const [activityLogOpen, setActivityLogOpen] = useState(false);
   const [allProviders, setAllProviders] = useState<ProviderInfo[]>([]);
   const [toolBanner, setToolBanner] = useState<string | null>(null);
-  const [newPipelineCap, setNewPipelineCap] = useState<number>(0);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityLogRef = useRef<HTMLDivElement>(null);
 
@@ -544,8 +543,7 @@ export default function SessionPage() {
                 state={state}
                 credits={credits}
                 estimatedCredits={estimatedCredits}
-                newPipelineCap={newPipelineCap}
-                setNewPipelineCap={setNewPipelineCap}
+
                 insufficientCredits={insufficientCredits}
                 feedbackGiven={feedbackGiven}
                 rebuttalChallenge={rebuttalChallenge}

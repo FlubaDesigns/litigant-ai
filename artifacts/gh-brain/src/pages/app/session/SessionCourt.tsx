@@ -177,8 +177,7 @@ interface SessionCourtProps {
   state: SessionState;
   credits: number;
   estimatedCredits: number;
-  newPipelineCap: number;
-  setNewPipelineCap: (v: number) => void;
+
   insufficientCredits: boolean;
   feedbackGiven: "good" | "bad" | "warn" | null;
   rebuttalChallenge: string;
@@ -210,8 +209,7 @@ export function SessionCourt({
   state,
   credits,
   estimatedCredits,
-  newPipelineCap,
-  setNewPipelineCap,
+
   insufficientCredits,
   feedbackGiven,
   rebuttalChallenge,
@@ -301,9 +299,9 @@ export function SessionCourt({
               {state.pauseReason === "credit_cap" ? (
                 <>
                   <div style={{ fontSize: 12, color: "#9ab89a", marginBottom: 10, lineHeight: 1.5 }}>
-                    The court debated until the credit cap was hit. The Moderator synthesised the following
-                    partial answer from what was argued. Raise your cap to run the full verdict pipeline
-                    (Architect → Builder → Auditor) and get a polished structured document, or accept this answer as-is.
+                    Your credits ran out mid-debate. The court's best answer from what was argued is below —
+                    it's yours to keep as-is. To get a polished structured document (Architect → Builder → Auditor),
+                    you'll need more credits.
                   </div>
                   {state.finalAnswer && (
                     <div style={{
@@ -314,33 +312,20 @@ export function SessionCourt({
                       {state.finalAnswer}
                     </div>
                   )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <label style={{ fontSize: 12, color: "#7ab87a", whiteSpace: "nowrap" }}>New credit cap</label>
-                    <input
-                      type="number"
-                      min={state.creditsUsed + 1}
-                      step={10}
-                      value={newPipelineCap || (state.config.maxCredits ?? 0) + 50}
-                      onChange={(e) => setNewPipelineCap(Math.max(state.creditsUsed + 1, Number(e.target.value)))}
-                      style={{
-                        width: 90, padding: "4px 8px", borderRadius: 7, border: "1px solid #2a4a2a",
-                        background: "#0d1f0d", color: "#eef7ee", fontSize: 13,
-                      }}
-                    />
-                    <span style={{ fontSize: 11, color: "#556655" }}>credits (you have {credits})</span>
-                  </div>
                   <div className="session-pause-btns">
-                    {credits < 25 ? (
-                      <button onClick={() => onNavigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
-                    ) : (
+                    {credits >= 50 ? (
                       <button
-                        onClick={() => { void onContinue(newPipelineCap || (state.config.maxCredits ?? 0) + 50); }}
+                        onClick={() => { void onContinue(state.creditsUsed + credits); }}
                         className="session-pause-btn-primary"
                       >
-                        Continue to full verdict — {credits} cr
+                        Get full document — uses up to {credits} cr
+                      </button>
+                    ) : (
+                      <button onClick={() => onNavigate("/billing")} className="session-pause-btn-primary">
+                        Buy credits → get full document
                       </button>
                     )}
-                    <button onClick={onAcceptPartial} className="session-pause-btn-secondary">Accept partial answer</button>
+                    <button onClick={onAcceptPartial} className="session-pause-btn-secondary">Keep this answer</button>
                   </div>
                 </>
               ) : (
