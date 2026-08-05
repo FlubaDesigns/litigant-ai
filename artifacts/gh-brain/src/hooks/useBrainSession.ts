@@ -1,6 +1,6 @@
 import { useReducer, useRef, useCallback } from "react";
-import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem } from "@/services/sessionService";
-export type { CaseFileItem };
+import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
+export type { CaseFileItem, CourtroomOutcome, RelayContext };
 import type { Template, CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
 import {
@@ -22,6 +22,7 @@ export type SessionPhase =
   | "running"
   | "paused"
   | "complete"
+  | "relay_needed"
   | "error";
 
 export interface FeedItem {
@@ -77,6 +78,23 @@ export interface SessionState {
    * stored here so all subsequent turns are pinned to it.
    */
   failoverProvider: string | null;
+  /** Which pipeline branch was taken (set on done/courtroom_outcome). */
+  artifactPath: "artifact" | "no-artifact" | null;
+  /** Structured metadata about why/how the session terminated. */
+  courtroomOutcome: CourtroomOutcome | null;
+  /** Number of relay rounds completed. */
+  relayCount: number;
+  /**
+   * When Auditor (no-artifact) flagged NOT_ENOUGH, this is the specific
+   * missing information the user must supply. Triggers a relay prompt.
+   */
+  relayQuestion: string | null;
+  /** Whether this session is waiting for a user relay answer. */
+  needsRelay: boolean;
+  /**
+   * End-of-job tap — null = not yet tapped; only relevant when relayCount >= 1.
+   */
+  endOfJobTap: "worth_it" | "not_worth_it" | null;
 }
 
 type Action =
@@ -105,10 +123,18 @@ type Action =
         sessionId: string;
         pauseReason?: PauseReason;
         pauseTranscript?: string[];
+        artifactPath?: "artifact" | "no-artifact";
+        courtroomOutcome?: CourtroomOutcome;
+        relayCount?: number;
+        relayQuestion?: string;
+        needsRelay?: boolean;
+        endOfJobTap?: "worth_it" | "not_worth_it" | null;
       };
     }
   | { type: "ERROR"; message: string }
   | { type: "PROVIDER_FAILOVER"; provider: string }
+  | { type: "COURTROOM_OUTCOME"; courtroomOutcome: CourtroomOutcome; artifactPath: "artifact" | "no-artifact" }
+  | { type: "SET_END_OF_JOB_TAP"; tap: "worth_it" | "not_worth_it" }
   | { type: "RESET" }
   | { type: "ADD_CASE_FILE"; item: CaseFileItem }
   | { type: "REMOVE_CASE_FILE"; id: string }
@@ -148,6 +174,12 @@ type Action =
       transcript: string;
       caveats: string;
       artifacts: string;
+    }
+  | {
+      type: "RELAY_SUBMIT";
+      relayRound: number;
+      missingInfo: string;
+      prevSessionId: string;
     };
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
@@ -185,6 +217,12 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     grades: makeDefaultGrades(),
     caseFile: [],
     failoverProvider: null,
+    artifactPath: null,
+    courtroomOutcome: null,
+    relayCount: 0,
+    relayQuestion: null,
+    needsRelay: false,
+    endOfJobTap: null,
   };
 }
 
@@ -350,29 +388,70 @@ function reducer(state: SessionState, action: Action): SessionState {
       };
     }
 
-    case "SESSION_DONE":
+    case "SESSION_DONE": {
+      const p = action.payload;
+      const phase = p.pauseReason ? "paused" : p.needsRelay ? "relay_needed" : "complete";
       return {
         ...state,
-        phase: action.payload.pauseReason ? "paused" : "complete",
+        phase,
         activeRole: null,
-        confidence: action.payload.confidence,
-        creditsUsed: action.payload.creditsUsed,
-        finalAnswer: action.payload.finalAnswer,
-        debateNotes: action.payload.debateNotes,
-        transcript: action.payload.transcript,
-        caveats: action.payload.caveats,
-        artifacts: action.payload.artifacts,
-        sessionId: action.payload.sessionId,
-        pauseReason: action.payload.pauseReason ?? null,
-        pauseTranscript: action.payload.pauseTranscript ?? null,
-        activityLog: [...state.activityLog, `[Orchestrator] final delivery — ${action.payload.confidence}% confidence`],
+        confidence: p.confidence,
+        creditsUsed: p.creditsUsed,
+        finalAnswer: p.finalAnswer,
+        debateNotes: p.debateNotes,
+        transcript: p.transcript,
+        caveats: p.caveats,
+        artifacts: p.artifacts,
+        sessionId: p.sessionId,
+        pauseReason: p.pauseReason ?? null,
+        pauseTranscript: p.pauseTranscript ?? null,
+        artifactPath: p.artifactPath ?? state.artifactPath,
+        courtroomOutcome: p.courtroomOutcome ?? state.courtroomOutcome,
+        relayCount: p.relayCount ?? state.relayCount,
+        relayQuestion: p.relayQuestion ?? null,
+        needsRelay: p.needsRelay ?? false,
+        endOfJobTap: p.endOfJobTap ?? null,
+        activityLog: [...state.activityLog, `[Orchestrator] final delivery — ${p.confidence}% confidence`],
       };
+    }
 
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
 
     case "PROVIDER_FAILOVER":
       return { ...state, failoverProvider: action.provider };
+
+    case "COURTROOM_OUTCOME":
+      return {
+        ...state,
+        courtroomOutcome: action.courtroomOutcome,
+        artifactPath: action.artifactPath,
+      };
+
+    case "SET_END_OF_JOB_TAP":
+      return { ...state, endOfJobTap: action.tap };
+
+    case "RELAY_SUBMIT":
+      return {
+        ...state,
+        phase: "running",
+        runtimeFeed: [],
+        activityLog: [`[System] Relay round ${action.relayRound} — court incorporating your information…`],
+        courtHappened: false,
+        confidence: 0,
+        creditsUsed: 0,
+        currentRound: 0,
+        finalAnswer: "",
+        debateNotes: "",
+        transcript: "",
+        caveats: "",
+        artifacts: "",
+        errorMessage: null,
+        pauseReason: null,
+        pauseTranscript: null,
+        relayQuestion: null,
+        needsRelay: false,
+      };
 
     case "REBUTTAL_SUBMIT":
       return {
@@ -514,6 +593,11 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
           debateNotes: event.debateNotes ?? "",
         });
         break;
+      case "courtroom_outcome":
+        if (event.courtroomOutcome && event.artifactPath) {
+          dispatch({ type: "COURTROOM_OUTCOME", courtroomOutcome: event.courtroomOutcome, artifactPath: event.artifactPath });
+        }
+        break;
       case "done":
         dispatch({
           type: "SESSION_DONE",
@@ -528,6 +612,12 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
             sessionId: event.sessionId!,
             pauseReason: event.pauseReason,
             pauseTranscript: event.transcriptLines,
+            artifactPath: event.artifactPath,
+            courtroomOutcome: event.courtroomOutcome,
+            relayCount: event.relayCount,
+            relayQuestion: event.relayQuestion,
+            needsRelay: event.needsRelay,
+            endOfJobTap: event.endOfJobTap,
           },
         });
         break;
@@ -768,6 +858,54 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     }
   }, [user, handleSSEEvent]);
 
+  const submitRelay = useCallback(async (missingInfo: string) => {
+    const s = stateRef.current;
+    if (!s.sessionId) return;
+
+    const relayRound = s.relayCount + 1;
+
+    dispatch({
+      type: "RELAY_SUBMIT",
+      relayRound,
+      missingInfo,
+      prevSessionId: s.sessionId,
+    });
+
+    abortRef.current = new AbortController();
+
+    let idToken: string | undefined;
+    try {
+      idToken = (await user?.getIdToken()) ?? undefined;
+    } catch { /* guest */ }
+
+    const relayCtx: RelayContext = {
+      missingInfo,
+      relayRound,
+      originalTranscript: s.pauseTranscript ?? s.transcript.split("\n\n---\n\n").filter(Boolean),
+      parentSessionId: s.sessionId,
+    };
+
+    const request: BrainRunRequest = {
+      question: s.question,
+      config: s.config,
+      templateId: s.template?.id,
+      idToken,
+      relayContext: relayCtx,
+    };
+
+    try {
+      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        dispatch({ type: "ERROR", message: err?.message || "Relay failed" });
+      }
+    }
+  }, [user, handleSSEEvent]);
+
+  const setEndOfJobTap = useCallback((tap: "worth_it" | "not_worth_it") => {
+    dispatch({ type: "SET_END_OF_JOB_TAP", tap });
+  }, []);
+
   const addCaseFile = useCallback((item: CaseFileItem) => {
     dispatch({ type: "ADD_CASE_FILE", item });
   }, []);
@@ -787,6 +925,8 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     loadPausedSession,
     loadCompleteSession,
     submitRebuttal,
+    submitRelay,
+    setEndOfJobTap,
     setQuestion,
     setTemplate,
     setConfig,

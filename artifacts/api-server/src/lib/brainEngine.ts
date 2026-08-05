@@ -146,6 +146,35 @@ export interface RebuttalContext {
   parentSessionId?: string;
 }
 
+export interface CourtroomOutcome {
+  /** Why the session terminated or routed the way it did. */
+  reason:
+    | "approved"           // Auditor approved — delivered to user
+    | "not_enough"         // Auditor: missing determinative fact; relay to user
+    | "convergence_failure"// 3 artifact cycles without APPROVED
+    | "credit_cap"         // credit cap hit before full pipeline
+    | "iteration_limit"    // max debate rounds without target confidence
+    | "aborted";           // user stopped
+  confidenceAtExit: number;
+  /** Debate round count at exit (0 when debate was skipped). */
+  round: number;
+}
+
+export interface RelayContext {
+  /**
+   * The missing information the user is now supplying in response to a
+   * NOT_ENOUGH Auditor decision.
+   */
+  missingInfo: string;
+  relayRound: number;
+  /**
+   * Full debate transcript from the original session, so Moderator can
+   * incorporate the new info without re-running the debate.
+   */
+  originalTranscript: string[];
+  parentSessionId?: string;
+}
+
 export interface CaseFileItem {
   id: string;
   type: "url" | "file";
@@ -180,6 +209,13 @@ export interface BrainRunOptions {
    * instead of the one originally selected by the user.
    */
   forcedProvider?: string;
+  /**
+   * Relay context — user is supplying missing information in response to a
+   * NOT_ENOUGH Auditor decision. Moderator receives the original transcript
+   * plus the new info and decides whether to trigger a fresh debate round
+   * (SUBSTANTIVE: yes) or pass directly to Auditor (SUBSTANTIVE: no).
+   */
+  relayContext?: RelayContext;
   res: Response;
   abortSignal?: AbortSignal;
 }
@@ -213,9 +249,30 @@ export interface BrainRunResult {
   /**
    * True when 3 full Architect→Builder→Architect→Auditor cycles exhausted
    * without APPROVED. The last-cycle artifact is still delivered; the user
-   * will be asked for clarification (handled by the no-artifact/relay task).
+   * will be asked for clarification.
    */
   convergenceFailure?: boolean;
+  /**
+   * Which pipeline branch the session took after the debate.
+   * "artifact"    → Architect→Builder→Auditor (standard path)
+   * "no-artifact" → Moderator synthesis reviewed directly by Auditor
+   */
+  artifactPath: "artifact" | "no-artifact";
+  /** Structured metadata about why/how the session terminated. */
+  courtroomOutcome: CourtroomOutcome;
+  /** Number of relay rounds completed (user supplied missing info). */
+  relayCount: number;
+  /**
+   * End-of-job satisfaction tap — set to null initially; updated by the
+   * frontend after the user taps. Only exposed when relayCount >= 1.
+   */
+  endOfJobTap?: "worth_it" | "not_worth_it" | null;
+  /**
+   * When Auditor (no-artifact) returned NOT_ENOUGH, this contains the
+   * specific missing information the user must supply before the court
+   * can complete its answer.
+   */
+  relayQuestion?: string;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -586,9 +643,12 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     // When the credit cap was hit mid-debate, prompt Moderator to synthesise a
     // partial / degraded answer from whatever the court produced. This ensures
     // the user always sees a real answer, not a blank card.
+    const { relayContext } = opts;
     const moderatorUserContent = creditCapHit
-      ? `The court debate was cut short because the credit cap was reached. Here is the partial debate transcript:\n\n${debateTranscript}\n\nThe debate is incomplete. Synthesise the best possible answer from the arguments that were made. Start with a clear note that this is a partial analysis. Summarise the key points of agreement and disagreement, identify the strongest argument on each side, and state the most defensible conclusion you can draw from what was debated. Be explicit about the limitations caused by the incomplete debate.`
-      : `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps. Then brief the Architect on what deliverable this question requires.`;
+      ? `The court debate was cut short because the credit cap was reached. Here is the partial debate transcript:\n\n${debateTranscript}\n\nThe debate is incomplete. Synthesise the best possible answer from the arguments that were made. Start with a clear note that this is a partial analysis. Summarise the key points of agreement and disagreement, identify the strongest argument on each side, and state the most defensible conclusion you can draw from what was debated. Be explicit about the limitations caused by the incomplete debate.\n\nDeclare ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no based on whether the question requires a structured document.`
+      : relayContext
+      ? `You are operating in relay mode (relay round ${relayContext.relayRound}). The Auditor previously flagged that a determinative fact was missing. The user has now supplied the missing information.\n\nOriginal debate transcript:\n\n${relayContext.originalTranscript.join("\n\n")}\n\nUser's new information:\n\n"${relayContext.missingInfo}"\n\nReview the original transcript in light of this new information. Produce an updated deliberation summary incorporating the new information.\n\nThen declare:\n- ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no\n- SUBSTANTIVE: yes (if the new information materially changes the debate outcome and warrants a fresh debate round) or SUBSTANTIVE: no (if the new information can be incorporated directly into the synthesis without re-debating)`
+      : `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps.\n\nThen declare ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no based on whether the question requires a structured deliverable document (report, memo, plan, code, etc.) or whether a synthesised text answer is sufficient.`;
 
     const moderatorMessages: ChatMessage[] = [
       {
@@ -642,206 +702,300 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         conscienceVersion,
         pauseReason: "credit_cap",
         fixedStageTokens: { input: 0, output: 0 },
+        artifactPath: "artifact" as const,
+        courtroomOutcome: { reason: "credit_cap" as const, confidenceAtExit: confidence, round: config.maxIterations },
+        relayCount: opts.relayContext?.relayRound ?? 0,
       };
     }
   }
 
-  // ── Architect — design the artifact blueprint ─────────────────────────────
+  // ── Route: artifact vs no-artifact ───────────────────────────────────────
+  // Parse the Moderator's ARTIFACT_NEEDED declaration.
+  // Falls back to "yes" (artifact path) when absent so old prompts don't break.
+  const artifactNeeded = !/ARTIFACT_NEEDED:\s*no\b/i.test(moderatorSummary);
+
+  // Relay count: how many prior relay rounds have accumulated.
+  const relayCount = opts.relayContext?.relayRound ?? 0;
+
+  // When the Moderator declared ARTIFACT_NEEDED: no, or we are in relay mode
+  // (which always stays on the no-artifact path), skip Architect + Builder.
+  let artifactPath: "artifact" | "no-artifact" = artifactNeeded ? "artifact" : "no-artifact";
+  // Relay mode always uses the no-artifact path.
+  if (opts.relayContext) artifactPath = "no-artifact";
+
+  // ── No-artifact path: Auditor reviews Moderator synthesis directly ────────
+  let noArtifactApproved = false;
+  let noArtifactRelayQuestion = "";
+  let noArtifactFinalSynthesis = moderatorSummary;
+
+  if (artifactPath === "no-artifact") {
+    throwIfAborted(abortSignal);
+    sendSSE(res, { type: "role_start", role: "Auditor (Release)", roleIndex: -5, round: 99, provider: auditProvider.name });
+
+    const noArtifactAuditorPrompt =
+      `Moderator's synthesised answer:\n\n${moderatorSummary}\n\n` +
+      `Full debate transcript (for accuracy checking):\n\n${transcript.join("\n\n")}\n\n` +
+      `You are operating in Mode B (no-artifact review). Check the synthesis for accuracy against the transcript, completeness, and unsupported claims.\n\n` +
+      `Output APPROVED or NOT_ENOUGH as your first line, then follow the Mode B output format.`;
+
+    const noArtifactAuditMessages: ChatMessage[] = [
+      { role: "system", content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}` },
+      { role: "user",   content: noArtifactAuditorPrompt },
+    ];
+
+    const noArtifactAuditOutput = await callRole(
+      auditProvider, noArtifactAuditMessages, 800,
+      (chunk) => sendSSE(res, { type: "content", role: "Auditor (Release)", content: chunk }),
+    );
+
+    transcript.push(`**Auditor (Release):** ${noArtifactAuditOutput}`);
+    turns.push({ role: "Auditor (Release)", round: 99, content: noArtifactAuditOutput });
+    sendSSE(res, { type: "role_end", role: "Auditor (Release)", fullContent: noArtifactAuditOutput });
+
+    const noArtifactDecision = noArtifactAuditOutput.match(/^(APPROVED|NOT_ENOUGH)\b/im)?.[1]?.toUpperCase() ?? "APPROVED";
+    noArtifactApproved = noArtifactDecision === "APPROVED";
+
+    if (noArtifactApproved) {
+      // Extract the corrected synthesis text from Auditor output
+      const synthMatch = noArtifactAuditOutput.match(/APPROVED[^\n]*\n+([\s\S]+)/i);
+      noArtifactFinalSynthesis = synthMatch ? synthMatch[1].trim() : moderatorSummary;
+    } else {
+      // NOT_ENOUGH: extract what the user must supply
+      const missingMatch = noArtifactAuditOutput.match(/##\s+Missing Information\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+      noArtifactRelayQuestion = missingMatch
+        ? missingMatch[1].trim()
+        : "The court requires additional information to complete its answer. Please provide more detail.";
+    }
+  }
+
+  // ── Emit courtroom_outcome SSE (no-artifact path) ─────────────────────────
+  // For the artifact path this is emitted after the convergence loop below.
+  if (artifactPath === "no-artifact") {
+    const outcomeReason = noArtifactApproved ? "approved" : "not_enough";
+    const courtroomOutcomePayload: CourtroomOutcome = {
+      reason: outcomeReason,
+      confidenceAtExit: confidence,
+      round: config.maxIterations,
+    };
+    sendSSE(res, { type: "courtroom_outcome", courtroomOutcome: courtroomOutcomePayload, artifactPath });
+  }
+
+  // ── Artifact path: Architect — design the artifact blueprint ─────────────
   throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Architect", roleIndex: -3, round: 99, provider: archProvider.name });
+  if (artifactPath === "artifact") sendSSE(res, { type: "role_start", role: "Architect", roleIndex: -3, round: 99, provider: archProvider.name });
 
-  const architectMessages: ChatMessage[] = [
-    {
-      role: "system",
-      content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}`,
-    },
-    {
-      role: "user",
-      content: `The Moderator has produced this deliberation summary:\n\n${moderatorSummary}\n\nOriginal question: "${question}"\n\n${
-        config.artifactType && config.artifactType !== "auto"
-          ? `REQUIRED ARTIFACT TYPE: The user has explicitly requested a **${config.artifactType}**. You MUST design the blueprint for this specific document type — do not choose a different format. Design the section structure, tone, and audience for a ${config.artifactType} specifically.\n\n`
-          : ""
-      }Design the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`,
-    },
-  ];
-
-  const architectBlueprint = await callRole(
-    archProvider, architectMessages, 600,
-    (chunk) => sendSSE(res, { type: "content", role: "Architect", content: chunk }),
-  );
-
-  transcript.push(`**Architect (Blueprint):** ${architectBlueprint}`);
-  turns.push({ role: "Architect", round: 99, content: architectBlueprint });
-  sendSSE(res, { type: "role_end", role: "Architect", fullContent: architectBlueprint });
-
-  // ── Architect / Builder / Auditor — 3-cycle convergence loop ─────────────
-  // Each full cycle: Builder builds to the current blueprint → Architect reviews
-  // against its own blueprint (catches deviations before Auditor sees them) →
-  // Auditor quality-gates. On Auditor RETURNED: Architect reworks the blueprint
-  // and the next cycle begins. On 3 cycles exhausted without APPROVED:
-  // convergenceFailure is flagged; the relay-to-user path is handled by task #41.
-  const MAX_BUILD_CYCLES = 3;
-  let currentBlueprint = architectBlueprint;
   let finalArtifact = "";
   let auditorOutput = "";
   let convergenceFailure = false;
 
-  for (let cycle = 1; cycle <= MAX_BUILD_CYCLES; cycle++) {
-    throwIfAborted(abortSignal);
-
-    // ── Builder — build to current blueprint ─────────────────────────────────
-    const buildLabel = cycle === 1 ? "Builder" : `Builder (Rebuild ${cycle - 1})`;
-    sendSSE(res, { type: "role_start", role: buildLabel, roleIndex: -4, round: 99, provider: buildProvider.name, cycle });
-
-    const builderMessages: ChatMessage[] = [
-      { role: "system", content: `${seatBriefs.builder}\n\n${baseContext}${conscienceClause}` },
+  if (artifactPath === "artifact") {
+    const architectMessages: ChatMessage[] = [
+      {
+        role: "system",
+        content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}`,
+      },
       {
         role: "user",
-        content: cycle === 1
-          ? `Architect's blueprint:\n\n${currentBlueprint}\n\nModerator's deliberation summary:\n\n${moderatorSummary}\n\nBuild the artifact exactly to spec. Deliver the complete, production-ready document.`
-          : `The Auditor returned the previous artifact. The Architect has reworked the blueprint to address the concerns.\n\n## Revised Blueprint\n${currentBlueprint}\n\n## Moderator's Deliberation Summary\n${moderatorSummary}\n\nBuild the artifact exactly to the revised blueprint. Deliver the complete, production-ready document.`,
+        content: `The Moderator has produced this deliberation summary:\n\n${moderatorSummary}\n\nOriginal question: "${question}"\n\n${
+          config.artifactType && config.artifactType !== "auto"
+            ? `REQUIRED ARTIFACT TYPE: The user has explicitly requested a **${config.artifactType}**. You MUST design the blueprint for this specific document type — do not choose a different format. Design the section structure, tone, and audience for a ${config.artifactType} specifically.\n\n`
+            : ""
+        }Design the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`,
       },
     ];
 
-    let builtArtifact = await callRole(
-      buildProvider, builderMessages, 1800,
-      (chunk) => sendSSE(res, { type: "content", role: buildLabel, content: chunk }),
+    const architectBlueprint = await callRole(
+      archProvider, architectMessages, 600,
+      (chunk) => sendSSE(res, { type: "content", role: "Architect", content: chunk }),
     );
 
-    transcript.push(`**${cycle === 1 ? "Builder (Artifact)" : buildLabel}:** ${builtArtifact}`);
-    turns.push({ role: buildLabel, round: 99, content: builtArtifact });
-    sendSSE(res, { type: "role_end", role: buildLabel, fullContent: builtArtifact, cycle });
+    transcript.push(`**Architect (Blueprint):** ${architectBlueprint}`);
+    turns.push({ role: "Architect", round: 99, content: architectBlueprint });
+    sendSSE(res, { type: "role_end", role: "Architect", fullContent: architectBlueprint });
 
-    // ── Architect review — catches deviations before Auditor ─────────────────
-    throwIfAborted(abortSignal);
-    sendSSE(res, { type: "role_start", role: "Architect (Review)", roleIndex: -3, round: 99, provider: archProvider.name, cycle });
+    // ── Architect / Builder / Auditor — 3-cycle convergence loop ─────────────
+    const MAX_BUILD_CYCLES = 3;
+    let currentBlueprint = architectBlueprint;
 
-    const archReviewMessages: ChatMessage[] = [
-      { role: "system", content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}` },
-      {
-        role: "user",
-        content: `You designed this blueprint:\n\n${currentBlueprint}\n\nThe Builder has delivered this artifact:\n\n${builtArtifact}\n\nCheck the artifact against your blueprint. Is every section present and correctly executed? Does the format, tone, and audience match what you specified?\n\nOutput format:\n1. First line: PASS or REWORK\n2. If REWORK: follow with a ## Correction Notes section listing the specific deviations Builder must fix\n3. Do not re-output the artifact — only your assessment`,
-      },
-    ];
-
-    const archReviewOutput = await callRole(
-      archProvider, archReviewMessages, 400,
-      (chunk) => sendSSE(res, { type: "content", role: "Architect (Review)", content: chunk }),
-    );
-
-    transcript.push(`**Architect (Review, Cycle ${cycle}):** ${archReviewOutput}`);
-    turns.push({ role: "Architect (Review)", round: 99, content: archReviewOutput });
-    sendSSE(res, { type: "role_end", role: "Architect (Review)", fullContent: archReviewOutput, cycle });
-
-    // If Architect finds deviations, give Builder one correction pass before Auditor
-    const archDecision = archReviewOutput.match(/^(PASS|REWORK)\b/im)?.[1]?.toUpperCase() ?? "PASS";
-    if (archDecision === "REWORK") {
+    for (let cycle = 1; cycle <= MAX_BUILD_CYCLES; cycle++) {
       throwIfAborted(abortSignal);
-      sendSSE(res, { type: "role_start", role: "Builder (Correction)", roleIndex: -4, round: 99, provider: buildProvider.name, cycle });
 
-      const correctionNotes = archReviewOutput.match(/##\s+Correction Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim()
-        ?? archReviewOutput;
+      // ── Builder ─────────────────────────────────────────────────────────────
+      const buildLabel = cycle === 1 ? "Builder" : `Builder (Rebuild ${cycle - 1})`;
+      sendSSE(res, { type: "role_start", role: buildLabel, roleIndex: -4, round: 99, provider: buildProvider.name, cycle });
 
-      const correctionMessages: ChatMessage[] = [
+      const builderMessages: ChatMessage[] = [
         { role: "system", content: `${seatBriefs.builder}\n\n${baseContext}${conscienceClause}` },
         {
           role: "user",
-          content: `The Architect has reviewed your artifact and found these deviations from the blueprint:\n\n## Architect's Correction Notes\n${correctionNotes}\n\n## Blueprint\n${currentBlueprint}\n\n## Your Previous Artifact\n${builtArtifact}\n\nFix every deviation exactly. Deliver the complete, corrected, production-ready document.`,
+          content: cycle === 1
+            ? `Architect's blueprint:\n\n${currentBlueprint}\n\nModerator's deliberation summary:\n\n${moderatorSummary}\n\nBuild the artifact exactly to spec. Deliver the complete, production-ready document.`
+            : `The Auditor returned the previous artifact. The Architect has reworked the blueprint to address the concerns.\n\n## Revised Blueprint\n${currentBlueprint}\n\n## Moderator's Deliberation Summary\n${moderatorSummary}\n\nBuild the artifact exactly to the revised blueprint. Deliver the complete, production-ready document.`,
         },
       ];
 
-      builtArtifact = await callRole(
-        buildProvider, correctionMessages, 1800,
-        (chunk) => sendSSE(res, { type: "content", role: "Builder (Correction)", content: chunk }),
+      let builtArtifact = await callRole(
+        buildProvider, builderMessages, 1800,
+        (chunk) => sendSSE(res, { type: "content", role: buildLabel, content: chunk }),
       );
 
-      transcript.push(`**Builder (Correction, Cycle ${cycle}):** ${builtArtifact}`);
-      turns.push({ role: "Builder (Correction)", round: 99, content: builtArtifact });
-      sendSSE(res, { type: "role_end", role: "Builder (Correction)", fullContent: builtArtifact, cycle });
+      transcript.push(`**${cycle === 1 ? "Builder (Artifact)" : buildLabel}:** ${builtArtifact}`);
+      turns.push({ role: buildLabel, round: 99, content: builtArtifact });
+      sendSSE(res, { type: "role_end", role: buildLabel, fullContent: builtArtifact, cycle });
+
+      // ── Architect review ─────────────────────────────────────────────────────
+      throwIfAborted(abortSignal);
+      sendSSE(res, { type: "role_start", role: "Architect (Review)", roleIndex: -3, round: 99, provider: archProvider.name, cycle });
+
+      const archReviewMessages: ChatMessage[] = [
+        { role: "system", content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}` },
+        {
+          role: "user",
+          content: `You designed this blueprint:\n\n${currentBlueprint}\n\nThe Builder has delivered this artifact:\n\n${builtArtifact}\n\nCheck the artifact against your blueprint. Is every section present and correctly executed? Does the format, tone, and audience match what you specified?\n\nOutput format:\n1. First line: PASS or REWORK\n2. If REWORK: follow with a ## Correction Notes section listing the specific deviations Builder must fix\n3. Do not re-output the artifact — only your assessment`,
+        },
+      ];
+
+      const archReviewOutput = await callRole(
+        archProvider, archReviewMessages, 400,
+        (chunk) => sendSSE(res, { type: "content", role: "Architect (Review)", content: chunk }),
+      );
+
+      transcript.push(`**Architect (Review, Cycle ${cycle}):** ${archReviewOutput}`);
+      turns.push({ role: "Architect (Review)", round: 99, content: archReviewOutput });
+      sendSSE(res, { type: "role_end", role: "Architect (Review)", fullContent: archReviewOutput, cycle });
+
+      const archDecision = archReviewOutput.match(/^(PASS|REWORK)\b/im)?.[1]?.toUpperCase() ?? "PASS";
+      if (archDecision === "REWORK") {
+        throwIfAborted(abortSignal);
+        sendSSE(res, { type: "role_start", role: "Builder (Correction)", roleIndex: -4, round: 99, provider: buildProvider.name, cycle });
+
+        const correctionNotes = archReviewOutput.match(/##\s+Correction Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim()
+          ?? archReviewOutput;
+
+        const correctionMessages: ChatMessage[] = [
+          { role: "system", content: `${seatBriefs.builder}\n\n${baseContext}${conscienceClause}` },
+          {
+            role: "user",
+            content: `The Architect has reviewed your artifact and found these deviations from the blueprint:\n\n## Architect's Correction Notes\n${correctionNotes}\n\n## Blueprint\n${currentBlueprint}\n\n## Your Previous Artifact\n${builtArtifact}\n\nFix every deviation exactly. Deliver the complete, corrected, production-ready document.`,
+          },
+        ];
+
+        builtArtifact = await callRole(
+          buildProvider, correctionMessages, 1800,
+          (chunk) => sendSSE(res, { type: "content", role: "Builder (Correction)", content: chunk }),
+        );
+
+        transcript.push(`**Builder (Correction, Cycle ${cycle}):** ${builtArtifact}`);
+        turns.push({ role: "Builder (Correction)", round: 99, content: builtArtifact });
+        sendSSE(res, { type: "role_end", role: "Builder (Correction)", fullContent: builtArtifact, cycle });
+      }
+
+      // ── Auditor — quality gate ───────────────────────────────────────────────
+      throwIfAborted(abortSignal);
+      const auditLabel = cycle === 1 ? "Auditor (Release)" : `Auditor (Cycle ${cycle})`;
+      sendSSE(res, { type: "role_start", role: auditLabel, roleIndex: -5, round: 99, provider: auditProvider.name, cycle });
+
+      const isLastCycle = cycle === MAX_BUILD_CYCLES;
+      const auditorUserPrompt =
+        `Architect's blueprint:\n\n${currentBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed.` +
+        (isLastCycle
+          ? "\n\nThis is the final review cycle (cycle 3 of 3). If you issue RETURNED, include a ## Convergence Diagnosis section explaining what specific information or clarification from the user would resolve the remaining gaps — this will be surfaced to the user directly."
+          : "") +
+        `\n\nOutput format:\n1. Start with your release decision on its own line: APPROVED or RETURNED\n2. If RETURNED, follow with a ## Revision Notes section (specific issues for the next cycle)` +
+        (isLastCycle ? ", then a ## Convergence Diagnosis section (what user input would unblock convergence)" : "") +
+        `\n3. Then output the complete artifact text — output the artifact as-is on APPROVED, or your lightly corrected version on RETURNED`;
+
+      const auditorMessages: ChatMessage[] = [
+        { role: "system", content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}` },
+        { role: "user",   content: auditorUserPrompt },
+      ];
+
+      auditorOutput = await callRole(
+        auditProvider, auditorMessages, 1200,
+        (chunk) => sendSSE(res, { type: "content", role: auditLabel, content: chunk }),
+      );
+
+      transcript.push(`**${auditLabel}:** ${auditorOutput}`);
+      turns.push({ role: auditLabel, round: 99, content: auditorOutput });
+      sendSSE(res, { type: "role_end", role: auditLabel, fullContent: auditorOutput, cycle });
+
+      const auditDecision = auditorOutput.match(/^(APPROVED|RETURNED)\b/im)?.[1]?.toUpperCase() ?? "APPROVED";
+
+      if (auditDecision === "APPROVED") {
+        const artifactMatch = auditorOutput.match(/APPROVED[^\n]*\n+([\s\S]+)/i);
+        finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
+        break;
+      }
+
+      finalArtifact = builtArtifact;
+
+      if (isLastCycle) {
+        convergenceFailure = true;
+        sendSSE(res, { type: "convergence_failure", sessionId, cycle });
+        break;
+      }
+
+      // ── Architect reworks blueprint for next cycle ───────────────────────────
+      throwIfAborted(abortSignal);
+      sendSSE(res, { type: "role_start", role: "Architect (Blueprint)", roleIndex: -3, round: 99, provider: archProvider.name, cycle });
+
+      const auditRevisionNotes = auditorOutput.match(/##\s+Revision Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim()
+        ?? auditorOutput;
+
+      const blueprintReworkMessages: ChatMessage[] = [
+        { role: "system", content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}` },
+        {
+          role: "user",
+          content: `The Auditor has returned the artifact with these revision notes:\n\n${auditRevisionNotes}\n\n## Your Current Blueprint\n${currentBlueprint}\n\n## Moderator's Deliberation Summary\n${moderatorSummary}\n\nRework the blueprint to directly address the Auditor's concerns. Stay grounded in the original question and Moderator's summary — fixing the gaps is not license to expand scope. Output the complete, revised blueprint.`,
+        },
+      ];
+
+      currentBlueprint = await callRole(
+        archProvider, blueprintReworkMessages, 600,
+        (chunk) => sendSSE(res, { type: "content", role: "Architect (Blueprint)", content: chunk }),
+      );
+
+      transcript.push(`**Architect (Blueprint Rework, Cycle ${cycle}):** ${currentBlueprint}`);
+      turns.push({ role: "Architect (Blueprint)", round: 99, content: currentBlueprint });
+      sendSSE(res, { type: "role_end", role: "Architect (Blueprint)", fullContent: currentBlueprint, cycle });
     }
 
-    // ── Auditor — quality gate ─────────────────────────────────────────────────
-    throwIfAborted(abortSignal);
-    const auditLabel = cycle === 1 ? "Auditor (Release)" : `Auditor (Cycle ${cycle})`;
-    sendSSE(res, { type: "role_start", role: auditLabel, roleIndex: -5, round: 99, provider: auditProvider.name, cycle });
-
-    const isLastCycle = cycle === MAX_BUILD_CYCLES;
-    const auditorUserPrompt =
-      `Architect's blueprint:\n\n${currentBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed.` +
-      (isLastCycle
-        ? "\n\nThis is the final review cycle (cycle 3 of 3). If you issue RETURNED, include a ## Convergence Diagnosis section explaining what specific information or clarification from the user would resolve the remaining gaps — this will be surfaced to the user directly."
-        : "") +
-      `\n\nOutput format:\n1. Start with your release decision on its own line: APPROVED or RETURNED\n2. If RETURNED, follow with a ## Revision Notes section (specific issues for the next cycle)` +
-      (isLastCycle ? ", then a ## Convergence Diagnosis section (what user input would unblock convergence)" : "") +
-      `\n3. Then output the complete artifact text — output the artifact as-is on APPROVED, or your lightly corrected version on RETURNED`;
-
-    const auditorMessages: ChatMessage[] = [
-      { role: "system", content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}` },
-      { role: "user",   content: auditorUserPrompt },
-    ];
-
-    auditorOutput = await callRole(
-      auditProvider, auditorMessages, 1200,
-      (chunk) => sendSSE(res, { type: "content", role: auditLabel, content: chunk }),
-    );
-
-    transcript.push(`**${auditLabel}:** ${auditorOutput}`);
-    turns.push({ role: auditLabel, round: 99, content: auditorOutput });
-    sendSSE(res, { type: "role_end", role: auditLabel, fullContent: auditorOutput, cycle });
-
-    // Parse decision and update finalArtifact correctly per path:
-    //   APPROVED → extract artifact from Auditor output (Auditor outputs it as-is or
-    //              with minor Caveats corrections; everything after the decision line).
-    //   RETURNED → preserve the latest Builder artifact — under the new protocol the
-    //              Auditor outputs only Revision Notes (and optionally a Convergence
-    //              Diagnosis on the final cycle), NOT a corrected artifact. Reading
-    //              the diagnostic sections as deliverable content would be a bug.
-    const auditDecision = auditorOutput.match(/^(APPROVED|RETURNED)\b/im)?.[1]?.toUpperCase() ?? "APPROVED";
-
-    if (auditDecision === "APPROVED") {
-      const artifactMatch = auditorOutput.match(/APPROVED[^\n]*\n+([\s\S]+)/i);
-      finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
-      break;
-    }
-
-    // RETURNED: keep the last Builder output as the best artifact produced so far.
-    // Never read Auditor's diagnostic sections as artifact content.
-    finalArtifact = builtArtifact;
-
-    if (isLastCycle) {
-      convergenceFailure = true;
-      sendSSE(res, { type: "convergence_failure", sessionId, cycle });
-      break;
-    }
-
-    // ── Architect reworks blueprint for next cycle ────────────────────────────
-    throwIfAborted(abortSignal);
-    sendSSE(res, { type: "role_start", role: "Architect (Blueprint)", roleIndex: -3, round: 99, provider: archProvider.name, cycle });
-
-    const auditRevisionNotes = auditorOutput.match(/##\s+Revision Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim()
-      ?? auditorOutput;
-
-    const blueprintReworkMessages: ChatMessage[] = [
-      { role: "system", content: `${seatBriefs.architect}\n\n${baseContext}${conscienceClause}` },
-      {
-        role: "user",
-        content: `The Auditor has returned the artifact with these revision notes:\n\n${auditRevisionNotes}\n\n## Your Current Blueprint\n${currentBlueprint}\n\n## Moderator's Deliberation Summary\n${moderatorSummary}\n\nRework the blueprint to directly address the Auditor's concerns. Stay grounded in the original question and Moderator's summary — fixing the gaps is not license to expand scope. Output the complete, revised blueprint.`,
-      },
-    ];
-
-    currentBlueprint = await callRole(
-      archProvider, blueprintReworkMessages, 600,
-      (chunk) => sendSSE(res, { type: "content", role: "Architect (Blueprint)", content: chunk }),
-    );
-
-    transcript.push(`**Architect (Blueprint Rework, Cycle ${cycle}):** ${currentBlueprint}`);
-    turns.push({ role: "Architect (Blueprint)", round: 99, content: currentBlueprint });
-    sendSSE(res, { type: "role_end", role: "Architect (Blueprint)", fullContent: currentBlueprint, cycle });
+    // Emit courtroom_outcome for the artifact path
+    const artifactOutcomeReason: CourtroomOutcome["reason"] = convergenceFailure ? "convergence_failure" : "approved";
+    const artifactCourtroomOutcome: CourtroomOutcome = {
+      reason: artifactOutcomeReason,
+      confidenceAtExit: confidence,
+      round: config.maxIterations,
+    };
+    sendSSE(res, { type: "courtroom_outcome", courtroomOutcome: artifactCourtroomOutcome, artifactPath });
   }
+
+  // ── Build final courtroomOutcome object ──────────────────────────────────────
+  const courtroomOutcome: CourtroomOutcome = artifactPath === "no-artifact"
+    ? {
+        reason: noArtifactApproved ? "approved" : "not_enough",
+        confidenceAtExit: confidence,
+        round: config.maxIterations,
+      }
+    : {
+        reason: convergenceFailure ? "convergence_failure" : "approved",
+        confidenceAtExit: confidence,
+        round: config.maxIterations,
+      };
 
   // ── Orchestrator — deliver verdict to user ────────────────────────────────
   throwIfAborted(abortSignal);
   sendSSE(res, { type: "role_start", role: "Verdict", roleIndex: 99, round: 99, provider: orchProvider.name });
+
+  // Craft Orchestrator prompt based on which path we took
+  const orchestratorUserContent = artifactPath === "no-artifact"
+    ? noArtifactApproved
+      // APPROVED no-artifact: Orchestrator delivers the synthesised answer
+      ? `The court has completed its work without building a document — the answer is self-contained.\n\nModerator's synthesised answer (Auditor-approved):\n\n${noArtifactFinalSynthesis}\n\nDeliver this answer to the user clearly and directly. Lead with the direct answer, then briefly explain the court's reasoning. Do not manufacture a document — the answer IS the deliverable.`
+      // NOT_ENOUGH: Orchestrator relays the missing-information question to the user
+      : `The court has determined it cannot fully answer the question without additional information from the user.\n\nModerator's synthesis so far:\n\n${moderatorSummary}\n\nAuditor's missing information flag:\n\n${noArtifactRelayQuestion}\n\nInform the user clearly that the court needs this specific information before it can deliver a complete answer. Ask the question precisely. Explain why this information is determinative.`
+    // Artifact path: standard verdict delivery
+    : `The court has completed its work. Here is the Moderator's summary:\n\n${moderatorSummary}\n\nHere is the Auditor-approved artifact:\n\n${finalArtifact}\n\nDeliver the verdict to the user: lead with a direct answer, summarise the key reasons in 2-3 sentences, present the artifact, and close with your standard save prompt asking if they would like to keep a copy in their files.`;
 
   const orchestratorCloseMessages: ChatMessage[] = [
     {
@@ -850,7 +1004,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
     {
       role: "user",
-      content: `The court has completed its work. Here is the Moderator's summary:\n\n${moderatorSummary}\n\nHere is the Auditor-approved artifact:\n\n${finalArtifact}\n\nDeliver the verdict to the user: lead with a direct answer, summarise the key reasons in 2-3 sentences, present the artifact, and close with your standard save prompt asking if they would like to keep a copy in their files.`,
+      content: orchestratorUserContent,
     },
   ];
 
@@ -877,6 +1031,17 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     usage.outputTokens
   );
 
+  // The delivered artifact: for no-artifact APPROVED path, this is the synthesis.
+  // For no-artifact NOT_ENOUGH and artifact paths, use finalArtifact as-is.
+  const deliveredArtifact = artifactPath === "no-artifact" && noArtifactApproved
+    ? noArtifactFinalSynthesis
+    : finalArtifact;
+
+  // The relay question surfaces to the frontend when NOT_ENOUGH.
+  const relayQuestion = artifactPath === "no-artifact" && !noArtifactApproved
+    ? noArtifactRelayQuestion
+    : undefined;
+
   sendSSE(res, { type: "role_end", role: "Verdict", fullContent: finalAnswer });
   sendSSE(res, {
     type: "done",
@@ -888,13 +1053,18 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     transcript: transcript.join("\n\n---\n\n"),
     transcriptLines: transcript,
     caveats,
-    artifacts: finalArtifact,
+    artifacts: deliveredArtifact,
     provider: providerName,
     model: modelName,
     tokenUsage: usage,
     conscienceVersion,
+    artifactPath,
+    courtroomOutcome,
+    relayCount,
+    ...(relayQuestion ? { relayQuestion, needsRelay: true } : {}),
     ...(pauseReason ? { pauseReason } : {}),
     ...(convergenceFailure ? { convergenceFailure } : {}),
+    ...(relayCount >= 1 ? { endOfJobTap: null } : {}),
   });
 
   return {
@@ -905,7 +1075,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     debateNotes: debateNotesList.join("\n\n---\n\n"),
     transcript,
     caveats,
-    artifacts: finalArtifact,
+    artifacts: deliveredArtifact,
     turns,
     provider: providerName,
     model: modelName,
@@ -913,6 +1083,11 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     conscienceVersion,
     pauseReason,
     ...(convergenceFailure ? { convergenceFailure } : {}),
+    artifactPath,
+    courtroomOutcome,
+    relayCount,
+    ...(relayQuestion ? { relayQuestion } : {}),
+    ...(relayCount >= 1 ? { endOfJobTap: null as "worth_it" | "not_worth_it" | null } : {}),
     fixedStageTokens: {
       input:  usage.inputTokens  - usageAfterDebate.inputTokens,
       output: usage.outputTokens - usageAfterDebate.outputTokens,

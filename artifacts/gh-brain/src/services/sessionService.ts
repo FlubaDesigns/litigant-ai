@@ -48,6 +48,31 @@ export interface BrainRunRequest {
    * backup provider name so the new run is pinned to it from the start.
    */
   failoverProvider?: string;
+  /**
+   * Relay context — user is supplying the missing information flagged by the
+   * Auditor's NOT_ENOUGH decision. Moderator receives the original transcript
+   * plus the new info and decides SUBSTANTIVE: yes/no.
+   */
+  relayContext?: RelayContext;
+}
+
+export interface CourtroomOutcome {
+  reason:
+    | "approved"
+    | "not_enough"
+    | "convergence_failure"
+    | "credit_cap"
+    | "iteration_limit"
+    | "aborted";
+  confidenceAtExit: number;
+  round: number;
+}
+
+export interface RelayContext {
+  missingInfo: string;
+  relayRound: number;
+  originalTranscript: string[];
+  parentSessionId?: string;
 }
 
 export type SSEEventType =
@@ -59,6 +84,7 @@ export type SSEEventType =
   | "round_start"
   | "round_end"
   | "paused_post_moderator"
+  | "courtroom_outcome"
   | "done"
   | "error"
   | "provider_failover";
@@ -95,6 +121,20 @@ export interface SSEEvent {
    * can store them and pass back as `continueFromTranscript` on the resume call.
    */
   debateTranscriptLines?: string[];
+  /** Which pipeline branch was taken — emitted on `courtroom_outcome` and `done`. */
+  artifactPath?: "artifact" | "no-artifact";
+  /** Structured termination metadata — emitted on `courtroom_outcome` and `done`. */
+  courtroomOutcome?: CourtroomOutcome;
+  /** Number of relay rounds completed — emitted on `done`. */
+  relayCount?: number;
+  /** When Auditor (no-artifact) returned NOT_ENOUGH — what the user must supply. */
+  relayQuestion?: string;
+  /** True when the session needs a user relay answer before it can complete. */
+  needsRelay?: boolean;
+  /** End-of-job tap — null until user taps; only present when relayCount >= 1. */
+  endOfJobTap?: "worth_it" | "not_worth_it" | null;
+  /** Whether convergence failed after 3 artifact cycles. */
+  convergenceFailure?: boolean;
 }
 
 export function runBrainSession(
@@ -121,7 +161,8 @@ export function runBrainSession(
           sessionId: request.sessionId,
           continueFromTranscript: request.continueFromTranscript,
           rebuttalContext: request.rebuttalContext,
-          parentSessionId: request.rebuttalContext?.parentSessionId,
+          relayContext: request.relayContext,
+          parentSessionId: request.rebuttalContext?.parentSessionId ?? request.relayContext?.parentSessionId,
           caseFile: request.caseFile,
           resumeWithFixedPipeline: request.resumeWithFixedPipeline,
           failoverProvider: request.failoverProvider,

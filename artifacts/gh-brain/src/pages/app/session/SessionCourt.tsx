@@ -187,6 +187,7 @@ interface SessionCourtProps {
   isRunning: boolean;
   isPaused: boolean;
   isComplete: boolean;
+  isRelayNeeded: boolean;
   isError: boolean;
   onStop: () => void;
   onContinue: (cap?: number) => Promise<void>;
@@ -197,6 +198,8 @@ interface SessionCourtProps {
   onDownload: () => Promise<void>;
   onExportPDF: () => void;
   onSubmitRebuttal: (challenge: string) => Promise<void>;
+  onSubmitRelay: (missingInfo: string) => Promise<void>;
+  onSetEndOfJobTap: (tap: "worth_it" | "not_worth_it") => void;
   onSetTemplate: (t: Template | null) => void;
   onSetFieldValues: (v: Record<string, string>) => void;
   onRun: () => void;
@@ -219,6 +222,7 @@ export function SessionCourt({
   isRunning,
   isPaused,
   isComplete,
+  isRelayNeeded,
   isError,
   onStop,
   onContinue,
@@ -229,11 +233,14 @@ export function SessionCourt({
   onDownload,
   onExportPDF,
   onSubmitRebuttal,
+  onSubmitRelay,
+  onSetEndOfJobTap,
   onSetTemplate,
   onSetFieldValues,
   onRun,
   onNavigate,
 }: SessionCourtProps) {
+  const [relayAnswer, setRelayAnswer] = useState("");
   return (
     <>
       {/* ── Row 2: Compact Court Summary ── */}
@@ -341,6 +348,58 @@ export function SessionCourt({
             </div>
           )}
 
+          {/* Relay needed card — Auditor flagged a missing determinative fact */}
+          {isRelayNeeded && state.relayQuestion && (
+            <div style={{ background: "rgba(100,120,255,.07)", border: "1px solid rgba(100,120,255,.35)", borderRadius: 9, padding: "14px 16px" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#8fa8ff", marginBottom: 8 }}>
+                ℹ️ Court needs more information
+              </div>
+              <div style={{ fontSize: 13, color: "#b8c8ff", lineHeight: 1.65, marginBottom: 12, whiteSpace: "pre-wrap" }}>
+                {state.relayQuestion}
+              </div>
+              <textarea
+                value={relayAnswer}
+                onChange={(e) => setRelayAnswer(e.target.value)}
+                placeholder="Provide the missing information here…"
+                rows={3}
+                style={{
+                  width: "100%", background: "#070f1a", border: "1px solid rgba(100,120,255,.3)",
+                  borderRadius: 8, color: "#eef7ee", fontSize: 13, padding: "8px 10px",
+                  resize: "vertical", outline: "none", fontFamily: "inherit", lineHeight: 1.6,
+                  marginBottom: 10,
+                }}
+                onFocus={(e) => { e.target.style.borderColor = "rgba(100,120,255,.7)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "rgba(100,120,255,.3)"; }}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => {
+                    const info = relayAnswer.trim();
+                    if (!info) return;
+                    setRelayAnswer("");
+                    void onSubmitRelay(info);
+                  }}
+                  disabled={!relayAnswer.trim()}
+                  style={{
+                    flex: 1, padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 800,
+                    background: relayAnswer.trim() ? "#5c6fff" : "rgba(100,120,255,.12)",
+                    color: relayAnswer.trim() ? "#fff" : "#3a4a99",
+                    border: "none", cursor: relayAnswer.trim() ? "pointer" : "not-allowed",
+                    transition: "background .15s, color .15s",
+                  }}
+                >
+                  ↩ Submit to court
+                </button>
+                <button
+                  onClick={onReset}
+                  style={{ padding: "10px 14px", borderRadius: 8, background: "transparent", color: "#3a5a5a", fontSize: 12, border: "1px solid #1d2d3d", cursor: "pointer" }}
+                >
+                  New case
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error state */}
           {isError && (
             <div style={{ background: "rgba(200,64,64,.08)", border: "1px solid rgba(200,64,64,.3)", borderRadius: 9, padding: "16px", textAlign: "center" }}>
@@ -363,6 +422,85 @@ export function SessionCourt({
                 question={state.question}
                 items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
               />
+            </div>
+          )}
+
+          {/* Courtroom outcome metadata line — shown after session completes or relay needed */}
+          {state.courtroomOutcome && (isComplete || isRelayNeeded) && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                padding: "6px 10px", borderRadius: 7,
+                background: state.courtroomOutcome.reason === "approved"
+                  ? "rgba(0,200,83,.06)" : state.courtroomOutcome.reason === "not_enough"
+                  ? "rgba(100,120,255,.07)" : "rgba(243,210,106,.06)",
+                border: `1px solid ${state.courtroomOutcome.reason === "approved"
+                  ? "rgba(0,200,83,.2)" : state.courtroomOutcome.reason === "not_enough"
+                  ? "rgba(100,120,255,.25)" : "rgba(243,210,106,.2)"}`,
+              }}
+            >
+              <span style={{ fontSize: 11 }}>
+                {state.courtroomOutcome.reason === "approved" ? "✅" :
+                 state.courtroomOutcome.reason === "not_enough" ? "ℹ️" :
+                 state.courtroomOutcome.reason === "convergence_failure" ? "⚠️" : "⏸"}
+              </span>
+              <span style={{ fontSize: 11, color: "#7ab87a", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {state.courtroomOutcome.reason === "approved" ? "Court approved"
+                  : state.courtroomOutcome.reason === "not_enough" ? "Awaiting information"
+                  : state.courtroomOutcome.reason === "convergence_failure" ? "Convergence failure"
+                  : state.courtroomOutcome.reason === "credit_cap" ? "Credit cap"
+                  : "Iteration limit"}
+              </span>
+              <span style={{ fontSize: 11, color: "#4a6a4a" }}>·</span>
+              <span style={{ fontSize: 11, color: "#5a7a5a" }}>
+                {state.artifactPath === "no-artifact" ? "No-document path" : "Document path"}
+              </span>
+              <span style={{ fontSize: 11, color: "#4a6a4a" }}>·</span>
+              <span style={{ fontSize: 11, color: "#5a7a5a" }}>
+                {state.courtroomOutcome.confidenceAtExit}% confidence
+              </span>
+              {state.relayCount > 0 && (
+                <>
+                  <span style={{ fontSize: 11, color: "#4a6a4a" }}>·</span>
+                  <span style={{ fontSize: 11, color: "#5a7a5a" }}>{state.relayCount} relay{state.relayCount !== 1 ? "s" : ""}</span>
+                </>
+              )}
+            </motion.div>
+          )}
+
+          {/* End-of-job tap — only shown after relay rounds */}
+          {isComplete && state.relayCount >= 1 && (
+            <div style={{
+              padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,200,83,.18)",
+              background: "rgba(0,200,83,.04)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+            }}>
+              <span style={{ fontSize: 12, color: "#7ab87a" }}>Was it worth the relay?</span>
+              <button
+                onClick={() => onSetEndOfJobTap("worth_it")}
+                disabled={state.endOfJobTap !== null}
+                style={{
+                  padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700,
+                  background: state.endOfJobTap === "worth_it" ? "rgba(0,200,83,.25)" : "transparent",
+                  border: state.endOfJobTap === "worth_it" ? "1px solid #00c853" : "1px solid #1d331d",
+                  color: "#eef7ee", cursor: state.endOfJobTap !== null ? "default" : "pointer",
+                }}
+              >👍 Worth it</button>
+              <button
+                onClick={() => onSetEndOfJobTap("not_worth_it")}
+                disabled={state.endOfJobTap !== null}
+                style={{
+                  padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700,
+                  background: state.endOfJobTap === "not_worth_it" ? "rgba(200,64,64,.2)" : "transparent",
+                  border: state.endOfJobTap === "not_worth_it" ? "1px solid #c84040" : "1px solid #1d331d",
+                  color: "#eef7ee", cursor: state.endOfJobTap !== null ? "default" : "pointer",
+                }}
+              >👎 Not worth it</button>
+              {state.endOfJobTap && (
+                <span style={{ fontSize: 11, color: "#5a7a5a", marginLeft: 4 }}>Thanks for the feedback.</span>
+              )}
             </div>
           )}
 

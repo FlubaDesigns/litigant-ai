@@ -112,7 +112,7 @@ export default function SessionPage() {
   const brainSession = useBrainSession(savedConfig);
   const {
     state, run, stop, reset, acceptPartial, continueSession,
-    loadPausedSession, loadCompleteSession, submitRebuttal,
+    loadPausedSession, loadCompleteSession, submitRebuttal, submitRelay, setEndOfJobTap,
     setQuestion, setTemplate, setConfig, setSeatAI,
     applyFeedbackGrades, addCaseFile, removeCaseFile,
   } = brainSession;
@@ -258,11 +258,12 @@ export default function SessionPage() {
   const { maxLitigants, overdraftLimit } = useLimits();
   const overdraftFlag = useFeatureFlag("creditOverdraft");
 
-  const isRunning  = state.phase === "running";
-  const isPaused   = state.phase === "paused";
-  const isComplete = state.phase === "complete";
-  const isError    = state.phase === "error";
-  const isIdle     = state.phase === "idle";
+  const isRunning     = state.phase === "running";
+  const isPaused      = state.phase === "paused";
+  const isComplete    = state.phase === "complete";
+  const isRelayNeeded = state.phase === "relay_needed";
+  const isError       = state.phase === "error";
+  const isIdle        = state.phase === "idle";
 
   const effectiveCreditInfo = selectedCreditInfo && calibration?.isCalibrated
     ? { ...selectedCreditInfo, fixedStagePrior: calibration.fixedStage }
@@ -553,6 +554,7 @@ export default function SessionPage() {
                 isRunning={isRunning}
                 isPaused={isPaused}
                 isComplete={isComplete}
+                isRelayNeeded={isRelayNeeded}
                 isError={isError}
                 onStop={handleStop}
                 onContinue={continueSession}
@@ -563,6 +565,8 @@ export default function SessionPage() {
                 onDownload={handleDownload}
                 onExportPDF={handleExportPDF}
                 onSubmitRebuttal={submitRebuttal}
+                onSubmitRelay={submitRelay}
+                onSetEndOfJobTap={setEndOfJobTap}
                 onSetTemplate={setTemplate}
                 onSetFieldValues={(v) => setFieldValues(v)}
                 onRun={handleRun}

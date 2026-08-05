@@ -33,7 +33,7 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { safeError } from "../lib/safeError.js";
-import { runBrainSession, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
+import { runBrainSession, type CourtConfig, type RebuttalContext, type RelayContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { calculateActualCredits, estimateSessionCreditsCalibrated, estimateFixedPipelineCost, getModelRate } from "../lib/creditEngine.js";
@@ -330,13 +330,14 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // No Authorization header → guest path, allowed to continue.
 
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, parentSessionId, caseFile, resumeWithFixedPipeline, failoverProvider } = body as unknown as {
+  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, relayContext, parentSessionId, caseFile, resumeWithFixedPipeline, failoverProvider } = body as unknown as {
     question: string;
     config: CourtConfig;
     templateId?: string;
     sessionId?: string;
     continueFromTranscript?: string[];
     rebuttalContext?: RebuttalContext;
+    relayContext?: RelayContext;
     parentSessionId?: string;
     caseFile?: { id: string; type: "url" | "file"; name: string; content: string; url?: string }[];
     resumeWithFixedPipeline?: boolean;
@@ -518,6 +519,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       sessionId,
       continueFromTranscript,
       rebuttalContext,
+      relayContext,
       caseFile,
       resumeWithFixedPipeline,
       forcedProvider: failoverProvider,
