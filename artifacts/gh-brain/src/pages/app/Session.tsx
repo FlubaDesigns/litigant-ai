@@ -112,7 +112,7 @@ export default function SessionPage() {
   const brainSession = useBrainSession(savedConfig);
   const {
     state, run, stop, reset, acceptPartial, continueSession,
-    loadPausedSession, loadCompleteSession, submitRebuttal, submitRelay, setEndOfJobTap,
+    loadPausedSession, loadCompleteSession, loadRelayNeededSession, submitRebuttal, submitRelay, setEndOfJobTap,
     setQuestion, setTemplate, setConfig, setSeatAI,
     applyFeedbackGrades, addCaseFile, removeCaseFile,
   } = brainSession;
@@ -203,7 +203,7 @@ export default function SessionPage() {
     sessionStorage.removeItem("litigant_prefill");
     try {
       const prefill = JSON.parse(raw) as {
-        mode: "rerun" | "resume" | "load";
+        mode: "rerun" | "resume" | "load" | "relay_needed";
         question: string;
         templateId: string | null;
         sessionId?: string;
@@ -214,6 +214,8 @@ export default function SessionPage() {
         transcript?: string;
         caveats?: string;
         artifacts?: string;
+        relayQuestion?: string;
+        relayCount?: number;
       };
       if (prefill.templateId) {
         const tmpl = TEMPLATES.find((t) => t.id === prefill.templateId);
@@ -236,6 +238,16 @@ export default function SessionPage() {
           finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
           transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
           artifacts: prefill.artifacts ?? "",
+        });
+      } else if (prefill.mode === "relay_needed" && prefill.sessionId) {
+        loadRelayNeededSession({
+          question: prefill.question, config: {}, sessionId: prefill.sessionId,
+          confidence: prefill.confidence ?? 0, creditsUsed: prefill.creditsUsed ?? 0,
+          finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
+          transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
+          artifacts: prefill.artifacts ?? "",
+          relayQuestion: prefill.relayQuestion ?? "",
+          relayCount: prefill.relayCount ?? 0,
         });
       }
     } catch { /* ignore malformed payload */ }

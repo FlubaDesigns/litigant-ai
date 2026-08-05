@@ -180,6 +180,21 @@ type Action =
       relayRound: number;
       missingInfo: string;
       prevSessionId: string;
+    }
+  | {
+      type: "PREFILL_RELAY_NEEDED";
+      question: string;
+      config: Partial<CourtConfig>;
+      sessionId: string;
+      confidence: number;
+      creditsUsed: number;
+      finalAnswer: string;
+      debateNotes: string;
+      transcript: string;
+      caveats: string;
+      artifacts: string;
+      relayQuestion: string;
+      relayCount: number;
     };
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
@@ -552,6 +567,33 @@ function reducer(state: SessionState, action: Action): SessionState {
       };
     }
 
+    case "PREFILL_RELAY_NEEDED": {
+      const newConfig = { ...state.config, ...action.config };
+      // Split transcript so submitRelay can pass originalTranscript correctly
+      const pauseTranscript = action.transcript
+        ? action.transcript.split("\n\n---\n\n").filter(Boolean)
+        : [];
+      return {
+        ...makeInitialState(newConfig),
+        phase: "relay_needed" as const,
+        question: action.question,
+        config: newConfig,
+        sessionId: action.sessionId,
+        confidence: action.confidence,
+        creditsUsed: action.creditsUsed,
+        finalAnswer: action.finalAnswer,
+        debateNotes: action.debateNotes,
+        transcript: action.transcript,
+        caveats: action.caveats,
+        artifacts: action.artifacts,
+        pauseTranscript,
+        relayQuestion: action.relayQuestion,
+        relayCount: action.relayCount,
+        needsRelay: true,
+        courtHappened: true,
+      };
+    }
+
     default:
       return state;
   }
@@ -804,6 +846,23 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     dispatch({ type: "PREFILL_COMPLETE", ...s });
   }, []);
 
+  const loadRelayNeededSession = useCallback((s: {
+    question: string;
+    config: Partial<CourtConfig>;
+    sessionId: string;
+    confidence: number;
+    creditsUsed: number;
+    finalAnswer: string;
+    debateNotes: string;
+    transcript: string;
+    caveats: string;
+    artifacts: string;
+    relayQuestion: string;
+    relayCount: number;
+  }) => {
+    dispatch({ type: "PREFILL_RELAY_NEEDED", ...s });
+  }, []);
+
   const setQuestion = useCallback((q: string) => dispatch({ type: "SET_QUESTION", question: q }), []);
   const setTemplate = useCallback((t: Template | null) => dispatch({ type: "SET_TEMPLATE", template: t }), []);
   const setConfig = useCallback((c: Partial<CourtConfig>) => dispatch({ type: "SET_CONFIG", config: c }), []);
@@ -927,6 +986,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     continueSession: continueSessionFn,
     loadPausedSession,
     loadCompleteSession,
+    loadRelayNeededSession,
     submitRebuttal,
     submitRelay,
     setEndOfJobTap,

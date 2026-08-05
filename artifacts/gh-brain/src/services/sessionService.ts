@@ -229,7 +229,7 @@ export interface SavedSession {
   outputTokens?: number;
   costUSD?: number;
   model?: string;
-  status: "complete" | "incomplete" | "error" | "paused_credit_cap";
+  status: "complete" | "incomplete" | "error" | "paused_credit_cap" | "relay_needed";
   starred?: boolean;
   archived?: boolean;
   shared?: boolean;
@@ -241,6 +241,10 @@ export interface SavedSession {
   transcript?: string;
   caveats?: string;
   artifacts?: string;
+  /** Set when Auditor returned NOT_ENOUGH — the specific missing info the user must supply. */
+  relayQuestion?: string | null;
+  relayCount?: number;
+  artifactPath?: "artifact" | "no-artifact" | null;
 }
 
 export interface SessionsPage {

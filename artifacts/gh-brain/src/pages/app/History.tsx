@@ -45,6 +45,15 @@ const STATUS_STYLES: Record<string, string> = {
   incomplete: "text-amber-400 border-amber-400/30 bg-amber-400/10",
   error: "text-red-400 border-red-400/30 bg-red-400/10",
   paused_credit_cap: "text-orange-400 border-orange-400/30 bg-orange-400/10",
+  relay_needed: "text-violet-400 border-violet-400/30 bg-violet-400/10",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  complete: "Complete",
+  incomplete: "Incomplete",
+  error: "Error",
+  paused_credit_cap: "Credit cap paused",
+  relay_needed: "Needs your input",
 };
 
 function formatDate(iso: string): string {
@@ -76,7 +85,7 @@ function SessionDetail({ session, onClose, onRerun, onResume }: {
           <SheetTitle className="text-base leading-tight pr-6">{session.title}</SheetTitle>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             <Badge variant="outline" className={cn("text-xs", STATUS_STYLES[session.status] ?? "")}>
-              {session.status}
+              {STATUS_LABELS[session.status] ?? session.status}
             </Badge>
             <span className="text-xs text-muted-foreground">{formatDate(session.createdAt)}</span>
             {session.confidence > 0 && (
@@ -294,7 +303,7 @@ function SessionRow({
           <Clock className="w-3 h-3" />{formatDate(session.updatedAt ?? session.createdAt)}
         </span>
         <Badge variant="outline" className={cn("text-[10px] h-4 px-1.5", STATUS_STYLES[session.status] ?? "")}>
-          {session.status}
+          {STATUS_LABELS[session.status] ?? session.status}
         </Badge>
       </div>
 
@@ -524,19 +533,37 @@ export default function HistoryPage() {
         full = await getSession(session.id, idToken);
       } catch { /* fall back to partial data */ }
     }
-    sessionStorage.setItem("litigant_prefill", JSON.stringify({
-      mode: "resume",
-      question: full.question,
-      templateId: full.templateId,
-      sessionId: full.id,
-      confidence: full.confidence ?? 0,
-      creditsUsed: full.creditsUsed ?? 0,
-      finalAnswer: full.finalAnswer ?? "",
-      debateNotes: full.debateNotes ?? "",
-      transcript: full.transcript ?? "",
-      caveats: full.caveats ?? "",
-      artifacts: full.artifacts ?? "",
-    }));
+    if (full.status === "relay_needed") {
+      sessionStorage.setItem("litigant_prefill", JSON.stringify({
+        mode: "relay_needed",
+        question: full.question,
+        templateId: full.templateId,
+        sessionId: full.id,
+        confidence: full.confidence ?? 0,
+        creditsUsed: full.creditsUsed ?? 0,
+        finalAnswer: full.finalAnswer ?? "",
+        debateNotes: full.debateNotes ?? "",
+        transcript: full.transcript ?? "",
+        caveats: full.caveats ?? "",
+        artifacts: full.artifacts ?? "",
+        relayQuestion: full.relayQuestion ?? "",
+        relayCount: full.relayCount ?? 0,
+      }));
+    } else {
+      sessionStorage.setItem("litigant_prefill", JSON.stringify({
+        mode: "resume",
+        question: full.question,
+        templateId: full.templateId,
+        sessionId: full.id,
+        confidence: full.confidence ?? 0,
+        creditsUsed: full.creditsUsed ?? 0,
+        finalAnswer: full.finalAnswer ?? "",
+        debateNotes: full.debateNotes ?? "",
+        transcript: full.transcript ?? "",
+        caveats: full.caveats ?? "",
+        artifacts: full.artifacts ?? "",
+      }));
+    }
     setLocation("/session");
   }
 
@@ -734,7 +761,7 @@ export default function HistoryPage() {
           onClose={() => setDetailSession(null)}
           onRerun={() => handleRerun(detailSession)}
           onResume={
-            detailSession.status === "incomplete" || detailSession.status === "paused_credit_cap"
+            detailSession.status === "incomplete" || detailSession.status === "paused_credit_cap" || detailSession.status === "relay_needed"
               ? () => handleResume(detailSession)
               : undefined
           }
