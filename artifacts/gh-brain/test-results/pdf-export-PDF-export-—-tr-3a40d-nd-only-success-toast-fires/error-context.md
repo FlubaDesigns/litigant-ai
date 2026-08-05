@@ -12,9 +12,9 @@
 # Error details
 
 ```
-Error: page.goto: net::ERR_HTTP_RESPONSE_CODE_FAILURE at https://2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-an6n9ne6.worf.replit.dev/session?e2e=1
+Error: page.goto: net::ERR_HTTP_RESPONSE_CODE_FAILURE at https://2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-5wzgk8x7.worf.replit.dev/session?e2e=1
 Call log:
-  - navigating to "https://2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-an6n9ne6.worf.replit.dev/session?e2e=1", waiting until "domcontentloaded"
+  - navigating to "https://2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-5wzgk8x7.worf.replit.dev/session?e2e=1", waiting until "domcontentloaded"
 
 ```
 
@@ -25,7 +25,7 @@ Call log:
   - generic [ref=e6]:
     - heading "This page isn’t working" [level=1] [ref=e7]
     - paragraph [ref=e8]:
-      - strong [ref=e9]: 2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-an6n9ne6.worf.replit.dev
+      - strong [ref=e9]: 2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-5wzgk8x7.worf.replit.dev
       - text: is currently unable to handle this request.
     - generic [ref=e10]: HTTP ERROR 502
   - button "Reload" [ref=e13] [cursor=pointer]
@@ -54,7 +54,7 @@ Call log:
   18 | 
   19 | async function loadSessionPage(page: import("@playwright/test").Page) {
 > 20 |   await page.goto(SESSION_URL, { waitUntil: "domcontentloaded" });
-     |              ^ Error: page.goto: net::ERR_HTTP_RESPONSE_CODE_FAILURE at https://2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-an6n9ne6.worf.replit.dev/session?e2e=1
+     |              ^ Error: page.goto: net::ERR_HTTP_RESPONSE_CODE_FAILURE at https://2bc7216c-3112-4806-a45d-fb63cb185ae4-00-21aabxfgxor81-5wzgk8x7.worf.replit.dev/session?e2e=1
   21 |   // Wait for React to mount and the dev hook to register
   22 |   await page.waitForFunction(
   23 |     () => typeof (window as any).__testPdfExport === "function",

@@ -94,7 +94,7 @@ vi.mock("pino-http", () => ({
 // Imports (after mocks)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { addCredits, grantSignupBonus } from "../lib/creditLedger.js";
+import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
@@ -656,5 +656,144 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     expect(shortfall.amount).toBe(0);
     // userId ties the entry back to the user
     expect(shortfall.userId).toBe(FAKE_UID);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 5 — checkAndTriggerAutoRefill (direct unit tests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("checkAndTriggerAutoRefill()", () => {
+  let mockDb: ReturnType<typeof createMockDb>;
+  const UID = "uid-autorefill-test";
+
+  /** Minimal auto-refill preference that is enabled and configured. */
+  const ENABLED_PREFS = {
+    enabled: true,
+    thresholdCredits: 200,
+    dollarAmount: 10,
+  };
+
+  /** createCheckoutUrl stub that always returns a deterministic URL. */
+  const stubCheckout = vi.fn(async (_dollarAmount: number, _uid: string) =>
+    "https://square.link/checkout/test-url"
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stubCheckout.mockResolvedValue("https://square.link/checkout/test-url");
+  });
+
+  it("writes autoRefillCheckoutUrl when balance drops below threshold", async () => {
+    // User has auto-refill enabled; balance (50) < threshold (200) → should trigger.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
+
+    // createCheckoutUrl must have been called with the configured dollar amount and uid.
+    expect(stubCheckout).toHaveBeenCalledWith(ENABLED_PREFS.dollarAmount, UID);
+
+    // The user document must now carry the checkout URL.
+    const userDoc = mockDb._store[`users/${UID}`];
+    expect(userDoc.autoRefillCheckoutUrl).toBe("https://square.link/checkout/test-url");
+    expect(userDoc.autoRefillTriggeredAt).toBeDefined();
+  });
+
+  it("is a no-op when balance stays at or above the threshold", async () => {
+    // balance (200) === threshold (200) → should NOT trigger.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 200, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 200, stubCheckout);
+
+    expect(stubCheckout).not.toHaveBeenCalled();
+    const userDoc = mockDb._store[`users/${UID}`];
+    expect(userDoc.autoRefillCheckoutUrl).toBeUndefined();
+  });
+
+  it("is a no-op when balance is well above the threshold", async () => {
+    // balance (500) > threshold (200) → should NOT trigger.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 500, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 500, stubCheckout);
+
+    expect(stubCheckout).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op when auto-refill is disabled", async () => {
+    // Pref exists but enabled=false → should NOT trigger regardless of balance.
+    mockDb = createMockDb({
+      [`users/${UID}`]: {
+        creditBalance: 10,
+        autoRefill: { ...ENABLED_PREFS, enabled: false },
+      },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
+
+    expect(stubCheckout).not.toHaveBeenCalled();
+    const userDoc = mockDb._store[`users/${UID}`];
+    expect(userDoc.autoRefillCheckoutUrl).toBeUndefined();
+  });
+
+  it("is a no-op when the user has no auto-refill preference set", async () => {
+    // No autoRefill field on the user doc at all.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 10 },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
+
+    expect(stubCheckout).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op when the user document does not exist", async () => {
+    // Empty store — no user document at all.
+    mockDb = createMockDb({});
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
+
+    expect(stubCheckout).not.toHaveBeenCalled();
+  });
+
+  it("does not write the checkout URL when createCheckoutUrl returns null", async () => {
+    // balance below threshold but checkout creation fails.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    stubCheckout.mockResolvedValueOnce(null as any);
+
+    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
+
+    expect(stubCheckout).toHaveBeenCalled();
+    const userDoc = mockDb._store[`users/${UID}`];
+    expect(userDoc.autoRefillCheckoutUrl).toBeUndefined();
+  });
+
+  it("is a no-op when Firebase is not configured", async () => {
+    const { isFirebaseConfigured } = await import("../lib/firebaseAdmin.js");
+    vi.mocked(isFirebaseConfigured).mockReturnValueOnce(false);
+
+    // Should return early without touching mockDb or calling stubCheckout.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 10, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
+
+    expect(stubCheckout).not.toHaveBeenCalled();
   });
 });
