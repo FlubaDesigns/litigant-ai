@@ -5,11 +5,13 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+const isProd = process.env.NODE_ENV === "production";
 
 const rawPort = process.env.PORT;
 const basePath = process.env.BASE_PATH;
 
-if (!isTest) {
+// PORT and BASE_PATH are only required for the dev server (not for CI production builds).
+if (!isTest && !isProd) {
   if (!rawPort) {
     throw new Error("PORT environment variable is required but was not provided.");
   }
@@ -22,7 +24,7 @@ if (!isTest) {
   }
 }
 
-const port = isTest ? 3000 : Number(rawPort);
+const port = isTest || isProd ? 3000 : Number(rawPort);
 
 export default defineConfig({
   base: isTest ? "/" : basePath!,
