@@ -620,4 +620,41 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     expect(overageEntry.type).toBe("usage");
     expect(overageEntry.amount).toBe(-100);
   });
+
+  it("writes a usage_shortfall entry and does not drive balance negative when overage cannot be collected", async () => {
+    // estimated = 200, user balance = 200 (exactly covers reservation)
+    // actual = 350 → overage = 150, but post-reservation balance = 0 → uncollectable
+    const mockDb = createRouteMockDb(FAKE_UID, 200);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockResolvedValue(350);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({ creditsUsed: 350 }));
+
+    const res = await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    // The session itself must complete (not 402) — the result was already delivered
+    expect(res.status).toBe(200);
+
+    // Balance after reservation was 0; the uncollectable overage must NOT push it below 0
+    const finalBalance = mockDb._store[`users/${FAKE_UID}`].creditBalance;
+    expect(finalBalance).toBeGreaterThanOrEqual(0);
+
+    // A usage_shortfall ledger entry must be present in credit_transactions
+    const ledgerDocs = Object.values(mockDb._store).filter(
+      (v: any) => v && v.type === "usage_shortfall"
+    );
+    expect(ledgerDocs).toHaveLength(1);
+
+    const shortfall = ledgerDocs[0] as any;
+    // The shortfall entry records the uncollected overage amount for audit purposes
+    expect(shortfall.overage).toBe(150);
+    // source identifies this as an uncollected overage (not a normal reservation)
+    expect(shortfall.source).toBe("brain_overage_uncollected");
+    // amount must be 0 — no balance was deducted on this path
+    expect(shortfall.amount).toBe(0);
+    // userId ties the entry back to the user
+    expect(shortfall.userId).toBe(FAKE_UID);
+  });
 });
