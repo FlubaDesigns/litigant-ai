@@ -42,10 +42,17 @@ for (const v of optionalWarn) {
   if (!process.env[v]) console.warn(`WARN: ${v} is not set — ${v === "SENTRY_DSN" ? "error monitoring" : "emails/payments"} will be disabled in production.`);
 }
 
-// Provenance: the CI workflow injects GIT_SHA=${{ github.sha }} so the running
-// container can prove which source commit built it. DEPLOY_TIMESTAMP is set here
-// at deploy time. Both are surfaced by GET /api/version for post-deploy verification.
-const gitSha = process.env.GIT_SHA ?? "unknown";
+// Provenance: the CI workflow injects GIT_SHA=${{ github.sha }}.
+// The container image was built and pushed in the same CI run using this SHA as
+// the image tag — so this variable both identifies the source commit AND selects
+// the exact container image to deploy. Fail hard if it is missing so we never
+// accidentally redeploy a stale image.
+const gitSha = process.env.GIT_SHA;
+if (!gitSha || gitSha === "unknown") {
+  console.error("ERROR: GIT_SHA env var must be set to the git commit SHA.");
+  console.error("       Cannot determine which container image to deploy.");
+  process.exit(1);
+}
 const deployTimestamp = new Date().toISOString();
 console.log(`Deploy provenance — sha: ${gitSha}  timestamp: ${deployTimestamp}`);
 
@@ -71,7 +78,7 @@ spec:
       containerConcurrency: 80
       timeoutSeconds: 600
       containers:
-      - image: gcr.io/${required.project}/api:deploy-1784009328
+      - image: gcr.io/${required.project}/api:${gitSha}
         ports:
         - name: http1
           containerPort: 8080

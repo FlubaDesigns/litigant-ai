@@ -51,6 +51,24 @@ jobs:
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
 
+      # ── Backend container: build from source and push to GCR ───────────────
+      # GitHub-hosted runners have Docker pre-installed.
+      # The image is tagged with the exact commit SHA so deploy-cloudrun.mjs
+      # can reference it — no stale/hardcoded image tags.
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build API container
+        run: |
+          docker build \
+            --file artifacts/api-server/Dockerfile \
+            --tag gcr.io/litigant-ai/api:${{ github.sha }} \
+            --label "git.sha=${{ github.sha }}" \
+            .
+
+      - name: Push API container to GCR
+        run: docker push gcr.io/litigant-ai/api:${{ github.sha }}
+
       - name: Deploy Cloud Run env vars
         env:
           GIT_SHA: ${{ github.sha }}
