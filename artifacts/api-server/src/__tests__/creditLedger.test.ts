@@ -38,14 +38,14 @@ vi.mock("../lib/billingDefaultsConfig.js", () => ({
 }));
 
 vi.mock("../lib/emailService.js", () => ({
-  sendWelcomeEmail:              vi.fn(),
-  sendVerificationEmail:         vi.fn(),
-  sendPasswordResetEmail:        vi.fn(),
-  sendAutoRefillTriggeredEmail:  vi.fn(),
-  sendLowCreditsEmail:           vi.fn(),
-  sendSessionCompleteEmail:      vi.fn(),
-  sendFirstSessionEmail:         vi.fn(),
-  sendZeroCreditsEmail:          vi.fn(),
+  sendWelcomeEmail:              vi.fn(() => Promise.resolve()),
+  sendVerificationEmail:         vi.fn(() => Promise.resolve()),
+  sendPasswordResetEmail:        vi.fn(() => Promise.resolve()),
+  sendAutoRefillTriggeredEmail:  vi.fn(() => Promise.resolve()),
+  sendLowCreditsEmail:           vi.fn(() => Promise.resolve()),
+  sendSessionCompleteEmail:      vi.fn(() => Promise.resolve()),
+  sendFirstSessionEmail:         vi.fn(() => Promise.resolve()),
+  sendZeroCreditsEmail:          vi.fn(() => Promise.resolve()),
   isResendConfigured:            vi.fn(() => false),
 }));
 
@@ -99,6 +99,7 @@ import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
 import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
+import { sendAutoRefillTriggeredEmail, isResendConfigured } from "../lib/emailService.js";
 import app from "../app.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -795,6 +796,70 @@ describe("checkAndTriggerAutoRefill()", () => {
     await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
 
     expect(stubCheckout).not.toHaveBeenCalled();
+  });
+
+  // ── Email notification tests ─────────────────────────────────────────────
+
+  it("calls sendAutoRefillTriggeredEmail with the correct arguments when Resend is configured and threshold is crossed", async () => {
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(isResendConfigured).mockReturnValue(true);
+
+    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
+
+    expect(sendAutoRefillTriggeredEmail).toHaveBeenCalledOnce();
+    expect(sendAutoRefillTriggeredEmail).toHaveBeenCalledWith(
+      UID,                                       // uid
+      50,                                        // newBalance
+      "https://square.link/checkout/test-url",   // checkout URL
+      ENABLED_PREFS.dollarAmount                 // dollarAmount
+    );
+  });
+
+  it("does not send the auto-refill email when balance stays at or above the threshold", async () => {
+    // balance (200) === threshold (200) → trigger does not fire, no email
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 200, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(isResendConfigured).mockReturnValue(true);
+
+    await checkAndTriggerAutoRefill(UID, 200, stubCheckout);
+
+    expect(sendAutoRefillTriggeredEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not send the auto-refill email when Resend is not configured", async () => {
+    // balance below threshold, Resend absent → URL written but email suppressed
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(isResendConfigured).mockReturnValue(false); // default, but explicit here
+
+    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
+
+    // Checkout URL must still be written — the email absence is the only difference
+    expect(mockDb._store[`users/${UID}`].autoRefillCheckoutUrl).toBe(
+      "https://square.link/checkout/test-url"
+    );
+    expect(sendAutoRefillTriggeredEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not send the auto-refill email when checkout URL creation fails", async () => {
+    // If createCheckoutUrl returns null, the function returns early before the email call
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(isResendConfigured).mockReturnValue(true);
+    stubCheckout.mockResolvedValueOnce(null as any);
+
+    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
+
+    expect(sendAutoRefillTriggeredEmail).not.toHaveBeenCalled();
   });
 });
 
