@@ -477,6 +477,16 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     uid = decoded.uid;
     isAdminRun = decoded.admin === true;
 
+    // Item 12: require email verification before consuming credits.
+    // OAuth users (Google/Apple) are always verified. Email+password users
+    // must click their verification link first.
+    // decoded.emailVerified is undefined (not false) in dev mode where Firebase
+    // is not fully configured — treat undefined as "not blocked" so local dev works.
+    if (decoded.emailVerified === false) {
+      res.status(403).json({ message: "Please verify your email address before running a session." });
+      return;
+    }
+
     // ── Resume ownership check ────────────────────────────────────────────────
     // If the client supplied an existing session ID for a genuine resume/rebuttal
     // continuation, verify the caller actually owns that session before using it.
