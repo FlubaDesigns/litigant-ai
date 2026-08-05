@@ -224,16 +224,31 @@ router.post("/case-file/upload", upload.single("file"), async (req, res) => {
   const name = file.originalname;
   let content = "";
 
+  // Magic-byte validation — reject files whose actual content doesn't match
+  // their claimed type. Trusting MIME type alone lets a client upload a
+  // crafted binary disguised as a PDF or DOCX.
+  const buf = file.buffer;
+  const isPdfMagic  = buf.length >= 4 && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46; // %PDF
+  const isZipMagic  = buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04; // PK (ZIP / DOCX)
+  const claimedPdf  = mime === "application/pdf"  || name.endsWith(".pdf");
+  const claimedDocx = mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || name.endsWith(".docx");
+
+  if (claimedPdf && !isPdfMagic) {
+    res.status(400).json({ message: "File does not appear to be a valid PDF" });
+    return;
+  }
+  if (claimedDocx && !isZipMagic) {
+    res.status(400).json({ message: "File does not appear to be a valid DOCX" });
+    return;
+  }
+
   try {
-    if (mime === "application/pdf" || name.endsWith(".pdf")) {
+    if (claimedPdf) {
       const pdfMod = await import("pdf-parse");
       const pdfParse = (pdfMod as any).default ?? pdfMod;
       const result = await pdfParse(file.buffer);
       content = result.text;
-    } else if (
-      mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-      name.endsWith(".docx")
-    ) {
+    } else if (claimedDocx) {
       const mammoth = await import("mammoth");
       const result = await mammoth.extractRawText({ buffer: file.buffer });
       content = result.value;
