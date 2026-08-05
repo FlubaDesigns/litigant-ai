@@ -56,6 +56,12 @@ function baseTemplate({
   body: string;
   footerExtra?: string;
 }): string {
+  // Escape user-controlled values before embedding in HTML.
+  // `headline` may contain {displayName} interpolated from user input;
+  // `badge` is admin-controlled but escape it for defence-in-depth.
+  // `renderIntro` already escapes its input — kept consistent here.
+  const safeHeadline = escapeHtml(headline);
+  const safeBadge = escapeHtml(badge);
   const year = new Date().getFullYear();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -91,8 +97,8 @@ function baseTemplate({
         <!-- Body -->
         <tr>
           <td style="padding:40px 36px 36px;">
-            <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:2.5px;color:${badgeColor};text-transform:uppercase;">${badge}</p>
-            <h1 style="margin:0 0 26px;font-size:26px;font-weight:700;color:#fff;line-height:1.25;letter-spacing:-0.3px;">${headline}</h1>
+            <p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:2.5px;color:${badgeColor};text-transform:uppercase;">${safeBadge}</p>
+            <h1 style="margin:0 0 26px;font-size:26px;font-weight:700;color:#fff;line-height:1.25;letter-spacing:-0.3px;">${safeHeadline}</h1>
             ${body}
           </td>
         </tr>
