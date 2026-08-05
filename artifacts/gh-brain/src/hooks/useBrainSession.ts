@@ -557,6 +557,9 @@ function reducer(state: SessionState, action: Action): SessionState {
   }
 }
 
+/** Exported for unit testing only — do not use outside of tests. */
+export { reducer as _reducerForTests, makeInitialState as _makeInitialStateForTests };
+
 export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   const [state, dispatch] = useReducer(reducer, initialConfig, makeInitialState);
   const abortRef = useRef<AbortController | null>(null);

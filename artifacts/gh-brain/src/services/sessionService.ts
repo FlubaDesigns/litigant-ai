@@ -229,7 +229,7 @@ export interface SavedSession {
   outputTokens?: number;
   costUSD?: number;
   model?: string;
-  status: "complete" | "incomplete" | "error";
+  status: "complete" | "incomplete" | "error" | "paused_credit_cap";
   starred?: boolean;
   archived?: boolean;
   shared?: boolean;

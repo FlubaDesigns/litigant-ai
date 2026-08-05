@@ -44,6 +44,7 @@ const STATUS_STYLES: Record<string, string> = {
   complete: "text-primary border-primary/30 bg-primary/10",
   incomplete: "text-amber-400 border-amber-400/30 bg-amber-400/10",
   error: "text-red-400 border-red-400/30 bg-red-400/10",
+  paused_credit_cap: "text-orange-400 border-orange-400/30 bg-orange-400/10",
 };
 
 function formatDate(iso: string): string {
@@ -732,7 +733,11 @@ export default function HistoryPage() {
           session={detailSession}
           onClose={() => setDetailSession(null)}
           onRerun={() => handleRerun(detailSession)}
-          onResume={detailSession.status === "incomplete" ? () => handleResume(detailSession) : undefined}
+          onResume={
+            detailSession.status === "incomplete" || detailSession.status === "paused_credit_cap"
+              ? () => handleResume(detailSession)
+              : undefined
+          }
         />
       )}
 
