@@ -775,12 +775,24 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     turns.push({ role: auditLabel, round: 99, content: auditorOutput });
     sendSSE(res, { type: "role_end", role: auditLabel, fullContent: auditorOutput, cycle });
 
-    // Parse decision and extract artifact text
+    // Parse decision and update finalArtifact correctly per path:
+    //   APPROVED → extract artifact from Auditor output (Auditor outputs it as-is or
+    //              with minor Caveats corrections; everything after the decision line).
+    //   RETURNED → preserve the latest Builder artifact — under the new protocol the
+    //              Auditor outputs only Revision Notes (and optionally a Convergence
+    //              Diagnosis on the final cycle), NOT a corrected artifact. Reading
+    //              the diagnostic sections as deliverable content would be a bug.
     const auditDecision = auditorOutput.match(/^(APPROVED|RETURNED)\b/im)?.[1]?.toUpperCase() ?? "APPROVED";
-    const artifactMatch  = auditorOutput.match(/(?:APPROVED|RETURNED)[^\n]*\n+(?:##\s+(?:Revision Notes|Convergence Diagnosis)[\s\S]*?\n\n)?([\s\S]+)/i);
-    finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
 
-    if (auditDecision === "APPROVED") break;
+    if (auditDecision === "APPROVED") {
+      const artifactMatch = auditorOutput.match(/APPROVED[^\n]*\n+([\s\S]+)/i);
+      finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
+      break;
+    }
+
+    // RETURNED: keep the last Builder output as the best artifact produced so far.
+    // Never read Auditor's diagnostic sections as artifact content.
+    finalArtifact = builtArtifact;
 
     if (isLastCycle) {
       convergenceFailure = true;
