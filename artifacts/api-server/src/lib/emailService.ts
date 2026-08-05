@@ -140,15 +140,17 @@ function callout(html: string, accent = "#00c853"): string {
 }
 
 function infoTable(rows: { label: string; value: string; color?: string }[]): string {
-  const cells = rows.map(({ label, value, color = "#fff" }, i) => {
+  const cells = rows.map(({ label, value, color }, i) => {
     const last = i === rows.length - 1;
     const border = last ? "" : "border-bottom:1px solid #1a1a1a;";
+    // Allowlist color to a CSS hex value; reject anything else to prevent CSS injection.
+    const safeColor = /^#[0-9a-fA-F]{3,6}$/.test(color ?? "") ? color! : "#fff";
     return `<tr>
       <td style="padding:16px 22px;${border}">
         <table cellpadding="0" cellspacing="0" role="presentation" width="100%">
           <tr>
-            <td style="font-size:12px;color:#555;">${label}</td>
-            <td align="right" style="font-size:15px;font-weight:600;color:${color};">${value}</td>
+            <td style="font-size:12px;color:#555;">${escapeHtml(label)}</td>
+            <td align="right" style="font-size:15px;font-weight:600;color:${safeColor};">${escapeHtml(value)}</td>
           </tr>
         </table>
       </td>
@@ -164,8 +166,8 @@ function featureList(items: { label: string; desc: string }[]): string {
     const border = last ? "" : "border-bottom:1px solid #1a1a1a;";
     return `<tr>
       <td style="padding:16px 22px;${border}">
-        <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">${label}</p>
-        <p style="margin:0;font-size:13px;color:#888;">${desc}</p>
+        <p style="margin:0 0 4px;font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(label)}</p>
+        <p style="margin:0;font-size:13px;color:#888;">${escapeHtml(desc)}</p>
       </td>
     </tr>`;
   }).join("");
@@ -325,7 +327,7 @@ function accountSuspendedTemplate(reason: string | undefined, intro: string, hea
     headline,
     body: `
       ${renderIntro(intro)}
-      ${reason ? infoTable([{ label: "Reason on file", value: escapeHtml(reason), color: "#888" }]) : ""}
+      ${reason ? infoTable([{ label: "Reason on file", value: reason, color: "#888" }]) : ""}
       ${btn("Contact support", "mailto:support@litigant-ai.com", "#ef4444", "#fff")}
     `,
     footerExtra: "This notice was sent to the email address associated with your account.",
