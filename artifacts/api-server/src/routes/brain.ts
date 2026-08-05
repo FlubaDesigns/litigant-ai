@@ -32,6 +32,7 @@
  */
 import { Router } from "express";
 import crypto from "crypto";
+import { safeError } from "../lib/safeError.js";
 import { runBrainSession, type CourtConfig, type RebuttalContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -718,9 +719,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
     }
   } catch (err: any) {
+    console.error("[brain] Unhandled session error:", err);
     if (!res.writableEnded) {
       res.write(
-        `data: ${JSON.stringify({ type: "error", message: err?.message || "Internal error" })}\n\n`
+        `data: ${JSON.stringify({ type: "error", message: safeError(err) })}\n\n`
       );
     }
   } finally {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
+import { safeError } from "../lib/safeError.js";
 import crypto from "crypto";
 
 const router = Router();
@@ -59,7 +60,8 @@ router.get("/sessions", async (req, res) => {
       nextCursor: hasMore ? docs[docs.length - 1]?.id ?? null : null,
     });
   } catch (e: any) {
-    res.status(500).json({ message: e?.message || "Failed to fetch sessions" });
+    console.error("[sessions] GET /sessions error:", e);
+    res.status(500).json({ message: safeError(e) });
   }
 });
 
@@ -135,7 +137,8 @@ router.get("/sessions/:id", async (req, res) => {
       updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
     });
   } catch (e: any) {
-    res.status(500).json({ message: e?.message });
+    console.error("[sessions] GET /sessions/:id error:", e);
+    res.status(500).json({ message: safeError(e) });
   }
 });
 
@@ -157,7 +160,8 @@ router.delete("/sessions/:id", async (req, res) => {
     await doc.ref.delete();
     res.json({ success: true });
   } catch (e: any) {
-    res.status(500).json({ message: e?.message });
+    console.error("[sessions] DELETE /sessions/:id error:", e);
+    res.status(500).json({ message: safeError(e) });
   }
 });
 
@@ -225,7 +229,8 @@ router.patch("/sessions/:id", async (req, res) => {
     await doc.ref.update(updates);
     res.json({ success: true });
   } catch (e: any) {
-    res.status(500).json({ message: e?.message });
+    console.error("[sessions] PATCH /sessions/:id error:", e);
+    res.status(500).json({ message: safeError(e) });
   }
 });
 
@@ -255,7 +260,8 @@ router.post("/sessions/:id/share", async (req, res) => {
     await doc.ref.update({ shared: true, shareId });
     res.json({ success: true, shareId });
   } catch (e: any) {
-    res.status(500).json({ message: e?.message });
+    console.error("[sessions] POST /sessions/:id/share error:", e);
+    res.status(500).json({ message: safeError(e) });
   }
 });
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { getAuth } from "firebase-admin/auth";
+import { safeError } from "../lib/safeError.js";
 
 const router = Router();
 
@@ -94,7 +95,7 @@ router.delete("/account", async (req, res) => {
     res.json({ success: true, authDeleted });
   } catch (e: any) {
     console.error("[account] Delete account error:", e);
-    res.status(500).json({ message: e?.message || "Failed to delete account data" });
+    res.status(500).json({ message: safeError(e) });
   }
 });
 
