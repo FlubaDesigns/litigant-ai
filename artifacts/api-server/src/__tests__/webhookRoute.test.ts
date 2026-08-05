@@ -222,6 +222,66 @@ describe("POST /api/square/webhook — route-level", () => {
     expect(addCredits).toHaveBeenCalledOnce();
   });
 
+  // ── Idempotency: duplicate webhook delivery must not grant credits twice ──────
+
+  it("returns 200 for both deliveries but only grants credits on the first (idempotency guard)", async () => {
+    // Square retries webhook delivery on non-2xx. Both deliveries must return
+    // 200 so Square stops retrying, but the credit grant must fire only once.
+    //
+    // squareEventHandler passes idempotencyKey="payment_<id>" to addCredits.
+    // addCredits writes that key to payment_events atomically on the first call
+    // and returns { skipped: true } on subsequent calls with the same key.
+    // This test exercises that contract at the route level.
+
+    const body = JSON.stringify(makePaymentEvent());
+    const sig  = makeSignature(body);
+    const app  = buildApp();
+
+    // First delivery: Firestore transaction succeeds → credits granted.
+    vi.mocked(addCredits).mockResolvedValueOnce({ newBalance: 1000, skipped: false });
+    // Second delivery: idempotency key already present → no balance mutation.
+    vi.mocked(addCredits).mockResolvedValueOnce({ newBalance: 0, skipped: true });
+
+    const first = await supertest(app)
+      .post("/api/square/webhook")
+      .set("Content-Type", "application/json")
+      .set("x-square-hmacsha256-signature", sig)
+      .send(body);
+
+    const second = await supertest(app)
+      .post("/api/square/webhook")
+      .set("Content-Type", "application/json")
+      .set("x-square-hmacsha256-signature", sig)
+      .send(body);
+
+    // Both responses must be 200 so Square stops retrying.
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+
+    // addCredits is invoked for each delivery (the route always calls it),
+    // but only the FIRST call produces a real credit grant.
+    expect(addCredits).toHaveBeenCalledTimes(2);
+
+    // Both calls use the same payment-scoped idempotency key — that key is
+    // what the Firestore guard keys on to enforce exactly-once semantics.
+    const expectedArgs: [string, number, string, object] = [
+      "user-1",
+      1000,
+      "purchase",
+      expect.objectContaining({ idempotencyKey: "payment_pay-001" }),
+    ];
+    expect(addCredits).toHaveBeenNthCalledWith(1, ...expectedArgs);
+    expect(addCredits).toHaveBeenNthCalledWith(2, ...expectedArgs);
+
+    // First delivery: credits actually granted (skipped is falsy).
+    const firstResult = await vi.mocked(addCredits).mock.results[0].value;
+    expect(firstResult).toMatchObject({ newBalance: 1000, skipped: false });
+
+    // Second delivery: idempotency guard fired — no second grant.
+    const secondResult = await vi.mocked(addCredits).mock.results[1].value;
+    expect(secondResult).toMatchObject({ skipped: true });
+  });
+
   // ── Extra: missing signing key rejects even a legitimately signed request ──
 
   it("returns 401 when SQUARE_WEBHOOK_SIGNATURE_KEY is not configured", async () => {
