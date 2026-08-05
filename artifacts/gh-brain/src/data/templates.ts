@@ -49,6 +49,13 @@ export interface CourtConfig {
   // ── Intelligence slider (0 = cheapest, 100 = best quality) ──────────────
   /** 0–100 position on the $ ↔ 🎓 slider. Drives automatic model selection. */
   intelligenceLevel?: number;
+  // ── Output preference — controls whether Moderator is directed to build a document ──
+  /**
+   * "answer-only" → Moderator forced to ARTIFACT_NEEDED: no (plain answer)
+   * "document"    → Moderator forced to ARTIFACT_NEEDED: yes (structured document)
+   * "auto"        → Moderator decides based on the question (default)
+   */
+  outputPreferenceMode?: "answer-only" | "document" | "auto";
   // ── Internal / API compat ────────────────────────────────────────────────
   responseMode: "balanced" | "thorough" | "concise";
   outputFormat: "report" | "memo" | "bullets" | "verdict";

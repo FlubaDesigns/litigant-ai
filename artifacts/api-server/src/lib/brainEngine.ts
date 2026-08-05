@@ -26,6 +26,12 @@ export interface CourtConfig {
   maxCredits?: number;
   debateMode?: "adversarial" | "collaborative";
   artifactType?: string;
+  /**
+   * "answer-only" → Moderator is directed to declare ARTIFACT_NEEDED: no
+   * "document"    → Moderator is directed to declare ARTIFACT_NEEDED: yes
+   * "auto"        → Moderator decides based on the question (default)
+   */
+  outputPreferenceMode?: "answer-only" | "document" | "auto";
 }
 
 interface RoleDefinition {
@@ -643,12 +649,21 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     // When the credit cap was hit mid-debate, prompt Moderator to synthesise a
     // partial / degraded answer from whatever the court produced. This ensures
     // the user always sees a real answer, not a blank card.
+    // ── Output preference directive — injected when user has overridden Auto mode ─
+    const outputPreferenceMode = config.outputPreferenceMode ?? "auto";
+    const outputPreferenceDirective =
+      outputPreferenceMode === "answer-only"
+        ? "\n\nIMPORTANT USER DIRECTIVE: The user has requested a plain answer, not a document. You MUST declare ARTIFACT_NEEDED: no regardless of question type. Do NOT build a structured document — deliver a synthesised text answer only."
+        : outputPreferenceMode === "document"
+        ? "\n\nIMPORTANT USER DIRECTIVE: The user has requested a structured document output. You MUST declare ARTIFACT_NEEDED: yes regardless of question type. Route to the Architect and Builder to produce a formatted report."
+        : ""; // "auto" — no directive; Moderator decides
+
     const { relayContext } = opts;
     const moderatorUserContent = creditCapHit
-      ? `The court debate was cut short because the credit cap was reached. Here is the partial debate transcript:\n\n${debateTranscript}\n\nThe debate is incomplete. Synthesise the best possible answer from the arguments that were made. Start with a clear note that this is a partial analysis. Summarise the key points of agreement and disagreement, identify the strongest argument on each side, and state the most defensible conclusion you can draw from what was debated. Be explicit about the limitations caused by the incomplete debate.\n\nDeclare ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no based on whether the question requires a structured document.`
+      ? `The court debate was cut short because the credit cap was reached. Here is the partial debate transcript:\n\n${debateTranscript}\n\nThe debate is incomplete. Synthesise the best possible answer from the arguments that were made. Start with a clear note that this is a partial analysis. Summarise the key points of agreement and disagreement, identify the strongest argument on each side, and state the most defensible conclusion you can draw from what was debated. Be explicit about the limitations caused by the incomplete debate.\n\nDeclare ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no based on whether the question requires a structured document.${outputPreferenceDirective}`
       : relayContext
-      ? `You are operating in relay mode (relay round ${relayContext.relayRound}). The Auditor previously flagged that a determinative fact was missing. The user has now supplied the missing information.\n\nOriginal debate transcript:\n\n${relayContext.originalTranscript.join("\n\n")}\n\nUser's new information:\n\n"${relayContext.missingInfo}"\n\nReview the original transcript in light of this new information. Produce an updated deliberation summary incorporating the new information.\n\nThen declare:\n- ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no\n- SUBSTANTIVE: yes (if the new information materially changes the debate outcome and warrants a fresh debate round) or SUBSTANTIVE: no (if the new information can be incorporated directly into the synthesis without re-debating)`
-      : `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps.\n\nThen declare ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no based on whether the question requires a structured deliverable document (report, memo, plan, code, etc.) or whether a synthesised text answer is sufficient.`;
+      ? `You are operating in relay mode (relay round ${relayContext.relayRound}). The Auditor previously flagged that a determinative fact was missing. The user has now supplied the missing information.\n\nOriginal debate transcript:\n\n${relayContext.originalTranscript.join("\n\n")}\n\nUser's new information:\n\n"${relayContext.missingInfo}"\n\nReview the original transcript in light of this new information. Produce an updated deliberation summary incorporating the new information.\n\nThen declare:\n- ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no\n- SUBSTANTIVE: yes (if the new information materially changes the debate outcome and warrants a fresh debate round) or SUBSTANTIVE: no (if the new information can be incorporated directly into the synthesis without re-debating)${outputPreferenceDirective}`
+      : `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps.\n\nThen declare ARTIFACT_NEEDED: yes or ARTIFACT_NEEDED: no based on whether the question requires a structured deliverable document (report, memo, plan, code, etc.) or whether a synthesised text answer is sufficient.${outputPreferenceDirective}`;
 
     const moderatorMessages: ChatMessage[] = [
       {

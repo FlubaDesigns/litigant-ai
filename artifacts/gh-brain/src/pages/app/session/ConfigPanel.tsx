@@ -128,6 +128,7 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
         responseMode: c.responseMode, outputFormat: c.outputFormat,
         provider: c.provider, model: c.model,
         intelligenceLevel: c.intelligenceLevel,
+        outputPreferenceMode: c.outputPreferenceMode,
       };
       const settings = Object.fromEntries(
         Object.entries(rawSettings).filter(([, v]) => v !== undefined)
@@ -191,6 +192,30 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
             <DialogHeader className="pb-0">
               <DialogTitle className="text-xl font-bold text-primary tracking-tight">Mission Briefing</DialogTitle>
             </DialogHeader>
+
+            {/* OUTPUT PREFERENCE */}
+            <V29Field
+              label="Output Preference"
+              tooltip="Controls whether the court builds a structured document or delivers a plain synthesised answer. 'Answer only' skips the Architect and Builder stages — faster and cheaper, ideal for questions that just need a verdict. 'Document' always produces a formatted report. 'Auto' lets the court decide based on the question type."
+            >
+              <Select
+                value={config.outputPreferenceMode ?? "auto"}
+                onValueChange={(v) => handleChange({ outputPreferenceMode: v as CourtConfig["outputPreferenceMode"] })}
+              >
+                <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto" label="Auto (let the court decide)">
+                    <span className="text-xs text-muted-foreground">Court decides whether a document is needed based on the question.</span>
+                  </SelectItem>
+                  <SelectItem value="answer-only" label="Answer only">
+                    <span className="text-xs text-muted-foreground">Skip Architect & Builder — deliver a plain synthesised answer. Faster &amp; cheaper.</span>
+                  </SelectItem>
+                  <SelectItem value="document" label="Document">
+                    <span className="text-xs text-muted-foreground">Always produce a structured report or document regardless of question type.</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </V29Field>
 
             {/* CONSCIENCE */}
             <V29Field
