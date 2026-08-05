@@ -137,7 +137,7 @@ export function estimateCreditCost(config: CourtConfig): number {
   });
 }
 
-export type PauseReason = "credit_cap" | "credit_cap_pre_pipeline" | "iteration_limit";
+export type PauseReason = "credit_cap" | "iteration_limit";
 
 export interface RebuttalContext {
   challenge: string;
@@ -202,19 +202,12 @@ export interface BrainRunResult {
   /** Present when the session stopped before hitting the confidence target. */
   pauseReason?: PauseReason;
   /**
-   * True when the session stopped BEFORE the fixed pipeline because the credit
-   * cap was hit during debate. The pipeline (Mod/Arch/Builder/Aud/Verdict) has
-   * NOT run. The frontend will show a pause card; the user can raise their cap
-   * and continue (which runs only the fixed pipeline via resumeWithFixedPipeline).
-   */
-  pausedPrePipeline?: boolean;
-  /**
    * Token usage for the fixed pipeline stages (Moderator, Architect, Builder,
    * Auditor, Verdict) — everything after the debate loop ends, including any
    * Auditor retry passes (Builder revision + re-review). Saved to Firestore so
    * getCalibratedFixedStageTokens() can learn real averages across the last 50
    * sessions instead of relying on hardcoded priors.
-   * Zero when pausedPrePipeline is true (pipeline never ran).
+   * Zero when a credit_cap pause stops after Moderator (Architect/Builder/Auditor/Verdict never ran).
    */
   fixedStageTokens: { input: number; output: number };
   /**
@@ -566,71 +559,92 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // learn real averages from the last 50 sessions instead of using hardcoded priors.
   const usageAfterDebate = { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens };
 
-  // ── Hard cap gate — stop BEFORE the fixed pipeline ────────────────────────
-  // When the debate consumed the full credit budget, emit a pause event and
-  // return early. The pipeline (Mod→Arch→Builder→Aud→Verdict) does NOT run.
-  // The frontend shows a pause card; the user can raise their cap and send a
-  // fresh request with resumeWithFixedPipeline:true to run just the pipeline.
-  if (creditCapHit) {
-    const creditsUsed = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
-    sendSSE(res, {
-      type: "paused_pre_pipeline",
-      sessionId,
-      confidence,
-      creditsUsed,
-      debateTranscriptLines: transcript,
-      debateNotes: debateNotesList.join("\n\n---\n\n"),
-    });
-    return {
-      sessionId,
-      confidence,
-      creditsUsed,
-      finalAnswer: "",
-      debateNotes: debateNotesList.join("\n\n---\n\n"),
-      transcript,
-      caveats: "",
-      artifacts: "",
-      turns,
-      provider: providerName,
-      model: modelName,
-      tokenUsage: usage,
-      conscienceVersion,
-      pauseReason: "credit_cap_pre_pipeline",
-      pausedPrePipeline: true,
-      fixedStageTokens: { input: 0, output: 0 },
-    };
-  }
-
-  // ── Determine why we stopped (credit_cap now handled above — only iteration_limit remains) ──
-  const pauseReason: PauseReason | undefined = confidence < config.confidenceTarget
+  // ── Determine why we stopped ──────────────────────────────────────────────
+  const pauseReason: PauseReason | undefined = creditCapHit
+    ? "credit_cap"
+    : confidence < config.confidenceTarget
     ? "iteration_limit"
     : undefined;
 
   const debateTranscript = transcript.join("\n\n");
 
   // ── Moderator — collect and synthesise the deliberation ───────────────────
-  throwIfAborted(abortSignal);
-  sendSSE(res, { type: "role_start", role: "Moderator", roleIndex: -2, round: 99, provider: modProvider.name });
+  // When resuming the fixed pipeline, the Moderator already ran in the original
+  // paused session. Its summary is already in the provided transcript — extract
+  // it instead of calling the AI again.
+  let moderatorSummary: string;
 
-  const moderatorMessages: ChatMessage[] = [
-    {
-      role: "system",
-      content: `${seatBriefs.moderator}\n\n${baseContext}${conscienceClause}`,
-    },
-    {
-      role: "user",
-      content: `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps. Then brief the Architect on what deliverable this question requires.`,
-    },
-  ];
+  if (opts.resumeWithFixedPipeline) {
+    const modEntry = transcript.find((l) => l.startsWith("**Moderator (Summary):**"));
+    moderatorSummary = modEntry
+      ? modEntry.replace(/^\*\*Moderator \(Summary\):\*\*\s*/, "")
+      : transcript.join("\n\n"); // fallback: treat full transcript as context
+  } else {
+    throwIfAborted(abortSignal);
+    sendSSE(res, { type: "role_start", role: "Moderator", roleIndex: -2, round: 99, provider: modProvider.name });
 
-  const moderatorSummary = await callRole(
-    modProvider, moderatorMessages, 800,
-    (chunk) => sendSSE(res, { type: "content", role: "Moderator", content: chunk }),
-  );
+    // When the credit cap was hit mid-debate, prompt Moderator to synthesise a
+    // partial / degraded answer from whatever the court produced. This ensures
+    // the user always sees a real answer, not a blank card.
+    const moderatorUserContent = creditCapHit
+      ? `The court debate was cut short because the credit cap was reached. Here is the partial debate transcript:\n\n${debateTranscript}\n\nThe debate is incomplete. Synthesise the best possible answer from the arguments that were made. Start with a clear note that this is a partial analysis. Summarise the key points of agreement and disagreement, identify the strongest argument on each side, and state the most defensible conclusion you can draw from what was debated. Be explicit about the limitations caused by the incomplete debate.`
+      : `The courtroom deliberation is complete. Here is the full debate transcript:\n\n${debateTranscript}\n\nProduce your deliberation summary. Identify points of consensus, genuine disagreement, the strongest argument on each side, and any logical gaps. Then brief the Architect on what deliverable this question requires.`;
 
-  transcript.push(`**Moderator (Summary):** ${moderatorSummary}`);
-  turns.push({ role: "Moderator", round: 99, content: moderatorSummary });
-  sendSSE(res, { type: "role_end", role: "Moderator", fullContent: moderatorSummary });
+    const moderatorMessages: ChatMessage[] = [
+      {
+        role: "system",
+        content: `${seatBriefs.moderator}\n\n${baseContext}${conscienceClause}`,
+      },
+      {
+        role: "user",
+        content: moderatorUserContent,
+      },
+    ];
+
+    moderatorSummary = await callRole(
+      modProvider, moderatorMessages, 800,
+      (chunk) => sendSSE(res, { type: "content", role: "Moderator", content: chunk }),
+    );
+
+    transcript.push(`**Moderator (Summary):** ${moderatorSummary}`);
+    turns.push({ role: "Moderator", round: 99, content: moderatorSummary });
+    sendSSE(res, { type: "role_end", role: "Moderator", fullContent: moderatorSummary });
+
+    // ── Credit cap: stop here — Architect/Builder/Auditor/Verdict stay gated ──
+    // The user sees the Moderator's degraded answer on the pause card.
+    // They can raise their cap and resume (resumeWithFixedPipeline:true) to run
+    // the full Architect→Builder→Auditor→Verdict pipeline seeded from this summary.
+    if (creditCapHit) {
+      const creditsUsed = calculateActualCredits(modelName || "gpt-5", usage.inputTokens, usage.outputTokens);
+      sendSSE(res, {
+        type: "paused_post_moderator",
+        sessionId,
+        confidence,
+        creditsUsed,
+        finalAnswer: moderatorSummary,
+        debateTranscriptLines: transcript,
+        debateNotes: debateNotesList.join("\n\n---\n\n"),
+        pauseReason: "credit_cap",
+      });
+      return {
+        sessionId,
+        confidence,
+        creditsUsed,
+        finalAnswer: moderatorSummary,
+        debateNotes: debateNotesList.join("\n\n---\n\n"),
+        transcript,
+        caveats: "⚠️ Partial analysis — the credit cap was reached before the full verdict pipeline ran. Raise your cap and continue to get the complete structured answer.",
+        artifacts: "",
+        turns,
+        provider: providerName,
+        model: modelName,
+        tokenUsage: usage,
+        conscienceVersion,
+        pauseReason: "credit_cap",
+        fixedStageTokens: { input: 0, output: 0 },
+      };
+    }
+  }
 
   // ── Architect — design the artifact blueprint ─────────────────────────────
   throwIfAborted(abortSignal);

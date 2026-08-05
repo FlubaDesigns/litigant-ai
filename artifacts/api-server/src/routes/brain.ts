@@ -604,7 +604,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: actualCost,
           fixedStageTokens: result.fixedStageTokens,
-          status: result.pausedPrePipeline ? "paused_pre_pipeline" : "complete",
+          status: result.pauseReason === "credit_cap" ? "paused_credit_cap" : "complete",
           finalAnswer: result.finalAnswer,
           debateNotes: result.debateNotes,
           transcript: result.debateNotes

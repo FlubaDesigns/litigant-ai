@@ -6,7 +6,7 @@ function getApiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
-export type PauseReason = "credit_cap" | "credit_cap_pre_pipeline" | "iteration_limit";
+export type PauseReason = "credit_cap" | "iteration_limit";
 
 export interface RebuttalContext {
   challenge: string;
@@ -58,7 +58,7 @@ export type SSEEventType =
   | "confidence_update"
   | "round_start"
   | "round_end"
-  | "paused_pre_pipeline"
+  | "paused_post_moderator"
   | "done"
   | "error"
   | "provider_failover";
@@ -91,7 +91,7 @@ export interface SSEEvent {
    */
   attempt?: number;
   /**
-   * Debate transcript lines sent with `paused_pre_pipeline` events so the frontend
+   * Debate transcript lines sent with `paused_post_moderator` events so the frontend
    * can store them and pass back as `continueFromTranscript` on the resume call.
    */
   debateTranscriptLines?: string[];
@@ -155,7 +155,7 @@ export function runBrainSession(
             try {
               const event = JSON.parse(raw) as SSEEvent;
               onEvent(event);
-              if (event.type === "done" || event.type === "error" || event.type === "paused_pre_pipeline") {
+              if (event.type === "done" || event.type === "error" || event.type === "paused_post_moderator") {
                 resolve();
                 return;
               }

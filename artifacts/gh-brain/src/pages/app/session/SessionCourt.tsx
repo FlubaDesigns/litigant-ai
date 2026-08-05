@@ -293,27 +293,34 @@ export function SessionCourt({
           {isPaused && state.pauseReason && (
             <div className="session-pause-card">
               <div className="session-pause-title">
-                {state.pauseReason === "credit_cap_pre_pipeline"
-                  ? `⏸ Debate complete — credit cap hit before verdict pipeline`
-                  : state.pauseReason === "credit_cap"
+                {state.pauseReason === "credit_cap"
                   ? `⏸ Credit cap reached — ${Math.round(state.confidence)}% confidence`
                   : `⏸ ${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
               </div>
 
-              {state.pauseReason === "credit_cap_pre_pipeline" ? (
+              {state.pauseReason === "credit_cap" ? (
                 <>
                   <div style={{ fontSize: 12, color: "#9ab89a", marginBottom: 10, lineHeight: 1.5 }}>
-                    The court has finished debating with <strong>{Math.round(state.confidence)}% confidence</strong>.
-                    The verdict pipeline (Moderator → Architect → Builder → Verdict) still needs to run.
-                    Raise your cap to allow it, or accept the debate transcript as-is.
+                    The court debated until the credit cap was hit. The Moderator synthesised the following
+                    partial answer from what was argued. Raise your cap to run the full verdict pipeline
+                    (Architect → Builder → Auditor) and get a polished structured document, or accept this answer as-is.
                   </div>
+                  {state.finalAnswer && (
+                    <div style={{
+                      background: "rgba(0,0,0,.25)", border: "1px solid #1a3a1a", borderRadius: 7,
+                      padding: "10px 12px", marginBottom: 10, fontSize: 12, color: "#c8e8c8",
+                      lineHeight: 1.6, maxHeight: 200, overflowY: "auto", whiteSpace: "pre-wrap",
+                    }}>
+                      {state.finalAnswer}
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     <label style={{ fontSize: 12, color: "#7ab87a", whiteSpace: "nowrap" }}>New credit cap</label>
                     <input
                       type="number"
                       min={state.creditsUsed + 1}
                       step={10}
-                      value={newPipelineCap || (state.config.maxCredits ?? 0) + 30}
+                      value={newPipelineCap || (state.config.maxCredits ?? 0) + 50}
                       onChange={(e) => setNewPipelineCap(Math.max(state.creditsUsed + 1, Number(e.target.value)))}
                       style={{
                         width: 90, padding: "4px 8px", borderRadius: 7, border: "1px solid #2a4a2a",
@@ -327,13 +334,13 @@ export function SessionCourt({
                       <button onClick={() => onNavigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
                     ) : (
                       <button
-                        onClick={() => { void onContinue(newPipelineCap || (state.config.maxCredits ?? 0) + 30); }}
+                        onClick={() => { void onContinue(newPipelineCap || (state.config.maxCredits ?? 0) + 50); }}
                         className="session-pause-btn-primary"
                       >
-                        Continue to verdict — {credits} cr
+                        Continue to full verdict — {credits} cr
                       </button>
                     )}
-                    <button onClick={onAcceptPartial} className="session-pause-btn-secondary">Accept debate only</button>
+                    <button onClick={onAcceptPartial} className="session-pause-btn-secondary">Accept partial answer</button>
                   </div>
                 </>
               ) : (

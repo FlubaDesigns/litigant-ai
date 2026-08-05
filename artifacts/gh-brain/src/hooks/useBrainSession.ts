@@ -114,10 +114,11 @@ type Action =
   | { type: "REMOVE_CASE_FILE"; id: string }
   | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string }
   | {
-      type: "PAUSED_PRE_PIPELINE";
+      type: "PAUSED_POST_MODERATOR";
       sessionId: string;
       confidence: number;
       creditsUsed: number;
+      finalAnswer: string;
       debateTranscriptLines: string[];
       debateNotes: string;
     }
@@ -412,7 +413,7 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "REMOVE_CASE_FILE":
       return { ...state, caseFile: state.caseFile.filter((i) => i.id !== action.id) };
 
-    case "PAUSED_PRE_PIPELINE":
+    case "PAUSED_POST_MODERATOR":
       return {
         ...state,
         phase: "paused" as const,
@@ -420,12 +421,13 @@ function reducer(state: SessionState, action: Action): SessionState {
         sessionId: action.sessionId,
         confidence: action.confidence,
         creditsUsed: action.creditsUsed,
-        pauseReason: "credit_cap_pre_pipeline" as const,
+        finalAnswer: action.finalAnswer,
+        pauseReason: "credit_cap" as const,
         pauseTranscript: action.debateTranscriptLines,
         debateNotes: action.debateNotes,
         activityLog: [
           ...state.activityLog,
-          `[Court] Debate complete — credit cap reached before the verdict pipeline`,
+          `[Court] Credit cap reached — Moderator synthesised a partial answer`,
         ],
       };
 
@@ -501,12 +503,13 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       case "confidence_update":
         dispatch({ type: "CONFIDENCE_UPDATE", confidence: event.confidence!, creditsUsed: event.creditsUsed! });
         break;
-      case "paused_pre_pipeline":
+      case "paused_post_moderator":
         dispatch({
-          type: "PAUSED_PRE_PIPELINE",
+          type: "PAUSED_POST_MODERATOR",
           sessionId: event.sessionId!,
           confidence: event.confidence ?? 0,
           creditsUsed: event.creditsUsed ?? 0,
+          finalAnswer: event.finalAnswer ?? "",
           debateTranscriptLines: event.debateTranscriptLines ?? [],
           debateNotes: event.debateNotes ?? "",
         });
@@ -643,10 +646,10 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       idToken = (await user?.getIdToken()) ?? undefined;
     } catch { /* guest */ }
 
-    const isPrePipelinePause = s.pauseReason === "credit_cap_pre_pipeline";
+    const isCreditCapPause = s.pauseReason === "credit_cap";
 
     const effectiveConfig: typeof s.config =
-      isPrePipelinePause && newMaxCredits !== undefined
+      isCreditCapPause && newMaxCredits !== undefined
         ? { ...s.config, maxCredits: newMaxCredits }
         : s.config;
 
@@ -657,7 +660,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       idToken,
       sessionId: s.sessionId ?? undefined,
       continueFromTranscript: s.pauseTranscript,
-      ...(isPrePipelinePause ? { resumeWithFixedPipeline: true } : {}),
+      ...(isCreditCapPause ? { resumeWithFixedPipeline: true } : {}),
     };
 
     dispatch({ type: "SET_PHASE", phase: "running" });
