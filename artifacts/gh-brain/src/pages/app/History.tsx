@@ -710,7 +710,7 @@ export default function HistoryPage() {
             </AnimatePresence>
 
             {/* Load more */}
-            {hasMore && !search && templateFilter === "all" && tabView === "all" && (
+            {hasMore && !search && templateFilter === "all" && (
               <div className="flex justify-center mt-6">
                 <Button
                   variant="outline"

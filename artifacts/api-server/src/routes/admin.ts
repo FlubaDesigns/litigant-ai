@@ -29,6 +29,7 @@ import {
   saveMultiplierOverride,
   resetMultiplierToDefault,
 } from "../lib/pricingConfig.js";
+import { safeError } from "../lib/safeError.js";
 import {
   getAllConfiguredProviders,
   saveApiKey,
@@ -176,7 +177,7 @@ router.post("/admin/set-claim", setClaimLimiter, async (req, res) => {
       message: "admin: true set. User must sign out and sign back in for the claim to appear.",
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -207,7 +208,7 @@ router.get("/admin/stats", requireAdmin, async (_req, res) => {
       recentSessions: recentSnap.data().count,
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -273,7 +274,7 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
       },
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -334,7 +335,7 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
       ...(boundedSearch ? { boundedSearch: true } : {}),
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -367,7 +368,7 @@ router.get("/admin/users/:uid", requireAdmin, async (req, res) => {
       recentSessions: sessionsSnap.docs.map((d) => serializeDoc(d)),
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -384,7 +385,7 @@ router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => 
     if (!result) return res.status(503).json({ error: "Firebase not configured" });
     return res.json({ success: true, newBalance: result.newBalance });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -445,7 +446,7 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
       ...(authWarning ? { authWarning } : {}),
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -476,7 +477,7 @@ router.post("/admin/users/:uid/test-model", requireAdmin, async (req: any, res) 
       return res.json({ success: true, testProvider: null, testModel: null });
     }
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -492,7 +493,7 @@ router.post("/admin/send-reengagement", requireAdmin, async (req: any, res) => {
     const sent = await runReengagementCampaign(inactiveDays);
     return res.json({ success: true, emailsSent: sent, inactiveDays });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -528,7 +529,7 @@ router.get("/admin/email-templates", requireAdmin, async (_req, res) => {
     );
     return res.json({ templates: configs });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -583,7 +584,7 @@ router.patch("/admin/email-templates/:id", requireAdmin, async (req: any, res) =
     );
     return res.json({ success: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -604,7 +605,7 @@ router.get("/admin/email-templates/:id/preview", requireAdmin, async (req: any, 
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     return res.send(html);
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -621,7 +622,7 @@ router.get("/admin/email-templates/:id/versions", requireAdmin, async (req: any,
     const versions = await listTemplateVersions(id);
     return res.json({ versions });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -643,7 +644,7 @@ router.post("/admin/email-templates/:id/versions", requireAdmin, async (req: any
     const versionId = await saveTemplateVersion(id, versionName.trim(), req.adminUid as string);
     return res.json({ success: true, versionId });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -663,7 +664,7 @@ router.post(
       await activateTemplateVersion(id, versionId, req.adminUid as string);
       return res.json({ success: true });
     } catch (err: any) {
-      return res.status(err.message === "Version not found" ? 404 : 500).json({ error: err.message });
+      return res.status(err.message === "Version not found" ? 404 : 500).json({ error: safeError(err) });
     }
   }
 );
@@ -683,7 +684,7 @@ router.delete(
       await deleteTemplateVersion(id, versionId);
       return res.json({ success: true });
     } catch (err: any) {
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: safeError(err) });
     }
   }
 );
@@ -723,7 +724,7 @@ router.get("/admin/sessions", requireAdmin, async (req, res) => {
       nextCursor: hasMore ? docs[docs.length - 1]?.id : null,
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -741,7 +742,7 @@ router.get("/admin/sessions/:id", requireAdmin, async (req, res) => {
 
     return res.json({ session: data, turns });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -778,7 +779,7 @@ router.get("/admin/transactions", requireAdmin, async (req, res) => {
       nextCursor: hasMore ? docs[docs.length - 1]?.id : null,
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -799,7 +800,7 @@ router.post("/admin/credits/refund", requireAdmin, async (req: any, res) => {
     if (!result) return res.status(503).json({ error: "Firebase not configured" });
     return res.json({ success: true, newBalance: result.newBalance });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -856,7 +857,7 @@ router.get("/admin/api-usage", requireAdmin, async (_req, res) => {
       apiLogs,
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -902,7 +903,7 @@ router.get("/admin/error-logs", requireAdmin, async (req, res) => {
       })),
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -931,7 +932,7 @@ router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
       totalCount: flagDocs.length,
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1004,7 +1005,7 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
       );
     return res.json({ success: true, name, value });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1066,7 +1067,7 @@ router.put("/admin/limits/:name", requireAdmin, async (req, res) => {
       .set({ [name]: value, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return res.json({ success: true, name, value });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1083,7 +1084,7 @@ router.get("/admin/credit-packs", requireAdmin, async (_req, res) => {
     const packs = await getAllCreditPacks();
     return res.json({ packs: Object.values(packs), bounds: CREDIT_PACK_BOUNDS });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1150,7 +1151,7 @@ router.post("/admin/credit-packs", requireAdmin, async (req: any, res) => {
     return res.json({ success: true, id });
   } catch (err: any) {
     const status = /already exists/i.test(err.message) ? 409 : 500;
-    return res.status(status).json({ error: err.message });
+    return res.status(status).json({ error: safeError(err) });
   }
 });
 
@@ -1207,7 +1208,7 @@ router.patch("/admin/credit-packs/:id", requireAdmin, async (req: any, res) => {
     return res.json({ success: true, pack });
   } catch (err: any) {
     const status = /no pack with id/i.test(err.message) ? 404 : 500;
-    return res.status(status).json({ error: err.message });
+    return res.status(status).json({ error: safeError(err) });
   }
 });
 
@@ -1223,7 +1224,7 @@ router.delete("/admin/credit-packs/:id", requireAdmin, async (req, res) => {
     return res.json({ success: true, id, active: false });
   } catch (err: any) {
     const status = /no pack with id/i.test(err.message) ? 404 : 500;
-    return res.status(status).json({ error: err.message });
+    return res.status(status).json({ error: safeError(err) });
   }
 });
 
@@ -1254,7 +1255,7 @@ router.get("/admin/conscience", requireAdmin, async (_req, res) => {
 
     return res.json({ exists: true, ...serializeDoc(doc) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1294,7 +1295,7 @@ router.patch("/admin/conscience", requireAdmin, async (req: any, res) => {
       note: "This instance cache cleared. Other Cloud Run instances update within 5 minutes.",
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1308,7 +1309,7 @@ router.get("/admin/templates", requireAdmin, async (_req, res) => {
     const snap = await db.collection("templates").orderBy("title").get();
     return res.json({ templates: snap.docs.map((d) => serializeDoc(d)) });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1335,7 +1336,7 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
     await db.collection("templates").doc(req.params["id"]!).set(updates, { merge: true });
     return res.json({ success: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1346,7 +1347,7 @@ router.get("/admin/pricing", requireAdmin, async (_req, res) => {
     const table = await getAdminPricingTable();
     return res.json(table);
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1366,7 +1367,7 @@ router.put("/admin/pricing/:model", requireAdmin, async (req, res) => {
     await saveMultiplierOverride(model, value);
     return res.json({ success: true, model, multiplier: value });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1376,7 +1377,7 @@ router.delete("/admin/pricing/:model", requireAdmin, async (req, res) => {
     await resetMultiplierToDefault(model);
     return res.json({ success: true, model, reset: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1388,7 +1389,7 @@ router.get("/admin/api-keys", requireAdmin, async (_req, res) => {
     const providers = await getAllConfiguredProviders();
     return res.json({ providers });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1414,7 +1415,7 @@ router.put("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
     await saveApiKey(sanitizedId, key.trim(), label.trim(), baseUrl?.trim() || undefined);
     return res.json({ success: true, providerId: sanitizedId });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1425,7 +1426,7 @@ router.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
     await deleteApiKey(providerId);
     return res.json({ success: true, providerId, note: "env var fallback still applies if set" });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1459,7 +1460,7 @@ router.get("/admin/seat-briefs", requireAdmin, async (_req, res) => {
       seatIds: SEAT_IDS,
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1498,7 +1499,7 @@ router.patch("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) =
 
     return res.json({ success: true, seatId, length: text.trim().length });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1529,7 +1530,7 @@ router.delete("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) 
       note: "Firestore override removed — file default is now active",
     });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1595,7 +1596,7 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
     });
     return res.json(updated);
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1688,7 +1689,7 @@ router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
 
     return res.json({ models, disabledProviders, customProviders });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1704,14 +1705,16 @@ router.patch("/admin/ai-studio/models/:modelId", requireAdmin, async (req: any, 
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
   try {
     const ref = db.collection("system_config").doc("aiStudio");
-    const doc = await ref.get();
-    let disabledModels: string[] = (doc.data()?.["disabledModels"] as string[]) ?? [];
-    if (enabled) disabledModels = disabledModels.filter((m) => m !== modelId);
-    else if (!disabledModels.includes(modelId)) disabledModels.push(modelId);
-    await ref.set({ disabledModels, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      let disabledModels: string[] = (snap.data()?.["disabledModels"] as string[]) ?? [];
+      if (enabled) disabledModels = disabledModels.filter((m) => m !== modelId);
+      else if (!disabledModels.includes(modelId)) disabledModels.push(modelId);
+      tx.set(ref, { disabledModels, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    });
     return res.json({ ok: true, modelId, enabled });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1727,14 +1730,16 @@ router.patch("/admin/ai-studio/providers/:providerId", requireAdmin, async (req:
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
   try {
     const ref = db.collection("system_config").doc("aiStudio");
-    const doc = await ref.get();
-    let disabledProviders: string[] = (doc.data()?.["disabledProviders"] as string[]) ?? [];
-    if (enabled) disabledProviders = disabledProviders.filter((p) => p !== providerId);
-    else if (!disabledProviders.includes(providerId)) disabledProviders.push(providerId);
-    await ref.set({ disabledProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      let disabledProviders: string[] = (snap.data()?.["disabledProviders"] as string[]) ?? [];
+      if (enabled) disabledProviders = disabledProviders.filter((p) => p !== providerId);
+      else if (!disabledProviders.includes(providerId)) disabledProviders.push(providerId);
+      tx.set(ref, { disabledProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    });
     return res.json({ ok: true, providerId, enabled });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1760,7 +1765,7 @@ router.post("/admin/ai-studio/providers", requireAdmin, async (req: any, res) =>
     await ref.set({ customProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return res.status(201).json({ ok: true, id });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1784,7 +1789,7 @@ router.delete("/admin/ai-studio/providers/:providerId", requireAdmin, async (req
     await ref.set({ customProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return res.json({ ok: true, providerId });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1798,7 +1803,7 @@ router.get("/admin/checklist", requireAdmin, async (_req, res) => {
     const items = await getChecklist();
     return res.json({ items });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1815,7 +1820,7 @@ router.patch("/admin/checklist/:id", requireAdmin, async (req: any, res) => {
     await setChecklistItemChecked(req.params.id, checked);
     return res.json({ ok: true });
   } catch (err: any) {
-    return res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: safeError(err) });
   }
 });
 
@@ -1835,7 +1840,7 @@ router.get("/admin/model-scores", requireAdmin, async (_req, res) => {
     const scores = { ...DEFAULT_QUALITY_SCORES, ...firestoreOverrides };
     return res.json({ scores, overrides: firestoreOverrides });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
@@ -1861,7 +1866,7 @@ router.patch("/admin/model-scores/:modelId", requireAdmin, async (req: any, res)
     }
     return res.json({ ok: true, modelId, score: score ?? DEFAULT_QUALITY_SCORES[modelId] });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 

@@ -401,7 +401,7 @@ export default function BillingPage() {
       autoRefillHandled.current = true;
       // Clear the field so we don't re-trigger
       await updateDoc(userRef, { autoRefillCheckoutUrl: deleteField() }).catch(() => {});
-      toast.info("Low balance — completing auto-refill top-up…");
+      toast.info("Your balance is low — redirecting to complete your top-up…");
       window.location.href = url;
     });
     return () => unsub();
@@ -495,7 +495,7 @@ export default function BillingPage() {
       });
       toast.success(
         next
-          ? `Auto top-up enabled — we'll charge $${autoRefillAmount} when you drop below ${autoRefillThreshold} credits.`
+          ? `Auto top-up enabled — you'll be redirected to checkout when you drop below ${autoRefillThreshold} credits.`
           : "Auto top-up disabled."
       );
     } catch (err: any) {
@@ -658,7 +658,7 @@ export default function BillingPage() {
                 <div>
                   <p className="text-sm font-medium">Auto Top-Up</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Charge your card automatically when balance runs low.
+                    Get a checkout link to top up when your balance runs low.
                   </p>
                 </div>
                 <button
@@ -697,7 +697,7 @@ export default function BillingPage() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  = {(autoRefillAmount * 100).toLocaleString()} credits per charge
+                  = {(autoRefillAmount * 100).toLocaleString()} credits per top-up
                 </p>
               </div>
 

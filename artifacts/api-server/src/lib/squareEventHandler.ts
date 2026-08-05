@@ -3,6 +3,7 @@ import { addCredits } from "./creditLedger.js";
 import { isFirebaseConfigured } from "./firebaseAdmin.js";
 import { logger } from "./logger.js";
 import { sendPaymentReceiptEmail, isResendConfigured } from "./emailService.js";
+import { getAllCreditPacks } from "./creditPacksConfig.js";
 
 /**
  * Verify a Square webhook signature.
@@ -71,7 +72,7 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
       if (payment.status !== "COMPLETED") return;
 
       const note: string = payment.note ?? "";
-      const match = note.match(/LITIGANT:userId=([^,]+),creditAmount=(\d+)/);
+      const match = note.match(/LITIGANT:userId=([^,]+),creditAmount=(\d+)(?:,pack=([^,\s]+))?/);
       if (!match) {
         logger.warn(
           "[SquareEvent] payment.completed: no LITIGANT metadata in payment note — ignoring"
@@ -81,18 +82,63 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
 
       const userId = match[1];
       const creditAmount = parseInt(match[2], 10);
+      const packId = match[3] ?? null;
       if (!userId || !creditAmount) return;
 
-      // Defense-in-depth: no legitimate credit pack or custom top-up (see
-      // creditPacks.ts, max $500 → 50,000 credits) ever produces a value
-      // this large. Catches a malformed/forged note even if signature
-      // verification is ever misconfigured.
+      // Defense-in-depth ceiling: no legitimate pack produces a value this large.
       const MAX_CREDIT_GRANT = 100_000;
       if (creditAmount > MAX_CREDIT_GRANT) {
         logger.error(
           `[SquareEvent] Rejected suspicious creditAmount=${creditAmount} for ${userId} — exceeds ${MAX_CREDIT_GRANT} cap`
         );
         return;
+      }
+
+      // Business validation: cross-check the note's creditAmount and the actual
+      // paid amount against the known pack catalogue. This prevents a forged note
+      // (e.g. LITIGANT:userId=X,creditAmount=50000,pack=starter_pack) from
+      // granting far more credits than were actually paid for.
+      //
+      // If no packId is present (legacy notes or custom top-ups), we skip the
+      // pack lookup but still rely on the ceiling above.
+      if (packId) {
+        try {
+          const allPacks = await getAllCreditPacks();
+          const pack = allPacks[packId];
+          if (!pack) {
+            logger.error(
+              `[SquareEvent] Rejected unknown packId="${packId}" for ${userId} — not in catalogue`
+            );
+            return;
+          }
+          // Verify the credited amount matches what the pack declares.
+          const packCreditAmount = parseInt(pack.metadata?.creditAmount ?? "0", 10);
+          if (packCreditAmount > 0 && creditAmount !== packCreditAmount) {
+            logger.error(
+              `[SquareEvent] Rejected creditAmount mismatch for pack="${packId}": ` +
+              `note says ${creditAmount}, pack declares ${packCreditAmount} — possible forgery for ${userId}`
+            );
+            return;
+          }
+          // Verify the actual amount paid matches the pack's listed price (first price,
+          // packs only ever carry one). Allow a ±5 cent tolerance for Square rounding.
+          const expectedCents = pack.prices[0]?.unit_amount ?? 0;
+          const paidCents: number = (payment.amount_money?.amount as number | undefined) ?? 0;
+          if (expectedCents > 0 && Math.abs(paidCents - expectedCents) > 5) {
+            logger.error(
+              `[SquareEvent] Rejected amount mismatch for pack="${packId}": ` +
+              `paid ${paidCents}¢, expected ${expectedCents}¢ for ${userId}`
+            );
+            return;
+          }
+        } catch (lookupErr: any) {
+          // If the pack catalogue is temporarily unavailable, log and continue
+          // rather than silently failing a legitimate payment. The ceiling above
+          // still provides defense-in-depth.
+          logger.warn(
+            `[SquareEvent] Pack catalogue lookup failed (non-fatal): ${lookupErr?.message} — proceeding without amount validation`
+          );
+        }
       }
 
       // Deduplication key is the payment ID, not the event ID.

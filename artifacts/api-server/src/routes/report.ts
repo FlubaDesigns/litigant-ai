@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
+import { safeError } from "../lib/safeError.js";
 
 const router = Router();
 
@@ -96,7 +97,7 @@ router.get("/report/:shareId", async (req, res) => {
 
     return res.json(result);
   } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeError(err) });
   }
 });
 
