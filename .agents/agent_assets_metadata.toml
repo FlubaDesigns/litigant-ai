@@ -238,7 +238,8 @@ title = "Litigant AI — Complete Source (tar.gz)"
 id = "HzVxZUVHnHUQBQthlNuDI"
 uri = "file://litigant-ai-source.zip"
 type = "unspecified"
-title = "Litigant AI — Complete Source (with Firestore Rules + Cloud Run)"
+title = "Litigant AI — Source Package"
+description = "Full source: API server, React frontend, Firebase rules, CI workflow, Dockerfile, and lockfile. Excludes node_modules and build outputs. Install with: pnpm install"
 
 [[outputs]]
 id = "F8QE8Pyf3EUpyXatEUHv3"
