@@ -1195,6 +1195,8 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
 }
 
 // ─── Transactions Tab ─────────────────────────────────────────────────────────
+const SHORTFALL_TYPES = new Set(["usage_shortfall", "settlement_failure"]);
+
 function TransactionsTab() {
   const [filterType, setFilterType] = useState("");
   const [filterUserId, setFilterUserId] = useState("");
@@ -1216,8 +1218,32 @@ function TransactionsTab() {
     }),
   });
 
+  // Separate query for unresolved shortfalls — always runs regardless of filter
+  const { data: shortfallData } = useQuery({
+    queryKey: ["admin-shortfalls"],
+    queryFn: () => listAdminTransactions({ type: "usage_shortfall", limit: 5 }),
+    staleTime: 60_000,
+  });
+  const { data: settlementFailData } = useQuery({
+    queryKey: ["admin-settlement-failures"],
+    queryFn: () => listAdminTransactions({ type: "settlement_failure", limit: 5 }),
+    staleTime: 60_000,
+  });
+  const shortfallCount = (shortfallData?.transactions?.length ?? 0) + (settlementFailData?.transactions?.length ?? 0);
+
   return (
     <div className="space-y-4">
+      {shortfallCount > 0 && (
+        <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-sm text-amber-300">
+            <span className="font-semibold">{shortfallCount} unresolved credit shortfall{shortfallCount !== 1 ? "s" : ""}</span>
+            {" "}— sessions where the actual cost exceeded the user's available balance or settlement crashed.
+            Filter by <code className="text-xs bg-amber-400/10 px-1 rounded">usage_shortfall</code> or <code className="text-xs bg-amber-400/10 px-1 rounded">settlement_failure</code> to review and issue manual refunds.
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={filterType}
@@ -1231,6 +1257,8 @@ function TransactionsTab() {
           <option value="usage">Usage</option>
           <option value="refund">Refund</option>
           <option value="admin_adjustment">Admin adjustment</option>
+          <option value="usage_shortfall">⚠ Usage shortfall</option>
+          <option value="settlement_failure">⚠ Settlement failure</option>
         </select>
         <Input
           value={filterUserId}
@@ -1260,37 +1288,53 @@ function TransactionsTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(data?.transactions ?? []).map((tx) => (
-                <TableRow key={tx.id} className="hover:bg-secondary/20">
-                  <TableCell className="text-xs font-mono text-muted-foreground truncate max-w-[120px]">
-                    {tx.userId ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs font-mono uppercase">
-                      {tx.type?.replace("_", " ") ?? "—"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className={cn("font-mono font-semibold", (tx.amount ?? 0) > 0 ? "text-primary" : "text-destructive")}>
-                    {(tx.amount ?? 0) > 0 ? "+" : ""}{tx.amount}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{tx.balanceAfter ?? "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{tx.source ?? "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</TableCell>
-                  <TableCell>
-                    {tx.type === "usage" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary"
-                        onClick={() => setRefundTarget(tx)}
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        Refund
-                      </Button>
+              {(data?.transactions ?? []).map((tx) => {
+                const isShortfall = SHORTFALL_TYPES.has(tx.type ?? "");
+                return (
+                  <TableRow
+                    key={tx.id}
+                    className={cn(
+                      "hover:bg-secondary/20",
+                      isShortfall && "bg-amber-400/5 border-l-2 border-amber-400/40"
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                  >
+                    <TableCell className="text-xs font-mono text-muted-foreground truncate max-w-[120px]">
+                      {tx.userId ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs font-mono uppercase",
+                          isShortfall && "border-amber-400/50 text-amber-400"
+                        )}
+                      >
+                        {isShortfall && <AlertTriangle className="w-3 h-3 mr-1" />}
+                        {tx.type?.replace(/_/g, " ") ?? "—"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={cn("font-mono font-semibold", (tx.amount ?? 0) > 0 ? "text-primary" : "text-destructive")}>
+                      {(tx.amount ?? 0) > 0 ? "+" : ""}{tx.amount}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{tx.balanceAfter ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{tx.source ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</TableCell>
+                    <TableCell>
+                      {(tx.type === "usage" || isShortfall) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary"
+                          onClick={() => setRefundTarget(tx)}
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Refund
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {!data?.transactions?.length && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-sm">

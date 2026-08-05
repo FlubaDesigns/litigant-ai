@@ -658,10 +658,21 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           }
         } catch (e) {
           console.error("[brain] Credit settlement failed:", e);
-          // actualCost stays as result.creditsUsed (the pre-run estimate).
-          // The finally block will handle the full refund via brain_failure_refund
-          // only when runSucceeded is false — here it's true so we rely on the
-          // next deploy + manual reconciliation for any settlement gap.
+          // Run succeeded but settlement crashed — refund the full reservation
+          // immediately so the user's balance is not permanently stranded.
+          // A durable audit entry is written so an admin can investigate the gap.
+          await reconcileCredits(uid, estimatedCost, result.sessionId, "brain_failure_refund")
+            .catch((e2) => console.error("[brain] Settlement-failure refund also failed uid=%s:", uid, e2));
+          db?.collection("credit_transactions").add({
+            userId: uid,
+            type:   "settlement_failure",
+            amount: 0,
+            balanceAfter: null,
+            source: "brain_settlement_crashed",
+            sessionId: result.sessionId,
+            estimatedCost,
+            createdAt: FieldValue.serverTimestamp(),
+          }).catch((e2) => console.error("[brain] Failed to record settlement failure:", e2));
         }
       }
 
