@@ -15,9 +15,13 @@ const PROVIDER_SHORT: Record<string, string> = {
 };
 
 const NON_LITIGANT_ROLES = new Set(["Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict"]);
+// Pipeline role prefixes — covers variants like "Architect (Review)", "Builder (Correction)", "Auditor (Cycle 2)"
+const PIPELINE_ROLE_PREFIXES = ["Architect", "Builder", "Auditor", "Moderator", "Orchestrator", "Verdict"];
 
 function isLitigantRole(role: string) {
-  return role !== "You" && !NON_LITIGANT_ROLES.has(role);
+  return role !== "You"
+    && !NON_LITIGANT_ROLES.has(role)
+    && !PIPELINE_ROLE_PREFIXES.some((p) => role.startsWith(p));
 }
 
 function isOrchestratorRole(role: string) {
