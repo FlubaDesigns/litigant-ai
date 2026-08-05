@@ -797,3 +797,141 @@ describe("checkAndTriggerAutoRefill()", () => {
     expect(stubCheckout).not.toHaveBeenCalled();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 6 — Settlement crash protection (calculateLiveCredits throws)
+//
+// When the pricing-config call that computes the real token cost throws
+// (e.g. Firestore is temporarily unavailable), the session result has already
+// been streamed to the client.  The settlement catch block must:
+//   1. Immediately refund the full reservation so credits are not stranded.
+//   2. Write a durable `settlement_failure` audit entry for admin review.
+//   3. Never drive the user's balance below its pre-run value.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("settlement crash — calculateLiveCredits throws", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // estimated cost is 200 throughout this suite
+    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
+  });
+
+  it("returns HTTP 200 (SSE result was already delivered) even when settlement crashes", async () => {
+    const mockDb = createRouteMockDb(FAKE_UID, 500);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("Firestore pricing lookup failed"));
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+
+    const res = await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    // SSE streaming returns 200 regardless of post-run settlement outcome
+    expect(res.status).toBe(200);
+  });
+
+  it("preserves the original reservation ledger entry", async () => {
+    const mockDb = createRouteMockDb(FAKE_UID, 500);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+
+    await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    const ledgerDocs = Object.keys(mockDb._store)
+      .filter(k => k.startsWith("credit_transactions/"))
+      .map(k => mockDb._store[k]);
+
+    // The initial reservation must always be written — it is the primary audit record
+    const reservationEntry = ledgerDocs.find(
+      d => d.type === "usage" && d.source === "brain_reservation"
+    );
+    expect(reservationEntry).toBeDefined();
+    expect(reservationEntry.amount).toBe(-200);
+    expect(reservationEntry.userId).toBe(FAKE_UID);
+  });
+
+  it("refunds the full reservation so the user's balance is not permanently stranded", async () => {
+    // Start 500; reserve 200; settlement crashes → refund 200 → net 500
+    const mockDb = createRouteMockDb(FAKE_UID, 500);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+
+    await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    // Balance must be fully restored — no credits permanently lost
+    expect(mockDb._store[`users/${FAKE_UID}`].creditBalance).toBe(500);
+  });
+
+  it("writes a brain_failure_refund ledger entry for the restored reservation", async () => {
+    const mockDb = createRouteMockDb(FAKE_UID, 500);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+
+    await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    const ledgerDocs = Object.keys(mockDb._store)
+      .filter(k => k.startsWith("credit_transactions/"))
+      .map(k => mockDb._store[k]);
+
+    const refundEntry = ledgerDocs.find(d => d.source === "brain_failure_refund");
+    expect(refundEntry).toBeDefined();
+    expect(refundEntry.type).toBe("refund");
+    expect(refundEntry.amount).toBe(200); // full reservation returned
+    expect(refundEntry.userId).toBe(FAKE_UID);
+  });
+
+  it("writes a settlement_failure audit entry so admins can investigate the gap", async () => {
+    const mockDb = createRouteMockDb(FAKE_UID, 500);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+
+    await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    const allDocs = Object.values(mockDb._store);
+    const auditEntry = allDocs.find((d: any) => d?.type === "settlement_failure");
+    expect(auditEntry).toBeDefined();
+    expect((auditEntry as any).source).toBe("brain_settlement_crashed");
+    expect((auditEntry as any).estimatedCost).toBe(200);
+    expect((auditEntry as any).userId).toBe(FAKE_UID);
+    // amount is 0 — no additional balance change; the refund is the separate entry above
+    expect((auditEntry as any).amount).toBe(0);
+  });
+
+  it("does not double-charge: balance after crash equals balance before the run", async () => {
+    // Verifies the invariant: stranded reservation + double-refund is not possible
+    const STARTING_BALANCE = 1000;
+    const mockDb = createRouteMockDb(FAKE_UID, STARTING_BALANCE);
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+
+    await request(app)
+      .post("/api/run-brain")
+      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send(BRAIN_BODY);
+
+    const finalBalance = mockDb._store[`users/${FAKE_UID}`].creditBalance;
+    // Must equal starting balance — no net cost when settlement fails
+    expect(finalBalance).toBe(STARTING_BALANCE);
+    // Must not exceed starting balance — no double-refund
+    expect(finalBalance).not.toBeGreaterThan(STARTING_BALANCE);
+  });
+});
