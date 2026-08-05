@@ -1,4 +1,4 @@
-name: Deploy to Cloud Run
+name: Deploy
 
 on:
   push:
@@ -7,50 +7,68 @@ on:
 
 jobs:
   deploy:
-    name: Update Cloud Run env vars
+    name: Cloud Run + Firebase Hosting
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
+      # Required for Workload Identity Federation — GitHub mints an OIDC token
+      # that GCP verifies in exchange for a short-lived access token.
+      # No service-account JSON key is ever stored or transmitted.
+      id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud (keyless)
+        id: auth
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          project_id: litigant-ai
 
-      - name: Generate service YAML and deploy
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # ── Cloud Run: update env vars ──────────────────────────────────────────
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Deploy Cloud Run env vars
         env:
-          # Provenance: inject the triggering commit SHA so the running container
-          # can prove which source built it. Verified in the step below.
           GIT_SHA: ${{ github.sha }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.GCP_SA_KEY }}
+          # Firebase / GCP
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          # AI providers
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          # App secrets
           ADMIN_MASTER_SECRET: ${{ secrets.ADMIN_MASTER_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          # Payments / email / monitoring
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
           SQUARE_LOCATION_ID: ${{ secrets.SQUARE_LOCATION_ID }}
           SQUARE_WEBHOOK_SIGNATURE_KEY: ${{ secrets.SQUARE_WEBHOOK_SIGNATURE_KEY }}
           SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_PROJECT_ID: litigant-ai
         run: node scripts/deploy-cloudrun.mjs
 
-      - name: Verify deployed image matches source commit
-        # Poll GET /api/version until it returns the current commit SHA or we time out.
-        # Cloud Run may take ~30 s to swap to the new revision; we allow 2 minutes.
-        # A mismatch here means the deploy script ran against a stale image — fail
-        # loudly so the discrepancy is caught in CI rather than discovered post-incident.
+      # ── Provenance check: confirm deployed revision matches this commit ─────
+      - name: Verify Cloud Run deployment matches source commit
         env:
           EXPECTED_SHA: ${{ github.sha }}
           VERSION_URL: "https://api-781960492360.us-central1.run.app/api/version"
@@ -61,12 +79,40 @@ jobs:
             echo "  Attempt ${i}/12 — deployed sha: '${DEPLOYED_SHA}'"
             if [ "${DEPLOYED_SHA}" = "${EXPECTED_SHA}" ]; then
               echo "✅ Provenance verified: deployed sha matches ${EXPECTED_SHA}"
-              exit 0
+              break
+            fi
+            if [ $i -eq 12 ]; then
+              echo "❌ Provenance check FAILED after 2 minutes."
+              echo "   Expected : ${EXPECTED_SHA}"
+              echo "   Deployed : ${DEPLOYED_SHA}"
+              exit 1
             fi
             sleep 10
           done
-          echo "❌ Provenance check FAILED after 2 minutes."
-          echo "   Expected : ${EXPECTED_SHA}"
-          echo "   Deployed : ${DEPLOYED_SHA}"
-          echo "   The running Cloud Run revision may not match the source commit."
-          exit 1
+
+      # ── Firebase Hosting: build frontend and deploy ────────────────────────
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: litigant-ai
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          NODE_ENV: production
+          BASE_PATH: "/"
+        working-directory: artifacts/gh-brain
+        run: pnpm run build
+
+      - name: Deploy to Firebase Hosting
+        working-directory: artifacts/gh-brain
+        run: |
+          # gcloud auth (set up by the WIF step above) provides Application
+          # Default Credentials that the Firebase CLI reads automatically.
+          npx firebase-tools deploy --only hosting \
+            --project litigant-ai \
+            --non-interactive
