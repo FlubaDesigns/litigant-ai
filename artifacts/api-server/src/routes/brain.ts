@@ -32,6 +32,7 @@
  */
 import { Router } from "express";
 import crypto from "crypto";
+import { z } from "zod";
 import { safeError } from "../lib/safeError.js";
 import { runBrainSession, type CourtConfig, type RebuttalContext, type RelayContext } from "../lib/brainEngine.js";
 import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
@@ -51,6 +52,63 @@ import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 
 const router = Router();
+
+// ── Runtime request schema ─────────────────────────────────────────────────
+// Validates /run-brain body before any credit estimation or AI calls.
+// Bounded integers prevent clients from requesting arbitrarily large loops.
+
+const CaseFileItemSchema = z.object({
+  id:      z.string().max(200),
+  type:    z.enum(["url", "file"]),
+  name:    z.string().max(500),
+  content: z.string().max(200_000),
+  url:     z.string().url().optional(),
+});
+
+const RebuttalContextSchema = z.object({
+  challenge:       z.string().max(10_000),
+  originalVerdict: z.string().max(50_000),
+  rebuttalRound:   z.number().int().min(1).max(10),
+  parentSessionId: z.string().max(200).optional(),
+});
+
+const RelayContextSchema = z.object({
+  missingInfo:         z.string().max(10_000),
+  relayRound:          z.number().int().min(1).max(10),
+  originalTranscript:  z.array(z.string().max(50_000)).max(200),
+  parentSessionId:     z.string().max(200).optional(),
+});
+
+const CourtConfigSchema = z.object({
+  litigantCount:    z.number().int().min(1).max(10).default(3),
+  confidenceTarget: z.number().int().min(50).max(100).default(80),
+  maxIterations:    z.number().int().min(1).max(20).default(2),
+  responseMode:     z.enum(["balanced", "thorough", "concise"]).default("balanced"),
+  outputFormat:     z.enum(["report", "memo", "bullets", "verdict"]).default("report"),
+  provider:         z.enum(["openai", "anthropic", "grok", "gemini"]).optional(),
+  model:            z.string().max(200).optional(),
+  conscience:       z.boolean().optional(),
+  aiReasoning:      z.enum(["independent", "chain"]).optional(),
+  maxCredits:       z.number().int().min(1).optional(),
+  debateMode:       z.enum(["adversarial", "collaborative"]).optional(),
+  artifactType:     z.string().max(100).optional(),
+});
+
+const RunBrainSchema = z.object({
+  question:               z.string().min(1).max(10_000),
+  config:                 CourtConfigSchema,
+  templateId:             z.string().max(200).optional(),
+  sessionId:              z.string().max(200).optional(),
+  continueFromTranscript: z.array(z.string().max(50_000)).max(200).optional(),
+  rebuttalContext:        RebuttalContextSchema.optional(),
+  relayContext:           RelayContextSchema.optional(),
+  parentSessionId:        z.string().max(200).optional(),
+  caseFile:               z.array(CaseFileItemSchema).max(10).optional(),
+  resumeWithFixedPipeline: z.boolean().optional(),
+  failoverProvider:       z.enum(["openai", "anthropic", "grok", "gemini"]).optional(),
+  // Overdraft consent — must be passed explicitly; server never assumes true.
+  overdraft:              z.boolean().optional(),
+});
 
 /**
  * IP-level burst limiter — applied before auth so anonymous traffic is also
@@ -329,25 +387,30 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   }
   // No Authorization header → guest path, allowed to continue.
 
-  const body = (req.body ?? {}) as Record<string, unknown>;
-  const { question, config, templateId, sessionId: clientSessionId, continueFromTranscript, rebuttalContext, relayContext, parentSessionId, caseFile, resumeWithFixedPipeline, failoverProvider } = body as unknown as {
-    question: string;
-    config: CourtConfig;
-    templateId?: string;
-    sessionId?: string;
-    continueFromTranscript?: string[];
-    rebuttalContext?: RebuttalContext;
-    relayContext?: RelayContext;
-    parentSessionId?: string;
-    caseFile?: { id: string; type: "url" | "file"; name: string; content: string; url?: string }[];
-    resumeWithFixedPipeline?: boolean;
-    failoverProvider?: string;
-  };
-
-  if (!question?.trim()) {
-    res.status(400).json({ message: "question is required" });
+  // Runtime schema validation — rejects malformed bodies before any credit
+  // estimation or AI calls. Bounded integers prevent unbounded debate loops.
+  const parsed = RunBrainSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Invalid request body",
+      errors: parsed.error.flatten().fieldErrors,
+    });
     return;
   }
+  const {
+    question,
+    config,
+    templateId,
+    sessionId: clientSessionId,
+    continueFromTranscript,
+    rebuttalContext,
+    relayContext,
+    parentSessionId,
+    caseFile,
+    resumeWithFixedPipeline,
+    failoverProvider,
+    overdraft,   // finding #10: was silently dropped; now included in schema
+  } = parsed.data;
 
   // Mint a fresh session ID server-side by default.
   // New sessions always get a fresh server-minted ID — client-supplied IDs are
@@ -436,7 +499,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     if (!isAdminRun) {
       // Resolve overdraft limit if user opted in
       let overdraftLimit = 0;
-      const overdraftRequested = (req.body as any).overdraft === true;
+      const overdraftRequested = overdraft === true;
       if (overdraftRequested && db) {
         try {
           const [flagDoc, limitDoc] = await Promise.all([
