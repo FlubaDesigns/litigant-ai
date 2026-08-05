@@ -282,6 +282,109 @@ describe("POST /api/square/webhook — route-level", () => {
     expect(secondResult).toMatchObject({ skipped: true });
   });
 
+  // ── Tamper: creditAmount in note doesn't match pack catalogue ────────────────
+
+  it("returns 200 but does NOT call addCredits when creditAmount in note mismatches the pack catalogue", async () => {
+    // The note claims 9999 credits but the catalogue says starter_pack = 1000.
+    // The handler must reject the grant to prevent a forged note from inflating balances.
+    const tamperedNote = "LITIGANT:userId=user-1,creditAmount=9999,pack=starter_pack";
+    const body = JSON.stringify(
+      makePaymentEvent({ note: tamperedNote, amount_money: { amount: 1000, currency: "USD" } }),
+    );
+    const sig = makeSignature(body);
+    const app = buildApp();
+
+    // Catalogue pack declares creditAmount=1000, not 9999.
+    vi.mocked(getAllCreditPacks).mockResolvedValue({
+      starter_pack: {
+        id:       "starter_pack",
+        name:     "Starter",
+        active:   true,
+        metadata: { creditAmount: "1000" },
+        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
+      } as any,
+    });
+
+    const res = await supertest(app)
+      .post("/api/square/webhook")
+      .set("Content-Type", "application/json")
+      .set("x-square-hmacsha256-signature", sig)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+
+  // ── Tamper: paid amount doesn't match the pack's listed price ─────────────────
+
+  it("returns 200 but does NOT call addCredits when paid amount mismatches the pack price", async () => {
+    // The note is correct (1000 credits, starter_pack) but the payment shows
+    // only 1¢ was actually charged — a forged checkout lowering the price.
+    const body = JSON.stringify(
+      makePaymentEvent({
+        note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=starter_pack",
+        amount_money: { amount: 1, currency: "USD" }, // 1¢ instead of the expected 1000¢
+      }),
+    );
+    const sig = makeSignature(body);
+    const app = buildApp();
+
+    // Catalogue declares the pack costs 1000¢; we paid 1¢.
+    vi.mocked(getAllCreditPacks).mockResolvedValue({
+      starter_pack: {
+        id:       "starter_pack",
+        name:     "Starter",
+        active:   true,
+        metadata: { creditAmount: "1000" },
+        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
+      } as any,
+    });
+
+    const res = await supertest(app)
+      .post("/api/square/webhook")
+      .set("Content-Type", "application/json")
+      .set("x-square-hmacsha256-signature", sig)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+
+  // ── Tamper: unknown packId in note ────────────────────────────────────────────
+
+  it("returns 200 but does NOT call addCredits when packId is not in the catalogue", async () => {
+    // The note references a packId ("platinum_pack") that doesn't exist in the
+    // catalogue — could be a forged note trying to bypass validation.
+    const body = JSON.stringify(
+      makePaymentEvent({
+        note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=platinum_pack",
+        amount_money: { amount: 1000, currency: "USD" },
+      }),
+    );
+    const sig = makeSignature(body);
+    const app = buildApp();
+
+    // Catalogue only has starter_pack — platinum_pack is unknown.
+    vi.mocked(getAllCreditPacks).mockResolvedValue({
+      starter_pack: {
+        id:       "starter_pack",
+        name:     "Starter",
+        active:   true,
+        metadata: { creditAmount: "1000" },
+        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
+      } as any,
+    });
+
+    const res = await supertest(app)
+      .post("/api/square/webhook")
+      .set("Content-Type", "application/json")
+      .set("x-square-hmacsha256-signature", sig)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+
   // ── Extra: missing signing key rejects even a legitimately signed request ──
 
   it("returns 401 when SQUARE_WEBHOOK_SIGNATURE_KEY is not configured", async () => {
