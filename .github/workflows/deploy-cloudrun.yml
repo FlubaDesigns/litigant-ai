@@ -44,6 +44,13 @@ jobs:
         with:
           version: 10
 
+      # ── Backend tests: must pass before any deployment step ───────────────────
+      - name: Install api-server dependencies
+        run: pnpm --filter @workspace/api-server install --frozen-lockfile
+
+      - name: Run backend tests
+        run: pnpm --filter @workspace/api-server run test
+
       - name: Deploy Cloud Run env vars
         env:
           GIT_SHA: ${{ github.sha }}
