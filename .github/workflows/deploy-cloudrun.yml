@@ -75,6 +75,27 @@ jobs:
           await getFirestore().collection('templates').limit(1).get();
           await getAuth().listUsers(1);
           console.log('Keyless identity can read Firestore and Firebase Auth.');
+          // Idempotent mitigation for the credential formerly committed in the e2e test.
+          const marker=getFirestore().doc('security_migrations/exposed_e2e_session_2026');
+          if (!(await marker.get()).exists) {
+            let action='already_invalid';
+            try {
+              const uid='Hvi6tlxqa7N275p09qgScOYnuvv2';
+              const account=await getAuth().getUser(uid);
+              const exposedAuthTime=1784224659 * 1000;
+              if (!account.disabled && Date.parse(account.tokensValidAfterTime || '1970-01-01') <= exposedAuthTime) {
+                await getAuth().revokeRefreshTokens(uid);
+                action='revoked';
+              }
+            } catch(error) {
+              if (error.code !== 'auth/user-not-found') throw error;
+              action='account_absent';
+            }
+            await marker.set({action,checkedAt:new Date().toISOString()});
+            console.log(`Exposed test session mitigation: ${action}.`);
+          } else {
+            console.log('Exposed test session mitigation already completed.');
+          }
           NODE
 
       - name: Run backend tests

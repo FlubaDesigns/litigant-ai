@@ -37,8 +37,10 @@ Regression coverage includes Firestore read/write ordering, payment deduplicatio
 
 Local browser execution is restricted by the workspace's socket sandbox. All 10 browser tests passed in GitHub Actions. A container startup health check also gates deployment. A green deploy workflow is required evidence for the shipped revision.
 
-## Outstanding operational action
+## Credential incident mitigation
 
-An old browser test contained an account refresh token. The current test now uses isolated fixtures, with no real account credentials. Revoke the exposed account's existing refresh sessions in Firebase and review access history. Removing the token from the current tree does not remove it from historical commits. No history rewrite or end-user session revocation is claimed by this change. The rejected static Firebase service key is replaced with the existing keyless service identity, with database and Auth access checked during deployment.
+An old browser test contained an account refresh token. The current test uses isolated fixtures, with no real account credentials. Deployment checks the affected account's token validity date and revokes its refresh sessions if the exposed session could still be valid. A server-only migration marker makes this check idempotent. The affected account may need to sign in again. Historical Git commits still contain the old token; no history rewrite is claimed.
+
+The rejected static Firebase service key is replaced with the existing keyless service identity, with database and Auth access checked during deployment.
 
 A code review and automated tests cannot establish legal accuracy of AI output. There is still no empirical calibration study for the review score. Any launch claim about answer reliability needs a separate representative evaluation against source-grounded answers.
