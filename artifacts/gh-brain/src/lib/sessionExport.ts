@@ -24,6 +24,17 @@ export function buildMarkdown(state: SessionState): string {
   ].filter(Boolean).join("\n");
 }
 
+/** Plain-text wrapper; never strip symbols from generated content or code. */
+export function buildText(state: SessionState): string {
+  return [
+    "Litigant AI Session Report",
+    `Question: ${state.question}`,
+    `AI review: ${confidenceLabel(state.confidence)}`,
+    `Credits Used: ${state.creditsUsed}`,
+    ...sessionOutput(state).sections.map(section => `${section.title}\n\n${section.content}`),
+  ].join("\n\n");
+}
+
 export function exportPDF(state: SessionState, w: Window): void {
   const esc = (s: unknown): string =>
     String(s ?? "").replace(/[&<>"']/g, (c) =>

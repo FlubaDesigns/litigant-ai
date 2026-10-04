@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { CourtConfigSchema, restoreCourtConfig, RESPONSE_VIEWS } from "@workspace/api-zod/session";
 import { sessionOutput } from "./sessionOutput";
-import { buildMarkdown, exportPDF, type SessionState } from "./sessionExport";
+import { buildMarkdown, buildText, exportPDF, type SessionState } from "./sessionExport";
 
 const sample = {
   config: CourtConfigSchema.parse({}), question: "Question", template:null,
@@ -25,12 +25,17 @@ describe("one configured output for display and downloads", () => {
     expect(output.content).not.toContain(excluded);
     if(strategy === "consensus+individual") expect(output.content).toContain("INDIVIDUAL_ARGUMENTS");
     expect(buildMarkdown(state)).toContain(output.content);
+    expect(buildText(state)).toContain(output.content);
     expect(buildMarkdown(state)).not.toContain(excluded);
     expect(buildMarkdown(state)).toContain("SOURCE_LIMITATIONS");
     let html = "";
     exportPDF(state, {document:{write:(value:string)=> {html=value;},close:()=>{}},focus:()=>{},print:()=>{}} as unknown as Window);
     expect(html).toContain(included);
     expect(html).not.toContain(excluded);
+  });
+  it("preserves code and formulas verbatim in text downloads", () => {
+    const code = "# Notes\nresult_value = price * count\n`reference_id`";
+    expect(buildText({...sample,finalAnswer:code})).toContain(code);
   });
   it("normalizes overlapping saved controls and removes obsolete fields", () => {
     const config = CourtConfigSchema.parse({outputScope:"all-voices",outputStrategy:"moderator-consensus",outputPreference:"both",artifactType:"none"});

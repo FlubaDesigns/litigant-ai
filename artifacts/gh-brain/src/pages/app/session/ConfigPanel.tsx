@@ -325,11 +325,11 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
             {/* FOOTER */}
             <div className="flex flex-col gap-2 pb-2">
               <Button
-                onClick={async () => { const saved = await doSave(true); if (saved) setTimeout(onClose, 700); }}
+                onClick={async () => { if (!uid || !onboardingComplete) { onClose(); return; } const saved = await doSave(true); if (saved) setTimeout(onClose, 700); }}
                 disabled={saveState === "saving"}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
               >
-                {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : "Save Settings"}
+                {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : uid && onboardingComplete ? "Save Settings" : "Apply configuration"}
               </Button>
               {onboardingComplete
                 ? <p className="text-xs text-muted-foreground/50 text-center">Changes also save automatically as you go</p>

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildPdfToastActions } from "@/lib/pdfExport";
-import { buildMarkdown, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
+import { buildMarkdown, buildText, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
 import { useBrainSession } from "@/hooks/useBrainSession";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
@@ -298,7 +298,7 @@ export default function SessionPage() {
       return;
     }
     if (fmt === "text") {
-      const blob = new Blob([buildMarkdown(state).replace(/[#*_`]/g, "")], { type: "text/plain" });
+      const blob = new Blob([buildText(state)], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = `brain-session-${Date.now()}.txt`; a.click();
