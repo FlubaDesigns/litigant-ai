@@ -1,3 +1,4 @@
+import { ProviderFailureError, SessionProviderError, providerFailureKind } from "./providerErrors.js";
 import type { CallUsage } from "./sessionPricing.js";
 import { type EngineConfig as CourtConfig, CourtConfigSchema, ANSWER_STYLES, parseReviewScore, REVIEW_SCORE_INSTRUCTION, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
 import type { Response } from "express";
@@ -332,13 +333,6 @@ async function resolveSeatProvider(
 /** Thrown by streamRole when the AI provider itself errors (not an abort). */
 class CreditCapError extends Error {}
 
-class ProviderFailureError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ProviderFailureError";
-  }
-}
-
 /** Stream a role's response, using real provider token counts when available */
 async function streamRole(
   provider: AIProvider,
@@ -353,25 +347,26 @@ async function streamRole(
   const estimatedInput = charsToTokens(inputChars);
 
   let output = "";
+  let failure: unknown;
   try {
     for await (const chunk of provider.streamChat(messages, maxTokens, signal)) {
-      if (signal?.aborted) break;
+      throwIfAborted(signal);
       output += chunk;
       onChunk(chunk);
     }
-  } catch (err: any) {
-    if (err?.message === "Session aborted by client" || signal?.aborted) throw err;
-    throw new ProviderFailureError(err?.message || "Provider error");
-  }
-
-  throwIfAborted(signal);
-  if (!output.trim()) throw new ProviderFailureError("Provider returned an empty response");
+  } catch (error) { failure = error; }
   const realUsage = provider.getLastUsage?.();
-  const inputTokens = realUsage?.inputTokens || estimatedInput;
-  const outputTokens = realUsage?.outputTokens || charsToTokens(output.length);
-  usage.inputTokens += inputTokens;
-  usage.outputTokens += outputTokens;
-  usage.calls?.push({ provider: provider.name, model: provider.model ?? "gpt-5", inputTokens, outputTokens });
+  if (realUsage || output) {
+    const inputTokens = realUsage?.inputTokens ?? estimatedInput;
+    const outputTokens = realUsage?.outputTokens ?? charsToTokens(output.length);
+    usage.inputTokens += inputTokens;
+    usage.outputTokens += outputTokens;
+    usage.calls?.push({ provider: provider.name, model: provider.model ?? "gpt-5", inputTokens, outputTokens });
+  }
+  throwIfAborted(signal);
+  if (failure instanceof Error && failure.message === "Session aborted by client") throw failure;
+  if (failure) throw new ProviderFailureError(providerFailureKind(failure));
+  if (!output.trim()) throw new ProviderFailureError("empty_response");
 
   return output;
 }
@@ -412,59 +407,55 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     }
   };
 
-  // ── Provider failover state ───────────────────────────────────────────────
-  // If a provider errors mid-run we silently switch the whole session to the
-  // next available configured provider and emit one `provider_failover` SSE
-  // event so the client can pin subsequent turns to the backup.
-  let failoverTriggered = false;
-
-  async function triggerFailover(failedProviderName: string): Promise<boolean> {
-    if (failoverTriggered) return true; // already on backup
-    const backupName = configured.find((n) => n !== failedProviderName);
-    if (!backupName) return false;
-    failoverTriggered = true;
-    const backup = await createProviderAsync(backupName, opts.fallbackModels?.[backupName]);
-    globalProvider = backup;
-    if (orchProvider.name   === failedProviderName) orchProvider   = backup;
-    if (modProvider.name    === failedProviderName) modProvider    = backup;
-    if (archProvider.name   === failedProviderName) archProvider   = backup;
-    if (buildProvider.name  === failedProviderName) buildProvider  = backup;
-    if (auditProvider.name  === failedProviderName) auditProvider  = backup;
-    sendSSE(res, { type: "provider_failover", provider: backupName });
-    console.info(`[brainEngine] provider failover: ${failedProviderName} → ${backupName} (session ${opts.sessionId ?? "new"})`);
-    return true;
+  // Each enabled provider can be attempted once per failed stage. A failed
+  // backup must not prevent the remaining configured providers from answering.
+  const failedProviders = new Set<string>();
+  async function selectBackup(): Promise<AIProvider | null> {
+    for (const name of configured) {
+      if (failedProviders.has(name)) continue;
+      try {
+        return await createProviderAsync(name, opts.fallbackModels?.[name]);
+      } catch (error) {
+        failedProviders.add(name);
+        console.warn("[brainEngine] provider unavailable", {provider:name, kind:providerFailureKind(error)});
+      }
+    }
+    return null;
   }
 
-  /**
-   * Calls streamRole with the given provider. On ProviderFailureError, triggers
-   * failover to a backup provider and retries once. Stops the run when no backup succeeds.
-   */
   async function callRole(
-    p: AIProvider,
+    requested: AIProvider,
     messages: ChatMessage[],
     maxTokens: number,
     onChunk: (text: string) => void,
   ): Promise<string> {
-    checkCallBudget(p, messages, maxTokens);
-    try {
-      return await streamRole(p, messages, maxTokens, onChunk, usage, abortSignal);
-    } catch (err: any) {
-      if (err?.message === "Session aborted by client" || abortSignal?.aborted) throw err;
-      if (err instanceof ProviderFailureError || err?.name === "ProviderFailureError") {
-        const swapped = await triggerFailover(p.name);
-        if (swapped) {
-          checkCallBudget(globalProvider, messages, maxTokens);
-          try {
-            return await streamRole(globalProvider, messages, maxTokens, onChunk, usage, abortSignal);
-          } catch (retryErr: any) {
-            if (retryErr?.message === "Session aborted by client" || abortSignal?.aborted) throw retryErr;
-            // Both providers failed — fall through to error string
-          }
+    let candidate: AIProvider | null = failedProviders.has(requested.name)
+      ? (failedProviders.has(globalProvider.name) ? await selectBackup() : globalProvider)
+      : requested;
+    while (candidate) {
+      throwIfAborted(abortSignal);
+      checkCallBudget(candidate, messages, maxTokens);
+      try {
+        return await streamRole(candidate, messages, maxTokens, onChunk, usage, abortSignal);
+      } catch (error) {
+        throwIfAborted(abortSignal);
+        if (!(error instanceof ProviderFailureError)) throw error;
+        const failedName = candidate.name;
+        failedProviders.add(failedName);
+        console.warn("[brainEngine] provider response failed", {provider:failedName, kind:error.kind});
+        candidate = await selectBackup();
+        if (candidate) {
+          globalProvider = candidate;
+          if (failedProviders.has(orchProvider.name)) orchProvider = candidate;
+          if (failedProviders.has(modProvider.name)) modProvider = candidate;
+          if (failedProviders.has(archProvider.name)) archProvider = candidate;
+          if (failedProviders.has(buildProvider.name)) buildProvider = candidate;
+          if (failedProviders.has(auditProvider.name)) auditProvider = candidate;
+          sendSSE(res, {type:"provider_failover",provider:candidate.name});
         }
-        throw new Error("AI provider failed; no approved result was produced. Please retry.");
       }
-      throw err;
     }
+    throw new SessionProviderError();
   }
 
   sendSSE(res, { type: "start", sessionId, estimatedCredits, provider: providerName });

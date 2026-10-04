@@ -297,6 +297,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         caveats: "",
         artifacts: "",
         errorMessage: null,
+        failoverProvider: null,
       };
 
     case "ROLE_START": {
@@ -416,10 +417,12 @@ function reducer(state: SessionState, action: Action): SessionState {
         ? { ...state, acceptingAnswer: false, acceptanceError: action.message } : state;
 
     case "ERROR":
-      return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
+      return { ...state, phase: "error", activeRole: null, failoverProvider: null, errorMessage: action.message,
+        runtimeFeed: state.runtimeFeed.map(item => ({...item, isComplete: true})) };
 
     case "PROVIDER_FAILOVER":
-      return { ...state, failoverProvider: action.provider };
+      return { ...state, failoverProvider: action.provider,
+        runtimeFeed: state.runtimeFeed.map(item => item.isComplete ? item : {...item, provider:action.provider, content:""}) };
 
     case "COURTROOM_OUTCOME":
       return {
@@ -635,7 +638,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       idToken,
       caseFile: state.caseFile.length > 0 ? state.caseFile : undefined,
       ...(opts?.overdraft ? { overdraft: true } : {}),
-      ...(state.failoverProvider ? { failoverProvider: state.failoverProvider } : {}),
     };
 
     try {

@@ -103,19 +103,6 @@ jobs:
           }
           NODE
 
-      - name: Diagnose real provider responses
-        working-directory: artifacts/api-server
-        env:
-          FIREBASE_PROJECT_ID: litigant-ai
-          FIREBASE_USE_ADC: "true"
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-        run: |
-          pnpm exec esbuild scripts/diagnose-providers.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/diagnose-providers.mjs
-          node dist/diagnose-providers.mjs
-
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
 
@@ -252,7 +239,7 @@ jobs:
         run: |
           for attempt in $(seq 1 6); do
             curl --fail --silent --show-error https://litigant-ai.web.app/ -o /tmp/hosted-index.html
-            HOSTED_SHA=$(curl --fail --silent https://litigant-ai.web.app/api-server/api/version | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
+            HOSTED_SHA=$(curl --fail --silent https://litigant-ai.web.app/api-server/api/version | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null) || HOSTED_SHA=""
             if cmp -s artifacts/gh-brain/dist/public/index.html /tmp/hosted-index.html && [ "$HOSTED_SHA" = "$EXPECTED_SHA" ]; then
               curl --fail --silent https://litigant-ai.web.app/api-server/api/templates -o /tmp/templates.json
               python3 -c "import json; data=json.load(open('/tmp/templates.json')); assert data and all('defaultConfig' in t and 'inputFields' in t for t in data)"

@@ -698,3 +698,29 @@ describe("configuration reaches generation", () => {
     expect(provider.streamChat.mock.calls[3][0][1].content).toContain("legal-brief");
   });
 });
+
+describe("provider fallback recovery", () => {
+  it("reaches a working third provider after two authentication failures", async () => {
+    vi.clearAllMocks();
+    const failure = (name:string) => ({...makeProvider([]),name,streamChat:vi.fn(async function*(){throw Object.assign(new Error("Rejected"),{status:401});}),getLastUsage:()=>null});
+    const first=failure("openai"), second=failure("anthropic");
+    const third={...makeProvider(["Open","Argument","ARTIFACT_NEEDED: no","APPROVED\nCONFIDENCE: 80","Final answer"]),name:"grok"};
+    vi.mocked(createProviderAsync).mockImplementation(async name => ({openai:first,anthropic:second,grok:third}[name] as any));
+    const res=makeMockRes();
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,provider:"openai",outputPreferenceMode:"answer-only"},res,enabledProviders:["openai","anthropic","grok"]});
+    expect(result.finalAnswer).toBe("Final answer");
+    expect(first.streamChat).toHaveBeenCalledTimes(1);
+    expect(second.streamChat).toHaveBeenCalledTimes(1);
+    expect(res._events.filter(e=>e.type==="provider_failover").map(e=>e.provider)).toEqual(["anthropic","grok"]);
+  });
+  it("counts an empty billed completion before attempting another provider", async () => {
+    vi.clearAllMocks();
+    const first={...makeProvider([""]),name:"openai",getLastUsage:()=>({inputTokens:10,outputTokens:400})};
+    const backup={...makeProvider(["Should not be called"]),name:"anthropic"};
+    vi.mocked(createProviderAsync).mockImplementation(async name => (name==="openai"?first:backup) as any);
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,provider:"openai",maxCredits:1},res:makeMockRes(),enabledProviders:["openai","anthropic"],priceCalls:calls=>calls.filter(c=>c.outputTokens===400).length});
+    expect(result.pauseReason).toBe("credit_cap");
+    expect(backup.streamChat).not.toHaveBeenCalled();
+    expect(result.tokenUsage.calls?.[0].outputTokens).toBe(400);
+  });
+});

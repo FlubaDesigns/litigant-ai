@@ -553,3 +553,18 @@ describe("complete configuration persistence", () => {
     expect(reducer(restored,{type:"LOAD_DEFAULTS",config:{outputStrategy:"individual",format:"pdf"}}).config).toEqual(config);
   });
 });
+
+describe("failed provider UI recovery", () => {
+  it("stops typing, keeps the user's question and drops the failed fallback", () => {
+    let state=makeInitialState();
+    state=reducer(state,{type:"SET_QUESTION",question:"My original question"});
+    state=reducer(state,{type:"ROLE_START",role:"Orchestrator",round:0,roleIndex:-1,provider:"openai"});
+    state=reducer(state,{type:"PROVIDER_FAILOVER",provider:"anthropic"});
+    state=reducer(state,{type:"ERROR",message:"Provider unavailable"});
+    expect(state.question).toBe("My original question");
+    expect(state.config).toEqual(makeInitialState().config);
+    expect(state.runtimeFeed.every(item=>item.isComplete)).toBe(true);
+    expect(state.activeRole).toBeNull();
+    expect(state.failoverProvider).toBeNull();
+  });
+});

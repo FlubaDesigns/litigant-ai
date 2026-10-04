@@ -1,0 +1,40 @@
+name: Provider diagnostics
+on:
+  push:
+    branches: [main]
+    paths:
+      - artifacts/api-server/scripts/diagnose-providers.ts
+      - .github/workflows/provider-diagnostics.yml
+  workflow_dispatch:
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/source_safety.py
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: pnpm install --frozen-lockfile
+      - name: Check configured credentials without exposing values
+        working-directory: artifacts/api-server
+        env:
+          FIREBASE_PROJECT_ID: litigant-ai
+          FIREBASE_USE_ADC: "true"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        run: |
+          pnpm exec esbuild scripts/diagnose-providers.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/diagnose-providers.mjs
+          node dist/diagnose-providers.mjs

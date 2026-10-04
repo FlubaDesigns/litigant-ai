@@ -400,7 +400,7 @@ export function SessionCourt({
             <div style={{ background: "rgba(200,64,64,.08)", border: "1px solid rgba(200,64,64,.3)", borderRadius: 9, padding: "16px", textAlign: "center" }}>
               <div style={{ fontSize: 14, color: "#ff6b6b", fontWeight: 700, marginBottom: 6 }}>Session Error</div>
               <div style={{ fontSize: 12, color: "#9a5a5a", marginBottom: 10 }}>{state.errorMessage}</div>
-              <button onClick={onReset} style={{ background: "transparent", border: "1px solid #c84040", borderRadius: 8, color: "#ff6b6b", padding: "6px 16px", cursor: "pointer", fontSize: 13 }}>Try Again</button>
+              <button onClick={onRun} style={{ background: "transparent", border: "1px solid #c84040", borderRadius: 8, color: "#ff6b6b", padding: "6px 16px", cursor: "pointer", fontSize: 13 }}>Try Again</button>
             </div>
           )}
 
