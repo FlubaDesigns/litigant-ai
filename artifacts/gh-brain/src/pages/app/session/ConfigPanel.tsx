@@ -1,6 +1,8 @@
+import { useLimits } from "@/hooks/useLimits";
+import { CourtConfigSchema, RESPONSE_VIEWS, DOCUMENT_TYPES, DOWNLOAD_FORMATS, ANSWER_STYLES, OUTPUT_MODES } from "@workspace/api-zod/session";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { useState, useRef, useEffect } from "react";
-import { HelpCircle, DollarSign, GraduationCap, Check } from "lucide-react";
+import { HelpCircle, DollarSign, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -9,9 +11,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { useProviders } from "@/hooks/useConfiguration";
-import { type ModelInfo } from "@/services/providerService";
 import { saveUserConfig, type UserProfile } from "@/services/firestoreService";
 import type { CourtConfig } from "@/data/templates";
 
@@ -43,43 +42,6 @@ function V29Field({
   );
 }
 
-function V29OptionCard({
-  selected, onClick, icon: Icon, label, description, tag,
-}: {
-  selected: boolean; onClick: () => void; icon: React.ElementType;
-  label: string; description: string; tag?: string | null;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "relative w-full text-left rounded-lg border p-3 transition-all duration-150",
-        "hover:border-primary/60 hover:bg-primary/5",
-        selected ? "border-primary bg-primary/10 ring-1 ring-primary/40" : "border-border/60 bg-card/40"
-      )}
-    >
-      {tag && (
-        <span className="absolute top-2 right-2 text-xs font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-          {tag}
-        </span>
-      )}
-      <div className="flex items-start gap-2.5">
-        <div className={cn("mt-0.5 shrink-0 rounded-md p-1.5", selected ? "bg-primary/20" : "bg-muted/50")}>
-          <Icon className={cn("w-3.5 h-3.5", selected ? "text-primary" : "text-muted-foreground")} />
-        </div>
-        <div className={cn("min-w-0", tag ? "pr-12" : "pr-1")}>
-          <div className="font-semibold text-xs flex items-center gap-1.5">
-            {label}
-            {selected && <Check className="w-3 h-3 text-primary shrink-0" />}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
-        </div>
-      </div>
-    </button>
-  );
-}
-
 const V29_SELECT = "bg-[#0d1a0d] border border-primary/30 text-sm text-foreground hover:border-primary/60 focus:border-primary h-10";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -98,8 +60,8 @@ interface ConfigPanelProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChange, uid, onboardingComplete }: ConfigPanelProps) {
-  const {data:catalog} = useProviders(open);
-  const availableProviders = catalog?.providers ?? [];
+  const limits = useLimits();
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [atBottom, setAtBottom] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -117,6 +79,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
   }, [open]);
 
   async function doSave(showToast = false): Promise<boolean> {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
     if (!uid || !onboardingComplete) return false;
     setSaveState("saving");
     try {
@@ -125,9 +88,13 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
       const settings = Object.fromEntries(
         Object.entries(rawSettings).filter(([, v]) => v !== undefined)
       ) as UserProfile["defaultSettings"];
-      await saveUserConfig(uid, settings);
-      hasChanges.current = false;
-      setSaveState("saved");
+      const pending = saveQueue.current.catch(() => {}).then(() => saveUserConfig(uid, settings));
+      saveQueue.current = pending;
+      await pending;
+      if (latestConfigRef.current === c) {
+        hasChanges.current = false;
+        setSaveState("saved");
+      }
       if (showToast) toast.success("Settings saved to your profile");
       setTimeout(() => setSaveState("idle"), 2000);
       return true;
@@ -147,17 +114,12 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
   }
 
   function handleChange(partial: Partial<CourtConfig>) {
-    latestConfigRef.current = { ...latestConfigRef.current, ...partial };
+    latestConfigRef.current = CourtConfigSchema.parse({ ...latestConfigRef.current, ...partial });
     hasChanges.current = true;
-    onChange(partial);
+    onChange(latestConfigRef.current);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => doSave(false), 1500);
   }
-
-  const selectedProvider = availableProviders.find((p) => p.name === config.provider) ?? availableProviders[0];
-  const selectedModel: ModelInfo | undefined = selectedProvider?.models.find(
-    (m) => m.id === (config.model ?? selectedProvider.defaultModel)
-  ) ?? selectedProvider?.models[0];
 
   const quote = useSessionQuote(config, open && quoteEnabled);
   const credLow = quote.data?.estimatedCredits ?? 0;
@@ -180,33 +142,52 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
           <TooltipProvider delayDuration={150}>
           <div className="px-5 py-5 space-y-5">
             <DialogHeader className="pb-0">
-              <DialogTitle className="text-xl font-bold text-primary tracking-tight">Mission Briefing</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-primary tracking-tight">Configuration</DialogTitle>
             </DialogHeader>
 
-            {/* OUTPUT PREFERENCE */}
-            <V29Field
-              label="Output Preference"
-              tooltip="Controls whether the court builds a structured document or delivers a plain synthesised answer. 'Answer only' skips the Architect and Builder stages — faster and cheaper, ideal for questions that just need a verdict. 'Document' always produces a formatted report. 'Auto' lets the court decide based on the question type."
-            >
-              <Select
-                value={config.outputPreferenceMode ?? "auto"}
-                onValueChange={(v) => handleChange({ outputPreferenceMode: v as CourtConfig["outputPreferenceMode"] })}
-              >
-                <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto" label="Auto (let the court decide)">
-                    <span className="text-xs text-muted-foreground">Court decides whether a document is needed based on the question.</span>
-                  </SelectItem>
-                  <SelectItem value="answer-only" label="Answer only">
-                    <span className="text-xs text-muted-foreground">Skip Architect & Builder — deliver a plain synthesised answer. Faster &amp; cheaper.</span>
-                  </SelectItem>
-                  <SelectItem value="document" label="Document">
-                    <span className="text-xs text-muted-foreground">Always produce a structured report or document regardless of question type.</span>
-                  </SelectItem>
-                </SelectContent>
+            <V29Field label="Response view" desc="The selected response is used on screen and in downloads. The full court record remains available.">
+              <Select value={config.outputStrategy} onValueChange={(v) => handleChange({outputStrategy: v as CourtConfig["outputStrategy"], ...(v === "artifact" ? {outputPreferenceMode: "document" as const} : {})})}>
+                <SelectTrigger aria-label="Response view" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(RESPONSE_VIEWS).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+              </Select>
+            </V29Field>
+            <V29Field label="Document creation" desc="Answer only skips document building. Auto builds one when needed. Always build requests a document every time.">
+              <Select value={config.outputPreferenceMode ?? "auto"} onValueChange={(v) => handleChange({outputPreferenceMode: v as CourtConfig["outputPreferenceMode"], ...(v === "answer-only" && config.outputStrategy === "artifact" ? {outputStrategy: "moderator-consensus" as const} : {})})}>
+                <SelectTrigger aria-label="Document creation" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(OUTPUT_MODES).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+              </Select>
+            </V29Field>
+            {config.outputPreferenceMode !== "answer-only" && <V29Field label="Document type">
+              <Select value={config.artifactType === "none" ? "auto" : config.artifactType} onValueChange={(v) => handleChange({artifactType: v as CourtConfig["artifactType"]})}>
+                <SelectTrigger aria-label="Document type" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(DOCUMENT_TYPES).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+              </Select>
+            </V29Field>}
+            <V29Field label="Answer style" desc="How the court presents its conclusion. Document type controls the separate artifact.">
+              <Select value={config.outputFormat} onValueChange={(v) => handleChange({outputFormat: v as CourtConfig["outputFormat"]})}>
+                <SelectTrigger aria-label="Answer style" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(ANSWER_STYLES).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+              </Select>
+            </V29Field>
+            <V29Field label="Response depth" desc="Controls the detail and length of arguments and the final answer.">
+              <Select value={config.responseMode} onValueChange={(v) => handleChange({responseMode: v as CourtConfig["responseMode"]})}>
+                <SelectTrigger aria-label="Response depth" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{["concise", "balanced", "thorough"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+              </Select>
+            </V29Field>
+            <V29Field label="Download format" desc="Used by the session download button, including answer-only sessions.">
+              <Select value={config.format} onValueChange={(v) => handleChange({format: v as CourtConfig["format"]})}>
+                <SelectTrigger aria-label="Download format" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(DOWNLOAD_FORMATS).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
               </Select>
             </V29Field>
 
+            <V29Field label="Litigants">
+              <Select value={String(config.litigantCount)} onValueChange={v => handleChange({litigantCount: Number(v)})}>
+                <SelectTrigger aria-label="Litigants" className={V29_SELECT}><SelectValue /></SelectTrigger>
+                <SelectContent>{Array.from({length: limits.maxLitigants}, (_,i) => i+1).map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+              </Select>
+            </V29Field>
             {/* CONSCIENCE */}
             <V29Field
               label="Conscience"
@@ -216,7 +197,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
                 <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="on" label="Conscience ON">
-                    <span className="text-xs text-muted-foreground">Seats mandated to state evidence honestly and admit uncertainty. +1 Cr</span>
+                    <span className="text-xs text-muted-foreground">Seats mandated to state evidence honestly and admit uncertainty.</span>
                   </SelectItem>
                   <SelectItem value="off" label="Conscience OFF">
                     <span className="text-xs text-muted-foreground">No governing mandate — seats respond however the base model naturally would.</span>
@@ -269,10 +250,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
               <Select value={String(config.confidenceTarget)} onValueChange={(v) => handleChange({ confidenceTarget: Number(v) })}>
                 <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="80">80/100</SelectItem>
-                  <SelectItem value="90">90/100</SelectItem>
-                  <SelectItem value="95">95/100</SelectItem>
-                  <SelectItem value="99">99/100</SelectItem>
+                  {[...new Set([50, 60, 70, 80, 85, 90, 95, 99, 100, config.confidenceTarget])].sort((a,b) => a-b).map(n => <SelectItem key={n} value={String(n)}>{n}/100</SelectItem>)}
                 </SelectContent>
               </Select>
             </V29Field>
@@ -285,10 +263,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
               <Select value={String(config.maxIterations)} onValueChange={(v) => handleChange({ maxIterations: Number(v) })}>
                 <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
+                  {Array.from({length: 20}, (_, i) => i + 1).map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
                 </SelectContent>
               </Select>
             </V29Field>
@@ -301,11 +276,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
               <Select value={String(config.maxCredits)} onValueChange={(v) => handleChange({ maxCredits: Number(v) })}>
                 <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="100">100</SelectItem>
-                  <SelectItem value="250">250</SelectItem>
-                  <SelectItem value="500">500</SelectItem>
-                  <SelectItem value="1000">1 000</SelectItem>
-                  <SelectItem value="2500">2 500</SelectItem>
+                  {[...new Set([100,250,500,1000,2500,config.maxCredits])].sort((a,b) => a-b).map(n => <SelectItem key={n} value={String(n)}>{n.toLocaleString()}</SelectItem>)}
                 </SelectContent>
               </Select>
             </V29Field>
@@ -325,10 +296,12 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
                   </PopoverContent>
                 </Popover>
               </div>
+              {config.intelligenceLevel === undefined && <p className="text-xs text-muted-foreground">Using saved model: {config.model ?? `${config.provider ?? "Default provider"} default`}. Move the slider to choose by capability.</p>}
               <div className="flex items-center gap-3">
                 <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
                   type="range"
+                  aria-label="Master intelligence"
                   min={0} max={100}
                   value={config.intelligenceLevel ?? 50}
                   onChange={(e) => handleChange({ intelligenceLevel: Number(e.target.value), provider: undefined, model: undefined })}
@@ -342,7 +315,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
             {/* ESTIMATED RUN COST */}
             <div className="rounded-lg border border-primary/25 bg-primary/5 p-4 space-y-1">
               <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
-              <div className="text-2xl font-bold text-primary">{quote.ready ? credHigh : "…"} Credits</div>
+              <div className="text-2xl font-bold text-primary">{quote.ready ? credHigh : quote.isError ? "Unavailable" : "…"}{quote.ready ? " Credits" : ""}</div>
               <div className="text-xs text-muted-foreground leading-relaxed">
                 Based on {config.litigantCount} litigants, {config.debateMode} mode,{" "}
                 {confidenceLabel}.

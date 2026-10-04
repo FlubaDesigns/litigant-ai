@@ -1,3 +1,4 @@
+import { sessionOutput, isLitigantRole } from "@/lib/sessionOutput";
 import { confidenceLabel } from "@workspace/api-zod/session";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -14,16 +15,6 @@ import type { Template } from "@/data/templates";
 const PROVIDER_SHORT: Record<string, string> = {
   anthropic: "Claude", openai: "GPT", grok: "Grok", gemini: "Gemini",
 };
-
-const NON_LITIGANT_ROLES = new Set(["Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict"]);
-// Pipeline role prefixes — covers variants like "Architect (Review)", "Builder (Correction)", "Auditor (Cycle 2)"
-const PIPELINE_ROLE_PREFIXES = ["Architect", "Builder", "Auditor", "Moderator", "Orchestrator", "Verdict"];
-
-function isLitigantRole(role: string) {
-  return role !== "You"
-    && !NON_LITIGANT_ROLES.has(role)
-    && !PIPELINE_ROLE_PREFIXES.some((p) => role.startsWith(p));
-}
 
 function isOrchestratorRole(role: string) {
   return role === "Orchestrator" || role === "Verdict" || role === "Moderator";
@@ -242,6 +233,7 @@ export function SessionCourt({
   onNavigate,
 }: SessionCourtProps) {
   const [relayAnswer, setRelayAnswer] = useState("");
+  const output = sessionOutput(state);
   return (
     <>
       {/* ── Row 2: Compact Court Summary ── */}
@@ -308,8 +300,7 @@ export function SessionCourt({
                 <>
                   <div style={{ fontSize: 12, color: "#9ab89a", marginBottom: 10, lineHeight: 1.5 }}>
                     Your credits ran out mid-debate. The court's best answer from what was argued is below —
-                    it's yours to keep as-is. To get a polished structured document (Architect → Builder → Auditor),
-                    you'll need more credits.
+                    it's yours to keep as-is. Continue with your configured output settings when you have more credits.
                   </div>
                   {state.finalAnswer && (
                     <div style={{
@@ -327,11 +318,11 @@ export function SessionCourt({
                         onClick={() => { void onContinue(state.creditsUsed + credits); }}
                         className="session-pause-btn-primary"
                       >
-                        Get full document — uses up to {credits} cr
+                        Continue session — uses up to {credits} cr
                       </button>
                     ) : (
                       <button onClick={() => onNavigate("/billing")} className="session-pause-btn-primary">
-                        Buy credits → get full document
+                        Buy credits → continue session
                       </button>
                     )}
                     <button disabled={state.acceptingAnswer} onClick={onAcceptPartial} className="session-pause-btn-secondary">{state.acceptingAnswer ? "Saving…" : "Keep this answer"}</button>
@@ -414,7 +405,7 @@ export function SessionCourt({
           )}
 
           {/* Live conversation feed */}
-          {state.question && (
+          {state.question && !isComplete && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
                 <LitigantVoicesBox
@@ -541,7 +532,8 @@ export function SessionCourt({
               {/* Output tabs */}
               <Tabs defaultValue="answer">
                 <TabsList className="bg-black/30 border border-white/8 mb-2 flex-wrap h-auto gap-y-1">
-                  <TabsTrigger value="answer" className="text-xs">Final Answer</TabsTrigger>
+                  <TabsTrigger value="answer" className="text-xs">{output.title}</TabsTrigger>
+                  {state.artifacts && state.config.outputStrategy !== "artifact" && <TabsTrigger value="document" className="text-xs">Document</TabsTrigger>}
                   <TabsTrigger value="debate" className="text-xs">Debate</TabsTrigger>
                   <TabsTrigger value="transcript" className="text-xs">Transcript</TabsTrigger>
                   <TabsTrigger value="caveats" className="text-xs">Caveats</TabsTrigger>
@@ -549,13 +541,14 @@ export function SessionCourt({
                 <TabsContent value="answer">
                   <div style={{ border: "1px solid rgba(0,200,83,.2)", borderRadius: 10, background: "rgba(0,200,83,.05)", padding: "14px" }}>
                     <div style={{ fontSize: 11, color: "#00c853", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                      Verdict — {confidenceLabel(state.confidence)}
+                      {output.title} — {confidenceLabel(state.confidence)}
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap" }}>
-                      {state.finalAnswer || "No final answer generated."}
+                      {output.content}
                     </div>
                   </div>
                 </TabsContent>
+                <TabsContent value="document"><div className="whitespace-pre-wrap text-sm leading-relaxed">{state.artifacts}</div></TabsContent>
                 <TabsContent value="debate">
                   <div style={{ border: "1px solid #1d331d", borderRadius: 10, padding: "14px", background: "rgba(0,0,0,.12)" }}>
                     <div style={{ fontSize: 11, color: "#7ab87a", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Debate Notes</div>
@@ -565,12 +558,7 @@ export function SessionCourt({
                   </div>
                 </TabsContent>
                 <TabsContent value="transcript">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {state.runtimeFeed.some((f) => isLitigantRole(f.role)) && (
-                      <LitigantVoicesBox items={state.runtimeFeed.filter((f) => isLitigantRole(f.role))} adversarial={state.config.debateMode !== "collaborative"} />
-                    )}
-                    <OrchestratorBox question={state.question} items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))} />
-                  </div>
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{state.transcript || "No transcript recorded."}</div>
                 </TabsContent>
                 <TabsContent value="caveats">
                   <div style={{ border: "1px solid rgba(243,210,106,.2)", borderRadius: 10, background: "rgba(243,210,106,.04)", padding: "14px" }}>

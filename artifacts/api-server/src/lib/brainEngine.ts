@@ -1,5 +1,5 @@
 import type { CallUsage } from "./sessionPricing.js";
-import { type EngineConfig as CourtConfig, parseReviewScore, REVIEW_SCORE_INSTRUCTION, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
+import { type EngineConfig as CourtConfig, CourtConfigSchema, ANSWER_STYLES, parseReviewScore, REVIEW_SCORE_INSTRUCTION, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
 import type { Response } from "express";
 import { createProviderAsync, getConfiguredProvidersAsync } from "./providers/index.js";
 import type { AIProvider, ChatMessage, ProviderName } from "./providers/index.js";
@@ -633,7 +633,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // When resuming the fixed pipeline, the Moderator already ran in the original
   // paused session. Its summary is already in the provided transcript — extract
   // it instead of calling the AI again.
-  const outputPreferenceMode = config.outputPreferenceMode ?? (config.artifactType === "none" ? "answer-only" : config.artifactType && config.artifactType !== "auto" ? "document" : "auto");
+  const outputConfig = CourtConfigSchema.parse(config);
+  const outputPreferenceMode = outputConfig.outputPreferenceMode;
+  const answerDirective = `\n\nUSER ANSWER STYLE: ${ANSWER_STYLES[outputConfig.outputFormat]}. RESPONSE DEPTH: ${outputConfig.responseMode}. Apply this to the answer, preserving the requested document type for any separate artifact.`;
   let moderatorSummary: string;
 
   if (opts.resumeWithFixedPipeline) {
@@ -670,7 +672,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       },
       {
         role: "user",
-        content: moderatorUserContent,
+        content: moderatorUserContent + answerDirective,
       },
     ];
 
@@ -812,8 +814,8 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       {
         role: "user",
         content: `The Moderator has produced this deliberation summary:\n\n${moderatorSummary}\n\nOriginal question: "${question}"\n\n${
-          config.artifactType && config.artifactType !== "auto"
-            ? `REQUIRED ARTIFACT TYPE: The user has explicitly requested a **${config.artifactType}**. You MUST design the blueprint for this specific document type — do not choose a different format. Design the section structure, tone, and audience for a ${config.artifactType} specifically.\n\n`
+          outputConfig.artifactType !== "none" && outputConfig.artifactType !== "auto"
+            ? `REQUIRED ARTIFACT TYPE: The user has explicitly requested a **${outputConfig.artifactType}**. You MUST design the blueprint for this specific document type — do not choose a different format. Design the section structure, tone, and audience for a ${outputConfig.artifactType} specifically.\n\n`
             : ""
         }Design the blueprint for the artifact the Builder will construct. Specify: document type, section headings, what goes in each section, tone, and audience. Be explicit and complete.`,
       },
@@ -1022,12 +1024,12 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
     {
       role: "user",
-      content: orchestratorUserContent,
+      content: orchestratorUserContent + answerDirective,
     },
   ];
 
   const finalAnswer = await callRole(
-    orchProvider, orchestratorCloseMessages, 1000,
+    orchProvider, orchestratorCloseMessages, Math.max(600, maxTokens),
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
   );
 

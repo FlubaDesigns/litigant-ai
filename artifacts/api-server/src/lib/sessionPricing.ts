@@ -21,18 +21,18 @@ export async function prepareSession(input: unknown, pipelineOnly = false) {
   const providers = catalog.providers.filter(p => p.models.length > 0).map(p => ({...p, defaultModel: p.models.some(m => m.id === p.defaultModel) ? p.defaultModel : p.models[0]!.id}));
   if (!providers.length) throw new Error("No enabled AI provider is available.");
   const defaultProvider = providers.find(p => p.name === config.provider) ?? providers[0]!;
-  function resolve(seat?: SeatAssignment) {
-    const own = seat?.useMasterSettings === false;
-    const level = own ? seat?.intelligenceLevel : config.intelligenceLevel;
-    const selected = level === undefined ? null : resolveModelByIntelligence(level, own ? seat?.provider ?? "auto" : "auto", providers);
-    const providerId = selected?.provider ?? (seat?.provider && seat.provider !== "auto" ? seat.provider : defaultProvider.name);
+  function resolve(seat?: SeatAssignment, global = false) {
+    const own = global || seat?.useMasterSettings === false || (seat?.useMasterSettings === undefined && !!seat?.model);
+    const level = global ? config.intelligenceLevel : own ? seat?.intelligenceLevel : config.intelligenceLevel;
+    const selected = level === undefined ? null : resolveModelByIntelligence(level, own && !global ? seat?.provider ?? "auto" : "auto", providers);
+    const providerId = selected?.provider ?? (own && seat?.provider && seat.provider !== "auto" ? seat.provider : config.provider ?? defaultProvider.name);
     const provider = providers.find(p => p.name === providerId);
     if (!provider) throw new Error(`Provider ${providerId} is disabled or unavailable.`);
-    const model = selected?.model ?? seat?.model ?? (providerId === config.provider ? config.model : undefined) ?? provider.defaultModel;
+    const model = selected?.model ?? (own ? seat?.model : undefined) ?? (providerId === config.provider ? config.model : undefined) ?? provider.defaultModel;
     if (!provider.models.some(m => m.id === model)) throw new Error(`Model ${model} is disabled or unavailable.`);
     return { ...seat, provider: providerId, model };
   }
-  const globalSeat = resolve({provider: defaultProvider.name, model: config.model});
+  const globalSeat = resolve({provider: defaultProvider.name, model: config.model}, true);
   config.provider = globalSeat.provider as CourtConfig["provider"];
   config.model = globalSeat.model;
   const sm = config.seatMap;

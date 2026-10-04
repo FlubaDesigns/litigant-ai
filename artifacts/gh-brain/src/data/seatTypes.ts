@@ -73,7 +73,7 @@ export interface SeatGrade {
 export type GradeMap = Record<string, SeatGrade>;
 
 export function makeDefaultSeatAssignment(): SeatAssignment {
-  return { provider: "anthropic" };
+  return { provider: "auto", useMasterSettings: true };
 }
 
 export function makeDefaultSeatMap(litigantCount: number): SeatMapConfig {

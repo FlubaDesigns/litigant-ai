@@ -1,3 +1,5 @@
+import { sessionOutput } from "@/lib/sessionOutput";
+import type { CourtConfig } from "@workspace/api-zod/session";
 import { confidenceLabel } from "@workspace/api-zod/session";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
@@ -16,6 +18,7 @@ import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { API_BASE } from "@/lib/apiUrl";
 
 interface SharedReport {
+  outputStrategy?: CourtConfig["outputStrategy"];
   id: string;
   title?: string;
   question?: string;
@@ -258,9 +261,9 @@ export default function ShareReportPage() {
             transition={{ duration: 0.4, delay: 0.1 }}
             className="space-y-3"
           >
-            <h2 className="text-xs font-mono text-primary uppercase tracking-widest">Verdict</h2>
+            <h2 className="text-xs font-mono text-primary uppercase tracking-widest">{sessionOutput({...report,config:{outputStrategy:report.outputStrategy}}).title}</h2>
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
-              <MarkdownBlock text={report.finalAnswer} />
+              <MarkdownBlock text={sessionOutput({...report,config:{outputStrategy:report.outputStrategy}}).content} />
             </div>
           </motion.div>
         </div>

@@ -34,10 +34,10 @@ function getCurrentAssignment(
   seatMap: SeatMapConfig
 ): SeatAssignment {
   if (seatId === "litigant" && litIndex !== undefined) {
-    return seatMap.litigants[litIndex] ?? { provider: "anthropic" };
+    return seatMap.litigants[litIndex] ?? { provider: "auto", useMasterSettings: true };
   }
   const key = seatId as keyof Omit<SeatMapConfig, "litigants">;
-  return seatMap[key] ?? { provider: "anthropic" };
+  return seatMap[key] ?? { provider: "auto", useMasterSettings: true };
 }
 
 function getGradeKey(seatId: string, litIndex: number | undefined): string | null {
@@ -102,8 +102,7 @@ export function SeatInspector({
   function handleConfirm() {
     if (!seatId) { onClose(); return; }
     const assignment: SeatAssignment = {
-      provider: resolved?.provider ?? "anthropic",
-      model: resolved?.model,
+      provider: useMasterSettings ? "auto" : localProvider,
       useMasterSettings,
       intelligenceLevel: useMasterSettings ? undefined : localLevel,
     };

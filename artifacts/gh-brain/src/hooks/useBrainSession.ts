@@ -1,3 +1,4 @@
+import { CourtConfigSchema, restoreCourtConfig } from "@workspace/api-zod/session";
 import { useReducer, useRef, useCallback, useEffect } from "react";
 import { runBrainSession, updateSession, type SavedSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
 export type { CaseFileItem, CourtroomOutcome, RelayContext };
@@ -165,11 +166,7 @@ function phaseForStatus(status: SavedSession["status"]): SessionPhase {
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
   const litigantCount = initialConfig?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
-  const config: CourtConfig = {
-    ...DEFAULT_CONFIG,
-    ...initialConfig,
-    seatMap: initialConfig?.seatMap ?? makeDefaultSeatMap(litigantCount),
-  };
+  const config = restoreCourtConfig({ ...initialConfig, seatMap: initialConfig?.seatMap ?? makeDefaultSeatMap(litigantCount) });
   return {
     canLoadDefaults: initialConfig === undefined,
     acceptingAnswer: false,
@@ -225,15 +222,15 @@ function reducer(state: SessionState, action: Action): SessionState {
         canLoadDefaults: false,
         template: action.template,
         config: action.template
-          ? {
+          ? CourtConfigSchema.parse({
               ...action.template.defaultConfig,
-              seatMap: state.config.seatMap ?? makeDefaultSeatMap(action.template.defaultConfig.litigantCount),
-            }
+              seatMap: state.config.seatMap ? {...state.config.seatMap, litigants: syncLitigantSeats(state.config.seatMap.litigants, action.template.defaultConfig.litigantCount)} : makeDefaultSeatMap(action.template.defaultConfig.litigantCount),
+            })
           : state.config,
       };
 
     case "SET_CONFIG": {
-      const newConfig = { ...state.config, ...action.config };
+      const newConfig = CourtConfigSchema.parse({ ...state.config, ...action.config });
       // Sync seatMap litigant seats when litigantCount changes
       if (action.config.litigantCount !== undefined && newConfig.seatMap) {
         newConfig.seatMap = {

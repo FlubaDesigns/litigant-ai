@@ -1,4 +1,5 @@
-import type { CourtConfig } from "@workspace/api-zod/session";
+import { ConfigPanel } from "@/pages/app/session/ConfigPanel";
+import { CourtConfigSchema, restoreCourtConfig, type CourtConfig } from "@workspace/api-zod/session";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
@@ -11,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateUserProfile, getUserProfile, USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
-import { getAllSessions, exportSessionAsMarkdown, deleteAccount } from "@/services/sessionService";
+import { getAllSessions, deleteAccount } from "@/services/sessionService";
 import {
   updateProfile,
   updateEmail,
@@ -359,147 +359,24 @@ function ProfileTab({ user }: { user: User }) {
 }
 
 
-interface DefaultSettings {
-  litigantCount: number;
-  confidenceTarget: number;
-  responseMode: CourtConfig["responseMode"];
-  outputFormat: CourtConfig["outputFormat"];
-}
-
 function PreferencesTab({ user }: { user: User }) {
-  const [settings, setSettings] = useState<DefaultSettings>({
-    litigantCount: 3,
-    confidenceTarget: 80,
-    responseMode: "balanced",
-    outputFormat: "report",
-  });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
+  const [config, setConfig] = useState<CourtConfig | null>(null);
+  const [open, setOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   useEffect(() => {
-    getUserProfile(user.uid).then((profile) => {
-      if (profile?.defaultSettings) {
-        setSettings({
-          litigantCount: profile.defaultSettings.litigantCount ?? 3,
-          confidenceTarget: profile.defaultSettings.confidenceTarget ?? 80,
-          responseMode: profile.defaultSettings.responseMode ?? "balanced",
-          outputFormat: profile.defaultSettings.outputFormat ?? "report",
-        });
-      }
-    }).catch(() => {});
+    let active = true;
+    getUserProfile(user.uid).then(profile => {
+      if (active) setConfig(restoreCourtConfig(profile?.defaultSettings ?? {}));
+    }).catch(() => { if (active) setLoadError(true); });
+    return () => {active = false;};
   }, [user.uid]);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const profile = await getUserProfile(user.uid);
-      await updateUserProfile(user.uid, { defaultSettings: {...profile?.defaultSettings, ...settings} });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-      toast.success("Preferences saved.");
-    } catch {
-      toast.error("Failed to save preferences.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="space-y-8 max-w-md">
-      <Section title="Default court configuration" description="Pre-filled for each new session. You can always override.">
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
-              Confidence target — {settings.confidenceTarget}%
-            </Label>
-            <Slider
-              min={60} max={95} step={5}
-              value={[settings.confidenceTarget]}
-              onValueChange={([v]) => setSettings((s) => ({ ...s, confidenceTarget: v }))}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>60% quick</span><span>80% standard</span><span>95% thorough</span>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Response depth</Label>
-            <Select value={settings.responseMode} onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v as CourtConfig["responseMode"] }))}>
-              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="concise" label="Concise">
-                  <span className="text-xs text-muted-foreground">Key insights, no filler</span>
-                </SelectItem>
-                <SelectItem value="balanced" label="Balanced">
-                  <span className="text-xs text-muted-foreground">Clear reasoning, right mix</span>
-                </SelectItem>
-                <SelectItem value="thorough" label="Thorough">
-                  <span className="text-xs text-muted-foreground">Deep dive for high-stakes calls</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Output format</Label>
-            <Select value={settings.outputFormat} onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v as CourtConfig["outputFormat"] }))}>
-              <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="report" label="Full Report">
-                  <span className="text-xs text-muted-foreground">Structured document with findings</span>
-                </SelectItem>
-                <SelectItem value="memo" label="Executive Memo">
-                  <span className="text-xs text-muted-foreground">Key points and action items only</span>
-                </SelectItem>
-                <SelectItem value="bullets" label="Bullet Points">
-                  <span className="text-xs text-muted-foreground">Scannable list, fast to read</span>
-                </SelectItem>
-                <SelectItem value="verdict" label="Direct Verdict">
-                  <span className="text-xs text-muted-foreground">One clear answer with confidence score</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Section>
-
-      <Separator />
-
-      <Section title="Default panel size" description="How many AI litigants debate each session. More minds = deeper analysis = more credits.">
-        <div className="space-y-3">
-          <div className="grid grid-cols-6 gap-2">
-            {[2, 3, 4, 5, 6, 8].map((n) => (
-              <button
-                key={n}
-                onClick={() => setSettings((s) => ({ ...s, litigantCount: n }))}
-                className={cn(
-                  "rounded-xl border py-3 font-bold text-lg transition-all",
-                  "hover:border-primary/60 hover:bg-primary/5",
-                  settings.litigantCount === n
-                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/40"
-                    : "border-border/60 bg-card/40 text-foreground"
-                )}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Selected: <strong className="text-foreground">{settings.litigantCount} litigants</strong>. You can override this for any individual session from the config panel.
-          </p>
-        </div>
-      </Section>
-
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-        Save preferences
-      </Button>
-    </div>
-  );
+  return <Section title="Default court configuration" description="The same configuration is used for new sessions. Existing sessions keep the settings they ran with.">
+    {loadError && <p role="alert">Could not load your saved configuration. Reload to try again.</p>}
+    <Button onClick={() => setOpen(true)} disabled={!config}>Edit configuration</Button>
+    {config && <ConfigPanel open={open} onClose={() => setOpen(false)} config={config}
+      onChange={change => setConfig(current => CourtConfigSchema.parse({...current, ...change}))}
+      uid={user.uid} onboardingComplete />}
+  </Section>;
 }
 
 function NotificationsTab({ user }: { user: User }) {

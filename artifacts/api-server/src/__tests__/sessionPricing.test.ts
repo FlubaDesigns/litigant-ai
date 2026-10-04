@@ -66,3 +66,22 @@ describe("shared session contract and pricing", () => {
     expect(confidenceLabel(0)).toBe("Not assessed");
   });
 });
+
+describe("master model inheritance", () => {
+  it("ignores a stale saved model when the seat inherits the master", async () => {
+    const stale={provider:"openai",model:"gpt-4o",useMasterSettings:true};
+    const {config}=await prepareSession({provider:"gemini",model:"gemini-2.5-flash",seatMap:{orchestrator:stale,moderator:stale,architect:stale,builder:stale,auditor:stale,litigants:[stale]}});
+    expect(config.seatMap!.orchestrator.model).toBe("gemini-2.5-flash");
+    expect(config.seatMap!.litigants[0].provider).toBe("gemini");
+  });
+  it("supports per-seat Auto without pinning it to yesterday's provider", async () => {
+    const auto={provider:"auto",useMasterSettings:false,intelligenceLevel:50};
+    const {config}=await prepareSession({intelligenceLevel:80,seatMap:{orchestrator:auto,moderator:auto,architect:auto,builder:auto,auditor:auto,litigants:[auto]}});
+    expect(config.model).toBe("gpt-4o");
+    expect(config.seatMap!.auditor.model).toBe("gemini-2.5-flash");
+  });
+  it("rejects the old unsupported 25-round option", () => {
+    expect(CourtConfigSchema.safeParse({maxIterations:25}).success).toBe(false);
+    expect(CourtConfigSchema.safeParse({maxIterations:20}).success).toBe(true);
+  });
+});

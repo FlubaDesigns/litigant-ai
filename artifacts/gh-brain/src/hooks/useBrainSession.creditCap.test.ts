@@ -1,3 +1,4 @@
+import { CourtConfigSchema } from "@workspace/api-zod/session";
 /**
  * Unit tests: credit-cap partial answer survival
  *
@@ -533,5 +534,22 @@ describe("saved preferences arriving after the session page opens", () => {
       expect(current.config.maxCredits).toBe(900);
       expect(current.question).toBe("");
     } finally { vi.mocked(useEffect).mockReset(); }
+  });
+});
+
+
+describe("complete configuration persistence", () => {
+  it("restores every configured setting from saved JSON instead of today’s defaults", () => {
+    const seat={provider:"auto",intelligenceLevel:73,useMasterSettings:false};
+    const config=CourtConfigSchema.parse({litigantCount:2,confidenceTarget:85,maxIterations:20,responseMode:"thorough",
+      outputFormat:"bullets",conscience:false,aiReasoning:"chain",maxCredits:2500,debateMode:"collaborative",
+      artifactType:"legal-brief",outputStrategy:"consensus+individual",format:"docx",intelligenceLevel:62,outputPreferenceMode:"document",
+      seatMap:{orchestrator:seat,moderator:seat,architect:seat,builder:seat,auditor:seat,litigants:[seat,seat]}});
+    expect(makeInitialState(JSON.parse(JSON.stringify(config))).config).toEqual(config);
+    const saved={id:"saved-output",status:"complete",question:"Saved",config:JSON.parse(JSON.stringify(config)),
+      finalAnswer:"Consensus",debateNotes:"Arguments",transcript:"All turns",artifacts:"Brief"} as any;
+    const restored=reducer(makeInitialState(),{type:"RESTORE_SESSION",session:saved});
+    expect(restored.config).toEqual(config);
+    expect(reducer(restored,{type:"LOAD_DEFAULTS",config:{outputStrategy:"individual",format:"pdf"}}).config).toEqual(config);
   });
 });

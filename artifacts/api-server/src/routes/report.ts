@@ -1,3 +1,4 @@
+import { CourtConfigSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { safeError } from "../lib/safeError.js";
@@ -40,7 +41,8 @@ router.get("/report/:shareId", async (req, res) => {
       "shared", "shareId",
     ];
 
-    const result: Record<string, unknown> = { id: doc.id };
+    const parsedConfig = CourtConfigSchema.safeParse(data.config ?? {});
+    const result: Record<string, unknown> = { id: doc.id, outputStrategy: parsedConfig.success ? parsedConfig.data.outputStrategy : "moderator-consensus" };
     for (const field of publicFields) {
       if (data[field] !== undefined) result[field] = data[field];
     }

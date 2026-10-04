@@ -1,13 +1,10 @@
-import { Settings2, LayoutTemplate, ChevronRight, Gavel, Play, X, FileOutput, Briefcase } from "lucide-react";
+import { outputSummary, RESPONSE_VIEWS } from "@workspace/api-zod/session";
+import { Settings2, ChevronRight, FileOutput, Briefcase } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { CaseFileSection } from "@/components/CaseFileSection";
 import { makeDefaultSeatMap, getSeatAIShortName } from "@/data/seatTypes";
 import type { Template, CourtConfig } from "@/data/templates";
-import { TEMPLATES } from "@/data/templates";
 import type { SessionState } from "@/lib/sessionExport";
 import type { CaseFileItem } from "@/hooks/useBrainSession";
 
@@ -191,101 +188,26 @@ export function SessionConfigure({
                   <FileOutput className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                   <div className="flex flex-col gap-0.5 text-left">
                     <span className="text-xs font-black uppercase tracking-[0.15em] text-primary/70">Deliverable</span>
-                    <span className="text-xs text-primary/40 font-normal normal-case tracking-normal">Need a document or download?</span>
+                    <span className="text-xs text-primary/40 font-normal normal-case tracking-normal">Uses your configuration</span>
                   </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-3 pt-0 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {(["none", "artifact"] as const).map((mode) => {
-                    const active = mode === "none" ? state.config.artifactType === "none" : state.config.artifactType !== "none";
-                    return (
-                      <button key={mode} type="button"
-                        onClick={() => onSetConfig({ artifactType: mode === "none" ? "none" : "auto" })}
-                        className={cn("rounded-md border py-2 text-xs font-medium transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/50 hover:border-primary/40")}
-                      >
-                        {mode === "none" ? "Screen Only" : "Screen + Artifact"}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Response View</div>
-                  <Select value={state.config.outputStrategy} onValueChange={(v) => onSetConfig({ outputStrategy: v as CourtConfig["outputStrategy"] })}>
-                    <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-xs text-foreground hover:border-primary/60 h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="moderator-consensus">Moderator Consensus</SelectItem>
-                      <SelectItem value="individual">Individual Responses</SelectItem>
-                      <SelectItem value="consensus+individual">Consensus + Individual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {state.config.outputStrategy === "moderator-consensus" && (
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Response Mode</div>
-                    <Select value={state.config.outputScope} onValueChange={(v) => onSetConfig({ outputScope: v as CourtConfig["outputScope"] })}>
-                      <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-xs text-foreground hover:border-primary/60 h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="consensus">Consensus Only</SelectItem>
-                        <SelectItem value="all-voices">All Voices</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {state.config.artifactType !== "none" && (
-                  <>
-                    <div className="space-y-1.5">
-                      <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Format</div>
-                      <Select value={state.config.format} onValueChange={(v) => onSetConfig({ format: v as CourtConfig["format"] })}>
-                        <SelectTrigger className="bg-[#0d1a0d] border border-primary/30 text-xs text-foreground hover:border-primary/60 h-9"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="markdown">Markdown</SelectItem>
-                          <SelectItem value="json">JSON</SelectItem>
-                          <SelectItem value="docx">Word (.docx)</SelectItem>
-                          <SelectItem value="pdf">PDF</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Artifact Type</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(["auto","report","memo","business-plan","risk-matrix","contract-review","technical-spec","pitch-deck","legal-brief","blog-post","code","landing-page"] as const).map((value) => {
-                          const labels: Record<string, string> = { auto:"Auto", report:"Report", memo:"Decision Memo", "business-plan":"Business Plan", "risk-matrix":"Risk Matrix", "contract-review":"Contract Review", "technical-spec":"Technical Spec", "pitch-deck":"Pitch Deck", "legal-brief":"Legal Brief", "blog-post":"Blog Post", code:"Code", "landing-page":"Landing Page" };
-                          const active = (state.config.artifactType ?? "auto") === value;
-                          return (
-                            <button key={value} type="button"
-                              onClick={() => onSetConfig({ artifactType: value as CourtConfig["artifactType"] })}
-                              className={cn("rounded-md border px-3 py-2 text-xs font-medium text-left transition-colors", active ? "border-primary/60 bg-primary/10 text-primary" : "border-primary/20 text-primary/60 hover:border-primary/40")}
-                            >
-                              {labels[value]}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                )}
+                <p className="text-sm text-foreground/80" data-testid="deliverable-summary">{outputSummary(state.config)}</p>
+                <button type="button" onClick={onOpenConfig} className="text-sm text-primary underline min-h-11">Edit configuration</button>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
 
           {/* Runtime preview */}
           {(() => {
-            const modeLabel =
-              state.config.outputStrategy === "individual" ? "Individual"
-              : state.config.outputStrategy === "consensus+individual" ? "Combined"
-              : state.config.outputScope === "all-voices" ? "All Voices"
-              : "Consensus";
+            const modeLabel = RESPONSE_VIEWS[state.config.outputStrategy];
             const cells = [
               { label: "STARTING",   value: String(credits),                                           color: "text-white" },
               { label: "CURRENT",    value: String(credits),                                           color: credits < 10 ? "text-red-400" : credits < 30 ? "text-yellow-400" : "text-primary" },
               { label: "USED",       value: "0",                                                       color: "text-white" },
               { label: "ROUND",      value: `0 / ${state.config.maxIterations}`,                       color: "text-white" },
-              { label: "CREDIT CAP", value: estimatedCredits > 0 ? `~${estimatedCredits}` : "—",       color: "text-muted-foreground" },
+              { label: "CREDIT CAP", value: String(state.config.maxCredits),       color: "text-muted-foreground" },
               { label: "MODE",       value: modeLabel,                                                 color: "text-white" },
             ];
             return (

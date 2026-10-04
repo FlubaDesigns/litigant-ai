@@ -1,3 +1,4 @@
+import { sessionOutput } from "@/lib/sessionOutput";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { useProviders, useTemplates } from "@/hooks/useConfiguration";
 import { getSession } from "@/services/sessionService";
@@ -77,7 +78,7 @@ export default function SessionPage() {
     const config: Partial<CourtConfig> = { ...userProfile.defaultSettings };
     // Keep the existing account test-model override, including profiles without defaults.
     if (userProfile.testModel && userProfile.testProvider) {
-      const seat: SeatAssignment = { provider: userProfile.testProvider, model: userProfile.testModel };
+      const seat: SeatAssignment = { provider: userProfile.testProvider, model: userProfile.testModel, useMasterSettings: false };
       config.seatMap = {
         orchestrator: seat, moderator: seat, auditor: seat, architect: seat, builder: seat,
         litigants: Array.from({ length: config.litigantCount ?? DEFAULT_CONFIG.litigantCount }, () => ({ ...seat })),
@@ -285,8 +286,8 @@ export default function SessionPage() {
       const payload = {
         question: state.question, template: state.template?.title ?? null,
         confidence: state.confidence, creditsUsed: state.creditsUsed,
-        date: new Date().toISOString(), finalAnswer: state.finalAnswer,
-        artifacts: state.artifacts, debateNotes: state.debateNotes, caveats: state.caveats,
+        date: new Date().toISOString(), config: state.config,
+        response: sessionOutput(state),
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -337,19 +338,23 @@ export default function SessionPage() {
   }
 
   function handleSeatClick(seatId: string, litIndex?: number) {
+    if (!quoteEnabled) return;
     setInspectorSeat({ seatId, litIndex });
   }
 
   function handleSeatUpdate(seatId: string, assignment: SeatAssignment, litIndex?: number) {
+    if (!quoteEnabled) return;
     setSeatAI(seatId, assignment, litIndex);
   }
 
   function handleAddLitigant() {
+    if (!quoteEnabled) return;
     setConfig({ litigantCount: Math.min(state.config.litigantCount + 1, maxLitigants) });
   }
 
   function handleRemoveLitigant() {
-    setConfig({ litigantCount: Math.max(state.config.litigantCount - 1, 2) });
+    if (!quoteEnabled) return;
+    setConfig({ litigantCount: Math.max(state.config.litigantCount - 1, 1) });
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -391,7 +396,7 @@ export default function SessionPage() {
 
       {/* ── Mission Briefing sheet ── */}
       <ConfigPanel
-        open={configOpen}
+        open={configOpen && quoteEnabled}
         quoteEnabled={quoteEnabled}
         onClose={() => setConfigOpen(false)}
         config={state.config}
@@ -426,6 +431,7 @@ export default function SessionPage() {
             <div className="flex flex-col sm:flex-row gap-2 pt-3 pb-1">
               <button
                 onClick={() => setConfigOpen(true)}
+                disabled={!quoteEnabled}
                 className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
               >
                 ⚙ Configure
@@ -513,7 +519,7 @@ export default function SessionPage() {
               onSeatClick={handleSeatClick}
               onAddLitigant={handleAddLitigant}
               onRemoveLitigant={handleRemoveLitigant}
-              onToggleConscience={() => setConfig({ conscience: !state.config.conscience })}
+              onToggleConscience={() => { if (quoteEnabled) setConfigOpen(true); }}
             />
           </div>
 

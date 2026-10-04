@@ -1,3 +1,4 @@
+import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
@@ -231,27 +232,16 @@ router.patch("/auth/preferences", async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.json({ saved: false, reason: "firestore_unavailable" });
 
-  const VALID_RESP_MODES   = new Set(["balanced", "thorough", "concise"]);
-  const VALID_OUT_FORMATS  = new Set(["report", "memo", "bullets", "verdict"]);
-  const VALID_PROVIDERS    = new Set(["openai", "anthropic", "grok", "gemini"]);
-
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const ds   = (body.defaultSettings ?? {}) as Record<string, unknown>;
-
+  const ds = body.defaultSettings ?? {};
+  const parsed = CourtConfigFieldsSchema.partial().safeParse(ds);
+  if (!parsed.success) return res.status(400).json({error: "Invalid session configuration"});
   const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
-
-  if (body.onboardingComplete === true) patch["onboardingComplete"] = true;
-
-  if (typeof ds.litigantCount === "number" && Number.isInteger(ds.litigantCount) && ds.litigantCount >= 2 && ds.litigantCount <= 10)
-    patch["defaultSettings.litigantCount"] = ds.litigantCount;
-  if (typeof ds.confidenceTarget === "number" && Number.isInteger(ds.confidenceTarget) && ds.confidenceTarget >= 50 && ds.confidenceTarget <= 99)
-    patch["defaultSettings.confidenceTarget"] = ds.confidenceTarget;
-  if (ds.responseMode && VALID_RESP_MODES.has(ds.responseMode as string))
-    patch["defaultSettings.responseMode"] = ds.responseMode;
-  if (ds.outputFormat && VALID_OUT_FORMATS.has(ds.outputFormat as string))
-    patch["defaultSettings.outputFormat"] = ds.outputFormat;
-  if (ds.provider     && VALID_PROVIDERS.has(ds.provider as string))
-    patch["defaultSettings.provider"]     = ds.provider;
+  if (body.onboardingComplete === true) patch.onboardingComplete = true;
+  for (const key of Object.keys(ds as object)) {
+    const value = parsed.data[key as keyof typeof parsed.data];
+    if (value !== undefined) patch[`defaultSettings.${key}`] = value;
+  }
 
   try {
     await db.collection("users").doc(decoded.uid).update(patch);

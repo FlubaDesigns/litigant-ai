@@ -1,4 +1,4 @@
-import { CourtConfigSchema } from "@workspace/api-zod/session";
+import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { getTemplates } from "../lib/templateStore.js";
 import { Router } from "express";
 import crypto from "crypto";
@@ -1324,7 +1324,7 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
   if (systemPrompt !== undefined) updates["systemPrompt"] = systemPrompt;
   if (defaultSettings || req.body.defaultConfig) {
-    const config = CourtConfigSchema.partial().safeParse(req.body.defaultConfig ?? defaultSettings);
+    const config = CourtConfigFieldsSchema.partial().safeParse(req.body.defaultConfig ?? defaultSettings);
     if (!config.success) return res.status(400).json({error:"Invalid template settings"});
     updates["defaultConfig"] = config.data;
     updates["defaultSettings"] = FieldValue.delete();

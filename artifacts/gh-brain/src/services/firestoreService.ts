@@ -1,3 +1,4 @@
+import { CourtConfigSchema } from "@workspace/api-zod/session";
 import type { CourtConfig } from "@workspace/api-zod/session";
 import {
   doc,
@@ -70,7 +71,7 @@ export async function saveUserConfig(
   settings: UserProfile["defaultSettings"]
 ): Promise<void> {
   const ref = doc(db, "users", uid);
-  await updateDoc(ref, { defaultSettings: JSON.parse(JSON.stringify(settings)) });
+  await updateDoc(ref, { defaultSettings: JSON.parse(JSON.stringify(CourtConfigSchema.parse(settings))) });
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {

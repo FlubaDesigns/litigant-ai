@@ -676,3 +676,25 @@ describe("restored context reaches model prompts", () => {
     else expect(messages.some((message: any) => message.content.includes("Saved discussion") && message.content.includes("New fact"))).toBe(true);
   });
 });
+
+describe("configuration reaches generation", () => {
+  it("uses answer style and depth for the moderator and final answer", async () => {
+    vi.clearAllMocks();
+    const provider=makeProvider(["Open","Argue","ARTIFACT_NEEDED: no","APPROVED\nCONFIDENCE: 80","Verdict"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    await runBrainSession({question:"Q",config:{...BASE_CONFIG,responseMode:"thorough",outputFormat:"bullets",outputPreferenceMode:"answer-only"},res:makeMockRes()});
+    const calls=provider.streamChat.mock.calls;
+    expect(calls[2][0][1].content).toContain("USER ANSWER STYLE: Bullet points");
+    expect(calls.at(-1)[0][1].content).toContain("RESPONSE DEPTH: thorough");
+    expect(calls[1][1]).toBe(1200);
+    expect(calls.at(-1)[1]).toBe(1200);
+  });
+  it("builds the configured document even when the moderator says none is needed", async () => {
+    vi.clearAllMocks();
+    const provider=makeProvider(["Open","Argue","ARTIFACT_NEEDED: no","Blueprint","Draft","PASS","APPROVED\nCONFIDENCE: 80","Verdict"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,outputPreferenceMode:"document",artifactType:"legal-brief"},res:makeMockRes()});
+    expect(result.artifactPath).toBe("artifact");
+    expect(provider.streamChat.mock.calls[3][0][1].content).toContain("legal-brief");
+  });
+});

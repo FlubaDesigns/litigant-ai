@@ -4,7 +4,7 @@ export const SeatAssignmentSchema = z.object({
   provider: z.string().min(1).max(100), model: z.string().max(200).optional(),
   intelligenceLevel: z.number().min(0).max(100).optional(), useMasterSettings: z.boolean().optional(),
 });
-export const CourtConfigSchema = z.object({
+export const CourtConfigFieldsSchema = z.object({
   litigantCount: z.number().int().min(1).max(10).default(4),
   confidenceTarget: z.number().int().min(50).max(100).default(90),
   maxIterations: z.number().int().min(1).max(20).default(5),
@@ -16,9 +16,7 @@ export const CourtConfigSchema = z.object({
   maxCredits: z.number().int().min(1).max(100000).default(500),
   debateMode: z.enum(["adversarial", "collaborative"]).default("adversarial"),
   artifactType: z.enum(["none", "auto", "report", "memo", "business-plan", "risk-matrix", "contract-review", "technical-spec", "pitch-deck", "legal-brief", "code", "landing-page", "blog-post"]).default("auto"),
-  outputScope: z.enum(["consensus", "all-voices"]).default("consensus"),
   outputStrategy: z.enum(["moderator-consensus", "individual", "consensus+individual", "transcript", "artifact"]).default("moderator-consensus"),
-  outputPreference: z.enum(["chat", "download", "both"]).default("both"),
   format: z.enum(["text", "markdown", "json", "docx", "pdf"]).default("text"),
   intelligenceLevel: z.number().min(0).max(100).optional(),
   outputPreferenceMode: z.enum(["answer-only", "document", "auto"]).optional(),
@@ -28,7 +26,45 @@ export const CourtConfigSchema = z.object({
     litigants: z.array(SeatAssignmentSchema).max(10),
   }).optional(),
 });
+// Normalize saved configurations once at the boundary; execution and UI use only these fields.
+export const CourtConfigSchema = z.preprocess((input) => {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+  const { outputScope, outputPreference: _unused, ...value } = input as Record<string, unknown>;
+  if (outputScope === "all-voices" && (!value.outputStrategy || value.outputStrategy === "moderator-consensus")) {
+    value.outputStrategy = "consensus+individual";
+  }
+  if (value.intelligenceLevel === undefined && !value.provider && !value.model) value.intelligenceLevel = 50;
+  const mode = value.outputPreferenceMode ?? (value.artifactType === "none" ? "answer-only"
+    : value.artifactType && value.artifactType !== "auto" ? "document" : "auto");
+  value.outputPreferenceMode = mode;
+  if (mode === "answer-only") value.artifactType = "none";
+  else if (value.artifactType === "none") value.artifactType = "auto";
+  return value;
+}, CourtConfigFieldsSchema);
 export type CourtConfig = z.infer<typeof CourtConfigSchema>;
+/** Repair the formerly offered 25-round preference when reading saved data. New requests remain strict. */
+export function restoreCourtConfig(input: Partial<CourtConfig> = {}): CourtConfig {
+  return CourtConfigSchema.parse({...input, maxIterations: input.maxIterations === 25 ? 20 : input.maxIterations});
+}
+export const RESPONSE_VIEWS: Record<CourtConfig["outputStrategy"], string> = {
+  "moderator-consensus": "Court consensus", individual: "Individual responses",
+  "consensus+individual": "Consensus + individual", transcript: "Full transcript", artifact: "Document",
+};
+export const DOCUMENT_TYPES: Record<Exclude<CourtConfig["artifactType"], "none">, string> = {
+  auto: "Court chooses type", report: "Report", memo: "Decision memo", "business-plan": "Business plan",
+  "risk-matrix": "Risk matrix", "contract-review": "Contract review", "technical-spec": "Technical spec",
+  "pitch-deck": "Pitch deck", "legal-brief": "Legal brief", code: "Code", "landing-page": "Landing page", "blog-post": "Blog post",
+};
+export const DOWNLOAD_FORMATS: Record<CourtConfig["format"], string> = {
+  text: "Text", markdown: "Markdown", json: "JSON", docx: "Word (.docx)", pdf: "PDF",
+};
+export const ANSWER_STYLES: Record<CourtConfig["outputFormat"], string> = {
+  report: "Structured report", memo: "Executive memo", bullets: "Bullet points", verdict: "Direct verdict",
+};
+export const OUTPUT_MODES = {auto: "Auto — document when needed", "answer-only": "Answer only", document: "Always build a document"};
+export function outputSummary(config: CourtConfig): string {
+  return `${RESPONSE_VIEWS[config.outputStrategy]} · ${OUTPUT_MODES[config.outputPreferenceMode ?? "auto"]}${config.artifactType !== "none" ? ` · ${DOCUMENT_TYPES[config.artifactType]}` : ""} · ${ANSWER_STYLES[config.outputFormat]} · ${config.responseMode} · ${DOWNLOAD_FORMATS[config.format]}`;
+}
 export type SeatAssignment = z.infer<typeof SeatAssignmentSchema>;
 export type SeatMapConfig = NonNullable<CourtConfig["seatMap"]>;
 export type ArtifactType = CourtConfig["artifactType"];

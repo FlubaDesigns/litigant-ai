@@ -1,3 +1,4 @@
+import { sessionOutput } from "@/lib/sessionOutput";
 import { confidenceLabel } from "@workspace/api-zod/session";
 import { sessionPath } from "@workspace/api-zod/session";
 import { useState, useEffect, useCallback } from "react";
@@ -132,12 +133,12 @@ function SessionDetail({ session, onClose, onRerun, onResume }: {
 
           {session.finalAnswer && (
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Final Answer</p>
-              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-xs">{session.finalAnswer}</p>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">{sessionOutput(session).title}</p>
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-xs">{sessionOutput(session).content}</p>
             </div>
           )}
 
-          {session.artifacts && (
+          {session.artifacts && session.config?.outputStrategy !== "artifact" && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Artifacts</p>
               <pre className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap font-sans bg-muted/20 rounded-lg p-3 overflow-x-auto">{session.artifacts}</pre>
