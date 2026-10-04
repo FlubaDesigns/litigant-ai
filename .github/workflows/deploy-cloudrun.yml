@@ -33,6 +33,19 @@ jobs:
         with:
           project_id: litigant-ai
 
+      - name: Diagnose existing API catalogue failure
+        run: |
+          if ! curl --fail --silent https://api-781960492360.us-central1.run.app/api/templates >/dev/null; then
+            gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="api" AND severity>=ERROR' --project litigant-ai --freshness=20m --limit=8 --format=json > /tmp/api-errors.json || echo "[]" > /tmp/api-errors.json
+            python3 - <<'PYLOG'
+          import json,re
+          for entry in json.load(open('/tmp/api-errors.json')):
+              message=entry.get('textPayload',entry.get('jsonPayload',{}).get('message',''))
+              line=next((l for l in str(message).splitlines() if 'Error' in l or 'PERMISSION' in l or 'UNAUTHENTICATED' in l), '')
+              if line: print(re.sub(r'[A-Za-z0-9_+/=-]{30,}', '[redacted]', line)[:350])
+          PYLOG
+          fi
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -183,7 +196,9 @@ jobs:
             curl --fail --silent --show-error https://litigant-ai.web.app/ -o /tmp/hosted-index.html
             HOSTED_SHA=$(curl --fail --silent https://litigant-ai.web.app/api-server/api/version | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
             if cmp -s artifacts/gh-brain/dist/public/index.html /tmp/hosted-index.html && [ "$HOSTED_SHA" = "$EXPECTED_SHA" ]; then
-              echo "Hosted frontend and API match this commit."
+              curl --fail --silent https://litigant-ai.web.app/api-server/api/templates -o /tmp/templates.json
+              python3 -c "import json; data=json.load(open('/tmp/templates.json')); assert data and all('defaultConfig' in t and 'inputFields' in t for t in data)"
+              echo "Hosted frontend, templates and API match this commit."
               exit 0
             fi
             sleep 10

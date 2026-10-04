@@ -1,0 +1,24 @@
+import {describe,it,expect,vi,beforeEach} from "vitest";
+import {TEMPLATES} from "@workspace/api-zod/templates";
+vi.mock("../lib/firebaseAdmin.js",()=>({getFirestoreDb:vi.fn()}));
+import {getFirestoreDb} from "../lib/firebaseAdmin.js";
+import {getTemplates} from "../lib/templateStore.js";
+beforeEach(()=>vi.clearAllMocks());
+describe("shared template catalogue",()=>{
+  it("serves complete shared defaults when override storage is unavailable",async()=>{
+    vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({get:async()=>{throw Object.assign(new Error("Unavailable"),{code:14});}})} as any);
+    const result=await getTemplates();
+    expect(result).toEqual(TEMPLATES);
+    expect(result.every(t=>!!t.defaultConfig && Array.isArray(t.inputFields))).toBe(true);
+  });
+  it("normalizes admin overrides and honors inactive templates",async()=>{
+    vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({get:async()=>({docs:[
+      {id:TEMPLATES[0].id,data:()=>({title:"Updated title",defaultConfig:{litigantCount:2}})},
+      {id:TEMPLATES[1].id,data:()=>({isActive:false})},
+    ]})})} as any);
+    const result=await getTemplates();
+    expect(result.find(t=>t.id===TEMPLATES[0].id)).toMatchObject({title:"Updated title",defaultConfig:{litigantCount:2}});
+    expect(result.some(t=>t.id===TEMPLATES[1].id)).toBe(false);
+    expect((await getTemplates(true)).some(t=>t.id===TEMPLATES[1].id)).toBe(true);
+  });
+});
