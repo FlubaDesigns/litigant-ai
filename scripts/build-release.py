@@ -12,18 +12,9 @@ Exit code 0 = success, 1 = completeness check failed.
 
 import zipfile, os, hashlib, sys
 from datetime import datetime, timezone
+from source_safety import check_sources, source_files
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# ── Exclusions ────────────────────────────────────────────────────────────────
-EXCLUDE_DIRS = {
-    "node_modules", ".git", "dist", ".cache",
-    "__pycache__", ".local", "downloads", "attached_assets",
-}
-EXCLUDE_SUBTREES = {
-    "firebase-functions/lib",
-}
-EXCLUDE_EXTS = {".zip", ".tar", ".gz", ".log"}
 
 # ── Completeness checklist — every file here must be in the final zip ─────────
 REQUIRED_FILES = [
@@ -72,25 +63,8 @@ REQUIRED_FILES = [
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 def collect_files():
-    manifest = []
-    for dirpath, dirs, files in os.walk(ROOT):
-        dirs[:] = sorted(
-            d for d in dirs
-            if d not in EXCLUDE_DIRS and not d.startswith(".")
-        )
-        rel_root = os.path.relpath(dirpath, ROOT)
-        if rel_root == ".":
-            rel_root = ""
-        if any(rel_root == x or rel_root.startswith(x + os.sep)
-               for x in EXCLUDE_SUBTREES):
-            continue
-        for fname in sorted(files):
-            if any(fname.endswith(e) for e in EXCLUDE_EXTS):
-                continue
-            abs_path = os.path.join(dirpath, fname)
-            arc_name = os.path.join(rel_root, fname) if rel_root else fname
-            manifest.append((abs_path, arc_name))
-    return manifest
+    check_sources()
+    return [(os.path.join(ROOT, name), name) for name in source_files()]
 
 
 def build_zip(manifest, zip_path):

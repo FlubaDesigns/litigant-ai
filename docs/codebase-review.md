@@ -39,6 +39,23 @@ Local browser execution is restricted by the workspace's socket sandbox. All 10 
 
 ## Credential incident mitigation
 
+The October 4 follow-up found real service-account private keys and provider,
+payment and admin credentials in tracked `.replit` configuration. These were
+removed in `92f8919`. A second copy was found inside `downloads/litigant-ai.zip`;
+that archive and four unreadable temporary ZIP exports have also been removed.
+The tracked local Firebase environment file was replaced by a blank example.
+Both export commands now use `scripts/source_safety.py` for the same source
+manifest and credential checks, including nested ZIP contents. Deployment runs
+the same check. These checks are targeted prevention, not proof that every
+possible secret format is detected.
+
+The owner-provided Google Console screenshots show that service-account keys
+ending `cb646a62` and `2233be69` are disabled with reason `Exposed`. Their IDs
+match the leaked private keys. The remaining active key was not found in the
+exposed `.replit` configuration. This does not verify the status of the other
+provider, payment or admin credentials; their revocation remains a separate
+incident-response task. Historical Git objects still retain exposed values.
+
 An old browser test contained an account refresh token. The current test uses isolated fixtures, with no real account credentials. Deployment checks the affected account's token validity date and revokes its refresh sessions if the exposed session could still be valid. A server-only migration marker makes this check idempotent. The affected account may need to sign in again. Historical Git commits still contain the old token; no history rewrite is claimed.
 
 The rejected static Firebase service key is replaced with the existing keyless service identity, with database and Auth access checked during deployment.

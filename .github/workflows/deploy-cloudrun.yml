@@ -21,6 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check source and archives for credentials
+        run: |
+          python3 scripts/test_source_safety.py
+          python3 scripts/source_safety.py
+
       - name: Authenticate to Google Cloud (keyless)
         id: auth
         uses: google-github-actions/auth@v2

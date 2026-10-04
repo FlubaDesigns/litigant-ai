@@ -57,3 +57,13 @@ litigant-ai-source.zip
 # Generated browser test output
 **/test-results/
 **/playwright-report/
+
+# Local credentials and generated source bundles stay outside tracked source.
+.env
+.env.local
+.env.*.local
+exports/
+downloads/litigant-ai*.zip
+downloads/litigant-ai*.sha256
+downloads/zi*
+artifacts/gh-brain/public/downloads/
