@@ -1107,3 +1107,123 @@ describe("saved session continuity", () => {
     expect(res.text).not.toContain('"type":"done"');
   });
 });
+
+
+// Reuse the serializable Firestore fixture and the actual production route.
+import { claimSessionRun, writeSessionRun, releaseSessionRun } from "../lib/sessionRunLock.js";
+
+describe("one active run per saved session", () => {
+  const resumeBody = { ...BRAIN_BODY, sessionId: "saved", continueFromTranscript: ["prior"],
+    config: { ...BRAIN_BODY.config, maxCredits: 700 } };
+  const resume = (body = resumeBody) => request(app).post("/api/run-brain")
+    .set("Authorization", `Bearer ${FAKE_TOKEN}`).send(body);
+  function savedDb(balance = 1000) {
+    const db = createRouteMockDb(FAKE_UID, balance);
+    db._store["sessions/saved"] = { userId: FAKE_UID, status: "incomplete", creditsUsed: 30,
+      question: "Saved question", finalAnswer: "Prior answer", transcript: "Prior evidence", config: resumeBody.config };
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    return db;
+  }
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
+  });
+
+  it("rejects the second tab and acceptance while the first runs, with exactly one charge", async () => {
+    const db = savedDb();
+    let entered!: () => void;
+    let finish!: () => void;
+    const running = new Promise<void>(resolve => { entered = resolve; });
+    const gate = new Promise<void>(resolve => { finish = resolve; });
+    vi.mocked(runBrainSession).mockImplementation(async opts => {
+      entered();
+      await gate;
+      return makeBrainMock({ creditsUsed: 100 })(opts);
+    });
+    const first = resume().then(response => response);
+    await running;
+    try {
+      const second = await resume();
+      expect(second.status).toBe(409);
+      expect(second.body.message).toContain("already running");
+      const acceptance = await request(app).patch("/api/sessions/saved")
+        .set("Authorization", `Bearer ${FAKE_TOKEN}`).send({ status: "complete" });
+      expect(acceptance.status).toBe(409);
+      expect(runBrainSession).toHaveBeenCalledTimes(1);
+      expect(Object.values(db._store).filter((entry: any) => entry.source === "brain_reservation")).toHaveLength(1);
+    } finally { finish(); }
+    expect((await first).text).toContain('"type":"done"');
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);
+    expect(db._store["sessions/saved"]).toMatchObject({ activeRun: null, status: "complete", creditsUsed: 130 });
+    // The old paused tab cannot start another charged run after completion.
+    expect((await resume()).status).toBe(409);
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);
+  });
+
+  it("releases the lock after insufficient credits and permits a funded retry", async () => {
+    const db = savedDb(0);
+    expect((await resume()).status).toBe(402);
+    expect(db._store["sessions/saved"].activeRun).toBeNull();
+    expect(runBrainSession).not.toHaveBeenCalled();
+    db._store[`users/${FAKE_UID}`].creditBalance = 1000;
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+    expect((await resume()).text).toContain('"type":"done"');
+  });
+
+  it("releases the lock on a budget validation return", async () => {
+    const db = savedDb();
+    expect((await resume({ ...resumeBody, config: { ...resumeBody.config, maxCredits: 20 } })).status).toBe(402);
+    expect(db._store["sessions/saved"].activeRun).toBeNull();
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+  });
+
+  it("refunds and releases on provider failure, preserving the saved answer", async () => {
+    const db = savedDb();
+    vi.mocked(runBrainSession).mockRejectedValueOnce(new Error("Provider unavailable"));
+    expect((await resume()).text).toContain('"type":"error"');
+    expect(db._store["sessions/saved"]).toMatchObject({ activeRun: null, status: "incomplete", finalAnswer: "Prior answer" });
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+    expect((await resume()).text).toContain('"type":"done"');
+  });
+
+  it("recovers an expired lease and prevents its old worker from writing or unlocking", async () => {
+    const db = savedDb();
+    const first = await claimSessionRun(db as any, "saved", FAKE_UID);
+    db._store["sessions/saved"].activeRun.expiresAt = Date.now() - 1;
+    const second = await claimSessionRun(db as any, "saved", FAKE_UID);
+    await expect(writeSessionRun(db as any, first.lease, { finalAnswer: "Stale" })).rejects.toThrow("expired or was replaced");
+    await releaseSessionRun(db as any, first.lease);
+    expect(db._store["sessions/saved"].activeRun.id).toBe(second.lease.runId);
+    expect(db._store["sessions/saved"].finalAnswer).toBe("Prior answer");
+    await writeSessionRun(db as any, second.lease, { finalAnswer: "Current" });
+    await releaseSessionRun(db as any, second.lease);
+    expect(db._store["sessions/saved"]).toMatchObject({ activeRun: null, finalAnswer: "Current" });
+  });
+
+  it("refunds a replaced run without overwriting the session or clearing its successor's lock", async () => {
+    const db = savedDb();
+    let successorId = "";
+    vi.mocked(runBrainSession).mockImplementation(async opts => {
+      db._store["sessions/saved"].activeRun.expiresAt = Date.now() - 1;
+      const successor = await claimSessionRun(db as any, "saved", FAKE_UID);
+      successorId = successor.lease.runId;
+      return makeBrainMock()(opts);
+    });
+    const response = await resume();
+    expect(response.text).toContain('"type":"error"');
+    expect(response.text).not.toContain('"type":"done"');
+    expect(db._store["sessions/saved"].activeRun.id).toBe(successorId);
+    expect(db._store["sessions/saved"].finalAnswer).toBe("Prior answer");
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+  });
+
+  it("treats a supplied session ID with an empty transcript as a resume, never a new charged run", async () => {
+    const db = savedDb();
+    db._store["sessions/saved"].status = "complete";
+    expect((await resume({ ...resumeBody, continueFromTranscript: [] })).status).toBe(409);
+    expect(runBrainSession).not.toHaveBeenCalled();
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+  });
+});

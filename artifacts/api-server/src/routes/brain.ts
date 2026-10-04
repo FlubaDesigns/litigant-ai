@@ -1,6 +1,7 @@
 import { prepareSession, priceCalls } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
+import { claimSessionRun, writeSessionRun, releaseSessionRun, SessionRunError, type SessionRunLease } from "../lib/sessionRunLock.js";
 /**
  * Brain route — POST /run-brain
  *
@@ -359,6 +360,8 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
 
+  let runLease: SessionRunLease | null = null;
+  try {
   if (authHeader?.startsWith("Bearer ")) {
     // A bearer token was supplied — validate it strictly.
     // An invalid/expired token is always rejected; we do NOT fall through to guest mode.
@@ -391,15 +394,12 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     // New sessions (no clientSessionId) always keep the server-minted UUID above.
     // Guests can never supply a session ID (they have no account), so this only
     // runs for authenticated users.
-    if (clientSessionId && (continueFromTranscript?.length || resumeWithFixedPipeline) && db) {
+    if (clientSessionId && db) {
       try {
-        const existingSnap = await db.collection("sessions").doc(clientSessionId).get();
-        if (!existingSnap.exists || existingSnap.data()?.userId !== uid) {
-          res.status(403).json({ message: "Session not found or access denied." });
-          return;
-        }
+        const claimed = await claimSessionRun(db, clientSessionId, uid);
+        runLease = claimed.lease;
         sessionId = clientSessionId;
-        previousSession = existingSnap.data()!;
+        previousSession = claimed.session;
         templateId = previousSession.templateId ?? undefined;
         question = previousSession.question ?? question;
         continueFromTranscript = String(previousSession.transcript ?? "").split("\n\n---\n\n").filter(Boolean);
@@ -407,8 +407,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         // Resume the accepted configuration, allowing an explicitly raised budget.
         effectiveConfig = { ...effectiveConfig, ...previousSession.config, maxCredits: config.maxCredits };
         resumeWithFixedPipeline = previousSession.status === "paused_credit_cap" && continueFromTranscript.some(line => line.startsWith("**Moderator (Summary):**"));
-      } catch {
-        res.status(503).json({message:"Could not load the saved session. Please retry."});
+      } catch (error) {
+        res.status(error instanceof SessionRunError ? error.status : 503).json({
+          message: error instanceof SessionRunError ? error.message : "Could not load the saved session. Please retry.",
+        });
         return;
       }
     }
@@ -454,6 +456,13 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     guestIp = ip;
   }
   if (uid) {
+    if (runLease && db) {
+      try { await writeSessionRun(db, runLease, {}); }
+      catch (error) {
+        res.status(error instanceof SessionRunError ? error.status : 503).json({ message: "Could not confirm the session run. Reload it from History." });
+        return;
+      }
+    }
     if (!isAdminRun) {
       // Resolve overdraft limit if user opted in
       let overdraftLimit = 0;
@@ -553,6 +562,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     // (step 2) failed — the user was charged the estimated cost and any excess
     // must be refunded regardless of whether the session doc write succeeded.
     if (db && uid) {
+      const sessionUid = uid;
       const sessionRef = db.collection("sessions").doc(result.sessionId);
       const sessionTitle = rebuttalContext
         ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
@@ -620,7 +630,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       // A completion event is sent only after persistence. Failure here causes
       // an error event and a refund of the remaining collected charge.
       try {
-        await sessionRef.set({
+        const savedResult = {
           sessionId: result.sessionId,
           userId: uid,
           title: previousSession?.title ?? sessionTitle,
@@ -660,7 +670,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           } : {}),
           createdAt: previousSession?.createdAt ?? FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
-        }, {merge:true});
+        };
+        if (runLease) await writeSessionRun(db, runLease, savedResult);
+        else await sessionRef.set(savedResult, { merge: true });
       } catch (e) {
         console.error("[brain] Session persistence failed:", e);
         throw new Error("The result could not be saved. Your session was not marked complete. Please contact support.");
@@ -669,7 +681,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       // ── Step 3: Token usage + USD cost annotation ─────────────────────────
       // Best-effort update — provides accurate cost telemetry in the dashboard.
       try {
-        await sessionRef.update({
+        const usageAnnotation = {
           inputTokens: Number(previousSession?.inputTokens ?? 0) + result.tokenUsage.inputTokens,
           outputTokens: Number(previousSession?.outputTokens ?? 0) + result.tokenUsage.outputTokens,
           costUSD: Number(previousSession?.costUSD ?? 0) + Math.round((result.tokenUsage.calls ?? []).reduce((sum, c) => {
@@ -678,7 +690,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           }, 0) * 100000) / 100000,
           creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
           model: result.model || "gpt-5",
-        });
+        };
+        if (runLease) await writeSessionRun(db, runLease, usageAnnotation);
+        else await sessionRef.update(usageAnnotation);
       } catch (e) {
         console.error("[brain] Token usage annotation failed (non-fatal):", e);
       }
@@ -699,7 +713,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
             const lastSentMs = (userData.lowCreditEmailSentAt as number | undefined) ?? 0;
             if (lastSentMs < Date.now() - 24 * 60 * 60 * 1000) {
               sendLowCreditsEmail(uid, newBalance, emailThreshold)
-                .then(() => db.collection("users").doc(uid).update({ lowCreditEmailSentAt: Date.now() }))
+                .then(() => db.collection("users").doc(sessionUid).update({ lowCreditEmailSentAt: Date.now() }))
                 .catch((e) => console.error("[brain] Low-credits email failed (non-fatal):", e));
             }
           }
@@ -711,7 +725,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
           if (!userData.firstSessionEmailSent && result.sessionId) {
             sendFirstSessionEmail(uid, result.sessionId, sessionTitle)
-              .then(() => db.collection("users").doc(uid).update({ firstSessionEmailSent: true }))
+              .then(() => db.collection("users").doc(sessionUid).update({ firstSessionEmailSent: true }))
               .catch((e) => console.error("[brain] First-session email failed (non-fatal):", e));
           }
 
@@ -719,7 +733,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
             const lastZeroMs = (userData.zeroCreditsEmailSentAt as number | undefined) ?? 0;
             if (Date.now() - lastZeroMs > 24 * 60 * 60 * 1000) {
               sendZeroCreditsEmail(uid)
-                .then(() => db.collection("users").doc(uid).update({ zeroCreditsEmailSentAt: Date.now() }))
+                .then(() => db.collection("users").doc(sessionUid).update({ zeroCreditsEmailSentAt: Date.now() }))
                 .catch((e) => console.error("[brain] Zero-credits email failed (non-fatal):", e));
             }
           }
@@ -736,22 +750,29 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         const turnsCol = sessionRef.collection("session_turns");
         const oldTurns = previousSession ? await turnsCol.get() : null;
         const offset = oldTurns ? oldTurns.docs.reduce((max, d) => Math.max(max, Number(d.data().turnIndex ?? -1) + 1), 0) : 0;
-        await Promise.all(
-          result.turns.map((turn, idx) =>
-            turnsCol.doc(`turn_${String(offset + idx).padStart(3, "0")}`).set({
+        const turnWrites = result.turns.map((turn, idx) => ({
+            ref: turnsCol.doc(`turn_${String(offset + idx).padStart(3, "0")}`),
+            data: {
               turnIndex: offset + idx,
               role: turn.role,
               round: turn.round,
               content: turn.content,
               createdAt: FieldValue.serverTimestamp(),
-            })
-          )
-        );
+            },
+        }));
+        if (runLease) await writeSessionRun(db, runLease, {}, turnWrites);
+        else await Promise.all(turnWrites.map(write => write.ref.set(write.data)));
       } catch (e) {
         console.error("[brain] session_turns write failed (non-fatal):", e);
       }
     }
     resultSaved = true;
+    if (runLease && db) {
+      if (!await releaseSessionRun(db, runLease)) {
+        throw new SessionRunError(409, "This run was replaced. Reload the session from History.");
+      }
+      runLease = null;
+    }
     const transcript = Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript;
     if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify({
       ...result, transcript, status,
@@ -785,6 +806,13 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
     clearTimeout(sessionTimer);
     if (!res.writableEnded) res.end();
+  }
+  } finally {
+    if (runLease && db) {
+      await releaseSessionRun(db, runLease).catch(error => {
+        console.error("[brain] Session lock release failed; lease will expire", { sessionId, error });
+      });
+    }
   }
 });
 

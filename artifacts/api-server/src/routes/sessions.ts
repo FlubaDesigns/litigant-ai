@@ -4,6 +4,7 @@ import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
 import { safeError } from "../lib/safeError.js";
 import crypto from "crypto";
 import { FieldValue } from "firebase-admin/firestore";
+import { hasActiveSessionRun } from "../lib/sessionRunLock.js";
 
 const router = Router();
 
@@ -238,13 +239,16 @@ router.patch("/sessions/:id", async (req, res) => {
         return { code: 403, body: { message: "Forbidden" } };
       }
       const changes = { ...updates };
+      if (status === "complete" && hasActiveSessionRun(session)) {
+        return { code: 409, body: { message: "This session is running. Wait for it to finish before accepting the answer." } };
+      }
       if (status === "complete" && session.status !== "complete") {
         if (!["paused_credit_cap", "incomplete"].includes(session.status) ||
             typeof session.finalAnswer !== "string" || !session.finalAnswer.trim()) {
           return { code: 409, body: { message: "This session has no paused answer to accept. Reload it before continuing." } };
         }
         Object.assign(changes, {
-          status: "complete", pauseReason: null,
+          status: "complete", pauseReason: null, activeRun: null,
           acceptedAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         });

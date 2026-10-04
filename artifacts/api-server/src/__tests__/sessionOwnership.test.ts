@@ -160,7 +160,7 @@ describe("Session ownership", () => {
   });
 
   it("returns 403 when user B tries to resume user A's session", async () => {
-    const mockDb = createMockDb({ "session-owned-by-A": { userId: "user-A" } });
+    const mockDb = createMockDb({ "session-owned-by-A": { userId: "user-A", status: "incomplete" } });
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
     vi.mocked(verifyIdToken).mockResolvedValue({
       uid:           "user-B",
@@ -206,7 +206,7 @@ describe("Session ownership", () => {
   });
 
   it("allows the session owner to resume their own session", async () => {
-    const mockDb = createMockDb({ "session-owned-by-A": { userId: "user-A" } });
+    const mockDb = createMockDb({ "session-owned-by-A": { userId: "user-A", status: "incomplete" } });
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
     vi.mocked(verifyIdToken).mockResolvedValue({
       uid:           "user-A",
