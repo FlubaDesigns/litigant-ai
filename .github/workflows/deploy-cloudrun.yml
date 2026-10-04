@@ -64,6 +64,19 @@ jobs:
       - name: Validate deployment configuration
         run: node --input-type=module -e 'import {readFileSync} from "node:fs"; for (const file of ["firebase.json", "firestore.indexes.json", ".firebaserc"]) JSON.parse(readFileSync(file, "utf8"));'
 
+      - name: Verify keyless Firebase access
+        working-directory: artifacts/api-server
+        run: |
+          node --input-type=module <<'NODE'
+          import {initializeApp} from 'firebase-admin/app';
+          import {getFirestore} from 'firebase-admin/firestore';
+          import {getAuth} from 'firebase-admin/auth';
+          initializeApp({projectId:'litigant-ai'});
+          await getFirestore().collection('templates').limit(1).get();
+          await getAuth().listUsers(1);
+          console.log('Keyless identity can read Firestore and Firebase Auth.');
+          NODE
+
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
 
@@ -137,7 +150,7 @@ jobs:
         env:
           GIT_SHA: ${{ github.sha }}
           # Firebase / GCP
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          RUNTIME_SERVICE_ACCOUNT: ${{ secrets.WIF_SERVICE_ACCOUNT }}
           # AI providers
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

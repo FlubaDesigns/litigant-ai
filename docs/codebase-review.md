@@ -39,6 +39,6 @@ Local browser execution is restricted by the workspace's socket sandbox. All 10 
 
 ## Outstanding operational action
 
-An old browser test contained an account refresh token. The current test now uses isolated fixtures, with no real account credentials. Revoke the exposed account's existing refresh sessions in Firebase and review access history. Removing the token from the current tree does not remove it from historical commits. No history rewrite or account credential rotation is claimed by this change.
+An old browser test contained an account refresh token. The current test now uses isolated fixtures, with no real account credentials. Revoke the exposed account's existing refresh sessions in Firebase and review access history. Removing the token from the current tree does not remove it from historical commits. No history rewrite or end-user session revocation is claimed by this change. The rejected static Firebase service key is replaced with the existing keyless service identity, with database and Auth access checked during deployment.
 
 A code review and automated tests cannot establish legal accuracy of AI output. There is still no empirical calibration study for the review score. Any launch claim about answer reliability needs a separate representative evaluation against source-grounded answers.

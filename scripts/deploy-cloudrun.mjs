@@ -7,7 +7,7 @@
  * problem that occurs when --env-vars-file uses a static YAML with fake keys.
  *
  * Required env vars (must be set in the Replit Secrets panel):
- *   FIREBASE_SERVICE_ACCOUNT_JSON  — full SA JSON (minified)
+ *   RUNTIME_SERVICE_ACCOUNT       — existing service account email (no key)
  *   ANTHROPIC_API_KEY              — sk-ant-api03-…
  *   VITE_FIREBASE_PROJECT_ID       — GCP project id
  *
@@ -24,7 +24,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 
 const required = {
-  sa:        process.env.FIREBASE_SERVICE_ACCOUNT_JSON_V2 || process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+  runtimeServiceAccount: process.env.RUNTIME_SERVICE_ACCOUNT,
   anthropic: process.env.ANTHROPIC_API_KEY,
   project:   process.env.VITE_FIREBASE_PROJECT_ID,
 };
@@ -75,6 +75,7 @@ spec:
         autoscaling.knative.dev/minScale: "0"
         run.googleapis.com/cpu-throttling: "false"
     spec:
+      serviceAccountName: ${JSON.stringify(required.runtimeServiceAccount)}
       containerConcurrency: 80
       timeoutSeconds: 600
       containers:
@@ -90,7 +91,7 @@ spec:
 ${envEntry("NODE_ENV", "production")}
 ${envEntry("APP_DOMAIN", "litigant-ai.com")}
 ${envEntry("FIREBASE_PROJECT_ID", required.project)}
-${envEntry("FIREBASE_SERVICE_ACCOUNT", required.sa)}
+${envEntry("FIREBASE_USE_ADC", "true")}
 ${envEntry("ANTHROPIC_API_KEY", required.anthropic)}
 ${envEntry("ADMIN_MASTER_SECRET", process.env.ADMIN_MASTER_SECRET ?? "")}
 ${envEntry("OPENAI_API_KEY", process.env.OPENAI_API_KEY ?? "")}
@@ -107,13 +108,13 @@ ${envEntry("DEPLOY_TIMESTAMP", deployTimestamp)}
 `;
 
 // Private temp dir (random suffix, accessible only by owner) so the YAML
-// containing the service account key and API keys is never in a shared,
+// containing the API keys is never in a shared,
 // guessable location. File is also written with owner-only permissions.
 const tmpDir = mkdtempSync(join(tmpdir(), "cloudrun-deploy-"));
 const yamlPath = join(tmpDir, "service.yaml");
 writeFileSync(yamlPath, yaml, { encoding: "utf8", mode: 0o600 });
 console.log(`Service YAML written to ${yamlPath}`);
-console.log(`  FIREBASE_SERVICE_ACCOUNT length : ${required.sa.length}`);
+console.log("  Firebase uses the configured keyless runtime identity.");
 console.log("  AI provider credential configured.");
 
 try {

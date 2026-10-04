@@ -12,7 +12,10 @@ export function initFirebaseAdmin(): void {
     process.env["FIREBASE_SERVICE_ACCOUNT_JSON"];
   const projectId = process.env["FIREBASE_PROJECT_ID"];
 
-  if (serviceAccount) {
+  if (process.env["FIREBASE_USE_ADC"] === "true" && projectId) {
+    app = initializeApp({ projectId });
+    console.log("[FirebaseAdmin] Initialized with runtime application default credentials");
+  } else if (serviceAccount) {
     try {
       const parsed = JSON.parse(serviceAccount);
       app = initializeApp({ credential: cert(parsed) });
