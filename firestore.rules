@@ -69,7 +69,7 @@ service cloud.firestore {
                     && !setsAutoRefillCheckoutFields();
     }
 
-    // Sessions: owner-only read/write. Shared-session access is handled
+    // Sessions: owner-only reads; writes through the server. Shared-session access is handled
     // server-side via the Admin SDK (report.ts / sessions.ts), which bypasses
     // these rules entirely — no broad client-SDK read needed here.
     // NOTE: The session rule uses resource.data.userId which is undefined on

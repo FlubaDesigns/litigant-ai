@@ -33,8 +33,7 @@
         { "fieldPath": "archived", "order": "DESCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }
       ]
-    }
-  ],
+    },
     {
       "collectionGroup": "sessions",
       "queryScope": "COLLECTION",
