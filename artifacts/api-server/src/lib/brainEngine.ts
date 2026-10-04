@@ -492,7 +492,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       : "";
 
   const baseContext = rebuttalContext
-    ? `You are participating in a structured multi-AI reasoning session.\n\nOriginal question: "${question}"\n\nThe court previously delivered this verdict:\n\n${rebuttalContext.originalVerdict}\n\nThe user has challenged the verdict (Rebuttal Round ${rebuttalContext.rebuttalRound}):\n\n"${rebuttalContext.challenge}"\n\nThe court must reconvene and re-examine the question in light of this challenge. Every litigant must directly address the objection raised. Determine whether the original verdict should be upheld, amended, or reversed.${caseFileBlock}`
+    ? `${templateSystemPrompt ? `${templateSystemPrompt}\n\n` : ""}You are participating in a structured multi-AI reasoning session.\n\nOriginal question: "${question}"\n\nThe court previously delivered this verdict:\n\n${rebuttalContext.originalVerdict}\n\nThe user has challenged the verdict (Rebuttal Round ${rebuttalContext.rebuttalRound}):\n\n"${rebuttalContext.challenge}"\n\nThe court must reconvene and re-examine the question in light of this challenge. Every litigant must directly address the objection raised. Determine whether the original verdict should be upheld, amended, or reversed.${caseFileBlock}`
     : templateSystemPrompt
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"${caseFileBlock}`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"${caseFileBlock}`;

@@ -18,6 +18,6 @@ export async function getTemplates(includeInactive = false): Promise<Template[]>
   }
   return [...catalog.values()];
 }
-export async function getTemplate(id: string): Promise<Template | null> {
-  return (await getTemplates()).find(t => t.id === id) ?? null;
+export async function getTemplate(id: string, includeInactive = false): Promise<Template | null> {
+  return (await getTemplates(includeInactive)).find(t => t.id === id) ?? null;
 }

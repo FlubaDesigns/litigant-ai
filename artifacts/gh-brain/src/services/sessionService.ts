@@ -1,5 +1,5 @@
 import { confidenceLabel } from "@workspace/api-zod/session";
-import type { CourtConfig } from "@/data/templates";
+import type { CourtConfig, Template } from "@/data/templates";
 
 import { getApiUrl } from "@/lib/apiUrl";
 
@@ -89,6 +89,8 @@ export type SSEEventType =
   | "provider_failover";
 
 export interface SSEEvent {
+  caseFile?: CaseFileItem[];
+  rebuttalRound?: number;
   status?: SavedSession["status"];
   config?: CourtConfig;
   type: SSEEventType;
@@ -220,6 +222,10 @@ export function runBrainSession(
 }
 
 export interface SavedSession {
+  template?: Template | null;
+  courtroomOutcome?: CourtroomOutcome | null;
+  rebuttalRound?: number;
+  parentSessionId?: string | null;
   config?: CourtConfig;
   caseFile?: CaseFileItem[];
   id: string;

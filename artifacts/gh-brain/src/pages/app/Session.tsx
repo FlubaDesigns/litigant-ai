@@ -96,7 +96,7 @@ export default function SessionPage() {
   const brainSession = useBrainSession(savedConfig);
   const {
     state, run, stop, reset, acceptPartial, continueSession,
-    loadPausedSession, loadCompleteSession, loadRelayNeededSession, submitRebuttal, submitRelay, setEndOfJobTap,
+    loadSession, submitRebuttal, submitRelay, setEndOfJobTap,
     setQuestion, setTemplate, setConfig, setSeatAI,
     applyFeedbackGrades, addCaseFile, removeCaseFile,
   } = brainSession;
@@ -173,19 +173,10 @@ export default function SessionPage() {
     let cancelled = false;
     user.getIdToken().then(token => getSession(sessionId, token)).then(saved => {
       if (cancelled) return;
-      const data = {
-        question: saved.question, config: saved.config ?? {}, sessionId: saved.id,
-        confidence: saved.confidence ?? 0, creditsUsed: saved.creditsUsed ?? 0,
-        finalAnswer: saved.finalAnswer ?? "", debateNotes: saved.debateNotes ?? "",
-        transcript: saved.transcript ?? "", caveats: saved.caveats ?? "", artifacts: saved.artifacts ?? "",
-      };
-      if (saved.status === "relay_needed") loadRelayNeededSession({...data, relayQuestion: saved.relayQuestion ?? "", relayCount: saved.relayCount ?? 0});
-      else if (saved.status === "paused_credit_cap" || saved.status === "incomplete") loadPausedSession({...data, pauseReason: saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit"});
-      else if (saved.status === "complete") loadCompleteSession(data);
-      else throw new Error("This session did not complete. Start a new session to try again.");
+      loadSession(saved);
     }).catch(error => { if (!cancelled) toast.error(error.message); });
     return () => { cancelled = true; };
-  }, [sessionId, user, loadCompleteSession, loadPausedSession, loadRelayNeededSession]);
+  }, [sessionId, user, loadSession]);
 
   useEffect(() => {
     if (feedRef.current && state.phase === "running") {

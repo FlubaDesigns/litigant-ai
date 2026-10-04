@@ -312,6 +312,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     overdraft,   // finding #10: was silently dropped; now included in schema
   } = parsed.data;
 
+  if ((rebuttalContext && relayContext) || (clientSessionId && (rebuttalContext || relayContext))) {
+    res.status(400).json({ message: "Choose one continuation type per request." });
+    return;
+  }
+
   // Mint a fresh session ID server-side by default.
   // New sessions always get a fresh server-minted ID — client-supplied IDs are
   // never accepted for new runs. Resumed sessions may supply their existing ID
@@ -348,6 +353,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   let prepared: Awaited<ReturnType<typeof prepareSession>>;
   let estimatedCost = 0;
   let previousSession: Record<string, any> | null = null;
+  let parentSession: Record<string, any> | null = null;
   let templateSystemPrompt: string | undefined;
 
   // ── Auth + credit reservation ─────────────────────────────────────────────
@@ -400,13 +406,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         runLease = claimed.lease;
         sessionId = clientSessionId;
         previousSession = claimed.session;
-        templateId = previousSession.templateId ?? undefined;
-        question = previousSession.question ?? question;
-        continueFromTranscript = String(previousSession.transcript ?? "").split("\n\n---\n\n").filter(Boolean);
-        caseFile = previousSession.caseFile ?? caseFile;
-        // Resume the accepted configuration, allowing an explicitly raised budget.
-        effectiveConfig = { ...effectiveConfig, ...previousSession.config, maxCredits: config.maxCredits };
-        resumeWithFixedPipeline = previousSession.status === "paused_credit_cap" && continueFromTranscript.some(line => line.startsWith("**Moderator (Summary):**"));
       } catch (error) {
         res.status(error instanceof SessionRunError ? error.status : 503).json({
           message: error instanceof SessionRunError ? error.message : "Could not load the saved session. Please retry.",
@@ -415,6 +414,44 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
     }
 
+    if (db && (rebuttalContext || relayContext)) {
+      parentSessionId = rebuttalContext?.parentSessionId ?? relayContext?.parentSessionId;
+      if (!parentSessionId) {
+        res.status(400).json({ message: "A saved parent session is required." }); return;
+      }
+      try {
+        const parent = (await db.collection("sessions").doc(parentSessionId).get()).data();
+        if (!parent || parent.userId !== uid) {
+          res.status(403).json({ message: "Parent session not found or access denied." }); return;
+        }
+        parentSession = parent;
+        if (rebuttalContext) rebuttalContext = {
+          ...rebuttalContext, originalVerdict: parent.finalAnswer ?? "",
+          rebuttalRound: Number(parent.rebuttalRound ?? 0) + 1,
+        };
+        if (relayContext) relayContext = {
+          ...relayContext,
+          originalTranscript: String(parent.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
+          relayRound: Number(parent.relayCount ?? 0) + 1,
+        };
+      } catch {
+        res.status(503).json({ message: "Could not load the parent session. Please retry." }); return;
+      }
+    }
+  }
+
+  const sourceSession = previousSession ?? parentSession;
+  if (sourceSession) {
+    templateId = sourceSession.templateId ?? undefined;
+    question = sourceSession.question ?? question;
+    caseFile = sourceSession.caseFile ?? [];
+    effectiveConfig = { ...effectiveConfig, ...sourceSession.config,
+      ...(previousSession ? { maxCredits: config.maxCredits } : {}) };
+  }
+  if (previousSession) {
+    continueFromTranscript = String(previousSession.transcript ?? "").split("\n\n---\n\n").filter(Boolean);
+    resumeWithFixedPipeline = previousSession.status === "paused_credit_cap"
+      && continueFromTranscript.some(line => line.startsWith("**Moderator (Summary):**"));
   }
 
   try {
@@ -428,7 +465,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     effectiveConfig = { ...effectiveConfig, maxCredits: prepared.config.maxCredits - previousCharge };
     estimatedCost = Math.min(prepared.estimatedCredits, effectiveConfig.maxCredits!);
     if (templateId) {
-      const template = await getTemplate(templateId);
+      const template = await getTemplate(templateId, !!sourceSession);
       if (!template) { res.status(400).json({message:"Template not found"}); return; }
       templateSystemPrompt = template.systemPrompt;
     }
@@ -548,6 +585,8 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
     runSucceeded = true;
     actualCost = result.creditsUsed;
+    const relayCount = Math.max(result.relayCount ?? 0, sourceSession?.relayCount ?? 0);
+    const rebuttalRound = rebuttalContext?.rebuttalRound ?? sourceSession?.rebuttalRound ?? 0;
     // One status is used for both the stored session and its completion event.
     const status = result.pauseReason === "credit_cap" ? "paused_credit_cap"
       : result.pauseReason === "iteration_limit" ? "incomplete"
@@ -660,13 +699,13 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           } : {}),
           artifactPath: result.artifactPath ?? null,
           courtroomOutcome: result.courtroomOutcome ?? null,
-          relayCount: result.relayCount ?? 0,
+          relayCount,
+          rebuttalRound,
+          parentSessionId: parentSessionId ?? previousSession?.parentSessionId ?? null,
           relayQuestion: result.relayQuestion ?? null,
           ...(rebuttalContext ? {
             isRebuttal: true,
-            rebuttalRound: rebuttalContext.rebuttalRound,
             rebuttalChallenge: rebuttalContext.challenge,
-            parentSessionId: parentSessionId ?? null,
           } : {}),
           createdAt: previousSession?.createdAt ?? FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
@@ -775,7 +814,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     }
     const transcript = Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript;
     if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify({
-      ...result, transcript, status,
+      ...result, transcript, status, relayCount, rebuttalRound, caseFile: caseFile ?? [],
       config: prepared.config,
       debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
       creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,

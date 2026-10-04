@@ -6,6 +6,8 @@ import crypto from "crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { hasActiveSessionRun } from "../lib/sessionRunLock.js";
 
+import { getTemplate } from "../lib/templateStore.js";
+
 const router = Router();
 
 router.get("/sessions", async (req, res) => {
@@ -133,6 +135,7 @@ router.get("/sessions/:id", async (req, res) => {
     res.json({
       id: doc.id,
       ...data,
+      template: typeof data.templateId === "string" ? await getTemplate(data.templateId, true) : null,
       transcript,
       debateNotes,
       createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,

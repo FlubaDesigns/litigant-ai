@@ -650,3 +650,29 @@ describe("failure, budget and evidence regressions", () => {
     expect(res._events.some(e=>e.type==="done"||e.type==="paused_post_moderator")).toBe(false);
   });
 });
+
+
+describe("restored context reaches model prompts", () => {
+  it.each(["rebuttal", "relay"])("preserves template instructions and evidence in %s prompts", async kind => {
+    vi.clearAllMocks();
+    const provider = makeProvider([
+      "The court opens.", "Litigant argument.", "Summary. ARTIFACT_NEEDED: no",
+      "APPROVED\nSynthesised answer.", "Final verdict.",
+    ]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    await runBrainSession({
+      question: "Saved question", config: BASE_CONFIG, res: makeMockRes(),
+      templateSystemPrompt: "Evaluate the saved business plan.",
+      caseFile: [{ id: "doc", type: "file", name: "plan.txt", content: "Saved revenue evidence" }],
+      ...(kind === "rebuttal"
+        ? { rebuttalContext: { challenge: "Reconsider", originalVerdict: "Saved verdict", rebuttalRound: 2 } }
+        : { relayContext: { missingInfo: "New fact", originalTranscript: ["Saved discussion"], relayRound: 2 } }),
+    });
+    const messages = provider.streamChat.mock.calls.flatMap((call: any[]) => call[0]);
+    const moderatorContext = messages.find((message: any) => message.role === "system" && message.content.includes("You are the moderator."));
+    expect(moderatorContext.content).toContain("Evaluate the saved business plan.");
+    expect(moderatorContext.content).toContain("Saved revenue evidence");
+    if (kind === "rebuttal") expect(moderatorContext.content).toContain("Saved verdict");
+    else expect(messages.some((message: any) => message.content.includes("Saved discussion") && message.content.includes("New fact"))).toBe(true);
+  });
+});

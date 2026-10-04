@@ -1227,3 +1227,80 @@ describe("one active run per saved session", () => {
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
   });
 });
+
+
+import { TEMPLATES } from "@workspace/api-zod/templates";
+
+describe("saved context for restored sessions and child runs", () => {
+  const evidence = [{ id: "evidence", type: "file", name: "notes.txt", content: "Saved evidence" }];
+  const template = TEMPLATES[0];
+  function contextDb() {
+    const db = createRouteMockDb(FAKE_UID, 1000);
+    db._store["sessions/parent"] = {
+      userId: FAKE_UID, status: "relay_needed", question: "Original question", title: "Parent title",
+      templateId: template.id, config: { ...BRAIN_BODY.config, litigantCount: 4, maxCredits: 700 },
+      caseFile: evidence, transcript: "Saved transcript", finalAnswer: "Saved verdict", debateNotes: "Saved notes",
+      courtroomOutcome: { reason: "not_enough", round: 2, confidenceAtExit: 70 },
+      relayCount: 2, rebuttalRound: 3, creditsUsed: 250, artifactPath: "no-artifact",
+    };
+    // An existing session must remain readable even if its template is retired.
+    db._store[`templates/${template.id}`] = { ...template, isActive: false };
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    return db;
+  }
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
+  });
+
+  it("returns attachments, resolved template and outcome metadata from the saved record", async () => {
+    contextDb();
+    const response = await request(app).get("/api/sessions/parent").set("Authorization", `Bearer ${FAKE_TOKEN}`);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ caseFile: evidence, template: { id: template.id, title: template.title },
+      courtroomOutcome: { reason: "not_enough" }, relayCount: 2, rebuttalRound: 3, transcript: "Saved transcript" });
+  });
+
+  it.each(["rebuttal", "relay"])("uses the owned parent as authoritative context for a %s", async kind => {
+    const db = contextDb();
+    const parentBefore = { ...db._store["sessions/parent"] };
+    vi.mocked(runBrainSession).mockImplementation(async opts => {
+      expect(opts.question).toBe("Original question");
+      expect(opts.caseFile).toEqual(evidence);
+      expect(opts.templateSystemPrompt).toBe(template.systemPrompt);
+      expect(opts.config.litigantCount).toBe(4);
+      expect(opts.config.maxCredits).toBe(700); // child has its own budget; parent spend is not charged again
+      if (kind === "rebuttal") expect(opts.rebuttalContext).toMatchObject({ originalVerdict: "Saved verdict", rebuttalRound: 4, challenge: "Challenge" });
+      else expect(opts.relayContext).toMatchObject({ originalTranscript: ["Saved transcript"], relayRound: 3, missingInfo: "New fact" });
+      return { ...await makeBrainMock()(opts), relayCount: opts.relayContext?.relayRound ?? 0 };
+    });
+    const context = kind === "rebuttal"
+      ? { rebuttalContext: { parentSessionId: "parent", originalVerdict: "Forged verdict", challenge: "Challenge", rebuttalRound: 1 } }
+      : { relayContext: { parentSessionId: "parent", originalTranscript: ["Forged transcript"], missingInfo: "New fact", relayRound: 1 } };
+    const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send({ ...BRAIN_BODY, ...context, question: "Forged question", caseFile: [] });
+    const events = response.text.trim().split("\n\n").filter(line => line.startsWith("data: ")).map(line => JSON.parse(line.slice(6)));
+    const done = events.at(-1);
+    expect(done.type).toBe("done");
+    expect(done.sessionId).not.toBe("parent");
+    expect(done.caseFile).toEqual(evidence);
+    expect(db._store[`sessions/${done.sessionId}`]).toMatchObject({ parentSessionId: "parent", caseFile: evidence,
+      templateId: template.id, question: "Original question", creditsUsed: 100,
+      ...(kind === "rebuttal" ? { rebuttalRound: 4 } : { relayCount: 3 }) });
+    expect(db._store["sessions/parent"]).toEqual(parentBefore);
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);
+  });
+
+  it.each(["missing", "other-user"])("rejects a %s parent before making calls or charging", async owner => {
+    const db = contextDb();
+    if (owner === "missing") delete db._store["sessions/parent"];
+    else db._store["sessions/parent"].userId = owner;
+    const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`).send({
+      ...BRAIN_BODY, relayContext: { parentSessionId: "parent", originalTranscript: [], missingInfo: "New fact", relayRound: 1 },
+    });
+    expect(response.status).toBe(403);
+    expect(runBrainSession).not.toHaveBeenCalled();
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+  });
+});

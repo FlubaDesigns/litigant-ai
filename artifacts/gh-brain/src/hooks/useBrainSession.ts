@@ -119,6 +119,8 @@ type Action =
       type: "SESSION_DONE";
       payload: {
         status: SavedSession["status"];
+        caseFile?: CaseFileItem[];
+        rebuttalRound?: number;
         confidence: number;
         creditsUsed: number;
         finalAnswer: string;
@@ -145,64 +147,18 @@ type Action =
   | { type: "ADD_CASE_FILE"; item: CaseFileItem }
   | { type: "REMOVE_CASE_FILE"; id: string }
   | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string }
-  | {
-      type: "PAUSED_POST_MODERATOR";
-      sessionId: string;
-      confidence: number;
-      creditsUsed: number;
-      finalAnswer: string;
-      debateTranscriptLines: string[];
-      debateNotes: string;
-    }
-  | {
-      type: "PREFILL_PAUSED";
-      pauseReason?: PauseReason;
-      question: string;
-      config: Partial<CourtConfig>;
-      sessionId: string;
-      confidence: number;
-      creditsUsed: number;
-      finalAnswer: string;
-      debateNotes: string;
-      transcript: string;
-      caveats: string;
-      artifacts: string;
-      pauseTranscript: string[];
-    }
-  | {
-      type: "PREFILL_COMPLETE";
-      question: string;
-      config: Partial<CourtConfig>;
-      sessionId: string;
-      confidence: number;
-      creditsUsed: number;
-      finalAnswer: string;
-      debateNotes: string;
-      transcript: string;
-      caveats: string;
-      artifacts: string;
-    }
+  | { type: "RESTORE_SESSION"; session: SavedSession }
   | {
       type: "RELAY_SUBMIT";
       relayRound: number;
       missingInfo: string;
       prevSessionId: string;
-    }
-  | {
-      type: "PREFILL_RELAY_NEEDED";
-      question: string;
-      config: Partial<CourtConfig>;
-      sessionId: string;
-      confidence: number;
-      creditsUsed: number;
-      finalAnswer: string;
-      debateNotes: string;
-      transcript: string;
-      caveats: string;
-      artifacts: string;
-      relayQuestion: string;
-      relayCount: number;
     };
+
+function phaseForStatus(status: SavedSession["status"]): SessionPhase {
+  return status === "complete" ? "complete" : status === "relay_needed" ? "relay_needed"
+    : status === "incomplete" || status === "paused_credit_cap" ? "paused" : "error";
+}
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
   const litigantCount = initialConfig?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
@@ -414,9 +370,7 @@ function reducer(state: SessionState, action: Action): SessionState {
 
     case "SESSION_DONE": {
       const p = action.payload;
-      const phase = p.status === "complete" ? "complete"
-        : p.status === "relay_needed" ? "relay_needed"
-        : p.status === "incomplete" || p.status === "paused_credit_cap" ? "paused" : "error";
+      const phase = phaseForStatus(p.status);
       return {
         ...state,
         phase,
@@ -424,6 +378,8 @@ function reducer(state: SessionState, action: Action): SessionState {
         confidence: p.confidence,
         creditsUsed: p.creditsUsed,
         finalAnswer: p.finalAnswer,
+        caseFile: p.caseFile ?? state.caseFile,
+        rebuttalRound: p.rebuttalRound ?? state.rebuttalRound,
         debateNotes: p.debateNotes,
         transcript: p.transcript,
         caveats: p.caveats,
@@ -529,89 +485,32 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "REMOVE_CASE_FILE":
       return { ...state, caseFile: state.caseFile.filter((i) => i.id !== action.id) };
 
-    case "PAUSED_POST_MODERATOR":
+    case "RESTORE_SESSION": {
+      const saved = action.session;
+      const phase = phaseForStatus(saved.status);
       return {
-        ...state,
-        phase: "paused" as const,
-        activeRole: null,
-        sessionId: action.sessionId,
-        confidence: action.confidence,
-        creditsUsed: action.creditsUsed,
-        finalAnswer: action.finalAnswer,
-        pauseReason: "credit_cap" as const,
-        pauseTranscript: action.debateTranscriptLines,
-        debateNotes: action.debateNotes,
-        activityLog: [
-          ...state.activityLog,
-          `[Court] Credit cap reached — partial work saved without final approval`,
-        ],
-      };
-
-    case "PREFILL_PAUSED": {
-      const newConfig = { ...state.config, ...action.config };
-      return {
-        ...makeInitialState(newConfig),
-        phase: "paused" as const,
-        question: action.question,
-        config: newConfig,
-        sessionId: action.sessionId,
-        confidence: action.confidence,
-        creditsUsed: action.creditsUsed,
-        finalAnswer: action.finalAnswer,
-        debateNotes: action.debateNotes,
-        transcript: action.transcript,
-        caveats: action.caveats,
-        artifacts: action.artifacts,
-        pauseReason: action.pauseReason ?? "credit_cap",
-        pauseTranscript: action.pauseTranscript,
-        courtHappened: true,
-      };
-    }
-
-    case "PREFILL_COMPLETE": {
-      const newConfig = { ...state.config, ...action.config };
-      return {
-        ...makeInitialState(newConfig),
-        phase: "complete" as const,
-        question: action.question,
-        config: newConfig,
-        sessionId: action.sessionId,
-        confidence: action.confidence,
-        creditsUsed: action.creditsUsed,
-        finalAnswer: action.finalAnswer,
-        debateNotes: action.debateNotes,
-        transcript: action.transcript,
-        caveats: action.caveats,
-        artifacts: action.artifacts,
-        pauseReason: null,
-        pauseTranscript: null,
-        courtHappened: true,
-      };
-    }
-
-    case "PREFILL_RELAY_NEEDED": {
-      const newConfig = { ...state.config, ...action.config };
-      // Split transcript so submitRelay can pass originalTranscript correctly
-      const pauseTranscript = action.transcript
-        ? action.transcript.split("\n\n---\n\n").filter(Boolean)
-        : [];
-      return {
-        ...makeInitialState(newConfig),
-        phase: "relay_needed" as const,
-        question: action.question,
-        config: newConfig,
-        sessionId: action.sessionId,
-        confidence: action.confidence,
-        creditsUsed: action.creditsUsed,
-        finalAnswer: action.finalAnswer,
-        debateNotes: action.debateNotes,
-        transcript: action.transcript,
-        caveats: action.caveats,
-        artifacts: action.artifacts,
-        pauseTranscript,
-        relayQuestion: action.relayQuestion,
-        relayCount: action.relayCount,
-        needsRelay: true,
+        ...makeInitialState(saved.config),
+        phase,
+        question: saved.question,
+        template: saved.template ?? null,
+        sessionId: saved.id,
+        confidence: saved.confidence ?? 0,
+        creditsUsed: saved.creditsUsed ?? 0,
+        finalAnswer: saved.finalAnswer ?? "",
+        debateNotes: saved.debateNotes ?? "",
+        transcript: saved.transcript ?? "",
+        caveats: saved.caveats ?? "",
+        artifacts: saved.artifacts ?? "",
+        caseFile: saved.caseFile ?? [],
+        artifactPath: saved.artifactPath ?? null,
+        courtroomOutcome: saved.courtroomOutcome ?? null,
+        relayCount: saved.relayCount ?? 0,
+        relayQuestion: saved.relayQuestion ?? null,
+        needsRelay: phase === "relay_needed",
+        rebuttalRound: saved.rebuttalRound ?? 0,
+        pauseReason: phase === "paused" ? (saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit") : null,
+        pauseTranscript: (saved.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
+        errorMessage: phase === "error" ? "This session did not complete." : null,
         courtHappened: true,
       };
     }
@@ -651,22 +550,12 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       case "confidence_update":
         dispatch({ type: "CONFIDENCE_UPDATE", confidence: event.confidence!, creditsUsed: event.creditsUsed! });
         break;
-      case "paused_post_moderator":
-        dispatch({
-          type: "PAUSED_POST_MODERATOR",
-          sessionId: event.sessionId!,
-          confidence: event.confidence ?? 0,
-          creditsUsed: event.creditsUsed ?? 0,
-          finalAnswer: event.finalAnswer ?? "",
-          debateTranscriptLines: event.debateTranscriptLines ?? [],
-          debateNotes: event.debateNotes ?? "",
-        });
-        break;
       case "courtroom_outcome":
         if (event.courtroomOutcome && event.artifactPath) {
           dispatch({ type: "COURTROOM_OUTCOME", courtroomOutcome: event.courtroomOutcome, artifactPath: event.artifactPath });
         }
         break;
+      case "paused_post_moderator":
       case "done":
         if (!event.status) {
           dispatch({ type: "ERROR", message: "Session completion was not confirmed. Reload it from History." });
@@ -676,6 +565,8 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
           type: "SESSION_DONE",
           payload: {
             status: event.status,
+            caseFile: event.caseFile,
+            rebuttalRound: event.rebuttalRound,
             confidence: event.confidence!,
             creditsUsed: event.creditsUsed!,
             finalAnswer: event.finalAnswer!,
@@ -803,6 +694,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       question: s.question,
       config: effectiveConfig,
       templateId: s.template?.id,
+      caseFile: s.caseFile,
       idToken,
       sessionId: s.sessionId ?? undefined,
       continueFromTranscript: s.pauseTranscript ?? [],
@@ -820,59 +712,8 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     }
   }, [user, handleSSEEvent]);
 
-  const loadPausedSession = useCallback((s: {
-    pauseReason?: PauseReason;
-    question: string;
-    config: Partial<CourtConfig>;
-    sessionId: string;
-    confidence: number;
-    creditsUsed: number;
-    finalAnswer: string;
-    debateNotes: string;
-    transcript: string;
-    caveats: string;
-    artifacts: string;
-  }) => {
-    const pauseTranscript = s.transcript
-      ? s.transcript.split("\n\n---\n\n").filter(Boolean)
-      : [];
-    dispatch({
-      type: "PREFILL_PAUSED",
-      ...s,
-      pauseTranscript,
-    });
-  }, []);
-
-  const loadCompleteSession = useCallback((s: {
-    question: string;
-    config: Partial<CourtConfig>;
-    sessionId: string;
-    confidence: number;
-    creditsUsed: number;
-    finalAnswer: string;
-    debateNotes: string;
-    transcript: string;
-    caveats: string;
-    artifacts: string;
-  }) => {
-    dispatch({ type: "PREFILL_COMPLETE", ...s });
-  }, []);
-
-  const loadRelayNeededSession = useCallback((s: {
-    question: string;
-    config: Partial<CourtConfig>;
-    sessionId: string;
-    confidence: number;
-    creditsUsed: number;
-    finalAnswer: string;
-    debateNotes: string;
-    transcript: string;
-    caveats: string;
-    artifacts: string;
-    relayQuestion: string;
-    relayCount: number;
-  }) => {
-    dispatch({ type: "PREFILL_RELAY_NEEDED", ...s });
+  const loadSession = useCallback((session: SavedSession) => {
+    dispatch({ type: "RESTORE_SESSION", session });
   }, []);
 
   const setQuestion = useCallback((q: string) => dispatch({ type: "SET_QUESTION", question: q }), []);
@@ -920,6 +761,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       question: s.question,
       config: s.config,
       templateId: s.template?.id,
+      caseFile: s.caseFile,
       idToken,
       rebuttalContext: rebuttalCtx,
     };
@@ -965,6 +807,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       question: s.question,
       config: s.config,
       templateId: s.template?.id,
+      caseFile: s.caseFile,
       idToken,
       relayContext: relayCtx,
     };
@@ -998,9 +841,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     reset,
     acceptPartial,
     continueSession: continueSessionFn,
-    loadPausedSession,
-    loadCompleteSession,
-    loadRelayNeededSession,
+    loadSession,
     submitRebuttal,
     submitRelay,
     setEndOfJobTap,

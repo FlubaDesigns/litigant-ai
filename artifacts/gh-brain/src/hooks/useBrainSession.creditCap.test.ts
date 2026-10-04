@@ -75,41 +75,22 @@ function getInitialState(): SessionState {
   return makeInitialState();
 }
 
-// Build a PREFILL_PAUSED action the same way loadPausedSession + Session.tsx would
+// Exercise the same complete saved-session payload used by the page.
 function buildPrefillPausedAction(opts: {
-  question: string;
-  sessionId: string;
-  confidence: number;
-  creditsUsed: number;
-  finalAnswer: string;
-  debateNotes: string;
-  transcript: string;
-  caveats: string;
-  artifacts: string;
+  question: string; sessionId: string; confidence: number; creditsUsed: number;
+  finalAnswer: string; debateNotes: string; transcript: string; caveats: string; artifacts: string;
 }) {
-  const pauseTranscript = opts.transcript
-    ? opts.transcript.split("\n\n---\n\n").filter(Boolean)
-    : [];
   return {
-    type: "PREFILL_PAUSED" as const,
-    question: opts.question,
-    config: {},
-    sessionId: opts.sessionId,
-    confidence: opts.confidence,
-    creditsUsed: opts.creditsUsed,
-    finalAnswer: opts.finalAnswer,
-    debateNotes: opts.debateNotes,
-    transcript: opts.transcript,
-    caveats: opts.caveats,
-    artifacts: opts.artifacts,
-    pauseTranscript,
+    type: "RESTORE_SESSION" as const,
+    session: { ...opts, id: opts.sessionId, title: opts.question, templateId: null,
+      status: "paused_credit_cap" as const, createdAt: "", updatedAt: "" },
   };
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe("credit-cap partial answer survival", () => {
-  describe("PREFILL_PAUSED reducer case", () => {
+  describe("RESTORE_SESSION reducer case", () => {
     it("sets phase to 'paused'", () => {
       const action = buildPrefillPausedAction({
         question: "What is the best approach?",
@@ -333,7 +314,7 @@ describe("credit-cap partial answer survival", () => {
 // The async acceptance action must wait for the persisted status, while retaining
 // the paused result on errors and ignoring a response after the user resets.
 import { useReducer, useRef, useCallback } from "react";
-import { updateSession } from "@/services/sessionService";
+import { updateSession, runBrainSession, type SavedSession } from "@/services/sessionService";
 import { useAuth } from "@/contexts/AuthContext";
 
 describe("persisted answer acceptance", () => {
@@ -415,5 +396,59 @@ describe("server completion status", () => {
     } });
     expect(state.phase).toBe(phase);
     if (phase === "paused") expect(state.pauseReason).toBeTruthy();
+  });
+});
+
+
+describe("full saved session restoration", () => {
+  const attachment = { id: "evidence", type: "file" as const, name: "evidence.txt", content: "Original evidence" };
+  const template = { id: "business-plan", title: "Business Plan", defaultConfig: { confidenceTarget: 80 } } as any;
+  const saved: SavedSession = {
+    id: "saved-parent", title: "Saved", question: "Saved question", status: "complete", templateId: template.id, template,
+    createdAt: "", updatedAt: "", confidence: 85, creditsUsed: 40,
+    config: { litigantCount: 4, maxCredits: 700 } as any,
+    finalAnswer: "Saved answer", transcript: "Original transcript", debateNotes: "Notes", artifacts: "Built document",
+    caveats: "Review this", caseFile: [attachment], artifactPath: "artifact",
+    courtroomOutcome: { reason: "approved", confidenceAtExit: 85, round: 2 },
+    relayCount: 2, relayQuestion: "Missing fact?", rebuttalRound: 3,
+  };
+  it.each(["complete", "incomplete", "paused_credit_cap", "relay_needed"] as const)("restores all persisted context for %s", status => {
+    const dirty = { ...makeInitialState(), caseFile: [{ ...attachment, id: "wrong" }], config: { ...makeInitialState().config, maxCredits: 9999 } };
+    const restored = reducer(dirty, { type: "RESTORE_SESSION", session: { ...saved, status } });
+    expect(restored).toMatchObject({ question: saved.question, template, caseFile: [attachment],
+      finalAnswer: saved.finalAnswer, transcript: saved.transcript, debateNotes: saved.debateNotes,
+      caveats: saved.caveats, artifacts: saved.artifacts, artifactPath: "artifact",
+      courtroomOutcome: saved.courtroomOutcome, relayCount: 2, rebuttalRound: 3,
+      config: { litigantCount: 4, maxCredits: 700 }, pauseTranscript: [saved.transcript] });
+    expect(restored.needsRelay).toBe(status === "relay_needed");
+  });
+
+  it.each(["continueSession", "submitRebuttal", "submitRelay"] as const)("carries restored attachments and template into %s", async method => {
+    vi.clearAllMocks();
+    const restored = reducer(makeInitialState(), { type: "RESTORE_SESSION", session: { ...saved, status: "incomplete" } });
+    vi.mocked(useReducer).mockReturnValue([restored, vi.fn()] as any);
+    vi.mocked(useRef).mockImplementation((value: any) => ({ current: value }));
+    vi.mocked(useCallback).mockImplementation((callback: any) => callback);
+    vi.mocked(useAuth).mockReturnValue({ user: { getIdToken: async () => "test-token" } } as any);
+    vi.mocked(runBrainSession).mockResolvedValue();
+    const hook = useBrainSession();
+    if (method === "continueSession") await hook.continueSession();
+    else await hook[method]("New information");
+    const request = vi.mocked(runBrainSession).mock.calls[0][0];
+    expect(request).toMatchObject({ question: saved.question, templateId: template.id, caseFile: [attachment], config: { maxCredits: 700 } });
+    if (method === "submitRebuttal") expect(request.rebuttalContext).toMatchObject({ parentSessionId: saved.id, originalVerdict: saved.finalAnswer, rebuttalRound: 4 });
+    if (method === "submitRelay") expect(request.relayContext).toMatchObject({ parentSessionId: saved.id, originalTranscript: [saved.transcript], relayRound: 3 });
+  });
+
+  it("does not leak the previously opened session's template, evidence or configuration into a sparse record", () => {
+    const prior = reducer(makeInitialState(), { type: "RESTORE_SESSION", session: saved });
+    const restored = reducer(prior, { type: "RESTORE_SESSION", session: {
+      id: "older", title: "Older", question: "Older question", status: "complete", templateId: null,
+      confidence: 0, creditsUsed: 0, createdAt: "", updatedAt: "",
+    } });
+    expect(restored.caseFile).toEqual([]);
+    expect(restored.template).toBeNull();
+    expect(restored.courtroomOutcome).toBeNull();
+    expect(restored.config).toEqual(makeInitialState().config);
   });
 });
