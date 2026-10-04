@@ -1,3 +1,4 @@
+import { refreshConfiguration } from "@/lib/queryClient";
 import { auth } from "@/lib/firebase";
 
 import { API_BASE } from "@/lib/apiUrl";
@@ -11,10 +12,15 @@ async function authHeaders(): Promise<Record<string, string>> {
 
 async function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   const headers = await authHeaders();
-  return fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: { ...headers, "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
+  if (response.ok && init?.method && init.method !== "GET" &&
+      /^\/admin\/(?:pricing|ai-studio|api-keys|model-scores|feature-flags|limits|billing-defaults|templates)(?:\/|$)/.test(path)) {
+    refreshConfiguration();
+  }
+  return response;
 }
 
 export interface AdminUser {
@@ -200,8 +206,8 @@ export async function issueRefund(
 }
 
 export async function getFeatureFlags(): Promise<Record<string, boolean>> {
-  const res = await fetch(`${API_BASE}/feature-flags`);
-  if (!res.ok) return {};
+  const res = await fetch(`${API_BASE}/feature-flags`, {cache:"no-store"});
+  if (!res.ok) throw new Error("Unable to load feature flags");
   const data = await res.json();
   return data.flags ?? {};
 }

@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { getProviders, type ProviderInfo, type ModelInfo } from "@/services/providerService";
+import { useProviders } from "@/hooks/useConfiguration";
+import { type ModelInfo } from "@/services/providerService";
 import { saveUserConfig, type UserProfile } from "@/services/firestoreService";
 import type { CourtConfig } from "@/data/templates";
 
@@ -85,6 +86,7 @@ const V29_SELECT = "bg-[#0d1a0d] border border-primary/30 text-sm text-foregroun
 
 interface ConfigPanelProps {
   open: boolean;
+  quoteEnabled?: boolean;
   onClose: () => void;
   config: CourtConfig;
   onChange: (c: Partial<CourtConfig>) => void;
@@ -95,8 +97,9 @@ interface ConfigPanelProps {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingComplete }: ConfigPanelProps) {
-  const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
+export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChange, uid, onboardingComplete }: ConfigPanelProps) {
+  const {data:catalog} = useProviders(open);
+  const availableProviders = catalog?.providers ?? [];
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [atBottom, setAtBottom] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -110,7 +113,6 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
     if (open) {
       hasChanges.current = false;
       setSaveState("idle");
-      getProviders().then((p) => setAvailableProviders(p.providers));
     }
   }, [open]);
 
@@ -157,7 +159,7 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
     (m) => m.id === (config.model ?? selectedProvider.defaultModel)
   ) ?? selectedProvider?.models[0];
 
-  const quote = useSessionQuote(config);
+  const quote = useSessionQuote(config, open && quoteEnabled);
   const credLow = quote.data?.estimatedCredits ?? 0;
   const credHigh = credLow;
 

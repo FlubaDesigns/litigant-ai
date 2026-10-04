@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
 import { safeNext } from "@/lib/authUtils";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -35,14 +36,6 @@ const TermsPage = lazy(() => import("@/pages/legal/Terms"));
 const ShareReportPage = lazy(() => import("@/pages/ShareReport"));
 const NotFoundPage = lazy(() => import("@/pages/not-found"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      retry: 1,
-    },
-  },
-});
 
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, loading, setupError } = useAuth();

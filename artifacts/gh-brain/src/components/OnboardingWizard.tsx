@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { getLimits } from "@/services/providerService";
+import { useState } from "react";
+import { useLimits } from "@/hooks/useLimits";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Swords, Users, AlignLeft, FileText, List, Gavel, ChevronRight, ChevronLeft, Check, Zap, Gauge, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -140,16 +140,13 @@ function OptionCard({
 export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [maxLitigants, setMaxLitigants] = useState(10);
+  const {maxLitigants} = useLimits();
   const [prefs, setPrefs] = useState<Prefs>({
     litigantCount: 3,
     responseMode: "balanced",
     outputFormat: "report",
   });
 
-  useEffect(() => {
-    getLimits().then((l) => setMaxLitigants(l.maxLitigants)).catch(() => {});
-  }, []);
 
   function set<K extends keyof Prefs>(key: K, value: Prefs[K]) {
     setPrefs((p) => ({ ...p, [key]: value }));

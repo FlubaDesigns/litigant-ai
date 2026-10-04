@@ -1,3 +1,4 @@
+import { useBillingDefaults } from "@/hooks/useConfiguration";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,12 +20,11 @@ import {
   getTransactions,
   getPaymentHistory,
   setAutoRefill,
-  getBillingDefaults,
+  STATIC_BILLING_DEFAULTS,
   createCheckoutSession,
   createCustomCheckoutSession,
   PLAN_LIMITS,
   type BillingProduct,
-  type BillingDefaults,
   type CreditTransaction,
   type PaymentHistoryItem,
 } from "@/services/billingService";
@@ -362,13 +362,10 @@ export default function BillingPage() {
   const [autoRefillAmount, setAutoRefillAmount] = useState(20);
   const [autoRefillThreshold, setAutoRefillThreshold] = useState(100);
   const [warningThreshold, setWarningThreshold] = useState(200);
-  const [billingDefaults, setBillingDefaults] = useState<BillingDefaults>({
-    autoRefillAmounts: [10, 20, 50, 100, 200],
-    defaultAutoRefillAmount: 20,
-    defaultThresholdCredits: 100,
-    defaultWarningThresholdCredits: 200,
-    signupBonusCredits: 500,
-  });
+  const {data:liveDefaults} = useBillingDefaults();
+  const billingDefaults = liveDefaults ?? STATIC_BILLING_DEFAULTS;
+  const defaultsApplied = useRef(false);
+  const controlsEdited = useRef(false);
   const [creditControlsSaving, setCreditControlsSaving] = useState(false);
 
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -435,13 +432,13 @@ export default function BillingPage() {
   }, [user]);
 
   useEffect(() => {
-    getBillingDefaults().then((defaults) => {
-      setBillingDefaults(defaults);
-      setAutoRefillAmount(defaults.defaultAutoRefillAmount);
-      setAutoRefillThreshold(defaults.defaultThresholdCredits);
-      setWarningThreshold(defaults.defaultWarningThresholdCredits);
-    });
-  }, []);
+    if (!liveDefaults || defaultsApplied.current) return;
+    defaultsApplied.current = true;
+    if (controlsEdited.current || userProfile?.autoRefill) return;
+    setAutoRefillAmount(liveDefaults.defaultAutoRefillAmount);
+    setAutoRefillThreshold(liveDefaults.defaultThresholdCredits);
+    setWarningThreshold(liveDefaults.defaultWarningThresholdCredits);
+  }, [liveDefaults, userProfile]);
 
   useEffect(() => {
     fetchProducts();
@@ -684,7 +681,7 @@ export default function BillingPage() {
                   {billingDefaults.autoRefillAmounts.map((amt) => (
                     <button
                       key={amt}
-                      onClick={() => setAutoRefillAmount(amt)}
+                      onClick={() => {controlsEdited.current = true; setAutoRefillAmount(amt);}}
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-xs font-mono border transition-colors",
                         autoRefillAmount === amt
@@ -710,7 +707,7 @@ export default function BillingPage() {
                     min={1}
                     max={10000}
                     value={autoRefillThreshold}
-                    onChange={(e) => setAutoRefillThreshold(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={(e) => {controlsEdited.current = true; setAutoRefillThreshold(Math.max(1, parseInt(e.target.value) || 1));}}
                     className="w-24 h-8 rounded-lg border border-border/60 bg-card px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
                   />
                   <span className="text-xs text-muted-foreground">credits remaining</span>
@@ -726,7 +723,7 @@ export default function BillingPage() {
                     min={1}
                     max={100000}
                     value={warningThreshold}
-                    onChange={(e) => setWarningThreshold(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={(e) => {controlsEdited.current = true; setWarningThreshold(Math.max(1, parseInt(e.target.value) || 1));}}
                     className="w-24 h-8 rounded-lg border border-border/60 bg-card px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
                   />
                   <span className="text-xs text-muted-foreground">credits remaining</span>

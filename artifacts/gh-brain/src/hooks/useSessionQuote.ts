@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { CourtConfig } from "@workspace/api-zod/session";
 
+import { CONFIGURATION_REFRESH } from "@/lib/queryClient";
 import { API_BASE } from "@/lib/apiUrl";
-export function useSessionQuote(config: CourtConfig) {
+export function useSessionQuote(config: CourtConfig, enabled = true) {
   const key = JSON.stringify(config);
   const [settledKey, setSettledKey] = useState(key);
   useEffect(() => {
@@ -12,7 +13,8 @@ export function useSessionQuote(config: CourtConfig) {
   }, [key]);
   const query = useQuery({
     queryKey: ["session-quote", settledKey],
-    staleTime: 15_000,
+    ...CONFIGURATION_REFRESH,
+    enabled,
     queryFn: async ({ signal }): Promise<{config: CourtConfig; estimatedCredits: number; maxCredits: number}> => {
       const res = await fetch(`${API_BASE}/session-estimate`, {
         method: "POST", headers: {"Content-Type":"application/json"},

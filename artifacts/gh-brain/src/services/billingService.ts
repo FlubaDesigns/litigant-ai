@@ -158,7 +158,7 @@ export interface BillingDefaults {
   signupBonusCredits: number;
 }
 
-const STATIC_BILLING_DEFAULTS: BillingDefaults = {
+export const STATIC_BILLING_DEFAULTS: BillingDefaults = {
   autoRefillAmounts: [10, 20, 50, 100, 200],
   defaultAutoRefillAmount: 20,
   defaultThresholdCredits: 100,
@@ -170,13 +170,9 @@ const STATIC_BILLING_DEFAULTS: BillingDefaults = {
  * Fetches admin-configured billing defaults (auto-refill amounts, thresholds).
  */
 export async function getBillingDefaults(): Promise<BillingDefaults> {
-  try {
-    const res = await fetch(`${API_BASE}/billing/defaults`);
-    if (!res.ok) return STATIC_BILLING_DEFAULTS;
-    return res.json();
-  } catch {
-    return STATIC_BILLING_DEFAULTS;
-  }
+  const res = await fetch(`${API_BASE}/billing/defaults`, {cache:"no-store"});
+  if (!res.ok) throw new Error("Unable to load billing defaults");
+  return res.json();
 }
 
 /**

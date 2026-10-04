@@ -1,5 +1,5 @@
-import { fetchTemplates } from "@/services/templateService";
-import { useState, useEffect, useMemo } from "react";
+import { useTemplates } from "@/hooks/useConfiguration";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TEMPLATES as STATIC_TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
+import { TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
 
 import { API_BASE } from "@/lib/apiUrl";
 
@@ -201,15 +201,10 @@ function TemplateDetail({ template, onClose, onLaunch }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function TemplatesPage() {
   const [, navigate] = useLocation();
-  const [templates, setTemplates] = useState<Template[]>(STATIC_TEMPLATES);
+  const {data:templates = []} = useTemplates();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<Template | null>(null);
-
-  // Fetch from API (falls back to static if unavailable)
-  useEffect(() => {
-    fetchTemplates().then(setTemplates).catch(() => setTemplates([])).catch(() => {});
-  }, []);
 
   // Filter: category + keyword search
   const filtered = useMemo(() => {

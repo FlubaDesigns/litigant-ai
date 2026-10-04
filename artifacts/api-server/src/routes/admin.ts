@@ -951,7 +951,7 @@ router.get("/feature-flags", async (_req, res) => {
     if (!doc.exists) return res.json({ flags: DEFAULT_FLAGS });
     return res.json({ flags: { ...DEFAULT_FLAGS, ...(doc.data() ?? {}) } });
   } catch {
-    return res.json({ flags: DEFAULT_FLAGS });
+    return res.status(503).json({error:"Feature flags are temporarily unavailable"});
   }
 });
 
@@ -1028,7 +1028,7 @@ router.get("/limits", async (_req, res) => {
     if (!doc.exists) return res.json({ limits: DEFAULT_LIMITS });
     return res.json({ limits: { ...DEFAULT_LIMITS, ...(doc.data() ?? {}) } });
   } catch {
-    return res.json({ limits: DEFAULT_LIMITS });
+    return res.status(503).json({error:"Platform limits are temporarily unavailable"});
   }
 });
 

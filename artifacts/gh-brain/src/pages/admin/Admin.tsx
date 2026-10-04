@@ -57,7 +57,6 @@ import {
   type AiStudioModel, type AiStudioData, type AiStudioCustomProvider, type AiStudioCustomModel,
   type SeatBriefsData,
 } from "@/services/adminService";
-import { invalidateFeatureFlagCache } from "@/hooks/useFeatureFlag";
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
@@ -2027,7 +2026,6 @@ function FeatureFlagsTab() {
         toast.success(`Scope updated: ${PLAN_SCOPE_LABELS[value as string] ?? value}`);
       } else {
         toast.success(`${name}: ${value ? "enabled" : "disabled"}`);
-        invalidateFeatureFlagCache();
       }
       qc.invalidateQueries({ queryKey: ["admin-feature-flags"] });
     },

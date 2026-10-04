@@ -8,17 +8,10 @@ export interface PlatformLimits {
 }
 
 export async function getLimits(): Promise<PlatformLimits> {
-  try {
-    const res = await fetch(`${API_BASE}/limits`);
-    if (!res.ok) return { maxLitigants: 10, overdraftLimit: 500 };
-    const data = await res.json();
-    return {
-      maxLitigants: data.limits?.maxLitigants ?? 10,
-      overdraftLimit: data.limits?.overdraftLimit ?? 500,
-    };
-  } catch {
-    return { maxLitigants: 10, overdraftLimit: 500 };
-  }
+  const res = await fetch(`${API_BASE}/limits`, {cache:"no-store"});
+  if (!res.ok) throw new Error("Unable to load platform limits");
+  const data = await res.json();
+  return {maxLitigants:data.limits?.maxLitigants ?? 10, overdraftLimit:data.limits?.overdraftLimit ?? 500};
 }
 
 export interface ModelCreditInfo {
@@ -66,13 +59,9 @@ export interface ProvidersResponse {
 }
 
 export async function getProviders(): Promise<ProvidersResponse> {
-  try {
-    const res = await fetch(`${API_BASE}/providers`);
-    if (!res.ok) throw new Error("Failed to fetch providers");
-    return await res.json();
-  } catch {
-    return { configured: [], creditValueUsd: 0.01, providers: [] };
-  }
+  const res = await fetch(`${API_BASE}/providers`, {cache:"no-store"});
+  if (!res.ok) throw new Error("Unable to load providers");
+  return res.json();
 }
 
 export const PROVIDER_LABELS: Record<ProviderName, string> = {

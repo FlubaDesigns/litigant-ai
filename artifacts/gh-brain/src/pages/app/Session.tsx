@@ -1,5 +1,5 @@
 import { useSessionQuote } from "@/hooks/useSessionQuote";
-import { fetchTemplates } from "@/services/templateService";
+import { useProviders, useTemplates } from "@/hooks/useConfiguration";
 import { getSession } from "@/services/sessionService";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -23,9 +23,6 @@ import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation, useParams } from "wouter";
-import {
-  getProviders, type ProviderInfo,
-} from "@/services/providerService";
 import { useLimits } from "@/hooks/useLimits";
 import { toast } from "sonner";
 import { ConfigPanel } from "./session/ConfigPanel";
@@ -99,9 +96,9 @@ export default function SessionPage() {
 
   const [, navigate] = useLocation();
   const { sessionId } = useParams<{sessionId?: string}>();
-  const quote = useSessionQuote(state.config);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  useEffect(() => { fetchTemplates().then(setTemplates).catch(() => toast.error("Unable to load templates.")); }, []);
+  const quoteEnabled = ["idle", "configuring", "error"].includes(state.phase);
+  const quote = useSessionQuote(state.config, quoteEnabled);
+  const {data:templates = []} = useTemplates();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -115,16 +112,13 @@ export default function SessionPage() {
   const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [activityLogOpen, setActivityLogOpen] = useState(false);
-  const [allProviders, setAllProviders] = useState<ProviderInfo[]>([]);
+  const {data:catalog} = useProviders();
+  const allProviders = catalog?.providers ?? [];
   const [toolBanner, setToolBanner] = useState<string | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityLogRef = useRef<HTMLDivElement>(null);
 
   // ── Effects ─────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    getProviders().then((data) => setAllProviders(data.providers)).catch(() => {});
-  }, []);
 
   useEffect(() => { setFieldValues({}); }, [state.template?.id]);
 
@@ -149,13 +143,15 @@ export default function SessionPage() {
     return () => { delete (window as any).__testPdfExport; };
   });
 
-  // Pre-select template from ?templateId= URL param
+  const templateLinkApplied = useRef(false);
+  // Apply a template link once; catalog refreshes must not reset the working draft.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tid = params.get("templateId");
-    if (tid && state.phase === "idle" && !state.template) {
+    if (tid && !templateLinkApplied.current && state.phase === "idle" && !state.template) {
       const template = templates.find((t) => t.id === tid);
       if (template) {
+        templateLinkApplied.current = true;
         setTemplate(template);
         setConfig(template.defaultConfig);
         setToolBanner(template.title);
@@ -396,6 +392,7 @@ export default function SessionPage() {
       {/* ── Mission Briefing sheet ── */}
       <ConfigPanel
         open={configOpen}
+        quoteEnabled={quoteEnabled}
         onClose={() => setConfigOpen(false)}
         config={state.config}
         onChange={setConfig}
