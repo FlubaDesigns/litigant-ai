@@ -88,7 +88,6 @@ channel = "stable-25_05"
 [userenv.shared]
 # Credentials belong in the environment's secret store, never in this file.
 # Production credentials are supplied by GitHub Actions; Firebase uses keyless identity.
-VITE_FIREBASE_API_KEY = "AIzaSyDVCA3xld3uApfSs8gvhA7QVpARwP6hMSI"
 VITE_FIREBASE_AUTH_DOMAIN = "litigant-ai.firebaseapp.com"
 VITE_FIREBASE_PROJECT_ID = "litigant-ai"
 VITE_FIREBASE_STORAGE_BUCKET = "litigant-ai.firebasestorage.app"

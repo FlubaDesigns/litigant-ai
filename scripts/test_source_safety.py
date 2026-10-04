@@ -6,6 +6,9 @@ from source_safety import inspect_bytes
 
 
 class SourceSafetyTests(unittest.TestCase):
+    def test_google_key_including_browser_config(self):
+        self.assertTrue(inspect_bytes('firebase.config', b'AI' + b'za' + b'X' * 35))
+
     def test_private_key(self):
         marker = b'-----BEGIN ' + b'PRIVATE KEY-----'
         self.assertTrue(inspect_bytes('key.json', marker))

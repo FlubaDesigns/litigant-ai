@@ -12,9 +12,10 @@ SECRET_NAMES = {
     'FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_SERVICE_ACCOUNT', 'GCP_SA_KEY',
     'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'XAI_API_KEY',
     'RESEND_API_KEY', 'SQUARE_ACCESS_TOKEN', 'SQUARE_WEBHOOK_SIGNATURE_KEY',
-    'ADMIN_MASTER_SECRET', 'SESSION_SECRET',
+    'ADMIN_MASTER_SECRET', 'SESSION_SECRET', 'VITE_FIREBASE_API_KEY',
 }
 PATTERNS = {
+    'Google API key': rb'AIza[0-9A-Za-z_-]{35}',
     'private key': rb'-----BEGIN (?:RSA |EC )?PRIVATE KEY-----',
     'Anthropic token': rb'sk-ant-api\d+-[A-Za-z0-9_-]{50,}',
     'OpenAI token': rb'sk-proj-[A-Za-z0-9_-]{40,}',
