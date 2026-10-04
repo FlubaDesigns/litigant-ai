@@ -11,7 +11,7 @@ const distDir = path.join(artifactDir, "dist");
 try {
   await rm(distDir, { recursive: true, force: true });
   await build({
-    entryPoints: ["src/index.ts", "src/server-cloudrun.ts"].map(p => path.join(artifactDir, p)),
+    entryPoints: ["src/server-cloudrun.ts"].map(p => path.join(artifactDir, p)),
     platform: "node",
     bundle: true,
     format: "esm",

@@ -4,10 +4,11 @@ Multi-AI courtroom reasoning engine. Users submit a question; multiple AI agents
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/gh-brain run dev` — frontend dev server (Vite, port from `PORT`)
-- `pnpm --filter @workspace/api-server run dev` — API server (Express, port 8080)
-- `pnpm run typecheck` — full typecheck across all packages
-- Preview at `/gh-brain` and API at `/api-server/api`
+- Production uses Firebase Hosting and the Cloud Run API, deployed by `.github/workflows/deploy-cloudrun.yml`.
+- The API has one Express app (`app-firebase.ts`) and one route registry (`routes/index-firebase.ts`). Cloud Run and the Cloud Functions adapter share that app.
+- The separate development API server has been removed. Do not recreate an alternate app or route registry.
+- `pnpm --filter @workspace/api-server run build` builds the production server; `pnpm --filter @workspace/api-server start` runs it.
+- `pnpm run typecheck` checks all packages. Backend tests import the production app directly.
 
 ## Stack
 

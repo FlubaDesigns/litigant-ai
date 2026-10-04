@@ -30,13 +30,11 @@ Multi-model adversarial reasoning SaaS. A panel of AI models (GPT, Claude, Gemin
 artifacts/
   gh-brain/          # React frontend (Vite)
   api-server/        # Express API server
-  mockup-sandbox/    # Design canvas / component previews
 lib/
   api-spec/          # OpenAPI spec
   api-client-react/  # Generated API client
   api-zod/           # Generated Zod schemas
   db/                # Drizzle schema (Postgres, optional)
-firebase-functions/  # Cloud Run Dockerfile + entry point
 scripts/             # Deploy + utility scripts
 firestore.rules      # Firestore security rules
 firebase.json        # Firebase Hosting + rewrite config
@@ -44,16 +42,20 @@ firebase.json        # Firebase Hosting + rewrite config
 
 ---
 
-## Local development
+## Production runtime
 
-```bash
-# Install dependencies
-pnpm install
+The only application backend is the production Express app in
+`artifacts/api-server/src/app-firebase.ts`, with routes registered in
+`src/routes/index-firebase.ts`. Cloud Run starts it through
+`src/server-cloudrun.ts`; Firebase Hosting forwards `/api-server/**` requests
+there. The Cloud Functions adapter also imports this same app.
 
-# Start everything (frontend + API)
-pnpm --filter @workspace/gh-brain run dev        # http://localhost:<PORT>
-pnpm --filter @workspace/api-server run dev      # http://localhost:8080
-```
+There is no separate development API server or API `dev` command. The backend
+build produces only `dist/server-cloudrun.mjs`, and `pnpm --filter
+@workspace/api-server start` runs that production entry point.
+
+Automated backend tests import the production app directly. Browser tests use
+an isolated local frontend fixture; they do not provision another cloud server.
 
 ### Required environment variables
 

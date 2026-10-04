@@ -51,7 +51,7 @@ vi.mock("pino-http", () => ({
 
 // ── Imports ───────────────────────────────────────────────────────────────────
 
-import app from "../app.js";
+import app from "../app-firebase.js";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { grantSignupBonus } from "../lib/creditLedger.js";
 
