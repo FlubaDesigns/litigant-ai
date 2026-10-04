@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 // ── Module mocks (must be hoisted before any import) ───────────────────────
 
 vi.mock("react", () => ({
+  useEffect: vi.fn(),
   useReducer: vi.fn(),
   useRef: vi.fn(),
   useCallback: vi.fn(),
@@ -313,7 +314,7 @@ describe("credit-cap partial answer survival", () => {
 
 // The async acceptance action must wait for the persisted status, while retaining
 // the paused result on errors and ignoring a response after the user resets.
-import { useReducer, useRef, useCallback } from "react";
+import { useReducer, useRef, useCallback, useEffect } from "react";
 import { updateSession, runBrainSession, type SavedSession } from "@/services/sessionService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -450,5 +451,87 @@ describe("full saved session restoration", () => {
     expect(restored.template).toBeNull();
     expect(restored.courtroomOutcome).toBeNull();
     expect(restored.config).toEqual(makeInitialState().config);
+  });
+});
+
+
+describe("saved preferences arriving after the session page opens", () => {
+  const preferences = { litigantCount: 5, confidenceTarget: 91, maxCredits: 800,
+    responseMode: "thorough" as const, outputFormat: "report" as const };
+
+  it("applies late preferences without losing the question or evidence already entered", () => {
+    const evidence = { id: "evidence", type: "file" as const, name: "notes.txt", content: "Notes" };
+    let state = reducer(makeInitialState(), { type: "SET_QUESTION", question: "My question" });
+    state = reducer(state, { type: "ADD_CASE_FILE", item: evidence });
+    state = reducer(state, { type: "LOAD_DEFAULTS", config: preferences });
+    expect(state.config).toMatchObject(preferences);
+    expect(state.question).toBe("My question");
+    expect(state.caseFile).toEqual([evidence]);
+    expect(state.canLoadDefaults).toBe(false);
+  });
+
+  it.each(["configuration", "seat", "template"])("preserves a user's %s choice made before preferences arrive", choice => {
+    const initial = makeInitialState();
+    const edited = choice === "configuration" ? reducer(initial, { type: "SET_CONFIG", config: { maxCredits: 123 } })
+      : choice === "seat" ? reducer(initial, { type: "SET_SEAT_AI", seatId: "auditor", assignment: { provider: "anthropic", model: "chosen-model" } })
+      : reducer(initial, { type: "SET_TEMPLATE", template: { id: "chosen", defaultConfig: { ...initial.config, confidenceTarget: 75 } } as any });
+    expect(reducer(edited, { type: "LOAD_DEFAULTS", config: preferences })).toBe(edited);
+  });
+
+  it("does not replace preferences already applied during initial render", () => {
+    const state = makeInitialState(preferences);
+    expect(reducer(state, { type: "LOAD_DEFAULTS", config: { maxCredits: 999 } })).toBe(state);
+  });
+
+  it("does not change a run that starts before the profile arrives", () => {
+    const running = reducer(makeInitialState(), { type: "SET_PHASE", phase: "running" });
+    expect(reducer(running, { type: "LOAD_DEFAULTS", config: preferences })).toBe(running);
+  });
+
+  it.each([true, false])("never overrides a restored session (stored config: %s)", hasConfig => {
+    const restored = reducer(makeInitialState(), { type: "RESTORE_SESSION", session: {
+      id: "saved", title: "Saved", question: "Saved question", templateId: null,
+      status: "incomplete", confidence: 70, creditsUsed: 40, createdAt: "", updatedAt: "",
+      ...(hasConfig ? { config: { maxCredits: 150, litigantCount: 2 } as any } : {}),
+    } });
+    expect(reducer(restored, { type: "LOAD_DEFAULTS", config: preferences })).toBe(restored);
+  });
+
+  it("resets to the latest saved preferences and can await a profile when none has loaded", () => {
+    const edited = reducer(makeInitialState(), { type: "SET_CONFIG", config: { maxCredits: 12 } });
+    const fresh = reducer(edited, { type: "RESET", config: preferences });
+    expect(fresh.config).toMatchObject(preferences);
+    expect(fresh.phase).toBe("idle");
+    expect(fresh.canLoadDefaults).toBe(false);
+    const waiting = reducer(edited, { type: "RESET" });
+    expect(waiting.canLoadDefaults).toBe(true);
+    expect(reducer(waiting, { type: "LOAD_DEFAULTS", config: preferences }).config).toMatchObject(preferences);
+  });
+
+  it("the hook loads delayed preferences once and its stable reset uses the latest profile", () => {
+    vi.clearAllMocks();
+    let current = makeInitialState();
+    const dispatch = (action: any) => { current = reducer(current, action); };
+    const refs: Array<{ current: any }> = [];
+    let refIndex = 0;
+    vi.mocked(useReducer).mockImplementation(() => [current, dispatch] as any);
+    vi.mocked(useRef).mockImplementation((value: any) => refs[refIndex++] ?? (refs[refIndex - 1] = { current: value }));
+    vi.mocked(useCallback).mockImplementation((callback: any) => callback);
+    vi.mocked(useAuth).mockReturnValue({ user: null } as any);
+    vi.mocked(useEffect).mockImplementation(effect => { effect(); });
+    const render = (config?: any) => { refIndex = 0; return useBrainSession(config); };
+    try {
+      const original = render();
+      original.setQuestion("Keep my draft");
+      render(preferences);
+      expect(current.config).toMatchObject(preferences);
+      expect(current.question).toBe("Keep my draft");
+      render({ ...preferences, maxCredits: 900 });
+      expect(current.config.maxCredits).toBe(800);
+      // Use the callback from before the profile arrived, as React's useCallback does.
+      original.reset();
+      expect(current.config.maxCredits).toBe(900);
+      expect(current.question).toBe("");
+    } finally { vi.mocked(useEffect).mockReset(); }
   });
 });

@@ -1,7 +1,7 @@
 import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { fetchTemplates } from "@/services/templateService";
 import { getSession } from "@/services/sessionService";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
@@ -75,23 +75,19 @@ export default function SessionPage() {
   const { user, userProfile, isAdmin } = useAuth();
   const { credits, plan } = useUserProfile();
 
-  // If admin has toggled a test model on this account, pre-build a seatMap
-  // so all seats run on that model instead of the default.
-  const testSeatMap = (userProfile?.testModel && userProfile?.testProvider)
-    ? (() => {
-        const count = userProfile.defaultSettings?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
-        const seat: SeatAssignment = { provider: userProfile.testProvider!, model: userProfile.testModel! };
-        return {
-          orchestrator: seat, moderator: seat, auditor: seat,
-          architect: seat, builder: seat,
-          litigants: Array.from({ length: count }, () => ({ ...seat })),
-        };
-      })()
-    : undefined;
-
-  const savedConfig = userProfile?.defaultSettings
-    ? { ...DEFAULT_CONFIG, ...userProfile.defaultSettings, ...(testSeatMap ? {seatMap: testSeatMap} : {}) }
-    : undefined;
+  const savedConfig = useMemo(() => {
+    if (!userProfile) return undefined;
+    const config: Partial<CourtConfig> = { ...userProfile.defaultSettings };
+    // Keep the existing account test-model override, including profiles without defaults.
+    if (userProfile.testModel && userProfile.testProvider) {
+      const seat: SeatAssignment = { provider: userProfile.testProvider, model: userProfile.testModel };
+      config.seatMap = {
+        orchestrator: seat, moderator: seat, auditor: seat, architect: seat, builder: seat,
+        litigants: Array.from({ length: config.litigantCount ?? DEFAULT_CONFIG.litigantCount }, () => ({ ...seat })),
+      };
+    }
+    return config;
+  }, [userProfile]);
 
   const brainSession = useBrainSession(savedConfig);
   const {

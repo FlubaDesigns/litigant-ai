@@ -1,4 +1,4 @@
-import { useReducer, useRef, useCallback } from "react";
+import { useReducer, useRef, useCallback, useEffect } from "react";
 import { runBrainSession, updateSession, type SavedSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
 export type { CaseFileItem, CourtroomOutcome, RelayContext };
 import type { Template, CourtConfig } from "@/data/templates";
@@ -43,6 +43,8 @@ export interface RebuttalRecord {
 }
 
 export interface SessionState {
+  /** Late profile defaults may initialize only an untouched new session. */
+  canLoadDefaults: boolean;
   acceptingAnswer: boolean;
   acceptanceError: string | null;
   phase: SessionPhase;
@@ -100,6 +102,7 @@ export interface SessionState {
 }
 
 type Action =
+  | { type: "LOAD_DEFAULTS"; config: Partial<CourtConfig> }
   | { type: "ACCEPT_START"; sessionId: string }
   | { type: "ACCEPT_SAVED"; sessionId: string }
   | { type: "ACCEPT_FAILED"; sessionId: string; message: string }
@@ -143,7 +146,7 @@ type Action =
   | { type: "PROVIDER_FAILOVER"; provider: string }
   | { type: "COURTROOM_OUTCOME"; courtroomOutcome: CourtroomOutcome; artifactPath: "artifact" | "no-artifact" }
   | { type: "SET_END_OF_JOB_TAP"; tap: "worth_it" | "not_worth_it" }
-  | { type: "RESET" }
+  | { type: "RESET"; config?: Partial<CourtConfig> }
   | { type: "ADD_CASE_FILE"; item: CaseFileItem }
   | { type: "REMOVE_CASE_FILE"; id: string }
   | { type: "REBUTTAL_SUBMIT"; newRound: number; challenge: string; prevSessionId: string; prevFinalAnswer: string }
@@ -168,6 +171,7 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     seatMap: initialConfig?.seatMap ?? makeDefaultSeatMap(litigantCount),
   };
   return {
+    canLoadDefaults: initialConfig === undefined,
     acceptingAnswer: false,
     acceptanceError: null,
     phase: "idle",
@@ -208,12 +212,17 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
 
 function reducer(state: SessionState, action: Action): SessionState {
   switch (action.type) {
+    case "LOAD_DEFAULTS":
+      if (!state.canLoadDefaults || state.sessionId || !["idle", "configuring"].includes(state.phase)) return state;
+      return { ...state, config: makeInitialState(action.config).config, canLoadDefaults: false };
+
     case "SET_QUESTION":
       return { ...state, question: action.question };
 
     case "SET_TEMPLATE":
       return {
         ...state,
+        canLoadDefaults: false,
         template: action.template,
         config: action.template
           ? {
@@ -232,7 +241,7 @@ function reducer(state: SessionState, action: Action): SessionState {
           litigants: syncLitigantSeats(newConfig.seatMap.litigants, newConfig.litigantCount),
         };
       }
-      return { ...state, config: newConfig };
+      return { ...state, config: newConfig, canLoadDefaults: false };
     }
 
     case "SET_SEAT_AI": {
@@ -246,7 +255,7 @@ function reducer(state: SessionState, action: Action): SessionState {
       } else {
         updated = { ...seatMap, [seatId]: assignment };
       }
-      return { ...state, config: { ...state.config, seatMap: updated } };
+      return { ...state, config: { ...state.config, seatMap: updated }, canLoadDefaults: false };
     }
 
     case "APPLY_FEEDBACK_GRADES": {
@@ -270,11 +279,12 @@ function reducer(state: SessionState, action: Action): SessionState {
     }
 
     case "SET_PHASE":
-      return { ...state, phase: action.phase };
+      return { ...state, phase: action.phase, canLoadDefaults: action.phase === "running" ? false : state.canLoadDefaults };
 
     case "SESSION_STARTED":
       return {
         ...state,
+        canLoadDefaults: false,
         phase: "running",
         sessionId: action.sessionId,
         estimatedCredits: action.estimatedCredits,
@@ -477,7 +487,7 @@ function reducer(state: SessionState, action: Action): SessionState {
       };
 
     case "RESET":
-      return makeInitialState();
+      return makeInitialState(action.config);
 
     case "ADD_CASE_FILE":
       return { ...state, caseFile: [...state.caseFile, action.item] };
@@ -490,6 +500,7 @@ function reducer(state: SessionState, action: Action): SessionState {
       const phase = phaseForStatus(saved.status);
       return {
         ...makeInitialState(saved.config),
+        canLoadDefaults: false,
         phase,
         question: saved.question,
         template: saved.template ?? null,
@@ -525,6 +536,11 @@ export { reducer as _reducerForTests, makeInitialState as _makeInitialStateForTe
 
 export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   const [state, dispatch] = useReducer(reducer, initialConfig, makeInitialState);
+  const defaultConfigRef = useRef(initialConfig);
+  defaultConfigRef.current = initialConfig;
+  useEffect(() => {
+    if (initialConfig && state.canLoadDefaults) dispatch({ type: "LOAD_DEFAULTS", config: initialConfig });
+  }, [initialConfig, state.canLoadDefaults]);
   const abortRef = useRef<AbortController | null>(null);
   const acceptingRef = useRef(false);
   const { user } = useAuth();
@@ -646,7 +662,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
-    dispatch({ type: "RESET" });
+    dispatch({ type: "RESET", config: defaultConfigRef.current });
   }, []);
 
   const stateRef = useRef<SessionState>(state);
