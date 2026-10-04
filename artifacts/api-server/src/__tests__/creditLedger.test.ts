@@ -1075,6 +1075,22 @@ describe("saved session continuity", () => {
     expect(events.at(-1)).toMatchObject({type:"done",creditsUsed:130});
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);
   });
+  it.each([
+    [{}, "complete"],
+    [{ pauseReason: "credit_cap" }, "paused_credit_cap"],
+    [{ pauseReason: "iteration_limit" }, "incomplete"],
+    [{ convergenceFailure: true }, "incomplete"],
+    [{ courtroomOutcome: { reason: "not_enough" } }, "relay_needed"],
+  ])("emits exactly the status stored in the session (%s)", async (overrides, expectedStatus) => {
+    const db = createRouteMockDb(FAKE_UID, 1000);
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockImplementation(async opts => ({ ...await makeBrainMock({ creditsUsed: 100 })(opts), ...overrides }));
+    const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);
+    const events = response.text.trim().split("\n\n").filter(line => line.startsWith("data: ")).map(line => JSON.parse(line.slice(6)));
+    const event = events.at(-1);
+    expect(event.status).toBe(expectedStatus);
+    expect(db._store[`sessions/${event.sessionId}`].status).toBe(event.status);
+  });
   it("refunds the remaining net charge and emits error if saving the result fails", async()=>{
     const db=createRouteMockDb(FAKE_UID,500);
     const collection=db.collection.bind(db);

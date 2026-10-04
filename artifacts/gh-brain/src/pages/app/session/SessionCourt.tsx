@@ -301,7 +301,7 @@ export function SessionCourt({
               <div className="session-pause-title">
                 {state.pauseReason === "credit_cap"
                   ? `⏸ Credit cap reached — ${confidenceLabel(state.confidence)}`
-                  : `⏸ ${state.config.maxIterations} rounds done — ${confidenceLabel(state.confidence)} (target ${state.config.confidenceTarget}/100)`}
+                  : `⏸ Review incomplete — ${confidenceLabel(state.confidence)} (target ${state.config.confidenceTarget}/100)`}
               </div>
 
               {state.pauseReason === "credit_cap" ? (
@@ -323,6 +323,7 @@ export function SessionCourt({
                   <div className="session-pause-btns">
                     {credits >= 50 ? (
                       <button
+                        disabled={state.acceptingAnswer}
                         onClick={() => { void onContinue(state.creditsUsed + credits); }}
                         className="session-pause-btn-primary"
                       >
@@ -333,7 +334,7 @@ export function SessionCourt({
                         Buy credits → get full document
                       </button>
                     )}
-                    <button onClick={onAcceptPartial} className="session-pause-btn-secondary">Keep this answer</button>
+                    <button disabled={state.acceptingAnswer} onClick={onAcceptPartial} className="session-pause-btn-secondary">{state.acceptingAnswer ? "Saving…" : "Keep this answer"}</button>
                   </div>
                 </>
               ) : (
@@ -341,13 +342,15 @@ export function SessionCourt({
                   {credits === 0 ? (
                     <button onClick={() => onNavigate("/billing")} className="session-pause-btn-primary">Top Up Wallet</button>
                   ) : (
-                    <button onClick={() => { void onContinue(); }} className="session-pause-btn-primary">Continue — {credits} cr</button>
+                    <button disabled={state.acceptingAnswer} onClick={() => { void onContinue(); }} className="session-pause-btn-primary">Continue — {credits} cr</button>
                   )}
-                  <button onClick={onAcceptPartial} className="session-pause-btn-secondary">Accept answer</button>
+                  <button disabled={state.acceptingAnswer} onClick={onAcceptPartial} className="session-pause-btn-secondary">{state.acceptingAnswer ? "Saving…" : "Accept answer"}</button>
                 </div>
               )}
             </div>
           )}
+
+          {state.acceptanceError && <p role="alert">{state.acceptanceError}</p>}
 
           {/* Relay needed card — Auditor flagged a missing determinative fact */}
           {isRelayNeeded && state.relayQuestion && (

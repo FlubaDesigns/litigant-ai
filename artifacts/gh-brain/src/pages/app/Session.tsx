@@ -143,6 +143,7 @@ export default function SessionPage() {
       _dispatch({
         type: "SESSION_DONE",
         payload: {
+          status: "complete",
           confidence: 85, creditsUsed: 3, finalAnswer,
           debateNotes: "Test debate notes.", transcript: "Test transcript.",
           caveats: "Test caveats.", artifacts: "", sessionId: "test-session",
@@ -180,7 +181,8 @@ export default function SessionPage() {
       };
       if (saved.status === "relay_needed") loadRelayNeededSession({...data, relayQuestion: saved.relayQuestion ?? "", relayCount: saved.relayCount ?? 0});
       else if (saved.status === "paused_credit_cap" || saved.status === "incomplete") loadPausedSession({...data, pauseReason: saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit"});
-      else loadCompleteSession(data);
+      else if (saved.status === "complete") loadCompleteSession(data);
+      else throw new Error("This session did not complete. Start a new session to try again.");
     }).catch(error => { if (!cancelled) toast.error(error.message); });
     return () => { cancelled = true; };
   }, [sessionId, user, loadCompleteSession, loadPausedSession, loadRelayNeededSession]);

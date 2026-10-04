@@ -89,6 +89,7 @@ export type SSEEventType =
   | "provider_failover";
 
 export interface SSEEvent {
+  status?: SavedSession["status"];
   config?: CourtConfig;
   type: SSEEventType;
   role?: string;
@@ -297,9 +298,9 @@ export async function getSession(id: string, idToken?: string): Promise<SavedSes
 
 export async function updateSession(
   id: string,
-  data: { title?: string; starred?: boolean; archived?: boolean; shared?: boolean; shareId?: string },
+  data: { title?: string; starred?: boolean; archived?: boolean; shared?: boolean; status?: "complete" },
   idToken?: string
-): Promise<void> {
+): Promise<{ success: boolean; status?: SavedSession["status"] }> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(getApiUrl(`/sessions/${id}`), {
@@ -311,6 +312,7 @@ export async function updateSession(
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).message || `Update session failed (${res.status})`);
   }
+  return res.json();
 }
 
 export async function deleteSession(id: string, idToken?: string): Promise<void> {

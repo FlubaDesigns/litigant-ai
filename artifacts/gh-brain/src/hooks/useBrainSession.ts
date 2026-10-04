@@ -1,5 +1,5 @@
 import { useReducer, useRef, useCallback } from "react";
-import { runBrainSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
+import { runBrainSession, updateSession, type SavedSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
 export type { CaseFileItem, CourtroomOutcome, RelayContext };
 import type { Template, CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
@@ -43,6 +43,8 @@ export interface RebuttalRecord {
 }
 
 export interface SessionState {
+  acceptingAnswer: boolean;
+  acceptanceError: string | null;
   phase: SessionPhase;
   question: string;
   template: Template | null;
@@ -98,6 +100,9 @@ export interface SessionState {
 }
 
 type Action =
+  | { type: "ACCEPT_START"; sessionId: string }
+  | { type: "ACCEPT_SAVED"; sessionId: string }
+  | { type: "ACCEPT_FAILED"; sessionId: string; message: string }
   | { type: "SET_QUESTION"; question: string }
   | { type: "SET_TEMPLATE"; template: Template | null }
   | { type: "SET_CONFIG"; config: Partial<CourtConfig> }
@@ -113,6 +118,7 @@ type Action =
   | {
       type: "SESSION_DONE";
       payload: {
+        status: SavedSession["status"];
         confidence: number;
         creditsUsed: number;
         finalAnswer: string;
@@ -206,6 +212,8 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     seatMap: initialConfig?.seatMap ?? makeDefaultSeatMap(litigantCount),
   };
   return {
+    acceptingAnswer: false,
+    acceptanceError: null,
     phase: "idle",
     rebuttals: [],
     rebuttalRound: 0,
@@ -406,7 +414,9 @@ function reducer(state: SessionState, action: Action): SessionState {
 
     case "SESSION_DONE": {
       const p = action.payload;
-      const phase = p.pauseReason ? "paused" : p.needsRelay ? "relay_needed" : "complete";
+      const phase = p.status === "complete" ? "complete"
+        : p.status === "relay_needed" ? "relay_needed"
+        : p.status === "incomplete" || p.status === "paused_credit_cap" ? "paused" : "error";
       return {
         ...state,
         phase,
@@ -419,17 +429,28 @@ function reducer(state: SessionState, action: Action): SessionState {
         caveats: p.caveats,
         artifacts: p.artifacts,
         sessionId: p.sessionId,
-        pauseReason: p.pauseReason ?? null,
+        pauseReason: phase === "paused" ? (p.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit") : null,
         pauseTranscript: p.pauseTranscript ?? null,
         artifactPath: p.artifactPath ?? state.artifactPath,
         courtroomOutcome: p.courtroomOutcome ?? state.courtroomOutcome,
         relayCount: p.relayCount ?? state.relayCount,
         relayQuestion: p.relayQuestion ?? null,
-        needsRelay: p.needsRelay ?? false,
+        needsRelay: p.status === "relay_needed",
         endOfJobTap: p.endOfJobTap ?? null,
         activityLog: [...state.activityLog, `[Orchestrator] final delivery — ${p.confidence}% confidence`],
       };
     }
+
+    case "ACCEPT_START":
+      return state.sessionId === action.sessionId
+        ? { ...state, acceptingAnswer: true, acceptanceError: null } : state;
+    case "ACCEPT_SAVED":
+      return state.sessionId === action.sessionId
+        ? { ...state, phase: "complete", acceptingAnswer: false, acceptanceError: null,
+            pauseReason: null, pauseTranscript: null, needsRelay: false, relayQuestion: null } : state;
+    case "ACCEPT_FAILED":
+      return state.sessionId === action.sessionId
+        ? { ...state, acceptingAnswer: false, acceptanceError: action.message } : state;
 
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, errorMessage: action.message };
@@ -606,6 +627,7 @@ export { reducer as _reducerForTests, makeInitialState as _makeInitialStateForTe
 export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   const [state, dispatch] = useReducer(reducer, initialConfig, makeInitialState);
   const abortRef = useRef<AbortController | null>(null);
+  const acceptingRef = useRef(false);
   const { user } = useAuth();
 
   const handleSSEEvent = useCallback((event: SSEEvent) => {
@@ -646,9 +668,14 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
         }
         break;
       case "done":
+        if (!event.status) {
+          dispatch({ type: "ERROR", message: "Session completion was not confirmed. Reload it from History." });
+          break;
+        }
         dispatch({
           type: "SESSION_DONE",
           payload: {
+            status: event.status,
             confidence: event.confidence!,
             creditsUsed: event.creditsUsed!,
             finalAnswer: event.finalAnswer!,
@@ -731,16 +758,31 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     dispatch({ type: "RESET" });
   }, []);
 
-  const acceptPartial = useCallback(() => {
-    dispatch({ type: "SET_PHASE", phase: "complete" });
-  }, []);
-
   const stateRef = useRef<SessionState>(state);
   stateRef.current = state;
 
+  const acceptPartial = useCallback(async () => {
+    const s = stateRef.current;
+    if (!s.sessionId || s.phase !== "paused" || acceptingRef.current) return;
+    acceptingRef.current = true;
+    dispatch({ type: "ACCEPT_START", sessionId: s.sessionId });
+    try {
+      if (!user) throw new Error("Sign in to save an accepted answer.");
+      const token = await user.getIdToken();
+      const result = await updateSession(s.sessionId, { status: "complete" }, token);
+      if (result.status !== "complete") throw new Error("Acceptance was not confirmed. Please retry.");
+      dispatch({ type: "ACCEPT_SAVED", sessionId: s.sessionId });
+    } catch (error) {
+      dispatch({ type: "ACCEPT_FAILED", sessionId: s.sessionId,
+        message: error instanceof Error ? error.message : "Could not save your acceptance. Please retry." });
+    } finally {
+      acceptingRef.current = false;
+    }
+  }, [user]);
+
   const continueSessionFn = useCallback(async (newMaxCredits?: number) => {
     const s = stateRef.current;
-    if (!s.sessionId) return;
+    if (!s.sessionId || acceptingRef.current) return;
 
     dispatch({ type: "SET_PHASE", phase: "running" });
     abortRef.current = new AbortController();

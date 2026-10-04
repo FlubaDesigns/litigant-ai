@@ -3,6 +3,7 @@ import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
 import { safeError } from "../lib/safeError.js";
 import crypto from "crypto";
+import { FieldValue } from "firebase-admin/firestore";
 
 const router = Router();
 
@@ -182,14 +183,19 @@ router.patch("/sessions/:id", async (req, res) => {
 
   // shareId is intentionally excluded from the accepted body — it is always
   // generated server-side via POST /sessions/:id/share to prevent spoofing.
-  const { title, shared, starred, archived } = req.body as {
+  const { title, shared, starred, archived, status } = req.body as {
     title?: unknown;
     shared?: unknown;
     starred?: unknown;
     archived?: unknown;
+    status?: unknown;
   };
 
   const updates: Record<string, unknown> = {};
+
+  if (status !== undefined && status !== "complete") {
+    res.status(400).json({ message: "Only accepting an existing answer is supported" }); return;
+  }
 
   if (title !== undefined) {
     if (typeof title !== "string") {
@@ -219,15 +225,35 @@ router.patch("/sessions/:id", async (req, res) => {
     updates["archived"] = archived;
   }
 
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length === 0 && status === undefined) {
     res.status(400).json({ message: "No valid fields to update" }); return;
   }
 
   try {
-    const doc = await db.collection("sessions").doc(req.params["id"]!).get();
-    if (!doc.exists || doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
-    await doc.ref.update(updates);
-    res.json({ success: true });
+    const ref = db.collection("sessions").doc(req.params["id"]!);
+    const result = await db.runTransaction(async transaction => {
+      const doc = await transaction.get(ref);
+      const session = doc.data();
+      if (!session || session.userId !== decoded.uid) {
+        return { code: 403, body: { message: "Forbidden" } };
+      }
+      const changes = { ...updates };
+      if (status === "complete" && session.status !== "complete") {
+        if (!["paused_credit_cap", "incomplete"].includes(session.status) ||
+            typeof session.finalAnswer !== "string" || !session.finalAnswer.trim()) {
+          return { code: 409, body: { message: "This session has no paused answer to accept. Reload it before continuing." } };
+        }
+        Object.assign(changes, {
+          status: "complete", pauseReason: null,
+          acceptedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+      // Repeated acceptance is a no-op; preserve the answer, usage and audit outcome.
+      if (Object.keys(changes).length) transaction.update(ref, changes);
+      return { code: 200, body: { success: true, status: status ?? session.status } };
+    });
+    res.status(result.code).json(result.body);
   } catch (e: any) {
     console.error("[sessions] PATCH /sessions/:id error:", e);
     res.status(500).json({ message: safeError(e) });

@@ -539,6 +539,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
     runSucceeded = true;
     actualCost = result.creditsUsed;
+    // One status is used for both the stored session and its completion event.
+    const status = result.pauseReason === "credit_cap" ? "paused_credit_cap"
+      : result.pauseReason === "iteration_limit" ? "incomplete"
+      : result.courtroomOutcome?.reason === "not_enough" ? "relay_needed"
+      : result.convergenceFailure ? "incomplete" : "complete";
 
     // ── Post-run: credit settlement + persist session ──────────────────────
     //
@@ -629,11 +634,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
           fixedStageTokens: result.fixedStageTokens,
-          status: result.pauseReason === "credit_cap"
-            ? "paused_credit_cap"
-            : result.pauseReason === "iteration_limit" ? "incomplete"
-            : result.courtroomOutcome?.reason === "not_enough" ? "relay_needed"
-            : result.convergenceFailure ? "incomplete" : "complete",
+          status,
           finalAnswer: result.finalAnswer,
           debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
           transcript: Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript ?? "",
@@ -753,7 +754,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     resultSaved = true;
     const transcript = Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript;
     if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify({
-      ...result, transcript,
+      ...result, transcript, status,
       config: prepared.config,
       debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
       creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,

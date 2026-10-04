@@ -9,7 +9,7 @@
  * avoiding the need for DOM / Firebase / SSE.
  */
 
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 
 // ── Module mocks (must be hoisted before any import) ───────────────────────
 
@@ -21,6 +21,7 @@ vi.mock("react", () => ({
 
 vi.mock("@/services/sessionService", () => ({
   runBrainSession: vi.fn(),
+  updateSession: vi.fn(),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -62,6 +63,7 @@ vi.mock("@/data/templates", () => ({
 // ── Import under test ──────────────────────────────────────────────────────
 
 import {
+  useBrainSession,
   _reducerForTests as reducer,
   _makeInitialStateForTests as makeInitialState,
   type SessionState,
@@ -324,5 +326,94 @@ describe("credit-cap partial answer survival", () => {
       expect(resumeRequest.continueFromTranscript).toHaveLength(2);
       expect(resumeRequest.continueFromTranscript![0]).toContain("Litigant 1");
     });
+  });
+});
+
+
+// The async acceptance action must wait for the persisted status, while retaining
+// the paused result on errors and ignoring a response after the user resets.
+import { useReducer, useRef, useCallback } from "react";
+import { updateSession } from "@/services/sessionService";
+import { useAuth } from "@/contexts/AuthContext";
+
+describe("persisted answer acceptance", () => {
+  let current: SessionState;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    current = { ...makeInitialState(), phase: "paused", sessionId: "saved",
+      pauseReason: "credit_cap", finalAnswer: "Partial answer", creditsUsed: 40 };
+    vi.mocked(useReducer).mockReturnValue([current, (action: any) => { current = reducer(current, action); }] as any);
+    vi.mocked(useRef).mockImplementation((value: any) => ({ current: value }));
+    vi.mocked(useCallback).mockImplementation((callback: any) => callback);
+    vi.mocked(useAuth).mockReturnValue({ user: { getIdToken: async () => "test-token" } } as any);
+  });
+
+  it("waits for the server and coalesces repeated taps", async () => {
+    let finish!: (value: any) => void;
+    vi.mocked(updateSession).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const hook = useBrainSession();
+    const pending = hook.acceptPartial();
+    await hook.acceptPartial();
+    expect(current.phase).toBe("paused");
+    expect(current.acceptingAnswer).toBe(true);
+    expect(updateSession).toHaveBeenCalledTimes(1);
+    expect(updateSession).toHaveBeenCalledWith("saved", { status: "complete" }, "test-token");
+    finish({ success: true, status: "complete" });
+    await pending;
+    expect(current).toMatchObject({ phase: "complete", acceptingAnswer: false,
+      pauseReason: null, finalAnswer: "Partial answer", creditsUsed: 40 });
+  });
+
+  it("keeps the answer paused and allows retry after a save failure", async () => {
+    vi.mocked(updateSession).mockRejectedValueOnce(new Error("Could not save"));
+    const hook = useBrainSession();
+    await hook.acceptPartial();
+    expect(current).toMatchObject({ phase: "paused", acceptingAnswer: false,
+      acceptanceError: "Could not save", finalAnswer: "Partial answer" });
+    vi.mocked(updateSession).mockResolvedValue({ success: true, status: "complete" });
+    await hook.acceptPartial();
+    expect(current.phase).toBe("complete");
+    expect(current.acceptanceError).toBeNull();
+  });
+
+  it("does not treat an unconfirmed response as completion", async () => {
+    vi.mocked(updateSession).mockResolvedValue({ success: true });
+    await useBrainSession().acceptPartial();
+    expect(current.phase).toBe("paused");
+    expect(current.acceptanceError).toContain("not confirmed");
+  });
+
+  it("does not overwrite a new session when an earlier acceptance finishes", async () => {
+    let finish!: (value: any) => void;
+    vi.mocked(updateSession).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const hook = useBrainSession();
+    const pending = hook.acceptPartial();
+    hook.reset();
+    finish({ success: true, status: "complete" });
+    await pending;
+    expect(current.phase).toBe("idle");
+    expect(current.sessionId).toBeNull();
+  });
+
+  it("does not claim guest answers were saved", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null } as any);
+    await useBrainSession().acceptPartial();
+    expect(current.phase).toBe("paused");
+    expect(current.acceptanceError).toContain("Sign in");
+    expect(updateSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("server completion status", () => {
+  it.each([
+    ["complete", "complete"], ["incomplete", "paused"],
+    ["paused_credit_cap", "paused"], ["relay_needed", "relay_needed"], ["error", "error"],
+  ] as const)("renders %s as %s", (status, phase) => {
+    const state = reducer(makeInitialState(), { type: "SESSION_DONE", payload: {
+      status, sessionId: "saved", confidence: 90, creditsUsed: 40,
+      finalAnswer: "Answer", debateNotes: "", transcript: "", caveats: "", artifacts: "",
+    } });
+    expect(state.phase).toBe(phase);
+    if (phase === "paused") expect(state.pauseReason).toBeTruthy();
   });
 });

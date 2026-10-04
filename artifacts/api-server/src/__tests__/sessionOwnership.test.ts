@@ -96,7 +96,7 @@ import { runBrainSession } from "../lib/brainEngine.js";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Minimal in-memory Firestore that handles the collections the brain route uses. */
-function createMockDb(sessions: Record<string, { userId: string }> = {}) {
+function createMockDb(sessions: Record<string, any> = {}) {
   const store: Record<string, any> = {};
 
   // Pre-populate session documents
@@ -239,5 +239,80 @@ describe("Session ownership", () => {
     // Should NOT be 403 — the session owner gets the SSE stream
     expect(res.status).not.toBe(403);
     expect(runBrainSession).toHaveBeenCalled();
+  });
+});
+
+
+describe("accepting a saved partial answer", () => {
+  const original = {
+    userId: "owner", status: "paused_credit_cap", pauseReason: "credit_cap",
+    finalAnswer: "Saved partial answer", transcript: "Saved evidence", debateNotes: "Saved notes",
+    caveats: "Review still required", courtroomOutcome: { reason: "convergence_failure" },
+    creditsUsed: 40, starred: true, shareId: "existing-link",
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(verifyIdToken).mockResolvedValue({ uid: "owner" } as any);
+  });
+  const accept = () => request(app).patch("/api/sessions/saved")
+    .set("Authorization", "Bearer test-token").send({ status: "complete" });
+
+  it.each(["paused_credit_cap", "incomplete"])("persists acceptance of %s and restores it on a fresh read", async status => {
+    const db = createMockDb({ saved: { ...original, status } });
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect((await accept()).body).toMatchObject({ success: true, status: "complete" });
+    const stored = (await db.collection("sessions").doc("saved").get()).data();
+    expect(stored).toMatchObject({ ...original, status: "complete", pauseReason: null });
+    expect(stored.acceptedAt).toBeDefined();
+    expect(stored.updatedAt).toBeDefined();
+    const fresh = await request(app).get("/api/sessions/saved").set("Authorization", "Bearer test-token");
+    expect(fresh.status).toBe(200);
+    expect(fresh.body).toMatchObject({ status: "complete", finalAnswer: original.finalAnswer, creditsUsed: 40 });
+    expect(runBrainSession).not.toHaveBeenCalled();
+    // A retry must not re-stamp acceptance or charge for another run.
+    await accept();
+    expect((await db.collection("sessions").doc("saved").get()).data()).toEqual(stored);
+  });
+
+  it.each(["running", "error", "relay_needed"])("rejects acceptance of %s", async status => {
+    const db = createMockDb({ saved: { ...original, status } });
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect((await accept()).status).toBe(409);
+    expect((await db.collection("sessions").doc("saved").get()).data().status).toBe(status);
+  });
+
+  it("rejects an empty answer", async () => {
+    vi.mocked(getFirestoreDb).mockReturnValue(createMockDb({ saved: { ...original, finalAnswer: " " } }) as any);
+    expect((await accept()).status).toBe(409);
+  });
+
+  it("requires the owner and a valid token", async () => {
+    const db = createMockDb({ saved: original });
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect((await request(app).patch("/api/sessions/saved").send({ status: "complete" })).status).toBe(401);
+    vi.mocked(verifyIdToken).mockResolvedValue(null);
+    expect((await accept()).status).toBe(401);
+    vi.mocked(verifyIdToken).mockResolvedValue({ uid: "other-user" } as any);
+    expect((await accept()).status).toBe(403);
+    expect((await db.collection("sessions").doc("saved").get()).data()).toEqual(original);
+  });
+
+  it("does not confirm acceptance when the database write fails", async () => {
+    const db = createMockDb({ saved: original });
+    db.runTransaction = async () => { throw new Error("Storage unavailable"); };
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect((await accept()).status).toBe(500);
+    expect((await db.collection("sessions").doc("saved").get()).data()).toEqual(original);
+  });
+
+  it("rejects arbitrary status updates and preserves ordinary metadata editing", async () => {
+    const db = createMockDb({ saved: original });
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    const patch = (body: object) => request(app).patch("/api/sessions/saved").set("Authorization", "Bearer test-token").send(body);
+    expect((await patch({ status: "running" })).status).toBe(400);
+    expect((await patch({ title: "Renamed", starred: false, shared: false })).status).toBe(200);
+    expect((await db.collection("sessions").doc("saved").get()).data()).toMatchObject({
+      status: "paused_credit_cap", title: "Renamed", starred: false, shared: false, shareId: null,
+    });
   });
 });
