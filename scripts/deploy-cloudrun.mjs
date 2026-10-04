@@ -12,7 +12,6 @@
  *   VITE_FIREBASE_PROJECT_ID       — GCP project id
  *
  * Optional env vars (left blank if absent):
- *   ADMIN_MASTER_SECRET
  *   OPENAI_API_KEY
  *   GEMINI_API_KEY
  *   XAI_API_KEY
@@ -60,6 +59,8 @@ function envEntry(name, value) {
   return `        - name: ${name}\n          value: ${JSON.stringify(value ?? "")}`;
 }
 
+// The historical bootstrap secret was exposed. Explicitly clear it on every
+// deployment; existing Firebase admin claims are unaffected.
 const yaml = `apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
@@ -93,7 +94,7 @@ ${envEntry("APP_DOMAIN", "litigant-ai.com")}
 ${envEntry("FIREBASE_PROJECT_ID", required.project)}
 ${envEntry("FIREBASE_USE_ADC", "true")}
 ${envEntry("ANTHROPIC_API_KEY", required.anthropic)}
-${envEntry("ADMIN_MASTER_SECRET", process.env.ADMIN_MASTER_SECRET ?? "")}
+${envEntry("ADMIN_MASTER_SECRET", "")}
 ${envEntry("OPENAI_API_KEY", process.env.OPENAI_API_KEY ?? "")}
 ${envEntry("GEMINI_API_KEY", process.env.GEMINI_API_KEY ?? "")}
 ${envEntry("XAI_API_KEY", process.env.XAI_API_KEY ?? "")}

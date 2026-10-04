@@ -183,7 +183,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
           # App secrets
-          ADMIN_MASTER_SECRET: ${{ secrets.ADMIN_MASTER_SECRET }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           # Payments / email / monitoring
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -216,6 +215,13 @@ jobs:
           echo "   Expected : ${EXPECTED_SHA}"
           echo "   Deployed : ${DEPLOYED_SHA}"
           exit 1
+
+      - name: Verify public admin bootstrap is disabled
+        run: |
+          STATUS=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' --data '{}' \
+            https://api-781960492360.us-central1.run.app/api/admin/set-claim)
+          test "$STATUS" = '503' || { echo "Admin bootstrap must be disabled (received $STATUS)"; exit 1; }
 
       # ── Firebase Hosting: build frontend and deploy ────────────────────────
       - name: Deploy to Firebase Hosting
