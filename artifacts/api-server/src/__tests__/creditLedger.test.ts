@@ -654,7 +654,58 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     expect(finalBalance).toBeGreaterThanOrEqual(0);
 
     // A usage_shortfall ledger entry must be present in credit_transactions
-    const ledgerDo…694 tokens truncated…    // createCheckoutUrl must have been called with the configured dollar amount and uid.
+    const ledgerDocs = Object.values(mockDb._store).filter(
+      (v: any) => v && v.type === "usage_shortfall"
+    );
+    expect(ledgerDocs).toHaveLength(1);
+
+    const shortfall = ledgerDocs[0] as any;
+    // The shortfall entry records the uncollected overage amount for audit purposes
+    expect(shortfall.overage).toBe(150);
+    // source identifies this as an uncollected overage (not a normal reservation)
+    expect(shortfall.source).toBe("brain_overage_uncollected");
+    // amount must be 0 — no balance was deducted on this path
+    expect(shortfall.amount).toBe(0);
+    // userId ties the entry back to the user
+    expect(shortfall.userId).toBe(FAKE_UID);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 5 — checkAndTriggerAutoRefill (direct unit tests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("checkAndTriggerAutoRefill()", () => {
+  let mockDb: ReturnType<typeof createMockDb>;
+  const UID = "uid-autorefill-test";
+
+  /** Minimal auto-refill preference that is enabled and configured. */
+  const ENABLED_PREFS = {
+    enabled: true,
+    thresholdCredits: 200,
+    dollarAmount: 10,
+  };
+
+  /** createCheckoutUrl stub that always returns a deterministic URL. */
+  const stubCheckout = vi.fn(async (_dollarAmount: number, _uid: string) =>
+    "https://square.link/checkout/test-url"
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stubCheckout.mockResolvedValue("https://square.link/checkout/test-url");
+  });
+
+  it("writes autoRefillCheckoutUrl when balance drops below threshold", async () => {
+    // User has auto-refill enabled; balance (50) < threshold (200) → should trigger.
+    mockDb = createMockDb({
+      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
+    });
+    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+
+    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
+
+    // createCheckoutUrl must have been called with the configured dollar amount and uid.
     expect(stubCheckout).toHaveBeenCalledWith(ENABLED_PREFS.dollarAmount, UID);
 
     // The user document must now carry the checkout URL.
