@@ -17,7 +17,7 @@ async function adminFetch(path: string, init?: RequestInit): Promise<Response> {
     headers: { ...headers, "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
   if (response.ok && init?.method && init.method !== "GET" &&
-      /^\/admin\/(?:pricing|ai-studio|api-keys|model-scores|feature-flags|limits|billing-defaults|templates)(?:\/|$)/.test(path)) {
+      /^\/admin\/(?:pricing|ai-studio|api-keys|model-scores|feature-flags|limits|billing-defaults|credit-packs|templates)(?:\/|$)/.test(path)) {
     refreshConfiguration();
   }
   return response;

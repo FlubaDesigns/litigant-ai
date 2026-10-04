@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
 import { TEMPLATES } from "@/data/templates";
+import { LandingPricing } from "@/components/LandingPricing";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 
 const TEMPLATE_ICON_MAP: Record<string, React.ElementType> = {
@@ -114,65 +115,6 @@ const TESTIMONIALS = [
   },
 ];
 
-// ── Pricing tiers ─────────────────────────────────────────────────────────────
-const PLANS = [
-  {
-    name: "Trial",
-    price: "Free",
-    credits: "500 credits on signup",
-    badge: null,
-    highlight: false,
-    features: [
-      "500 credits — no card required",
-      "Full access to the courtroom",
-      "All AI models available",
-      "Export to Markdown",
-      "Complete session history",
-    ],
-  },
-  {
-    name: "Starter",
-    price: "$4.99",
-    credits: "500 credits",
-    badge: null,
-    highlight: false,
-    features: [
-      "500 credits, never expire",
-      "~12–33 full sessions",
-      "All export formats",
-      "Complete session history",
-      "Auto top-up available",
-    ],
-  },
-  {
-    name: "Pro Pack",
-    price: "$19.99",
-    credits: "2,200 credits",
-    badge: "Best Value",
-    highlight: true,
-    features: [
-      "2,200 credits (+10% bonus)",
-      "~55–146 full sessions",
-      "All export formats",
-      "Complete session history",
-      "Auto top-up available",
-    ],
-  },
-  {
-    name: "Mega Pack",
-    price: "$34.99",
-    credits: "4,200 credits",
-    badge: "+20% bonus",
-    highlight: false,
-    features: [
-      "4,200 credits (+20% bonus)",
-      "~105–280 full sessions",
-      "All export formats",
-      "Complete session history",
-      "Auto top-up available",
-    ],
-  },
-];
 
 // ── Accordion components ──────────────────────────────────────────────────────
 const AI_LABELS = [
@@ -319,15 +261,6 @@ export default function LandingPage() {
   const { user, loading } = useAuth();
   const isSignedIn = !loading && !!user;
   const { signupBonusCredits: signupBonus } = usePublicConfig();
-  const plans = PLANS.map((plan, i) =>
-    i === 0
-      ? {
-          ...plan,
-          credits: `${signupBonus} credits on signup`,
-          features: [`${signupBonus} credits — no card required`, ...plan.features.slice(1)],
-        }
-      : plan
-  );
   const [openPanel, setOpenPanel] = useState<number | null>(null);
   const [openHIW, setOpenHIW] = useState<number | null>(null);
   const [openBench, setOpenBench] = useState<number | null>(null);
@@ -555,70 +488,7 @@ export default function LandingPage() {
 
         </section>
 
-        {/* ── 7. Pricing ── */}
-        <section id="pricing" className="section border-t border-white/[0.06]">
-            <div className="row"><div className="max-w-3xl">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Pricing</p>
-              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">Open a Case</h2>
-              <p className="text-zinc-500 mt-3 text-sm">
-                Credits never expire. No subscriptions, no seat fees — pay for what you use.
-              </p>
-            </div></div>{/* /row — pricing heading */}
-            <div className="row">
-            <div className="layout__split-4">
-              {plans.map((plan, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                  className={cn(
-                    "border p-6 flex flex-col relative",
-                    plan.highlight
-                      ? "border-white/20 bg-white/[0.04]"
-                      : "border-white/[0.08] bg-transparent"
-                  )}
-                >
-                  {plan.badge && (
-                    <div className="absolute -top-3 left-4 px-2 py-0.5 bg-amber-500/[0.15] border border-amber-500/30 text-amber-400 text-[10px] font-mono uppercase tracking-widest">
-                      {plan.badge}
-                    </div>
-                  )}
-                  <div className="mb-4">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">{plan.name}</div>
-                    <div className="text-3xl font-bold text-white">{plan.price}</div>
-                    <div className="text-xs text-zinc-500 font-mono mt-1">{plan.credits}</div>
-                  </div>
-                  <ul className="space-y-2 flex-1 mb-5">
-                    {plan.features.map((f, j) => (
-                      <li key={j} className="text-xs text-zinc-500 flex items-start gap-1.5">
-                        <span className="text-white/25 mt-0.5 shrink-0">·</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href={isSignedIn ? "/billing" : "/register"}>
-                    <button className={cn(
-                      "w-full h-9 text-xs font-medium transition-colors",
-                      plan.highlight
-                        ? "bg-white text-black hover:bg-white/90"
-                        : "border border-white/[0.15] text-white hover:border-white/30"
-                    )}>
-                      {plan.name === "Trial"
-                        ? (isSignedIn ? "Go to Billing" : "Start Free")
-                        : (isSignedIn ? "Buy Credits" : "Get Started")}
-                    </button>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-            <p className="text-center text-xs text-zinc-600 font-mono mt-8">
-              {`100 credits = $1.00 · ${signupBonus} free on signup · Credits never expire · Auto top-up available · Cancel anytime`}
-            </p>
-            </div>{/* /row — pricing grid */}
-
-        </section>
+        <LandingPricing isSignedIn={isSignedIn} signupBonus={signupBonus} />
 
         {/* ── 9. In the Field ── */}
         <section id="in-the-field" className="section border-t border-white/[0.06]">
