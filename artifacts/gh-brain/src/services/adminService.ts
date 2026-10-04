@@ -460,7 +460,6 @@ export interface PricingModel {
   defaultMultiplier: number;
   effectiveMultiplier: number;
   isOverridden: boolean;
-  exampleCostUsd: number;
   exampleCredits: number;
 }
 
@@ -558,6 +557,7 @@ export interface AiStudioModel {
   userOutputPer1k: number;
   exampleCredits: number;
   enabled: boolean;
+  available: boolean;
   custom: boolean;
   /** 0–100 quality score used by the intelligence slider */
   qualityScore?: number;

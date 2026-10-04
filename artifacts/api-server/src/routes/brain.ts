@@ -17,7 +17,7 @@ import { claimSessionRun, writeSessionRun, releaseSessionRun, SessionRunError, t
  *
  *   3. Post-run settlement  (reconcileCredits)
  *      Calculates the ACTUAL cost from real token counts using the live
- *      Firestore multiplier (calculateLiveCredits from pricingConfig.ts).
+ *      price snapshot accepted before the run (sessionPricing.ts).
  *      - actual < estimated → refund the difference (type="refund", source="brain_reconcile")
  *      - actual > estimated → charge the overage (a second reserveCredits call)
  *      - run failed         → full refund of the reservation (source="brain_failure_refund")

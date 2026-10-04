@@ -51,7 +51,7 @@ Cost to user: $0.45. Your raw API cost: ~$0.089. Margin: ~5×.
 
 ## 3. Model Rate Table
 
-Defined in `src/lib/creditEngine.ts → MODEL_RATES`. All values are **USD per 1 000 tokens**.
+Defined once in `src/lib/providers/types.ts → PROVIDER_MODELS`; `creditEngine.ts → MODEL_RATES` is derived from it. All values are **USD per 1 000 tokens**.
 
 | Model               | Provider  | Input /1K  | Output /1K |
 |---------------------|-----------|------------ |------------|
@@ -75,7 +75,7 @@ Defined in `src/lib/creditEngine.ts → MODEL_RATES`. All values are **USD per 1
 
 ## 4. Multipliers
 
-Defined in `src/lib/creditEngine.ts → MODEL_MULTIPLIERS`. These are your **default** markups:
+Defined in `src/lib/providers/types.ts → PROVIDER_MODELS`; `MODEL_MULTIPLIERS` is derived from it. These are your **default** markups:
 
 | Model               | Default Multiplier | Reasoning |
 |---------------------|--------------------|-----------|
@@ -106,9 +106,9 @@ PUT /admin/api-keys/:model
 
 Overrides are stored in Firestore at `config/pricing → { multipliers: { "gpt-4o": 7 } }`.
 
-The server caches the overrides for **60 seconds** (`CACHE_TTL_MS` in `pricingConfig.ts`). After a write, the cache is immediately invalidated so the next request picks up the new value.
+The catalog reads persisted overrides for each request. A new session snapshots those resolved prices; subsequent Admin changes do not reprice its calls.
 
-Priority: Firestore override → hardcoded default in `MODEL_MULTIPLIERS`.
+Priority: Firestore override → the model definition’s default multiplier (built-in or custom).
 
 ---
 
@@ -141,10 +141,10 @@ usage.outputTokens // counted character-by-character as the stream arrives
 
 ### Phase 3 — Settlement (reconciliation)
 
-After the session completes, the server calculates the **actual** credit cost using real token counts and the **live Firestore multiplier** via `calculateLiveCredits()` in `pricingConfig.ts`.
+After the session completes, the server calculates the **actual** credit cost using each call’s token counts and the **immutable price snapshot accepted before the run**, via `priceCalls()` in `sessionPricing.ts`. Provider usage is used when available; otherwise token counts are estimated. Admin price changes apply to new sessions.
 
 ```
-actual_cost = calculateLiveCredits(model, inputTokens, outputTokens)
+actual_cost = priceCalls(calls, acceptedRates)
 ```
 
 **If actual < estimated** (the common case — estimation is conservative):
@@ -184,7 +184,7 @@ Request received
                                        │
                                        ├─ Success
                                        │     │
-                                       │     └─ calculateLiveCredits() with real tokens
+                                       │     └─ priceCalls() with accepted rates
                                        │             │
                                        │             ├─ actual < estimated → reconcileCredits (refund)
                                        │             ├─ actual > estimated → reserveCredits (charge overage)
@@ -263,7 +263,7 @@ Admin-editable multiplier overrides.
 }
 ```
 
-Models not listed here use the hardcoded defaults from `MODEL_MULTIPLIERS`.
+Models not listed here use the multiplier in their model definition.
 
 ### `config/apiKeys`
 
@@ -306,8 +306,10 @@ Implications:
 
 | File | Responsibility |
 |------|---------------|
-| `src/lib/creditEngine.ts` | Rate table, multipliers, all pricing math (`calculateActualCredits`, `estimateSessionCredits`, `usdToCredits`) |
-| `src/lib/pricingConfig.ts` | Firestore-backed live multiplier overrides; `calculateLiveCredits` (used for settlement) |
+| `src/lib/creditEngine.ts` | Token estimation and credit math; built-in rate views derived from provider definitions |
+| `src/lib/providerCatalog.ts` | Resolved definitions, enabled models, custom models, rates and multipliers for Admin and execution |
+| `src/lib/sessionPricing.ts` | Accepted config, reservation and immutable per-call settlement prices |
+| `src/lib/pricingConfig.ts` | Firestore multiplier override storage |
 | `src/lib/creditLedger.ts` | `addCredits()` — the only function that mutates `creditBalance`; idempotency logic; `getTransactions()` |
 | `src/routes/brain.ts` | `reserveCredits()`, `reconcileCredits()` — session-scoped credit transactions; the full pre/post-run lifecycle |
 | `src/routes/admin.ts` | `GET/PUT/DELETE /admin/pricing/:model` — admin multiplier management |
@@ -316,26 +318,11 @@ Implications:
 
 ## 10. Adding a New Model
 
-1. **Add the rate** to `MODEL_RATES` in `creditEngine.ts`:
-   ```ts
-   "my-new-model": { input: 0.002, output: 0.008 },
-   ```
+For a built-in provider, add one model entry to `src/lib/providers/types.ts → PROVIDER_MODELS` with its ID, label, quality score, input/output rates per 1K tokens and default multiplier. The rate and multiplier tables are derived from this definition.
 
-2. **Add the default multiplier** to `MODEL_MULTIPLIERS`:
-   ```ts
-   "my-new-model": 5,
-   ```
+For a custom OpenAI-compatible provider, add its definitions in Admin → AI Studio and configure the same provider ID, API key and Base URL in Admin → API Keys. Model IDs must be globally unique because persisted scores, price overrides and run snapshots use model IDs as keys.
 
-3. **Add the model metadata** to `MODEL_META` in `pricingConfig.ts` (for the admin pricing table):
-   ```ts
-   "my-new-model": { provider: "openai", label: "My New Model" },
-   ```
-
-4. **Add it to the provider's model list** in `src/lib/providers/types.ts → PROVIDER_MODELS`.
-
-5. (Optional) **Override the multiplier** live via Admin → Pricing without redeploying.
-
-No other files need to change. The credit formula, reservation flow, and settlement flow all work automatically with the new model's rate.
+Both paths flow through `providerCatalog.ts`. Admin → Pricing can override or reset either kind of model. Selection and fallback use only configured, enabled providers with enabled models. Quotes and new runs read the same resolved prices; active runs keep their accepted snapshots.
 
 ---
 

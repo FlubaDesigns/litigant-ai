@@ -1,5 +1,5 @@
 import { z } from "zod";
-export type ProviderName = "openai" | "anthropic" | "grok" | "gemini";
+export type ProviderName = string;
 export const SeatAssignmentSchema = z.object({
   provider: z.string().min(1).max(100), model: z.string().max(200).optional(),
   intelligenceLevel: z.number().min(0).max(100).optional(), useMasterSettings: z.boolean().optional(),
@@ -10,7 +10,7 @@ export const CourtConfigSchema = z.object({
   maxIterations: z.number().int().min(1).max(20).default(5),
   responseMode: z.enum(["balanced", "thorough", "concise"]).default("balanced"),
   outputFormat: z.enum(["report", "memo", "bullets", "verdict"]).default("report"),
-  provider: z.enum(["openai", "anthropic", "grok", "gemini"]).optional(),
+  provider: z.string().min(1).max(100).optional(),
   model: z.string().max(200).optional(), conscience: z.boolean().default(true),
   aiReasoning: z.enum(["independent", "chain"]).default("independent"),
   maxCredits: z.number().int().min(1).max(100000).default(500),

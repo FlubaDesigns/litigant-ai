@@ -36,9 +36,6 @@ vi.mock("../lib/creditEngine.js", () => ({
   getModelRate:                     vi.fn(() => ({ inputRate: 1, outputRate: 2 })),
 }));
 
-vi.mock("../lib/pricingConfig.js", () => ({
-  calculateLiveCredits: vi.fn(() => Promise.resolve(100)),
-}));
 
 vi.mock("../lib/creditLedger.js", async (importOriginal) => ({
   ...await importOriginal<typeof import("../lib/creditLedger.js")>(),

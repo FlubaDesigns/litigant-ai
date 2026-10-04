@@ -1,7 +1,6 @@
 import { CourtConfigSchema, resolveModelByIntelligence, type CourtConfig, type SeatAssignment } from "@workspace/api-zod/session";
 import { getProviderCatalog } from "./providerCatalog.js";
-import { getMultiplierOverrides } from "./pricingConfig.js";
-import { getModelRate, CREDIT_VALUE_USD, estimateSessionCreditsCalibrated, estimateFixedPipelineCost, getModelMultiplier } from "./creditEngine.js";
+import { CREDIT_VALUE_USD, estimateSessionCredits, creditsForTokens } from "./creditEngine.js";
 
 export interface CallUsage { provider: string; model: string; inputTokens: number; outputTokens: number; }
 export interface PriceRate { input: number; output: number; multiplier: number; }
@@ -17,7 +16,8 @@ export function priceCalls(calls: CallUsage[], rates: Record<string, PriceRate>)
 /** One accepted config and immutable price snapshot for quote, cap and settlement. */
 export async function prepareSession(input: unknown, pipelineOnly = false) {
   const config = CourtConfigSchema.parse(input);
-  const [catalog, multipliers] = await Promise.all([getProviderCatalog(), getMultiplierOverrides()]);
+  const catalog = await getProviderCatalog();
+  if (config.provider && !catalog.providers.some(p => p.name === config.provider)) throw new Error(`Provider ${config.provider} is disabled or unavailable.`);
   const providers = catalog.providers.filter(p => p.models.length > 0).map(p => ({...p, defaultModel: p.models.some(m => m.id === p.defaultModel) ? p.defaultModel : p.models[0]!.id}));
   if (!providers.length) throw new Error("No enabled AI provider is available.");
   const defaultProvider = providers.find(p => p.name === config.provider) ?? providers[0]!;
@@ -43,14 +43,16 @@ export async function prepareSession(input: unknown, pipelineOnly = false) {
   };
   // Include enabled backup models so failover uses the same price snapshot.
   const rates: Record<string, PriceRate> = {};
-  for (const p of providers) for (const m of p.models) rates[m.id] = { ...getModelRate(m.id), multiplier: multipliers[m.id] ?? 5 };
+  for (const p of providers) for (const m of p.models) rates[m.id] = {input:m.creditInfo.inputRatePer1k, output:m.creditInfo.outputRatePer1k, multiplier:m.creditInfo.multiplier};
   const seats = [config.seatMap.orchestrator, config.seatMap.moderator, config.seatMap.architect, config.seatMap.builder, config.seatMap.auditor, ...config.seatMap.litigants];
   // Conservative reservation uses the most expensive selected model. Settlement
   // uses the actual model of EVERY call and refunds any unused reservation.
-  const estimates = await Promise.all(seats.map(async seat => {
-    const base = pipelineOnly ? estimateFixedPipelineCost(seat.model) : await estimateSessionCreditsCalibrated({...config, model:seat.model});
-    return Math.ceil(base * rates[seat.model!].multiplier / getModelMultiplier(seat.model!));
-  }));
+  const estimates = seats.map(seat => {
+    const model = providers.find(p => p.name === seat.provider)!.models.find(m => m.id === seat.model)!;
+    const price = rates[model.id]!;
+    const fixed = model.creditInfo.fixedStagePrior;
+    return pipelineOnly ? creditsForTokens(price, fixed.input, fixed.output) : estimateSessionCredits(config, price, fixed);
+  });
   const estimatedCredits = Math.min(config.maxCredits, Math.max(...estimates));
   return { config, rates, estimatedCredits, enabledProviders: providers.map(p => p.name), fallbackModels: Object.fromEntries(providers.map(p => [p.name, p.defaultModel])) };
 }

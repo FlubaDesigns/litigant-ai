@@ -1,111 +1,24 @@
-/**
- * Credit Engine — the mathematical heart of the billing system.
- *
- * ## Core concept
- *   1 credit = $0.01 USD  (CREDIT_VALUE_USD)
- *
- * ## Pricing formula
- *   credits = ceil(
- *     (inputTokens/1000 × inputRate + outputTokens/1000 × outputRate)
- *     × multiplier
- *     / CREDIT_VALUE_USD
- *   )  with a floor of 1.
- *
- * ## Two-phase cost model
- *   Phase 1 — Pre-run: estimateSessionCredits() returns a conservative
- *             upper-bound used for the upfront credit reservation.
- *   Phase 2 — Post-run: calculateActualCredits() + the live Firestore
- *             multiplier (pricingConfig.ts → calculateLiveCredits) settle
- *             the true cost; any over-reservation is refunded.
- *
- * ## Multipliers
- *   Every model has a default markup multiplier (MODEL_MULTIPLIERS).
- *   Admins can override any multiplier live via Firestore without
- *   redeploying — see pricingConfig.ts.
- *
- * ## Adding a new model
- *   1. Add its rate to MODEL_RATES.
- *   2. Add its default multiplier to MODEL_MULTIPLIERS.
- *   3. Add metadata to MODEL_META in pricingConfig.ts (for the admin table).
- *   4. Add it to PROVIDER_MODELS in providers/types.ts.
- *   Nothing else needs to change — the formula applies automatically.
- *
- * See docs/credits.md for the full system reference.
- */
+/** Credit math. Built-in definitions come from providers/types.ts; live prices
+ * come from providerCatalog.ts and are snapshotted by sessionPricing.ts. */
 
 /** Fixed exchange rate: 1 credit costs the user $0.01 USD. Never changes. */
 export const CREDIT_VALUE_USD = 0.01;
 
-// ── Token rates (USD per 1K tokens) ──────────────────────────────────────────
-// Source: provider published pricing pages as of June 2026.
-// Update here whenever a provider changes its pricing.
-export interface ModelRate {
-  /** USD per 1 000 input/prompt tokens */
-  input: number;
-  /** USD per 1 000 output/completion tokens */
-  output: number;
+import { PROVIDER_MODELS } from "./providers/types.js";
+
+export interface ModelRate { input: number; output: number; }
+export interface ModelPrice extends ModelRate { multiplier: number; }
+// Derived compatibility views; model definitions live only in providers/types.ts.
+export const MODEL_RATES: Record<string, ModelRate> = Object.fromEntries(
+  Object.values(PROVIDER_MODELS).flat().map(m => [m.id, {input:m.inputRatePer1k, output:m.outputRatePer1k}])
+);
+export const MODEL_MULTIPLIERS: Record<string, number> = Object.fromEntries(
+  Object.values(PROVIDER_MODELS).flat().map(m => [m.id, m.multiplier])
+);
+
+export function creditsForTokens(price: ModelPrice, input: number, output: number): number {
+  return Math.max(1, Math.ceil((input * price.input + output * price.output) / 1000 * price.multiplier / CREDIT_VALUE_USD));
 }
-
-/**
- * Published API costs per 1 000 tokens for each supported model.
- * These are your COST — what you pay the provider.
- * What the user pays is this × multiplier / CREDIT_VALUE_USD.
- */
-export const MODEL_RATES: Record<string, ModelRate> = {
-  // ── OpenAI ──────────────────────────────────────────────────────────────────
-  "gpt-5":             { input: 0.0030,  output: 0.0150 },  // flagship — $3/$15 per 1M
-  "gpt-4o":            { input: 0.0025,  output: 0.0100 },
-  "gpt-4o-mini":       { input: 0.00015, output: 0.0006 },
-  "o3":                { input: 0.0100,  output: 0.0400 },  // reasoning — expensive
-  "o4-mini":           { input: 0.0011,  output: 0.0044 },  // reasoning — mid-tier
-  // ── Anthropic ───────────────────────────────────────────────────────────────
-  "claude-opus-4-5":   { input: 0.0150,  output: 0.0750 },  // most expensive per token
-  "claude-sonnet-4-5": { input: 0.0030,  output: 0.0150 },
-  "claude-haiku-4-5":  { input: 0.0008,  output: 0.0040 },  // fast and cheap
-  // ── xAI Grok ────────────────────────────────────────────────────────────────
-  "grok-3":            { input: 0.0030,  output: 0.0150 },
-  "grok-3-mini":       { input: 0.0003,  output: 0.0005 },  // very cheap
-  "grok-2":            { input: 0.0020,  output: 0.0100 },
-  // ── Google Gemini ────────────────────────────────────────────────────────────
-  "gemini-2.5-pro":    { input: 0.00125, output: 0.0100 },
-  "gemini-2.5-flash":  { input: 0.00015, output: 0.0006 },
-  "gemini-2.0-flash":  { input: 0.00010, output: 0.0004 },  // cheapest per token
-};
-
-// ── Default markup multipliers ────────────────────────────────────────────────
-/**
- * How many times the raw API cost you collect from the user by default.
- * e.g. multiplier=5 means if the API call costs $0.09, you charge the user
- * credits worth $0.45.
- *
- * Design principles:
- *   - Cheaper models → higher multiplier (users don't feel it; you earn more).
- *   - Expensive models → lower multiplier (stay price-competitive vs. direct access).
- *   - All defaults are intentionally round numbers for predictability.
- *
- * These defaults can be overridden live by admins via Firestore (no redeploy).
- * See pricingConfig.ts and Admin → Pricing.
- */
-export const MODEL_MULTIPLIERS: Record<string, number> = {
-  // OpenAI
-  "gpt-5":             5,
-  "gpt-4o":            5,
-  "gpt-4o-mini":       8,
-  "o3":                4,   // expensive — lower margin to stay competitive
-  "o4-mini":           6,
-  // Anthropic
-  "claude-opus-4-5":   3,   // most expensive model — lowest margin
-  "claude-sonnet-4-5": 5,
-  "claude-haiku-4-5":  8,
-  // xAI Grok
-  "grok-3":            5,
-  "grok-3-mini":       8,
-  "grok-2":            5,
-  // Google Gemini
-  "gemini-2.5-pro":    5,
-  "gemini-2.5-flash":  10,  // extremely cheap → very high margin
-  "gemini-2.0-flash":  10,
-};
 
 /** Fallback rate for models not in MODEL_RATES (conservative assumption) */
 const DEFAULT_RATE: ModelRate = { input: 0.003, output: 0.015 };
@@ -118,14 +31,7 @@ export function getModelRate(model: string): ModelRate {
   return MODEL_RATES[model] ?? DEFAULT_RATE;
 }
 
-/**
- * Returns the hardcoded default multiplier for a model.
- *
- * NOTE: For the live (admin-overridable) multiplier, use
- * pricingConfig.ts → getEffectiveMultiplier() instead.
- * This function is for pre-run estimates where a Firestore round-trip
- * is not worth the latency.
- */
+/** Built-in default, for synchronous internal estimates only. */
 export function getModelMultiplier(model: string): number {
   return MODEL_MULTIPLIERS[model] ?? DEFAULT_MULTIPLIER;
 }
@@ -135,8 +41,6 @@ export function getModelMultiplier(model: string): number {
  *
  * Formula: ceil(usd × multiplier / CREDIT_VALUE_USD), minimum 1.
  *
- * NOTE: Uses the hardcoded multiplier. For post-run settlement with the
- * live Firestore multiplier, call pricingConfig.ts → calculateLiveCredits().
  */
 export function usdToCredits(usd: number, model: string): number {
   const multiplier = getModelMultiplier(model);
@@ -146,10 +50,8 @@ export function usdToCredits(usd: number, model: string): number {
 /**
  * Calculates the exact credit cost from real, post-run token counts.
  *
- * Used during the pre-run phase where the Firestore multiplier override
- * doesn't need to be applied (estimation only). For actual settlement,
- * call pricingConfig.ts → calculateLiveCredits() which reads the live
- * admin-configurable multiplier.
+ * Synchronous built-in estimate only. Settlement uses sessionPricing.priceCalls
+ * with the price snapshot accepted before the run.
  *
  * @param model - The AI model ID used in the session.
  * @param inputTokens - Total input/prompt tokens consumed.
@@ -224,9 +126,7 @@ export interface SessionEstimateConfig {
  * that is 50% of the final round's accumulated transcript.
  * An additional 8000 tokens are added for the final verdict's large context.
  *
- * The model's HARDCODED multiplier (not Firestore override) is used here —
- * a Firestore round-trip before reservation isn't worth the latency.
- * The post-run settlement (calculateLiveCredits) will apply the real multiplier.
+ * Live callers supply the resolved price from the catalog.
  */
 /**
  * Hardcoded prior for the five fixed pipeline stages (Moderator, Architect,
@@ -307,12 +207,12 @@ function variableTokens(config: SessionEstimateConfig): { input: number; output:
   };
 }
 
-export function estimateSessionCredits(config: SessionEstimateConfig): number {
+export function estimateSessionCredits(config: SessionEstimateConfig, price?: ModelPrice, fixed = FIXED_STAGE_PRIOR): number {
   const v = variableTokens(config);
-  const outputTokens = v.output + FIXED_STAGE_PRIOR.output;
-  const inputTokens  = v.input  + FIXED_STAGE_PRIOR.input;
+  const outputTokens = v.output + fixed.output;
+  const inputTokens  = v.input  + fixed.input;
   const model = config.model ?? "gpt-5";
-  return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
+  return creditsForTokens(price ?? {...getModelRate(model), multiplier:getModelMultiplier(model)}, Math.ceil(inputTokens), outputTokens);
 }
 
 /**
@@ -320,8 +220,8 @@ export function estimateSessionCredits(config: SessionEstimateConfig): number {
  * Builder, Auditor, Verdict). Used when resuming a paused-pre-pipeline session
  * so the second reservation covers only what will actually run.
  */
-export function estimateFixedPipelineCost(model?: string): number {
-  return calculateActualCredits(model ?? "gpt-5", FIXED_STAGE_PRIOR.input, FIXED_STAGE_PRIOR.output);
+export function estimateFixedPipelineCost(model?: string, price?: ModelPrice): number {
+  return creditsForTokens(price ?? {...getModelRate(model ?? "gpt-5"), multiplier:getModelMultiplier(model ?? "gpt-5")}, FIXED_STAGE_PRIOR.input, FIXED_STAGE_PRIOR.output);
 }
 
 /**
@@ -333,14 +233,10 @@ export function estimateFixedPipelineCost(model?: string): number {
  * where you need an instant result (frontend slider maths, unit tests).
  */
 export async function estimateSessionCreditsCalibrated(
-  config: SessionEstimateConfig
+  config: SessionEstimateConfig, price?: ModelPrice
 ): Promise<number> {
   const fixed = await getCalibratedFixedStageTokens();
-  const v = variableTokens(config);
-  const outputTokens = v.output + fixed.output;
-  const inputTokens  = v.input  + fixed.input;
-  const model = config.model ?? "gpt-5";
-  return calculateActualCredits(model, Math.ceil(inputTokens), outputTokens);
+  return estimateSessionCredits(config, price, fixed);
 }
 
 /**
@@ -357,7 +253,7 @@ export async function estimateSessionCreditsCalibrated(
  */
 export interface ModelCreditInfo {
   model: string;
-  /** Hardcoded default multiplier (not Firestore override) */
+  /** Effective multiplier at the time this snapshot was built. */
   multiplier: number;
   inputRatePer1k: number;
   outputRatePer1k: number;
@@ -384,11 +280,11 @@ export interface ModelCreditInfo {
 }
 
 /** Builds the ModelCreditInfo snapshot for a given model. */
-export function getModelCreditInfo(model: string): ModelCreditInfo {
-  const rate = getModelRate(model);
+export function getModelCreditInfo(model: string, price: ModelPrice = {...getModelRate(model), multiplier:getModelMultiplier(model)}, fixed = FIXED_STAGE_PRIOR): ModelCreditInfo {
+  const rate = price;
   return {
     model,
-    multiplier:         getModelMultiplier(model),
+    multiplier:         price.multiplier,
     inputRatePer1k:     rate.input,
     outputRatePer1k:    rate.output,
     creditValueUsd:     CREDIT_VALUE_USD,
@@ -397,9 +293,9 @@ export function getModelCreditInfo(model: string): ModelCreditInfo {
       maxIterations: 2,
       responseMode:  "balanced",
       model,
-    }),
+    }, price, fixed),
     // Formula constants — single source of truth
-    fixedStagePrior:          { ...FIXED_STAGE_PRIOR },
+    fixedStagePrior:          { ...fixed },
     historyFillRate:          HISTORY_FILL_RATE,
     tokensPerTurnByMode:      { ...TOKENS_PER_TURN_BY_MODE },
     orchestratorOutputTokens: ORCHESTRATOR_OUTPUT_TOKENS,

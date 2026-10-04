@@ -65,17 +65,13 @@ export interface ProvidersResponse {
   providers: ProviderInfo[];
 }
 
-let _cache: ProvidersResponse | null = null;
-
 export async function getProviders(): Promise<ProvidersResponse> {
-  if (_cache) return _cache;
   try {
     const res = await fetch(`${API_BASE}/providers`);
     if (!res.ok) throw new Error("Failed to fetch providers");
-    _cache = await res.json();
-    return _cache!;
+    return await res.json();
   } catch {
-    return { configured: ["openai"], creditValueUsd: 0.01, providers: [] };
+    return { configured: [], creditValueUsd: 0.01, providers: [] };
   }
 }
 

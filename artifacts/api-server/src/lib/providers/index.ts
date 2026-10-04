@@ -23,6 +23,7 @@ export function createProvider(name: ProviderName, model?: string): AIProvider {
     case "anthropic": return new AnthropicProvider(m);
     case "grok":      return new GrokProvider(m);
     case "gemini":    return new GeminiProvider(m);
+    default: throw new Error(`Use the configured catalog for provider ${name}`);
   }
 }
 
@@ -43,7 +44,8 @@ export async function createProviderAsync(
     );
   }
 
-  const resolvedModel = model ?? DEFAULT_MODELS[id as ProviderName] ?? "gpt-5";
+  const resolvedModel = model ?? DEFAULT_MODELS[id];
+  if (!resolvedModel) throw new Error(`No model selected for provider ${id}`);
 
   switch (id) {
     case "openai":    return new OpenAIProvider(resolvedModel, creds);
@@ -66,7 +68,7 @@ export async function createProviderAsync(
 /** Returns all configured provider IDs — checks Firestore + env vars */
 export async function getConfiguredProvidersAsync(): Promise<string[]> {
   const all = await getAllConfiguredProviders();
-  return all.map((p) => p.id);
+  return all.filter(p => Object.hasOwn(DEFAULT_MODELS, p.id) || !!p.baseUrl).map(p => p.id);
 }
 
 /** Synchronous env-var-only check (for startup health, no Firestore) */

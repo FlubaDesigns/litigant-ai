@@ -68,9 +68,6 @@ vi.mock("../lib/creditEngine.js", () => ({
   getModelRate:                     vi.fn(() => ({ input: 0.001, output: 0.002 })),
 }));
 
-vi.mock("../lib/pricingConfig.js", () => ({
-  calculateLiveCredits: vi.fn(() => Promise.resolve(100)),
-}));
 
 vi.mock("../lib/squareClient.js", () => ({
   createPaymentLink:  vi.fn(),
@@ -105,7 +102,6 @@ vi.mock("pino-http", () => ({
 import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
-import { calculateLiveCredits } from "../lib/pricingConfig.js";
 import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
 import { sendAutoRefillTriggeredEmail, isResendConfigured } from "../lib/emailService.js";
 import app from "../app-firebase.js";
@@ -875,10 +871,9 @@ describe("checkAndTriggerAutoRefill()", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite 6 — Settlement crash protection (calculateLiveCredits throws)
+// Suite 6 — Settlement crash protection (refund transaction throws)
 //
-// When the pricing-config call that computes the real token cost throws
-// (e.g. Firestore is temporarily unavailable), the session result has already
+// When the refund transaction fails (e.g. Firestore is temporarily unavailable), the session result has already
 // been streamed to the client.  The settlement catch block must:
 //   1. Immediately refund the full reservation so credits are not stranded.
 //   2. Write a durable `settlement_failure` audit entry for admin review.

@@ -2860,7 +2860,6 @@ function ApiKeysTab() {
 }
 
 // ─── Pricing Tab ─────────────────────────────────────────────────────────────
-const PROVIDER_ORDER = ["openai", "anthropic", "grok", "gemini"];
 const PROVIDER_LABELS: Record<string, string> = {
   openai: "🤖 OpenAI", anthropic: "🔮 Anthropic", grok: "⚡ xAI Grok", gemini: "✨ Google Gemini",
 };
@@ -2877,6 +2876,7 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
       setEditing(false);
       onSaved();
       qc.invalidateQueries({ queryKey: ["admin-pricing"] });
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -2887,6 +2887,7 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
       toast.success(`${row.label} reset to default (${row.defaultMultiplier}×)`);
       onSaved();
       qc.invalidateQueries({ queryKey: ["admin-pricing"] });
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -3442,6 +3443,7 @@ function AiStudioTab() {
     onSuccess: (_d, { modelId, enabled }) => {
       toast.success(`${modelId} ${enabled ? "enabled" : "disabled"}`);
       qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -3452,6 +3454,7 @@ function AiStudioTab() {
     onSuccess: (_d, { providerId, enabled }) => {
       toast.success(`${providerId} ${enabled ? "enabled" : "disabled"}`);
       qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -3461,6 +3464,7 @@ function AiStudioTab() {
     onSuccess: (_d, providerId) => {
       toast.success(`Provider "${providerId}" deleted`);
       qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -3471,6 +3475,7 @@ function AiStudioTab() {
     onSuccess: (_d, { modelId, score }) => {
       toast.success(`${modelId} IQ score set to ${score}`);
       qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -3489,7 +3494,7 @@ function AiStudioTab() {
 
   const { models = [], disabledProviders = [], customProviders = [] } = data ?? {};
   const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending;
-  const enabledCount = models.filter((m) => m.enabled).length;
+  const enabledCount = models.filter((m) => m.available).length;
 
   // Build ordered provider list: built-ins first, then custom
   const customProviderIds = customProviders.map((cp) => cp.id);
@@ -3564,7 +3569,7 @@ function AiStudioTab() {
       <AddProviderModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSaved={() => qc.invalidateQueries({ queryKey: ["admin-ai-studio"] })}
+        onSaved={() => { qc.invalidateQueries({ queryKey: ["admin-ai-studio"] }); qc.invalidateQueries({ queryKey: ["admin-pricing"] }); }}
       />
     </div>
   );
@@ -3890,7 +3895,7 @@ function PricingTab() {
     );
   }
 
-  const byProvider = PROVIDER_ORDER.map((p) => ({
+  const byProvider = [...new Set(data.models.map(m => m.provider))].map((p) => ({
     provider: p,
     models: data.models.filter((m) => m.provider === p),
   })).filter((g) => g.models.length > 0);
@@ -3910,7 +3915,7 @@ function PricingTab() {
         <div className="rounded-xl border border-border bg-card p-4 space-y-1">
           <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Models</p>
           <p className="text-2xl font-bold font-mono">{totalModels}</p>
-          <p className="text-xs text-muted-foreground">across 4 providers</p>
+          <p className="text-xs text-muted-foreground">across {byProvider.length} providers</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 space-y-1">
           <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Overrides Active</p>
@@ -3926,7 +3931,7 @@ function PricingTab() {
         <div>
           <span className="font-medium text-foreground">How pricing works: </span>
           Credit cost = (input tokens × input rate + output tokens × output rate) × <strong>your multiplier</strong> ÷ $0.01.
-          Edit any multiplier inline — changes take effect within 60 seconds (cache TTL).
+          Edit any multiplier inline — changes apply to new sessions. Active sessions keep their agreed pricing.
           The <em>Example</em> column shows credits for a default session (3 litigants, 2 rounds, balanced).
         </div>
       </div>

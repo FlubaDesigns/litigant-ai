@@ -27,7 +27,6 @@ import {
   type EmailTemplateId,
 } from "../lib/emailTemplateStore.js";
 import {
-  getAdminPricingTable,
   saveMultiplierOverride,
   resetMultiplierToDefault,
 } from "../lib/pricingConfig.js";
@@ -37,16 +36,9 @@ import {
   saveApiKey,
   deleteApiKey,
 } from "../lib/apiKeyStore.js";
-import {
-  MODEL_RATES,
-  MODEL_MULTIPLIERS,
-  estimateSessionCredits,
-} from "../lib/creditEngine.js";
+import {getAdminPricingTable, getAiStudioModels, getModelRegistry, CustomProviderSchema, validateCustomProviders, type CustomProviderDefinition} from "../lib/providerCatalog.js";
 import {
   PROVIDER_MODELS,
-  PROVIDER_DISPLAY_NAMES,
-  DEFAULT_QUALITY_SCORES,
-  type ProviderName,
 } from "../lib/providers/index.js";
 import {
   getAllCreditPacks,
@@ -1370,6 +1362,8 @@ router.put("/admin/pricing/:model", requireAdmin, async (req, res) => {
   }
 
   try {
+    const registry = await getModelRegistry();
+    if (!registry.providers.some(p => p.models.some(m => m.id === model))) return res.status(404).json({error:"Unknown model"});
     await saveMultiplierOverride(model, value);
     return res.json({ success: true, model, multiplier: value });
   } catch (err: any) {
@@ -1380,6 +1374,8 @@ router.put("/admin/pricing/:model", requireAdmin, async (req, res) => {
 router.delete("/admin/pricing/:model", requireAdmin, async (req, res) => {
   const { model } = req.params as { model: string };
   try {
+    const registry = await getModelRegistry();
+    if (!registry.providers.some(p => p.models.some(m => m.id === model))) return res.status(404).json({error:"Unknown model"});
     await resetMultiplierToDefault(model);
     return res.json({ success: true, model, reset: true });
   } catch (err: any) {
@@ -1610,90 +1606,9 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
  * GET /admin/ai-studio/models
  * Returns all known models with API cost, user cost, credits, and enabled status.
  */
-interface CustomModel {
-  id: string;
-  label: string;
-  inputRatePer1k: number;
-  outputRatePer1k: number;
-  multiplier: number;
-}
-interface CustomProvider {
-  id: string;
-  label: string;
-  models: CustomModel[];
-}
-
-async function loadAiStudioDoc(db: ReturnType<typeof getFirestoreDb>) {
-  if (!db) return { disabledModels: [] as string[], disabledProviders: [] as string[], customProviders: [] as CustomProvider[] };
-  const doc = await db.collection("system_config").doc("aiStudio").get();
-  const d = doc.data() ?? {};
-  return {
-    disabledModels: (d["disabledModels"] as string[]) ?? [],
-    disabledProviders: (d["disabledProviders"] as string[]) ?? [],
-    customProviders: (d["customProviders"] as CustomProvider[]) ?? [],
-  };
-}
-
 router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
   try {
-    const db = getFirestoreDb();
-    const { disabledModels, disabledProviders, customProviders } = await loadAiStudioDoc(db);
-
-    const models: object[] = [];
-
-    // Built-in providers
-    for (const [providerId, providerModels] of Object.entries(PROVIDER_MODELS)) {
-      for (const { id, label } of providerModels) {
-        const rate = MODEL_RATES[id] ?? { input: 0.003, output: 0.015 };
-        const multiplier = MODEL_MULTIPLIERS[id] ?? 5;
-        const exampleCredits = estimateSessionCredits({
-          litigantCount: 3,
-          maxIterations: 2,
-          responseMode: "balanced",
-          model: id,
-        });
-        models.push({
-          id,
-          label,
-          provider: providerId,
-          providerLabel: PROVIDER_DISPLAY_NAMES[providerId as ProviderName] ?? providerId,
-          inputRatePer1k: rate.input,
-          outputRatePer1k: rate.output,
-          multiplier,
-          userInputPer1k: rate.input * multiplier,
-          userOutputPer1k: rate.output * multiplier,
-          exampleCredits,
-          enabled: !disabledModels.includes(id),
-          custom: false,
-        });
-      }
-    }
-
-    // Custom providers
-    for (const cp of customProviders) {
-      for (const m of cp.models) {
-        const userIn = m.inputRatePer1k * m.multiplier;
-        const userOut = m.outputRatePer1k * m.multiplier;
-        const exampleTokens = 3 * 2 * 2000;
-        const exampleCredits = Math.ceil(((userIn + userOut) / 2) * (exampleTokens / 1000) / 0.01);
-        models.push({
-          id: m.id,
-          label: m.label,
-          provider: cp.id,
-          providerLabel: cp.label,
-          inputRatePer1k: m.inputRatePer1k,
-          outputRatePer1k: m.outputRatePer1k,
-          multiplier: m.multiplier,
-          userInputPer1k: userIn,
-          userOutputPer1k: userOut,
-          exampleCredits,
-          enabled: !disabledModels.includes(m.id),
-          custom: true,
-        });
-      }
-    }
-
-    return res.json({ models, disabledProviders, customProviders });
+    return res.json(await getAiStudioModels());
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
@@ -1754,24 +1669,21 @@ router.patch("/admin/ai-studio/providers/:providerId", requireAdmin, async (req:
  * Add a new custom provider with its models.
  */
 router.post("/admin/ai-studio/providers", requireAdmin, async (req: any, res) => {
-  const { id, label, models } = req.body as Partial<CustomProvider>;
-  if (!id || !label || !Array.isArray(models) || models.length === 0) {
-    return res.status(400).json({ error: "id, label, and at least one model are required" });
-  }
+  const parsed = CustomProviderSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({error:"Valid provider ID, label, models, nonnegative rates and multipliers (1–100) are required"});
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
   try {
     const ref = db.collection("system_config").doc("aiStudio");
-    const doc = await ref.get();
-    let customProviders: CustomProvider[] = (doc.data()?.["customProviders"] as CustomProvider[]) ?? [];
-    if (customProviders.find((cp) => cp.id === id)) {
-      return res.status(409).json({ error: `Provider "${id}" already exists` });
-    }
-    customProviders.push({ id, label, models });
-    await ref.set({ customProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return res.status(201).json({ ok: true, id });
+    await db.runTransaction(async tx => {
+      const doc = await tx.get(ref);
+      const customProviders = [...(doc.data()?.customProviders ?? []), parsed.data];
+      validateCustomProviders(customProviders);
+      tx.set(ref, {customProviders, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    });
+    return res.status(201).json({ok:true, id:parsed.data.id});
   } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
+    return res.status(err.message?.includes("already exists") ? 409 : 500).json({error:safeError(err)});
   }
 });
 
@@ -1789,10 +1701,11 @@ router.delete("/admin/ai-studio/providers/:providerId", requireAdmin, async (req
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
   try {
     const ref = db.collection("system_config").doc("aiStudio");
-    const doc = await ref.get();
-    let customProviders: CustomProvider[] = (doc.data()?.["customProviders"] as CustomProvider[]) ?? [];
-    customProviders = customProviders.filter((cp) => cp.id !== providerId);
-    await ref.set({ customProviders, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.runTransaction(async tx => {
+      const doc = await tx.get(ref);
+      const customProviders = ((doc.data()?.customProviders as CustomProviderDefinition[]) ?? []).filter(cp => cp.id !== providerId);
+      tx.set(ref, {customProviders, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    });
     return res.json({ ok: true, providerId });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
@@ -1837,14 +1750,10 @@ router.patch("/admin/checklist/:id", requireAdmin, async (req: any, res) => {
  */
 router.get("/admin/model-scores", requireAdmin, async (_req, res) => {
   try {
-    const db = getFirestoreDb();
-    let firestoreOverrides: Record<string, number> = {};
-    if (db) {
-      const doc = await db.collection("system_config").doc("modelScores").get();
-      firestoreOverrides = (doc.data() ?? {}) as Record<string, number>;
-    }
-    const scores = { ...DEFAULT_QUALITY_SCORES, ...firestoreOverrides };
-    return res.json({ scores, overrides: firestoreOverrides });
+    const registry = await getModelRegistry();
+    const models = registry.providers.flatMap(p => p.models);
+    return res.json({scores:Object.fromEntries(models.map(m => [m.id, m.qualityScore])),
+      overrides:Object.fromEntries(models.filter(m => m.qualityScore !== m.defaultQualityScore).map(m => [m.id, m.qualityScore]))});
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
@@ -1858,19 +1767,22 @@ router.get("/admin/model-scores", requireAdmin, async (_req, res) => {
 router.patch("/admin/model-scores/:modelId", requireAdmin, async (req: any, res) => {
   const { modelId } = req.params;
   const { score } = req.body as { score?: number | null };
-  if (score !== null && (typeof score !== "number" || score < 0 || score > 100)) {
+  if (score !== null && (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 100)) {
     return res.status(400).json({ error: "score must be a number between 0 and 100, or null to reset" });
   }
   try {
     const db = getFirestoreDb();
     if (!db) return res.status(503).json({ error: "Firestore unavailable" });
+    const registry = await getModelRegistry();
+    const model = registry.providers.flatMap(p => p.models).find(m => m.id === modelId);
+    if (!model) return res.status(404).json({error:"Unknown model"});
     const ref = db.collection("system_config").doc("modelScores");
     if (score === null) {
       await ref.set({ [modelId]: FieldValue.delete() }, { merge: true });
     } else {
       await ref.set({ [modelId]: score, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
-    return res.json({ ok: true, modelId, score: score ?? DEFAULT_QUALITY_SCORES[modelId] });
+    return res.json({ ok: true, modelId, score: score ?? model.defaultQualityScore });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }

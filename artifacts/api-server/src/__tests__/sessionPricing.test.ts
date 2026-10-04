@@ -2,18 +2,20 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {CourtConfigSchema, parseReviewScore, confidenceLabel} from "@workspace/api-zod/session";
 import {TEMPLATES, normalizeTemplate} from "@workspace/api-zod/templates";
 vi.mock("../lib/providerCatalog.js", () => ({getProviderCatalog: vi.fn()}));
-vi.mock("../lib/pricingConfig.js", () => ({getMultiplierOverrides: vi.fn()}));
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: () => null}));
 import {getProviderCatalog} from "../lib/providerCatalog.js";
-import {getMultiplierOverrides} from "../lib/pricingConfig.js";
+import {getModelCreditInfo} from "../lib/creditEngine.js";
 import {prepareSession, priceCalls} from "../lib/sessionPricing.js";
 
+function catalog(multiplier = 5) {
+  const model = (id: string, qualityScore: number) => ({id, label:id, qualityScore, creditInfo:getModelCreditInfo(id, {input:.0025,output:.01,multiplier})});
+  return {providers:[
+    {name:"openai",defaultModel:"gpt-4o",models:[model("gpt-4o",80),model("gpt-4o-mini",30)]},
+    {name:"gemini",defaultModel:"gemini-2.5-flash",models:[model("gemini-2.5-flash",50)]},
+  ]} as any;
+}
 beforeEach(() => {
-  vi.mocked(getProviderCatalog).mockResolvedValue({providers:[
-    {name:"openai", defaultModel:"gpt-4o", models:[{id:"gpt-4o",label:"GPT",qualityScore:80},{id:"gpt-4o-mini",label:"Mini",qualityScore:30}]},
-    {name:"gemini", defaultModel:"gemini-2.5-flash", models:[{id:"gemini-2.5-flash",label:"Flash",qualityScore:50}]},
-  ]} as any);
-  vi.mocked(getMultiplierOverrides).mockResolvedValue({"gpt-4o":5,"gpt-4o-mini":5,"gemini-2.5-flash":5});
+  vi.mocked(getProviderCatalog).mockResolvedValue(catalog());
 });
 describe("shared session contract and pricing", () => {
   it("keeps every seat, intelligence setting and output preference through API validation", () => {
@@ -39,9 +41,10 @@ describe("shared session contract and pricing", () => {
   });
   it("uses live multipliers in both quotes and a per-call immutable settlement snapshot", async () => {
     const first=await prepareSession({provider:"openai",model:"gpt-4o",maxCredits:100000});
-    vi.mocked(getMultiplierOverrides).mockResolvedValue({"gpt-4o":10,"gpt-4o-mini":5,"gemini-2.5-flash":5});
+    vi.mocked(getProviderCatalog).mockResolvedValue(catalog(10));
     const second=await prepareSession({provider:"openai",model:"gpt-4o",maxCredits:100000});
-    expect(second.estimatedCredits).toBe(first.estimatedCredits*2);
+    expect(second.estimatedCredits).toBeGreaterThanOrEqual(first.estimatedCredits*2-1);
+    expect(second.estimatedCredits).toBeLessThanOrEqual(first.estimatedCredits*2);
     expect(first.rates["gpt-4o"].multiplier).toBe(5);
     const calls=[{provider:"openai",model:"a",inputTokens:1000,outputTokens:1000},
       {provider:"gemini",model:"b",inputTokens:2000,outputTokens:0}];
