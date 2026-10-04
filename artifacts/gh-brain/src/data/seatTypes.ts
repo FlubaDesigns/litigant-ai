@@ -1,3 +1,5 @@
+import type { SeatAssignment, SeatMapConfig } from "@workspace/api-zod/session";
+export type { SeatAssignment, SeatMapConfig } from "@workspace/api-zod/session";
 export const SEAT_AI_OPTIONS = [
   {
     id: "anthropic",
@@ -30,24 +32,6 @@ export const SEAT_AI_OPTIONS = [
 ] as const;
 
 export type SeatAIId = (typeof SEAT_AI_OPTIONS)[number]["id"];
-
-export interface SeatAssignment {
-  provider: string;
-  model?: string;
-  /** 0–100 slider position for this seat. When set, overrides the global intelligenceLevel. */
-  intelligenceLevel?: number;
-  /** When true the seat inherits the session's global intelligenceLevel instead of its own. */
-  useMasterSettings?: boolean;
-}
-
-export interface SeatMapConfig {
-  orchestrator: SeatAssignment;
-  moderator: SeatAssignment;
-  auditor: SeatAssignment;
-  architect: SeatAssignment;
-  builder: SeatAssignment;
-  litigants: SeatAssignment[];
-}
 
 export const SEAT_PURPOSES: Record<string, string> = {
   user: "Originates the request and controls the session.",

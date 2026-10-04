@@ -8,7 +8,7 @@ import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "
 export class CustomProvider implements AIProvider {
   readonly name: ProviderName = "openai"; // uses openai-compat wire format
   readonly displayName: string;
-  private model: string;
+  readonly model: string;
   private client: OpenAI;
   private _lastUsage: TokenUsageSnapshot | null = null;
 

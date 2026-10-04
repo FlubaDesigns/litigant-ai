@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
+import { API_BASE } from "@/lib/apiUrl";
 
 async function savePreferences(prefs: {
   defaultSettings: {

@@ -36,7 +36,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       # ── Cloud Run: update env vars ──────────────────────────────────────────
       - name: Install pnpm
@@ -45,11 +45,46 @@ jobs:
           version: 10
 
       # ── Backend tests: must pass before any deployment step ───────────────────
-      - name: Install api-server dependencies
-        run: pnpm --filter @workspace/api-server install --frozen-lockfile
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
+
+      - name: Typecheck all packages
+        run: pnpm run typecheck
+
+      - name: Run frontend tests
+        run: pnpm --filter @workspace/gh-brain run test
+
+      - name: Install browser for integration tests
+        run: pnpm --filter @workspace/gh-brain exec playwright install --with-deps chromium
+
+      - name: Run browser tests
+        working-directory: artifacts/gh-brain
+        run: pnpm exec playwright test
+
+      - name: Upload browser failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-results
+          path: artifacts/gh-brain/test-results
+          if-no-files-found: ignore
+
+      - name: Build frontend
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: litigant-ai
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_API_URL: "/api-server/api"
+          NODE_ENV: production
+          BASE_PATH: "/"
+        working-directory: artifacts/gh-brain
+        run: pnpm run build
 
       # ── Backend container: build from source and push to GCR ───────────────
       # GitHub-hosted runners have Docker pre-installed.
@@ -97,7 +132,6 @@ jobs:
         # Non-blocking: warns on mismatch but never stops the Firebase Hosting deploy.
         # SHA will read "unknown" on the very first deploy after /version was added;
         # subsequent deploys will show the correct git SHA.
-        continue-on-error: true
         env:
           EXPECTED_SHA: ${{ github.sha }}
           VERSION_URL: "https://api-781960492360.us-central1.run.app/api/version"
@@ -115,30 +149,14 @@ jobs:
           echo "⚠️  Provenance check inconclusive (may be first deploy with /version endpoint)."
           echo "   Expected : ${EXPECTED_SHA}"
           echo "   Deployed : ${DEPLOYED_SHA}"
+          exit 1
 
       # ── Firebase Hosting: build frontend and deploy ────────────────────────
-      - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build frontend
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: litigant-ai
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          NODE_ENV: production
-          BASE_PATH: "/"
-        working-directory: artifacts/gh-brain
-        run: pnpm run build
-
       - name: Deploy to Firebase Hosting
         working-directory: artifacts/gh-brain
         run: |
           # gcloud auth (set up by the WIF step above) provides Application
           # Default Credentials that the Firebase CLI reads automatically.
-          npx firebase-tools deploy --only hosting \
+          npx firebase-tools deploy --only hosting,firestore:rules,firestore:indexes \
             --project litigant-ai \
             --non-interactive

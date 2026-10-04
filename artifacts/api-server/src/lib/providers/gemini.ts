@@ -4,7 +4,7 @@ import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "
 export class GeminiProvider implements AIProvider {
   readonly name: ProviderName = "gemini";
   readonly displayName = "Google Gemini";
-  private model: string;
+  readonly model: string;
   private client: OpenAI;
   private _lastUsage: TokenUsageSnapshot | null = null;
 

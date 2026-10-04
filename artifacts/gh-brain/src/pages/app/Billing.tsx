@@ -400,7 +400,7 @@ export default function BillingPage() {
       if (!url || autoRefillHandled.current) return;
       autoRefillHandled.current = true;
       // Clear the field so we don't re-trigger
-      await updateDoc(userRef, { autoRefillCheckoutUrl: deleteField() }).catch(() => {});
+      await updateDoc(userRef, { autoRefillCheckoutUrl: deleteField(), autoRefillTriggeredAt: deleteField() }).catch(() => {});
       toast.info("Your balance is low — redirecting to complete your top-up…");
       window.location.href = url;
     });

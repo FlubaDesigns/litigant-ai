@@ -1,3 +1,4 @@
+import { confidenceLabel } from "@workspace/api-zod/session";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Settings2, Gavel, Play, X } from "lucide-react";
@@ -261,9 +262,9 @@ export function SessionCourt({
           <div className="session-meters">
             <div>
               <p className="session-meter-hd">
-                <span>Confidence</span>
+                <span>AI review</span>
                 <span className="session-meter-val" style={{ color: state.confidence >= state.config.confidenceTarget ? "#00c853" : "#7ab87a" }}>
-                  {state.confidence}% / {state.config.confidenceTarget}%
+                  {confidenceLabel(state.confidence)} · target {state.config.confidenceTarget}/100
                 </span>
               </p>
               <div className="session-meter-track">
@@ -299,8 +300,8 @@ export function SessionCourt({
             <div className="session-pause-card">
               <div className="session-pause-title">
                 {state.pauseReason === "credit_cap"
-                  ? `⏸ Credit cap reached — ${Math.round(state.confidence)}% confidence`
-                  : `⏸ ${state.config.maxIterations} rounds done — ${Math.round(state.confidence)}% (target ${state.config.confidenceTarget}%)`}
+                  ? `⏸ Credit cap reached — ${confidenceLabel(state.confidence)}`
+                  : `⏸ ${state.config.maxIterations} rounds done — ${confidenceLabel(state.confidence)} (target ${state.config.confidenceTarget}/100)`}
               </div>
 
               {state.pauseReason === "credit_cap" ? (
@@ -460,7 +461,7 @@ export function SessionCourt({
               </span>
               <span style={{ fontSize: 11, color: "#4a6a4a" }}>·</span>
               <span style={{ fontSize: 11, color: "#5a7a5a" }}>
-                {state.courtroomOutcome.confidenceAtExit}% confidence
+                {confidenceLabel(state.courtroomOutcome.confidenceAtExit)}
               </span>
               {state.relayCount > 0 && (
                 <>
@@ -545,7 +546,7 @@ export function SessionCourt({
                 <TabsContent value="answer">
                   <div style={{ border: "1px solid rgba(0,200,83,.2)", borderRadius: 10, background: "rgba(0,200,83,.05)", padding: "14px" }}>
                     <div style={{ fontSize: 11, color: "#00c853", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                      Verdict — {state.confidence}% confidence
+                      Verdict — {confidenceLabel(state.confidence)}
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.65, color: "#eef7ee", whiteSpace: "pre-wrap" }}>
                       {state.finalAnswer || "No final answer generated."}
@@ -667,7 +668,7 @@ export function SessionCourt({
                       <span className="text-xs font-semibold text-primary/80">{state.template.title}</span>
                       <button
                         onClick={() => { onSetTemplate(null); onSetFieldValues({}); }}
-                        className="ml-auto flex items-center gap-1 px-2 py-1 rounded-md border border-border/30 hover:border-red-500/40 text-[11px] font-medium text-muted-foreground/70 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                        className="ml-auto flex items-center gap-1 px-2 py-1 rounded-md border border-border/30 hover:border-red-500/40 text-xs font-medium text-muted-foreground/70 hover:text-red-400 hover:bg-red-500/5 transition-colors"
                       >
                         <X className="w-3 h-3" />
                         Clear template
@@ -675,7 +676,7 @@ export function SessionCourt({
                     </div>
                     {state.template.inputFields.map((field) => (
                       <div key={field.id} className="flex items-center gap-2">
-                        <span className="text-[11px] text-primary/60 whitespace-nowrap w-20 shrink-0 font-medium">{field.label}</span>
+                        <span className="text-xs text-primary/60 whitespace-nowrap w-20 shrink-0 font-medium">{field.label}</span>
                         <Input
                           type={field.type === "url" ? "url" : "text"}
                           placeholder={field.placeholder}

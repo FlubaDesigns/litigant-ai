@@ -1,6 +1,6 @@
 import type { ProviderName } from "@/data/templates";
 
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
+import { API_BASE } from "@/lib/apiUrl";
 
 export interface PlatformLimits {
   maxLitigants: number;
@@ -50,30 +50,7 @@ export interface ModelInfo {
  * When providerPreference is "auto", searches across all enabled providers.
  * Picks the model whose qualityScore is closest to the requested level.
  */
-export function resolveModelByIntelligence(
-  intelligenceLevel: number,
-  providerPreference: string,
-  providers: ProviderInfo[]
-): { provider: string; model: string; label: string } | null {
-  const candidates =
-    providerPreference === "auto"
-      ? providers.flatMap((p) => p.models.map((m) => ({ ...m, providerName: p.name })))
-      : (providers.find((p) => p.name === providerPreference)?.models ?? []).map((m) => ({
-          ...m,
-          providerName: providerPreference,
-        }));
-
-  if (candidates.length === 0) return null;
-
-  const best = candidates.reduce((b, m) =>
-    Math.abs((m.qualityScore ?? 50) - intelligenceLevel) <
-    Math.abs((b.qualityScore ?? 50) - intelligenceLevel)
-      ? m
-      : b
-  );
-
-  return { provider: best.providerName, model: best.id, label: best.label };
-}
+export { resolveModelByIntelligence } from "@workspace/api-zod/session";
 
 export interface ProviderInfo {
   name: ProviderName;
@@ -139,44 +116,4 @@ export async function getCalibration(idToken: string): Promise<CalibrationStats 
   } catch {
     return null;
   }
-}
-
-/**
- * Estimate credit cost client-side.
- *
- * All formula constants come from creditInfo, which is shipped by the server
- * (creditEngine.ts is the single source of truth). No magic numbers here.
- */
-export function estimateCredits(
-  creditInfo: ModelCreditInfo,
-  litigantCount: number,
-  maxIterations: number,
-  responseMode: ResponseMode
-): number {
-  // tokensPerTurnByMode may be absent on older API server deployments — fall back gracefully.
-  const tokensPerTurn = creditInfo.tokensPerTurnByMode?.[responseMode] ?? 2000;
-  const litigants     = Math.min(litigantCount, 10);
-  const rounds        = maxIterations;
-
-  const historyFillRate        = creditInfo.historyFillRate ?? 0.6;
-  const systemPromptInputTokens = creditInfo.systemPromptInputTokens ?? 1500;
-  const orchestratorOutputTokens = creditInfo.orchestratorOutputTokens ?? 500;
-  const fixedInput  = creditInfo.fixedStagePrior?.input  ?? 2000;
-  const fixedOutput = creditInfo.fixedStagePrior?.output ?? 500;
-
-  const historyPerRound = tokensPerTurn * litigants * historyFillRate;
-  const avgInputPerTurn = systemPromptInputTokens + historyPerRound * (rounds / 2);
-
-  const outputTokens = orchestratorOutputTokens
-    + litigants * rounds * tokensPerTurn
-    + fixedOutput;
-
-  const inputTokens = litigants * rounds * avgInputPerTurn
-    + fixedInput;
-
-  const costUSD =
-    (inputTokens  / 1000) * creditInfo.inputRatePer1k +
-    (outputTokens / 1000) * creditInfo.outputRatePer1k;
-
-  return Math.max(1, Math.ceil((costUSD * creditInfo.multiplier) / creditInfo.creditValueUsd));
 }

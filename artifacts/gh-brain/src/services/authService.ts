@@ -12,7 +12,7 @@ import { auth } from "@/lib/firebase";
 
 const googleProvider = new GoogleAuthProvider();
 
-const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api";
+import { API_BASE } from "@/lib/apiUrl";
 
 /**
  * Server-side equivalent of a Firebase Auth onCreate Cloud Function.

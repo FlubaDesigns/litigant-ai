@@ -263,7 +263,7 @@ function sessionCompleteTemplate(
         { label: "Session", value: sessionTitle },
         { label: "Credits used", value: creditsUsed.toLocaleString(), color: "#888" },
       ])}
-      ${btn("View results", `${APP_URL}/app/session/${sessionId}`)}
+      ${btn("View results", `${APP_URL}/session/${sessionId}`)}
     `,
     footerExtra: `Disable in your <a href="${APP_URL}/settings" style="color:#555;text-decoration:none;">account settings</a>.`,
   });
@@ -368,7 +368,7 @@ function firstSessionTemplate(
         { label: "Session history", desc: "Every session is saved. Review, share, or export transcripts any time from your dashboard." },
       ])}
       ${ctaRow(
-        { text: "View my results", url: `${APP_URL}/app/session/${sessionId}` },
+        { text: "View my results", url: `${APP_URL}/session/${sessionId}` },
         { text: "Back to dashboard", url: `${APP_URL}/app` }
       )}
     `,

@@ -1,10 +1,9 @@
+import { confidenceLabel } from "@workspace/api-zod/session";
 import type { CourtConfig } from "@/data/templates";
 
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
+import { getApiUrl } from "@/lib/apiUrl";
 
-function getApiUrl(path: string): string {
-  return `${API_BASE}${path}`;
-}
+
 
 export type PauseReason = "credit_cap" | "iteration_limit";
 
@@ -90,6 +89,7 @@ export type SSEEventType =
   | "provider_failover";
 
 export interface SSEEvent {
+  config?: CourtConfig;
   type: SSEEventType;
   role?: string;
   roleIndex?: number;
@@ -207,7 +207,7 @@ export function runBrainSession(
         }
       }
 
-      resolve();
+      reject(new Error("The session connection closed before a saved result was confirmed. Check History before retrying."));
     } catch (err) {
       if ((err as any)?.name === "AbortError") {
         resolve();
@@ -219,6 +219,8 @@ export function runBrainSession(
 }
 
 export interface SavedSession {
+  config?: CourtConfig;
+  caseFile?: CaseFileItem[];
   id: string;
   title: string;
   question: string;
@@ -351,7 +353,7 @@ export function exportSessionAsMarkdown(session: SavedSession): string {
     ``,
     `**Question:** ${session.question}`,
     session.templateId ? `**Template:** ${session.templateId}` : null,
-    `**Confidence:** ${session.confidence}%`,
+    `**AI review:** ${confidenceLabel(session.confidence)}`,
     `**Credits Used:** ${session.creditsUsed}`,
     `**Date:** ${new Date(session.createdAt).toLocaleDateString()}`,
     `**Status:** ${session.status}`,

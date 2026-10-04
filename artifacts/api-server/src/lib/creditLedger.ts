@@ -116,14 +116,25 @@ export async function addCredits(
   const userRef = db.collection("users").doc(uid);
 
   return db.runTransaction(async (tx) => {
+    // Firestore requires every read before the first write.
+    let dedupRef: FirebaseFirestore.DocumentReference | undefined;
     // ── Idempotency guard ─────────────────────────────────────────────────────
     if (opts.idempotencyKey) {
-      const dedupRef  = db.collection("payment_events").doc(opts.idempotencyKey);
+      dedupRef = db.collection("payment_events").doc(opts.idempotencyKey);
       const dedupSnap = await tx.get(dedupRef);
       if (dedupSnap.exists) {
         // Already processed — safe to return without any balance mutation
         return { newBalance: 0, skipped: true };
       }
+
+    }
+
+    // ── Balance update ────────────────────────────────────────────────────────
+    const snap    = await tx.get(userRef);
+    const current: number = snap.exists ? ((snap.data()?.creditBalance as number) ?? 0) : 0;
+    const newBalance = current + amount;
+
+    if (dedupRef) {
       tx.set(dedupRef, {
         eventType:   type,
         uid,
@@ -131,11 +142,6 @@ export async function addCredits(
         processedAt: FieldValue.serverTimestamp(),
       });
     }
-
-    // ── Balance update ────────────────────────────────────────────────────────
-    const snap    = await tx.get(userRef);
-    const current: number = snap.exists ? ((snap.data()?.creditBalance as number) ?? 0) : 0;
-    const newBalance = current + amount;
 
     tx.set(
       userRef,
@@ -339,4 +345,89 @@ export async function checkAndTriggerAutoRefill(
   } catch (err) {
     console.error("[CreditLedger] checkAndTriggerAutoRefill error:", err);
   }
+}
+
+export async function reserveCredits(
+  uid: string,
+  amount: number,
+  sessionId: string,
+  source = "brain_reservation",
+  overdraftLimit = 0
+): Promise<boolean> {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firestore not configured");
+
+  return db.runTransaction(async (txn) => {
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await txn.get(userRef);
+    const balance = (userDoc.data()?.creditBalance as number) ?? 0;
+    if (balance - amount < -overdraftLimit) return false;
+
+    const newBalance = balance - amount;
+
+    // Update balance
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
+
+    // Immutable ledger entry — source distinguishes initial reservations from overage charges
+    const txRef = db.collection("credit_transactions").doc();
+    txn.set(txRef, {
+      userId: uid,
+      type: "usage",
+      amount: -amount,
+      balanceAfter: newBalance,
+      source,
+      sessionId,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return true;
+  });
+}
+
+/**
+ * Atomically returns credits to a user's balance and writes a ledger entry.
+ *
+ * Used in two scenarios:
+ *   "brain_reconcile"      — post-session, refund the difference between
+ *                            the upfront estimate and the actual cost.
+ *   "brain_failure_refund" — session failed before completing; refund the
+ *                            full reservation so the user loses nothing.
+ *
+ * Errors are caught and logged but not re-thrown — the session result has
+ * already been streamed to the client, so a reconcile failure is non-fatal.
+ *
+ * @param uid          - Firebase UID of the user.
+ * @param refundAmount - Credits to return (always positive).
+ * @param sessionId    - Links the ledger entry to the session document.
+ * @param source       - Distinguishes reconcile vs failure refund in the ledger.
+ */
+export async function reconcileCredits(
+  uid: string,
+  refundAmount: number,
+  sessionId: string,
+  source: "brain_reconcile" | "brain_failure_refund"
+): Promise<void> {
+  const db = getFirestoreDb();
+  if (!db) return;
+
+  await db.runTransaction(async (txn) => {
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await txn.get(userRef);
+    const balance = (userDoc.data()?.creditBalance as number) ?? 0;
+    const newBalance = balance + refundAmount;
+
+    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
+
+    // Immutable ledger entry for the refund
+    const txRef = db.collection("credit_transactions").doc();
+    txn.set(txRef, {
+      userId: uid,
+      type: "refund",
+      amount: refundAmount,
+      balanceAfter: newBalance,
+      source,
+      sessionId,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  });
 }

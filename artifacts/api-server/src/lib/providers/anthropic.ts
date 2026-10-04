@@ -4,7 +4,7 @@ import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "
 export class AnthropicProvider implements AIProvider {
   readonly name: ProviderName = "anthropic";
   readonly displayName = "Anthropic";
-  private model: string;
+  readonly model: string;
   private client: Anthropic;
   private _lastUsage: TokenUsageSnapshot | null = null;
 

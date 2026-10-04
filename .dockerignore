@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+attached_assets
+downloads
+firebase-functions
+**/*.zip
+**/*.tar.gz
+**/.env*
+**/test-results
+**/playwright-report

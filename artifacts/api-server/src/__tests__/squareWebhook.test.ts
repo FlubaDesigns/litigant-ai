@@ -241,3 +241,15 @@ describe("handleSquareEvent", () => {
     expect(addCredits).not.toHaveBeenCalled();
   });
 });
+
+describe("custom top-up validation", () => {
+  beforeEach(() => {vi.clearAllMocks(); vi.mocked(addCredits).mockResolvedValue({newBalance:1000,skipped:false} as any);});
+  it("grants credits for the exact paid custom amount", async () => {
+    await handleSquareEvent(makePaymentEvent({note:"LITIGANT:userId=user-1,creditAmount=1250,pack=custom",amount_money:{amount:1250,currency:"USD"}}));
+    expect(addCredits).toHaveBeenCalledWith("user-1",1250,"purchase",expect.objectContaining({idempotencyKey:"payment_pay-001"}));
+  });
+  it("rejects a custom amount/credit mismatch", async () => {
+    await expect(handleSquareEvent(makePaymentEvent({note:"LITIGANT:userId=user-1,creditAmount=9999,pack=custom",amount_money:{amount:1250,currency:"USD"}}))).rejects.toThrow(/does not match/);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+});

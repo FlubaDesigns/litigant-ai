@@ -2117,7 +2117,7 @@ function TemplatesTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Firestore templates supplement the app's built-in template list.
+          Edit the shared template catalogue used by the session page and AI engine.
         </p>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
@@ -2126,7 +2126,7 @@ function TemplatesTab() {
 
       {templates?.length === 0 ? (
         <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
-          No Firestore templates found. Built-in templates are defined in <code className="bg-secondary px-1 rounded text-xs">src/data/templates.ts</code>
+          No templates are available.
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">

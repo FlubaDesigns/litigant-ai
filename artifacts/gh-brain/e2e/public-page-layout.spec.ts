@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 /**
  * Layout regression tests for public pages after .main-inner wrapper removal.

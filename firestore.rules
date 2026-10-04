@@ -76,7 +76,9 @@ service cloud.firestore {
     // CREATE (the document doesn't exist yet) — this correctly denies client-side
     // creates, since all sessions are written by the Admin SDK via brain.ts.
     match /sessions/{sessionId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Persisted transcript, configuration and billing fields are server-owned.
+      allow write: if false;
     }
 
     // Feedback: any signed-in user (or guest, where userId is null) may

@@ -1,3 +1,4 @@
+import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { useState, useRef, useEffect } from "react";
 import { HelpCircle, DollarSign, GraduationCap, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { getProviders, estimateCredits, type ProviderInfo, type ModelInfo } from "@/services/providerService";
+import { getProviders, type ProviderInfo, type ModelInfo } from "@/services/providerService";
 import { saveUserConfig, type UserProfile } from "@/services/firestoreService";
 import type { CourtConfig } from "@/data/templates";
 
@@ -21,7 +22,7 @@ function V29Field({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">{label}</div>
+        <div className="text-xs font-bold tracking-widest uppercase text-primary/60">{label}</div>
         {tooltip && (
           <Popover>
             <PopoverTrigger asChild>
@@ -29,14 +30,14 @@ function V29Field({
                 <HelpCircle className="w-3 h-3" />
               </button>
             </PopoverTrigger>
-            <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
+            <PopoverContent side="top" align="start" className="max-w-[280px] text-xs leading-relaxed p-3">
               {tooltip}
             </PopoverContent>
           </Popover>
         )}
       </div>
       {children}
-      {desc && <p className="text-[11px] text-muted-foreground/70 leading-relaxed">{desc}</p>}
+      {desc && <p className="text-xs text-muted-foreground/70 leading-relaxed">{desc}</p>}
     </div>
   );
 }
@@ -58,7 +59,7 @@ function V29OptionCard({
       )}
     >
       {tag && (
-        <span className="absolute top-2 right-2 text-[9px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+        <span className="absolute top-2 right-2 text-xs font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
           {tag}
         </span>
       )}
@@ -71,7 +72,7 @@ function V29OptionCard({
             {label}
             {selected && <Check className="w-3 h-3 text-primary shrink-0" />}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{description}</p>
         </div>
       </div>
     </button>
@@ -118,18 +119,7 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
     setSaveState("saving");
     try {
       const c = latestConfigRef.current;
-      const rawSettings = {
-        conscience: c.conscience, outputScope: c.outputScope,
-        debateMode: c.debateMode, aiReasoning: c.aiReasoning,
-        outputStrategy: c.outputStrategy, format: c.format,
-        artifactType: c.artifactType, confidenceTarget: c.confidenceTarget,
-        maxIterations: c.maxIterations, maxCredits: c.maxCredits,
-        litigantCount: c.litigantCount,
-        responseMode: c.responseMode, outputFormat: c.outputFormat,
-        provider: c.provider, model: c.model,
-        intelligenceLevel: c.intelligenceLevel,
-        outputPreferenceMode: c.outputPreferenceMode,
-      };
+      const rawSettings = c;
       const settings = Object.fromEntries(
         Object.entries(rawSettings).filter(([, v]) => v !== undefined)
       ) as UserProfile["defaultSettings"];
@@ -167,15 +157,13 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
     (m) => m.id === (config.model ?? selectedProvider.defaultModel)
   ) ?? selectedProvider?.models[0];
 
-  const credBase = selectedModel?.creditInfo
-    ? estimateCredits(selectedModel.creditInfo, config.litigantCount, config.maxIterations, config.responseMode)
-    : config.litigantCount * config.maxIterations * 3 + 6;
-  const credLow = credBase;
-  const credHigh = credBase + (config.conscience ? 1 : 0) + Math.ceil(credBase * 0.4);
+  const quote = useSessionQuote(config);
+  const credLow = quote.data?.estimatedCredits ?? 0;
+  const credHigh = credLow;
 
   const confidenceLabel = {
-    80: "80% Fast", 90: "90% Standard", 95: "95% Deep", 99: "99% Maximum",
-  }[config.confidenceTarget as 80 | 90 | 95 | 99] ?? `${config.confidenceTarget}%`;
+    80: "80/100", 90: "90/100", 95: "95/100", 99: "99/100",
+  }[config.confidenceTarget as 80 | 90 | 95 | 99] ?? `${config.confidenceTarget}/100`;
 
   async function handleClose() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -220,7 +208,7 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
             {/* CONSCIENCE */}
             <V29Field
               label="Conscience"
-              tooltip="Conscience is a governing mandate — a fixed block of instructions appended directly to every seat's system prompt, not a separate filter that reviews output afterward. Its current version (Canon v2, Execution-Honest) tells every AI, before it writes a single word: state what the evidence actually shows even if uncomfortable; never assert something it can't substantiate, and admit it doesn't know when that's true; never give a diplomatic non-answer to dodge conflict; explicitly name what information is missing; and report honestly if its own reasoning led somewhere unexpected, rather than reverse-engineering an argument to fit a conclusion. So it shapes how each seat reasons from the first token, not just what gets shown after. It costs a small credit surcharge (+1 Cr) because it adds to every prompt. When OFF, seats get no such mandate and respond however the base model naturally would — which can be more evasive, hedged, or unwilling to state hard conclusions plainly. An admin can update the exact wording of this mandate at any time without a code deploy."
+              tooltip="Conscience is a governing mandate — a fixed block of instructions appended directly to every seat's system prompt, not a separate filter that reviews output afterward. Its current version (Canon v2, Execution-Honest) tells every AI, before it writes a single word: state what the evidence actually shows even if uncomfortable; never assert something it can't substantiate, and admit it doesn't know when that's true; never give a diplomatic non-answer to dodge conflict; explicitly name what information is missing; and report honestly if its own reasoning led somewhere unexpected, rather than reverse-engineering an argument to fit a conclusion. So it shapes how each seat reasons from the first token, not just what gets shown after. Its prompt tokens are included in actual usage billing. When OFF, seats get no such mandate and respond however the base model naturally would — which can be more evasive, hedged, or unwilling to state hard conclusions plainly. An admin can update the exact wording of this mandate at any time without a code deploy."
             >
               <Select value={config.conscience ? "on" : "off"} onValueChange={(v) => handleChange({ conscience: v === "on" })}>
                 <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
@@ -273,16 +261,16 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
 
             {/* CONFIDENCE TARGET */}
             <V29Field
-              label="Confidence Target"
-              tooltip="How rigorous the debate needs to be before the court stops and delivers an answer. Fast (80%) accepts a quicker, less exhaustive pass. Standard (90%) is a balanced default. Deep (95%) and Maximum (99%) push seats to keep iterating and challenging until confidence is very high — higher targets take longer and use more credits since more rounds may run."
+              label="AI review target"
+              tooltip="The minimum AI review score you want before accepting the result. This is an uncalibrated assessment, not a probability of correctness. More rounds do not guarantee a higher score. Verify important claims against their sources."
             >
               <Select value={String(config.confidenceTarget)} onValueChange={(v) => handleChange({ confidenceTarget: Number(v) })}>
                 <SelectTrigger className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="80">80% Fast</SelectItem>
-                  <SelectItem value="90">90% Standard</SelectItem>
-                  <SelectItem value="95">95% Deep</SelectItem>
-                  <SelectItem value="99">99% Maximum</SelectItem>
+                  <SelectItem value="80">80/100</SelectItem>
+                  <SelectItem value="90">90/100</SelectItem>
+                  <SelectItem value="95">95/100</SelectItem>
+                  <SelectItem value="99">99/100</SelectItem>
                 </SelectContent>
               </Select>
             </V29Field>
@@ -323,14 +311,14 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
             {/* INTELLIGENCE SLIDER */}
             <div className="space-y-3 pt-1 border-t border-primary/10">
               <div className="flex items-center gap-1.5">
-                <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Intelligence</div>
+                <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Intelligence</div>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button type="button" tabIndex={-1} className="text-primary/40 hover:text-primary/80 transition-colors" aria-label="More info about Intelligence">
                       <HelpCircle className="w-3 h-3" />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent side="top" align="start" className="max-w-[280px] text-[11px] leading-relaxed p-3">
+                  <PopoverContent side="top" align="start" className="max-w-[280px] text-xs leading-relaxed p-3">
                     Controls AI capability across all seats. Left is more economical; right uses the strongest available models. Each seat can be tuned individually from the courtroom diagram.
                   </PopoverContent>
                 </Popover>
@@ -351,11 +339,11 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
 
             {/* ESTIMATED RUN COST */}
             <div className="rounded-lg border border-primary/25 bg-primary/5 p-4 space-y-1">
-              <div className="text-[10px] font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
-              <div className="text-2xl font-bold text-primary">{credLow}–{credHigh} Credits</div>
+              <div className="text-xs font-bold tracking-widest uppercase text-primary/60">Estimated Run Cost</div>
+              <div className="text-2xl font-bold text-primary">{quote.ready ? credHigh : "…"} Credits</div>
               <div className="text-xs text-muted-foreground leading-relaxed">
                 Based on {config.litigantCount} litigants, {config.debateMode} mode,{" "}
-                {confidenceLabel}{config.conscience ? " + conscience gate (+1 Cr)" : ""}.
+                {confidenceLabel}.
               </div>
             </div>
 
@@ -369,8 +357,8 @@ export function ConfigPanel({ open, onClose, config, onChange, uid, onboardingCo
                 {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : "Save Settings"}
               </Button>
               {onboardingComplete
-                ? <p className="text-[11px] text-muted-foreground/50 text-center">Changes also save automatically as you go</p>
-                : uid && <p className="text-[11px] text-muted-foreground/50 text-center">Complete onboarding to persist settings</p>
+                ? <p className="text-xs text-muted-foreground/50 text-center">Changes also save automatically as you go</p>
+                : uid && <p className="text-xs text-muted-foreground/50 text-center">Complete onboarding to persist settings</p>
               }
             </div>
           </div>

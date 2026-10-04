@@ -1,3 +1,4 @@
+import type { CourtConfig } from "@workspace/api-zod/session";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
@@ -361,8 +362,8 @@ function ProfileTab({ user }: { user: User }) {
 interface DefaultSettings {
   litigantCount: number;
   confidenceTarget: number;
-  responseMode: string;
-  outputFormat: string;
+  responseMode: CourtConfig["responseMode"];
+  outputFormat: CourtConfig["outputFormat"];
 }
 
 function PreferencesTab({ user }: { user: User }) {
@@ -391,7 +392,8 @@ function PreferencesTab({ user }: { user: User }) {
   async function handleSave() {
     setSaving(true);
     try {
-      await updateUserProfile(user.uid, { defaultSettings: settings });
+      const profile = await getUserProfile(user.uid);
+      await updateUserProfile(user.uid, { defaultSettings: {...profile?.defaultSettings, ...settings} });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       toast.success("Preferences saved.");
@@ -422,7 +424,7 @@ function PreferencesTab({ user }: { user: User }) {
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Response depth</Label>
-            <Select value={settings.responseMode} onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v }))}>
+            <Select value={settings.responseMode} onValueChange={(v) => setSettings((s) => ({ ...s, responseMode: v as CourtConfig["responseMode"] }))}>
               <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="concise" label="Concise">
@@ -440,7 +442,7 @@ function PreferencesTab({ user }: { user: User }) {
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Output format</Label>
-            <Select value={settings.outputFormat} onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v }))}>
+            <Select value={settings.outputFormat} onValueChange={(v) => setSettings((s) => ({ ...s, outputFormat: v as CourtConfig["outputFormat"] }))}>
               <SelectTrigger className="bg-card border-border/60"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="report" label="Full Report">

@@ -11,6 +11,7 @@ export interface TokenUsageSnapshot {
 }
 
 export interface AIProvider {
+  readonly model?: string;
   name: ProviderName;
   displayName: string;
   streamChat(

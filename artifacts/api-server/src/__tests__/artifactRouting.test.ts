@@ -607,3 +607,46 @@ describe("Artifact path — convergence failure", () => {
     expect((outcomeEvent as any)?.courtroomOutcome?.reason).toBe("convergence_failure");
   });
 });
+
+describe("failure, budget and evidence regressions", () => {
+  beforeEach(() => vi.clearAllMocks());
+  it("never emits completion or approval when the provider fails", async () => {
+    const provider=makeProvider([]);
+    provider.streamChat=vi.fn(async function*(){throw new Error("Unavailable");}) as any;
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const res=makeMockRes();
+    await expect(runBrainSession({question:"Q", config:BASE_CONFIG,res})).rejects.toThrow(/no approved result/);
+    expect(res._events.some(e => e.type==="done")).toBe(false);
+  });
+  it("rejects malformed auditor decisions instead of defaulting to approval", async () => {
+    vi.mocked(createProviderAsync).mockResolvedValue(makeProvider(["Open","Argue","ARTIFACT_NEEDED: no","Unclear response"]) as any);
+    await expect(runBrainSession({question:"Q",config:BASE_CONFIG,res:makeMockRes()})).rejects.toThrow(/valid release decision/);
+  });
+  it("keeps the auditor's score after verdict and includes same-round arguments in chain mode", async () => {
+    const provider=makeProvider(["Open","First argument has unique evidence","Second argument","ARTIFACT_NEEDED: no","APPROVED\nCONFIDENCE: 61\n## Assessment Basis\nOne source missing.","Verdict"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,litigantCount:2,aiReasoning:"chain"},res:makeMockRes()});
+    expect(provider.streamChat.mock.calls[2][0][1].content).toContain("First argument has unique evidence");
+    expect(result.confidence).toBe(61);
+    expect(result.courtroomOutcome.reason).toBe("iteration_limit");
+    expect(result.caveats).toContain("not a measured probability");
+  });
+  it("enforces answer-only even if the moderator asks for a document", async () => {
+    vi.mocked(createProviderAsync).mockResolvedValue(makeProvider(["Open","Argue","ARTIFACT_NEEDED: yes","APPROVED\nCONFIDENCE: 80","Verdict"]) as any);
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,outputPreferenceMode:"answer-only"},res:makeMockRes()});
+    expect(result.artifactPath).toBe("no-artifact");
+    expect(result.turns.some(t=>t.role.includes("Builder"))).toBe(false);
+  });
+  it("stops before a pipeline call that cannot fit the remaining budget", async () => {
+    const provider=makeProvider(["Open","Argue","ARTIFACT_NEEDED: yes"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const res=makeMockRes();
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,maxCredits:3},res,deferCompletion:true,
+      priceCalls:calls=>calls.length});
+    expect(provider.streamChat).toHaveBeenCalledTimes(3);
+    expect(result.creditsUsed).toBe(3);
+    expect(result.pauseReason).toBe("credit_cap");
+    expect(result.courtroomOutcome.reason).toBe("credit_cap");
+    expect(res._events.some(e=>e.type==="done"||e.type==="paused_post_moderator")).toBe(false);
+  });
+});

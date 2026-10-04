@@ -19,13 +19,13 @@
  * the admin PATCH route to force an immediate refresh on the local instance.
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SEATS_DIR = join(__dirname, "../seats");
+const SEATS_DIR = existsSync(join(__dirname, "seats")) ? join(__dirname, "seats") : join(__dirname, "../seats");
 
 export type SeatId = "orchestrator" | "moderator" | "architect" | "builder" | "auditor" | "litigant";
 

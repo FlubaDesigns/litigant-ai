@@ -1,3 +1,5 @@
+import { CourtConfigSchema } from "@workspace/api-zod/session";
+import { getTemplates } from "../lib/templateStore.js";
 import { Router } from "express";
 import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
@@ -1306,8 +1308,7 @@ router.get("/admin/templates", requireAdmin, async (_req, res) => {
   if (!db) return res.json({ templates: [] });
 
   try {
-    const snap = await db.collection("templates").orderBy("title").get();
-    return res.json({ templates: snap.docs.map((d) => serializeDoc(d)) });
+    return res.json({ templates: await getTemplates(true) });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
@@ -1330,7 +1331,12 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   if (description !== undefined) updates["description"] = description;
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
   if (systemPrompt !== undefined) updates["systemPrompt"] = systemPrompt;
-  if (defaultSettings) updates["defaultSettings"] = defaultSettings;
+  if (defaultSettings || req.body.defaultConfig) {
+    const config = CourtConfigSchema.partial().safeParse(req.body.defaultConfig ?? defaultSettings);
+    if (!config.success) return res.status(400).json({error:"Invalid template settings"});
+    updates["defaultConfig"] = config.data;
+    updates["defaultSettings"] = FieldValue.delete();
+  }
 
   try {
     await db.collection("templates").doc(req.params["id"]!).set(updates, { merge: true });

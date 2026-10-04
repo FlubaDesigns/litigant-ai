@@ -1,3 +1,4 @@
+import type { CourtConfig } from "@workspace/api-zod/session";
 import {
   doc,
   getDoc,
@@ -43,26 +44,7 @@ export interface UserProfile {
   subscriptionStatus: "none" | "active" | "cancelled" | "past_due";
   squareCustomerId?: string;
   onboardingComplete?: boolean;
-  defaultSettings: {
-    // V29 Mission Briefing fields
-    conscience?: boolean;
-    outputScope?: string;
-    debateMode?: string;
-    aiReasoning?: string;
-    seatAssignment?: string;
-    outputStrategy?: string;
-    outputPreference?: string;
-    format?: string;
-    artifactType?: string;
-    confidenceTarget?: number;
-    maxIterations?: number;
-    maxCredits?: number;
-    litigantCount?: number;
-    responseMode?: string;
-    outputFormat?: string;
-    provider?: string;
-    model?: string;
-  };
+  defaultSettings: Partial<CourtConfig>;
   notifications?: {
     sessionComplete: boolean;
     weeklyDigest: boolean;
@@ -90,7 +72,7 @@ export async function saveUserConfig(
   settings: UserProfile["defaultSettings"]
 ): Promise<void> {
   const ref = doc(db, "users", uid);
-  await updateDoc(ref, { defaultSettings: settings });
+  await updateDoc(ref, { defaultSettings: JSON.parse(JSON.stringify(settings)) });
 }
 
 export async function createUserProfile(uid: string, data: Omit<UserProfile, "userId">): Promise<void> {

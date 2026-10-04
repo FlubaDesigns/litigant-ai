@@ -13,6 +13,8 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer, { MulterError } from "multer";
 import dns from "dns/promises";
+import http from "node:http";
+import https from "node:https";
 import { verifyIdToken } from "../lib/firebaseAdmin.js";
 
 const router = Router();
@@ -41,6 +43,10 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
  */
 function isBlockedIp(ip: string): boolean {
   if (!ip) return true;
+  const [a, b, c] = ip.split(".").map(Number);
+  if (a === 0 || a >= 224 || (a === 100 && b >= 64 && b <= 127) ||
+      (a === 192 && b === 0) || (a === 198 && (b === 18 || b === 19)) ||
+      (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113)) return true;
   // Loopback
   if (ip === "127.0.0.1" || ip === "::1") return true;
   if (ip.startsWith("127.")) return true;
@@ -90,7 +96,8 @@ function stripHtml(html: string): string {
 
 function truncate(text: string, maxChars = 12000): string {
   if (text.length <= maxChars) return text;
-  return text.slice(0, maxChars) + "\n\n[… content truncated to fit court briefing …]";
+  const suffix = "\n\n[… content truncated to fit court briefing …]";
+  return text.slice(0, maxChars - suffix.length) + suffix;
 }
 
 // ── POST /case-file/fetch-url ─────────────────────────────────────────────────
@@ -115,7 +122,7 @@ router.post("/case-file/fetch-url", async (req, res) => {
     return;
   }
 
-  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+  if (!["http:", "https:"].includes(parsedUrl.protocol) || parsedUrl.username || parsedUrl.password) {
     res.status(400).json({ message: "Only http/https URLs are supported" });
     return;
   }
@@ -128,62 +135,38 @@ router.post("/case-file/fetch-url", async (req, res) => {
   }
 
   try {
-    const response = await fetch(url.trim(), {
-      headers: { "User-Agent": "LitigantAI-CaseFile/1.0" },
-      redirect: "manual", // never follow redirects — each hop could redirect to a private IP
-      signal: AbortSignal.timeout(10_000),
+    // Connect to the exact address checked above. Resolving again at connect
+    // time would allow DNS rebinding to a private address.
+    const response = await new Promise<{status: number; contentType: string; text: string}>((resolve, reject) => {
+      const client = parsedUrl.protocol === "https:" ? https : http;
+      const request = client.request({
+        protocol: parsedUrl.protocol, hostname: safeIp, port: parsedUrl.port || undefined,
+        servername: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+        headers: {Host: parsedUrl.host, "User-Agent":"LitigantAI-CaseFile/1.0"},
+        signal: AbortSignal.timeout(10_000),
+      }, incoming => {
+        const chunks: Buffer[] = [];
+        let bytes = 0;
+        incoming.on("error", reject);
+        incoming.on("data", (chunk: Buffer) => {
+          bytes += chunk.length;
+          if (bytes > MAX_FETCH_BYTES) { incoming.destroy(new Error("Response too large")); return; }
+          chunks.push(chunk);
+        });
+        incoming.on("end", () => resolve({status: incoming.statusCode ?? 502,
+          contentType: String(incoming.headers["content-type"] ?? ""), text: Buffer.concat(chunks).toString("utf8")}));
+      });
+      request.on("error", reject);
+      request.end();
     });
-
-    // Any redirect: refuse. The redirect target may be a private IP (SSRF via open redirect).
     if (response.status >= 300 && response.status < 400) {
-      res.status(400).json({ message: "Redirected URLs are not supported" });
-      return;
+      res.status(400).json({message:"Redirected URLs are not supported"}); return;
     }
-
-    if (!response.ok) {
-      res.status(400).json({ message: `URL returned ${response.status}` });
-      return;
+    if (response.status < 200 || response.status >= 300) {
+      res.status(400).json({message:`URL returned ${response.status}`}); return;
     }
-
-    // Reject large responses early when Content-Length is available
-    const clHeader = response.headers.get("content-length");
-    if (clHeader) {
-      const cl = parseInt(clHeader, 10);
-      if (!isNaN(cl) && cl > MAX_FETCH_BYTES) {
-        res.status(400).json({ message: "Response too large" });
-        return;
-      }
-    }
-
-    // Stream with a hard byte ceiling — prevents OOM from large/hostile responses
-    // even when Content-Length is absent or incorrect.
-    if (!response.body) {
-      res.status(502).json({ message: "No response body" });
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let rawText = "";
-    let bytesRead = 0;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        bytesRead += value.length;
-        if (bytesRead > MAX_FETCH_BYTES) {
-          rawText += decoder.decode(value, { stream: false });
-          reader.cancel().catch(() => {});
-          break;
-        }
-        rawText += decoder.decode(value, { stream: true });
-      }
-      rawText += decoder.decode(); // flush the internal state
-    } finally {
-      reader.releaseLock();
-    }
-
-    const contentType = response.headers.get("content-type") ?? "";
+    const rawText = response.text;
+    const contentType = response.contentType;
     let content: string;
     let title = parsedUrl.hostname;
 
@@ -244,10 +227,10 @@ router.post("/case-file/upload", upload.single("file"), async (req, res) => {
 
   try {
     if (claimedPdf) {
-      const pdfMod = await import("pdf-parse");
-      const pdfParse = (pdfMod as any).default ?? pdfMod;
-      const result = await pdfParse(file.buffer);
-      content = result.text;
+      const { PDFParse } = await import("pdf-parse");
+      const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
+      try { content = (await parser.getText()).text; }
+      finally { await parser.destroy(); }
     } else if (claimedDocx) {
       const mammoth = await import("mammoth");
       const result = await mammoth.extractRawText({ buffer: file.buffer });

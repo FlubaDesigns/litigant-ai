@@ -8,6 +8,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
+vi.mock("../lib/sessionPricing.js", () => ({
+  prepareSession: vi.fn(async (config: any) => {
+    const {estimateSessionCreditsCalibrated} = await import("../lib/creditEngine.js");
+    return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {}, enabledProviders: ["openai"]};
+  }),
+  priceCalls: vi.fn(() => 100),
+}));
+
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
 vi.mock("../lib/firebaseAdmin.js", () => ({
@@ -32,7 +40,8 @@ vi.mock("../lib/pricingConfig.js", () => ({
   calculateLiveCredits: vi.fn(() => Promise.resolve(100)),
 }));
 
-vi.mock("../lib/creditLedger.js", () => ({
+vi.mock("../lib/creditLedger.js", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../lib/creditLedger.js")>(),
   checkAndTriggerAutoRefill: vi.fn(() => Promise.resolve()),
 }));
 
@@ -208,7 +217,7 @@ describe("Session ownership", () => {
     // Mock the brain run to write SSE data and end the connection
     vi.mocked(runBrainSession).mockImplementation(async ({ res, sessionId }: any) => {
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-      res.end();
+
       return {
         sessionId: sessionId ?? "session-owned-by-A",
         creditsUsed: 0,

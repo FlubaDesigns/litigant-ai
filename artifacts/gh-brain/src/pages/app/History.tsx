@@ -1,3 +1,5 @@
+import { confidenceLabel } from "@workspace/api-zod/session";
+import { sessionPath } from "@workspace/api-zod/session";
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -90,7 +92,7 @@ function SessionDetail({ session, onClose, onRerun, onResume }: {
             <span className="text-xs text-muted-foreground">{formatDate(session.createdAt)}</span>
             {session.confidence > 0 && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Target className="w-3 h-3" />{session.confidence}%
+                <Target className="w-3 h-3" />{confidenceLabel(session.confidence)}
               </span>
             )}
             {session.creditsUsed > 0 && (
@@ -296,7 +298,7 @@ function SessionRow({
         <span>{getTemplateName(session.templateId)}</span>
         {session.confidence > 0 && (
           <span className="flex items-center gap-1">
-            <Target className="w-3 h-3" />{session.confidence}%
+            <Target className="w-3 h-3" />{confidenceLabel(session.confidence)}
           </span>
         )}
         <span className="flex items-center gap-1">
@@ -501,71 +503,8 @@ export default function HistoryPage() {
     }
   }
 
-  async function handleRerun(session: SavedSession) {
-    let full = session;
-    if ((!full.transcript || !full.finalAnswer) && user) {
-      try {
-        const idToken = await user.getIdToken();
-        full = await getSession(session.id, idToken);
-      } catch { /* fall back to partial data */ }
-    }
-    sessionStorage.setItem("litigant_prefill", JSON.stringify({
-      mode: "load",
-      question: full.question,
-      templateId: full.templateId,
-      sessionId: full.id,
-      confidence: full.confidence ?? 0,
-      creditsUsed: full.creditsUsed ?? 0,
-      finalAnswer: full.finalAnswer ?? "",
-      debateNotes: full.debateNotes ?? "",
-      transcript: full.transcript ?? "",
-      caveats: full.caveats ?? "",
-      artifacts: full.artifacts ?? "",
-    }));
-    setLocation("/session");
-  }
-
-  async function handleResume(session: SavedSession) {
-    let full = session;
-    if (!full.transcript && user) {
-      try {
-        const idToken = await user.getIdToken();
-        full = await getSession(session.id, idToken);
-      } catch { /* fall back to partial data */ }
-    }
-    if (full.status === "relay_needed") {
-      sessionStorage.setItem("litigant_prefill", JSON.stringify({
-        mode: "relay_needed",
-        question: full.question,
-        templateId: full.templateId,
-        sessionId: full.id,
-        confidence: full.confidence ?? 0,
-        creditsUsed: full.creditsUsed ?? 0,
-        finalAnswer: full.finalAnswer ?? "",
-        debateNotes: full.debateNotes ?? "",
-        transcript: full.transcript ?? "",
-        caveats: full.caveats ?? "",
-        artifacts: full.artifacts ?? "",
-        relayQuestion: full.relayQuestion ?? "",
-        relayCount: full.relayCount ?? 0,
-      }));
-    } else {
-      sessionStorage.setItem("litigant_prefill", JSON.stringify({
-        mode: "resume",
-        question: full.question,
-        templateId: full.templateId,
-        sessionId: full.id,
-        confidence: full.confidence ?? 0,
-        creditsUsed: full.creditsUsed ?? 0,
-        finalAnswer: full.finalAnswer ?? "",
-        debateNotes: full.debateNotes ?? "",
-        transcript: full.transcript ?? "",
-        caveats: full.caveats ?? "",
-        artifacts: full.artifacts ?? "",
-      }));
-    }
-    setLocation("/session");
-  }
+  function handleRerun(session: SavedSession) { setLocation(sessionPath(session.id)); }
+  function handleResume(session: SavedSession) { setLocation(sessionPath(session.id)); }
 
   // Unique templates present in loaded sessions
   const uniqueTemplateIds = [...new Set(sessions.map((s) => s.templateId))];

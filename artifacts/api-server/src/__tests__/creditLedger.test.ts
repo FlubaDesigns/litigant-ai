@@ -15,6 +15,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
+vi.mock("../lib/sessionPricing.js", () => ({
+  prepareSession: vi.fn(async (config: any) => {
+    const {estimateSessionCreditsCalibrated} = await import("../lib/creditEngine.js");
+    return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {}, enabledProviders: ["openai"]};
+  }),
+  priceCalls: vi.fn(() => 100),
+}));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Module mocks shared by every suite in this file
 // ─────────────────────────────────────────────────────────────────────────────
@@ -144,6 +152,7 @@ function createMockDb(initialStore: Record<string, any> = {}) {
   };
 
   const makeCollection = (name: string) => ({
+    async get() { return { docs: Object.keys(store).filter(key => key.startsWith(name+"/") && !key.slice(name.length+1).includes("/")).map(key => ({id:key.split("/").pop(),data:()=>store[key]})) }; },
     doc: (id?: string) => makeDocRef(name, id ?? `auto_${++autoId}`),
     async add(data: any) {
       const id = `auto_${++autoId}`;
@@ -162,7 +171,10 @@ function createMockDb(initialStore: Record<string, any> = {}) {
         const pending: Array<{ key: string; data: any; op: "set" | "update"; mergeOpt?: boolean }> = [];
 
         const txn = {
-          get: async (ref: any) => ref._get(),
+          get: async (ref: any) => {
+            if (pending.length) throw new Error("Firestore transactions require all reads before writes");
+            return ref._get();
+          },
           set: (ref: any, data: any, opts?: any) =>
             pending.push({ key: ref._key, data, op: "set", mergeOpt: opts?.merge }),
           update: (ref: any, data: any) =>
@@ -378,8 +390,7 @@ function makeBrainMock({
   creditsUsed  = 100,
 } = {}) {
   return vi.fn().mockImplementation(async ({ res, sessionId }: any) => {
-    res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-    res.end();
+
     return {
       sessionId:       sessionId ?? "test-session-id",
       creditsUsed,
@@ -462,7 +473,7 @@ describe("reserveCredits() — via POST /api/run-brain", () => {
     mockDb = createRouteMockDb(FAKE_UID, 200);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
     // Actual cost = estimated cost → no refund delta
-    vi.mocked(calculateLiveCredits).mockResolvedValue(200);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 200}));
 
     const res = await request(app)
       .post("/api/run-brain")
@@ -487,7 +498,7 @@ describe("reserveCredits() — via POST /api/run-brain", () => {
     // Balance = 1000, estimated cost = 200 → ample balance
     mockDb = createRouteMockDb(FAKE_UID, 1000);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockResolvedValue(200);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 200}));
 
     await request(app)
       .post("/api/run-brain")
@@ -527,7 +538,7 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     // estimated = 200, actual = 100 → refund = 100
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockResolvedValue(100);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 100}));
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock({ creditsUsed: 100 }));
 
     await request(app)
@@ -552,7 +563,7 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     // estimated = actual = 200 → refund = 0, no reconcile write
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockResolvedValue(200);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 200}));
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock({ creditsUsed: 200 }));
 
     await request(app)
@@ -602,7 +613,7 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     // estimated = 200, actual = 300 → overage = 100
     const mockDb = createRouteMockDb(FAKE_UID, 600);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockResolvedValue(300);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 300}));
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock({ creditsUsed: 300 }));
 
     await request(app)
@@ -627,7 +638,7 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     // actual = 350 → overage = 150, but post-reservation balance = 0 → uncollectable
     const mockDb = createRouteMockDb(FAKE_UID, 200);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockResolvedValue(350);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 350}));
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock({ creditsUsed: 350 }));
 
     const res = await request(app)
@@ -874,7 +885,7 @@ describe("checkAndTriggerAutoRefill()", () => {
 //   3. Never drive the user's balance below its pre-run value.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("settlement crash — calculateLiveCredits throws", () => {
+describe("settlement crash — refund transaction fails", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // estimated cost is 200 throughout this suite
@@ -885,7 +896,12 @@ describe("settlement crash — calculateLiveCredits throws", () => {
   it("returns HTTP 200 (SSE result was already delivered) even when settlement crashes", async () => {
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("Firestore pricing lookup failed"));
+    const transaction = mockDb.runTransaction.bind(mockDb);
+    let calls = 0;
+    mockDb.runTransaction = async (fn: any) => {
+      if (++calls === 2) throw new Error("Refund transaction failed");
+      return transaction(fn);
+    };
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
 
     const res = await request(app)
@@ -900,7 +916,12 @@ describe("settlement crash — calculateLiveCredits throws", () => {
   it("preserves the original reservation ledger entry", async () => {
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    const transaction = mockDb.runTransaction.bind(mockDb);
+    let calls = 0;
+    mockDb.runTransaction = async (fn: any) => {
+      if (++calls === 2) throw new Error("Refund transaction failed");
+      return transaction(fn);
+    };
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
 
     await request(app)
@@ -925,7 +946,12 @@ describe("settlement crash — calculateLiveCredits throws", () => {
     // Start 500; reserve 200; settlement crashes → refund 200 → net 500
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    const transaction = mockDb.runTransaction.bind(mockDb);
+    let calls = 0;
+    mockDb.runTransaction = async (fn: any) => {
+      if (++calls === 2) throw new Error("Refund transaction failed");
+      return transaction(fn);
+    };
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
 
     await request(app)
@@ -940,7 +966,12 @@ describe("settlement crash — calculateLiveCredits throws", () => {
   it("writes a brain_failure_refund ledger entry for the restored reservation", async () => {
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    const transaction = mockDb.runTransaction.bind(mockDb);
+    let calls = 0;
+    mockDb.runTransaction = async (fn: any) => {
+      if (++calls === 2) throw new Error("Refund transaction failed");
+      return transaction(fn);
+    };
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
 
     await request(app)
@@ -962,7 +993,12 @@ describe("settlement crash — calculateLiveCredits throws", () => {
   it("writes a settlement_failure audit entry so admins can investigate the gap", async () => {
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    const transaction = mockDb.runTransaction.bind(mockDb);
+    let calls = 0;
+    mockDb.runTransaction = async (fn: any) => {
+      if (++calls === 2) throw new Error("Refund transaction failed");
+      return transaction(fn);
+    };
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
 
     await request(app)
@@ -985,7 +1021,12 @@ describe("settlement crash — calculateLiveCredits throws", () => {
     const STARTING_BALANCE = 1000;
     const mockDb = createRouteMockDb(FAKE_UID, STARTING_BALANCE);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(calculateLiveCredits).mockRejectedValue(new Error("pricing unavailable"));
+    const transaction = mockDb.runTransaction.bind(mockDb);
+    let calls = 0;
+    mockDb.runTransaction = async (fn: any) => {
+      if (++calls === 2) throw new Error("Refund transaction failed");
+      return transaction(fn);
+    };
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
 
     await request(app)
@@ -998,5 +1039,55 @@ describe("settlement crash — calculateLiveCredits throws", () => {
     expect(finalBalance).toBe(STARTING_BALANCE);
     // Must not exceed starting balance — no double-refund
     expect(finalBalance).not.toBeGreaterThan(STARTING_BALANCE);
+  });
+});
+
+describe("saved session continuity", () => {
+  beforeEach(()=>{
+    vi.clearAllMocks();
+    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);
+  });
+  it("resumes the stored question/config/transcript and appends turns without resetting metadata", async()=>{
+    const db=createRouteMockDb(FAKE_UID,1000);
+    db._store["sessions/saved"]={status:"paused_credit_cap",userId:FAKE_UID,question:"Original question",title:"My saved title",config:{...BRAIN_BODY.config,litigantCount:4,maxCredits:500},
+      transcript:"**Litigant:** Original evidence\n\n---\n\n**Moderator (Summary):** Summary",debateNotes:"Original notes",creditsUsed:30,
+      starred:true,archived:false,shared:true,shareId:"keep-link",createdAt:"original-date"};
+    db._store["sessions/saved/session_turns/turn_000"]={turnIndex:0,content:"Original evidence"};
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockImplementation(async opts=>{
+      expect(opts.question).toBe("Original question");
+      expect(opts.config.litigantCount).toBe(4);
+      expect(opts.config.maxCredits).toBe(670);
+      expect(opts.continueFromTranscript).toContain("**Litigant:** Original evidence");
+      expect(opts.resumeWithFixedPipeline).toBe(true);
+      const result=await makeBrainMock({creditsUsed:100})(opts);
+      return {...result,transcript:[...opts.continueFromTranscript!,"**Auditor:** APPROVED"],debateNotes:"",turns:[{role:"Auditor",round:99,content:"APPROVED"}]};
+    });
+    const res=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send({...BRAIN_BODY,sessionId:"saved",resumeWithFixedPipeline:true,continueFromTranscript:["Forged client transcript"],config:{...BRAIN_BODY.config,maxCredits:700}});
+    const saved=db._store["sessions/saved"];
+    expect(saved).toMatchObject({title:"My saved title",creditsUsed:130,starred:true,shared:true,shareId:"keep-link",createdAt:"original-date",debateNotes:"Original notes"});
+    expect(saved.transcript).toContain("Original evidence");
+    expect(saved.transcript).not.toContain("Forged");
+    expect(db._store["sessions/saved/session_turns/turn_000"].content).toBe("Original evidence");
+    expect(db._store["sessions/saved/session_turns/turn_001"].content).toBe("APPROVED");
+    const events=res.text.trim().split("\n\n").filter(l=>l.startsWith("data: ")).map(l=>JSON.parse(l.slice(6)));
+    expect(events.at(-1)).toMatchObject({type:"done",creditsUsed:130});
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);
+  });
+  it("refunds the remaining net charge and emits error if saving the result fails", async()=>{
+    const db=createRouteMockDb(FAKE_UID,500);
+    const collection=db.collection.bind(db);
+    db.collection=(name:string)=>{
+      const col=collection(name);
+      if(name!=="sessions") return col;
+      return {...col,doc:(id?:string)=>({...col.doc(id),set:async()=>{throw new Error("Store unavailable");}})};
+    };
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed:100}));
+    const res=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(500);
+    expect(res.text).toContain('"type":"error"');
+    expect(res.text).not.toContain('"type":"done"');
   });
 });

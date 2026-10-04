@@ -4,7 +4,7 @@ import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "
 export class OpenAIProvider implements AIProvider {
   readonly name: ProviderName = "openai";
   readonly displayName = "OpenAI";
-  private model: string;
+  readonly model: string;
   private client: OpenAI;
   private _lastUsage: TokenUsageSnapshot | null = null;
 

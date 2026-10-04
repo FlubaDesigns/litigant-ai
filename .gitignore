@@ -53,3 +53,7 @@ scripts/cloud-run-env.yaml
 # Never commit Replit-attached files — may contain secrets
 attached_assets/
 litigant-ai-source.zip
+
+# Generated browser test output
+**/test-results/
+**/playwright-report/

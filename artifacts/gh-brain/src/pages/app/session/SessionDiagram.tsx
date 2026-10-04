@@ -21,12 +21,12 @@ function RuntimeControl({
   return (
     <div className="rounded-lg border border-primary/20 overflow-hidden">
       <div className="px-3 py-1.5 border-b border-primary/10 bg-primary/5">
-        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Runtime Control</span>
+        <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">Runtime Control</span>
       </div>
       <div className="grid grid-cols-2 gap-px bg-primary/10">
         {cells.map(({ label, value, color }) => (
           <div key={label} className="bg-[#070f07] px-3 py-2">
-            <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-0.5">{label}</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground/50 mb-0.5">{label}</div>
             <div className={cn("text-[15px] font-bold font-mono leading-none", color)}>{value}</div>
           </div>
         ))}
@@ -137,7 +137,7 @@ export function SessionDiagram({
             onToggleConscience={onToggleConscience}
           />
           {(isRunning || isComplete) && state.currentRound > 0 && state.currentRound < 99 && (
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-[10px] font-mono text-primary/80 pointer-events-none">
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-primary/25 text-xs font-mono text-primary/80 pointer-events-none">
               <span className={cn("w-1.5 h-1.5 rounded-full bg-primary", isRunning && "animate-pulse")} />
               Revolution {state.currentRound} / {state.config.maxIterations}
             </div>

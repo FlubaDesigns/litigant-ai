@@ -19,7 +19,7 @@ const DEMO_CONFIG = [
   { label: "Court Mode",        value: "Adversarial"      },
   { label: "Litigants",         value: "4 (+ / −)"        },
   { label: "Reasoning",         value: "Chain of Thought"  },
-  { label: "Confidence Target", value: "80%"               },
+  { label: "Illustrative review target", value: "80/100"               },
 ];
 
 interface Turn {
@@ -85,9 +85,9 @@ function ConfidenceBar({ value, target = 80 }: { value: number; target?: number 
   return (
     <div>
       <div className="flex justify-between text-[11px] text-zinc-500 mb-[3px]">
-        <span>Confidence</span>
+        <span>Example AI review score</span>
         <span className={`font-mono ${met ? "text-amber-400" : "text-zinc-500"}`}>
-          {value}% / {target}%
+          {value}/100 · target {target}
         </span>
       </div>
       <div className="h-[6px] rounded-[3px] bg-black/40 overflow-hidden">

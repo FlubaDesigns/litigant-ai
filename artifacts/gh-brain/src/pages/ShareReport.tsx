@@ -1,3 +1,4 @@
+import { confidenceLabel } from "@workspace/api-zod/session";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { TEMPLATES } from "@/data/templates";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 
-const API_BASE = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api";
+import { API_BASE } from "@/lib/apiUrl";
 
 interface SharedReport {
   id: string;
@@ -195,7 +196,7 @@ export default function ShareReportPage() {
             {typeof report.confidence === "number" && report.confidence > 0 && (
               <span className={cn("flex items-center gap-1 font-semibold", confidenceColor)}>
                 <Target className="w-3.5 h-3.5" />
-                {report.confidence}% confidence
+                {confidenceLabel(report.confidence)}
               </span>
             )}
             {typeof report.creditsUsed === "number" && (

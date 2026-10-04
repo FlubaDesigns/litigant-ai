@@ -1,3 +1,6 @@
+import { useSessionQuote } from "@/hooks/useSessionQuote";
+import { fetchTemplates } from "@/services/templateService";
+import { getSession } from "@/services/sessionService";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
@@ -19,10 +22,9 @@ import { makeDefaultSeatMap, type SeatAssignment } from "@/data/seatTypes";
 import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import {
-  getProviders, getCalibration, estimateCredits,
-  type ProviderInfo, type ModelCreditInfo, type CalibrationStats,
+  getProviders, type ProviderInfo,
 } from "@/services/providerService";
 import { useLimits } from "@/hooks/useLimits";
 import { toast } from "sonner";
@@ -56,7 +58,7 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold truncate">{template.title}</span>
             <span className="ml-auto text-xs font-mono text-muted-foreground shrink-0">
-              ~{template.estimatedCredits}cr
+              Live quote
             </span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -88,25 +90,7 @@ export default function SessionPage() {
     : undefined;
 
   const savedConfig = userProfile?.defaultSettings
-    ? {
-        litigantCount:    userProfile.defaultSettings.litigantCount ?? 3,
-        confidenceTarget: userProfile.defaultSettings.confidenceTarget ?? 80,
-        maxIterations:    userProfile.defaultSettings.maxIterations ?? 2,
-        responseMode:     (userProfile.defaultSettings.responseMode as CourtConfig["responseMode"]) ?? "balanced",
-        outputFormat:     (userProfile.defaultSettings.outputFormat as CourtConfig["outputFormat"]) ?? "report",
-        provider:         (userProfile.defaultSettings.provider as CourtConfig["provider"]) ?? undefined,
-        model:            userProfile.defaultSettings.model ?? undefined,
-        conscience:       userProfile.defaultSettings.conscience ?? true,
-        aiReasoning:      (userProfile.defaultSettings.aiReasoning as CourtConfig["aiReasoning"]) ?? "chain",
-        debateMode:       (userProfile.defaultSettings.debateMode as CourtConfig["debateMode"]) ?? "adversarial",
-        maxCredits:       userProfile.defaultSettings.maxCredits ?? DEFAULT_CONFIG.maxCredits,
-        outputScope:      (userProfile.defaultSettings.outputScope as CourtConfig["outputScope"]) ?? DEFAULT_CONFIG.outputScope,
-        outputStrategy:   (userProfile.defaultSettings.outputStrategy as CourtConfig["outputStrategy"]) ?? DEFAULT_CONFIG.outputStrategy,
-        outputPreference: "both" as CourtConfig["outputPreference"],
-        format:           (userProfile.defaultSettings.format as CourtConfig["format"]) ?? DEFAULT_CONFIG.format,
-        artifactType:     (userProfile.defaultSettings.artifactType as CourtConfig["artifactType"]) ?? "auto",
-        ...(testSeatMap ? { seatMap: testSeatMap } : {}),
-      }
+    ? { ...DEFAULT_CONFIG, ...userProfile.defaultSettings, ...(testSeatMap ? {seatMap: testSeatMap} : {}) }
     : undefined;
 
   const brainSession = useBrainSession(savedConfig);
@@ -118,6 +102,10 @@ export default function SessionPage() {
   } = brainSession;
 
   const [, navigate] = useLocation();
+  const { sessionId } = useParams<{sessionId?: string}>();
+  const quote = useSessionQuote(state.config);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  useEffect(() => { fetchTemplates().then(setTemplates).catch(() => toast.error("Unable to load templates.")); }, []);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -130,8 +118,6 @@ export default function SessionPage() {
   const [rebuttalChallenge, setRebuttalChallenge] = useState("");
   const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-  const [selectedCreditInfo, setSelectedCreditInfo] = useState<ModelCreditInfo | null>(null);
-  const [calibration, setCalibration] = useState<CalibrationStats | null>(null);
   const [activityLogOpen, setActivityLogOpen] = useState(false);
   const [allProviders, setAllProviders] = useState<ProviderInfo[]>([]);
   const [toolBanner, setToolBanner] = useState<string | null>(null);
@@ -143,21 +129,6 @@ export default function SessionPage() {
   useEffect(() => {
     getProviders().then((data) => setAllProviders(data.providers)).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    getProviders().then((data) => {
-      const prov = data.providers.find((p) => p.name === state.config.provider) ?? data.providers[0];
-      const model = prov?.models.find((m) => m.id === (state.config.model ?? prov?.defaultModel)) ?? prov?.models[0];
-      setSelectedCreditInfo(model?.creditInfo ?? null);
-    }).catch(() => {});
-  }, [state.config.provider, state.config.model]);
-
-  useEffect(() => {
-    if (!user) { setCalibration(null); return; }
-    user.getIdToken().then((token) => getCalibration(token)).then((cal) => {
-      if (cal) setCalibration(cal);
-    }).catch(() => {});
-  }, [user]);
 
   useEffect(() => { setFieldValues({}); }, [state.template?.id]);
 
@@ -186,72 +157,33 @@ export default function SessionPage() {
     const params = new URLSearchParams(window.location.search);
     const tid = params.get("templateId");
     if (tid && state.phase === "idle" && !state.template) {
-      const template = TEMPLATES.find((t) => t.id === tid);
+      const template = templates.find((t) => t.id === tid);
       if (template) {
         setTemplate(template);
         setConfig(template.defaultConfig);
         setToolBanner(template.title);
       }
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [templates]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Prefill from history Re-run / Resume
+  // The URL identifies the persisted session; History and email use this same path.
   useEffect(() => {
-    if (state.phase !== "idle") return;
-    const raw = sessionStorage.getItem("litigant_prefill");
-    if (!raw) return;
-    sessionStorage.removeItem("litigant_prefill");
-    try {
-      const prefill = JSON.parse(raw) as {
-        mode: "rerun" | "resume" | "load" | "relay_needed";
-        question: string;
-        templateId: string | null;
-        sessionId?: string;
-        confidence?: number;
-        creditsUsed?: number;
-        finalAnswer?: string;
-        debateNotes?: string;
-        transcript?: string;
-        caveats?: string;
-        artifacts?: string;
-        relayQuestion?: string;
-        relayCount?: number;
+    if (!sessionId || !user) return;
+    let cancelled = false;
+    user.getIdToken().then(token => getSession(sessionId, token)).then(saved => {
+      if (cancelled) return;
+      const data = {
+        question: saved.question, config: saved.config ?? {}, sessionId: saved.id,
+        confidence: saved.confidence ?? 0, creditsUsed: saved.creditsUsed ?? 0,
+        finalAnswer: saved.finalAnswer ?? "", debateNotes: saved.debateNotes ?? "",
+        transcript: saved.transcript ?? "", caveats: saved.caveats ?? "", artifacts: saved.artifacts ?? "",
       };
-      if (prefill.templateId) {
-        const tmpl = TEMPLATES.find((t) => t.id === prefill.templateId);
-        if (tmpl) { setTemplate(tmpl); setConfig(tmpl.defaultConfig); }
-      }
-      if (prefill.mode === "rerun") {
-        setQuestion(prefill.question);
-      } else if (prefill.mode === "load" && prefill.sessionId) {
-        loadCompleteSession({
-          question: prefill.question, config: {}, sessionId: prefill.sessionId,
-          confidence: prefill.confidence ?? 0, creditsUsed: prefill.creditsUsed ?? 0,
-          finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
-          transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
-          artifacts: prefill.artifacts ?? "",
-        });
-      } else if (prefill.mode === "resume" && prefill.sessionId) {
-        loadPausedSession({
-          question: prefill.question, config: {}, sessionId: prefill.sessionId,
-          confidence: prefill.confidence ?? 0, creditsUsed: prefill.creditsUsed ?? 0,
-          finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
-          transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
-          artifacts: prefill.artifacts ?? "",
-        });
-      } else if (prefill.mode === "relay_needed" && prefill.sessionId) {
-        loadRelayNeededSession({
-          question: prefill.question, config: {}, sessionId: prefill.sessionId,
-          confidence: prefill.confidence ?? 0, creditsUsed: prefill.creditsUsed ?? 0,
-          finalAnswer: prefill.finalAnswer ?? "", debateNotes: prefill.debateNotes ?? "",
-          transcript: prefill.transcript ?? "", caveats: prefill.caveats ?? "",
-          artifacts: prefill.artifacts ?? "",
-          relayQuestion: prefill.relayQuestion ?? "",
-          relayCount: prefill.relayCount ?? 0,
-        });
-      }
-    } catch { /* ignore malformed payload */ }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      if (saved.status === "relay_needed") loadRelayNeededSession({...data, relayQuestion: saved.relayQuestion ?? "", relayCount: saved.relayCount ?? 0});
+      else if (saved.status === "paused_credit_cap" || saved.status === "incomplete") loadPausedSession({...data, pauseReason: saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit"});
+      else loadCompleteSession(data);
+    }).catch(error => { if (!cancelled) toast.error(error.message); });
+    return () => { cancelled = true; };
+  }, [sessionId, user, loadCompleteSession, loadPausedSession, loadRelayNeededSession]);
 
   useEffect(() => {
     if (feedRef.current && state.phase === "running") {
@@ -277,15 +209,8 @@ export default function SessionPage() {
   const isError       = state.phase === "error";
   const isIdle        = state.phase === "idle";
 
-  const effectiveCreditInfo = selectedCreditInfo && calibration?.isCalibrated
-    ? { ...selectedCreditInfo, fixedStagePrior: calibration.fixedStage }
-    : selectedCreditInfo;
-
-  const estimatedCredits = effectiveCreditInfo
-    ? estimateCredits(effectiveCreditInfo, state.config.litigantCount, state.config.maxIterations, state.config.responseMode)
-    : state.config.litigantCount * state.config.maxIterations * 3 + 6;
-
-  const estimatedCreditsHigh = estimatedCredits + (state.config.conscience ? 1 : 0) + Math.ceil(estimatedCredits * 0.4);
+  const estimatedCredits = quote.data?.estimatedCredits ?? 0;
+  const estimatedCreditsHigh = estimatedCredits;
 
   const creditsCritical    = credits < 10;
   const creditsLow         = credits < 50 && !creditsCritical;
@@ -294,7 +219,7 @@ export default function SessionPage() {
   const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh && !overdraftAvailable;
 
   const filteredTemplates =
-    activeCategory === "all" ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory);
+    activeCategory === "all" ? templates : templates.filter((t) => t.category === activeCategory);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -307,6 +232,7 @@ export default function SessionPage() {
   }
 
   async function handleRun() {
+    if (!quote.ready) { toast.error(quote.error?.message ?? "Please wait for the current credit estimate."); return; }
     const hasFields = state.template && state.template.inputFields.length > 0;
     const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
 
@@ -362,7 +288,7 @@ export default function SessionPage() {
     }
     if (fmt === "pdf") {
       try {
-        const { wasTrimmed } = exportJsPdf(state);
+        const { wasTrimmed } = await exportJsPdf(state);
         for (const action of buildPdfToastActions(wasTrimmed)) {
           if (action.type === "success") toast.success(action.message);
           else toast.warning(action.message);

@@ -1,3 +1,4 @@
+import { CREDITS_PER_DOLLAR } from "./creditPacks.js";
 import crypto from "crypto";
 import { addCredits } from "./creditLedger.js";
 import { isFirebaseConfigured } from "./firebaseAdmin.js";
@@ -101,7 +102,14 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
       //
       // If no packId is present (legacy notes or custom top-ups), we skip the
       // pack lookup but still rely on the ceiling above.
-      if (packId) {
+      if (packId === "custom" || note.includes("type=auto_refill")) {
+        const cents = Number(payment.amount_money?.amount);
+        if (!Number.isInteger(cents) || cents < 100 || cents > 50_000 ||
+            creditAmount !== cents * CREDITS_PER_DOLLAR / 100 ||
+            (payment.amount_money?.currency && payment.amount_money.currency !== "USD")) {
+          throw new Error("Custom payment amount does not match the credit grant");
+        }
+      } else if (packId) {
         try {
           const allPacks = await getAllCreditPacks();
           const pack = allPacks[packId];

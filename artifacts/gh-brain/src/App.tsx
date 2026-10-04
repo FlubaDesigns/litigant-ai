@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+import { safeNext } from "@/lib/authUtils";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -6,31 +8,31 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 
 // Public pages
-import LandingPage from "@/pages/Landing";
-import SignInPage from "@/pages/auth/SignIn";
-import RegisterPage from "@/pages/auth/Register";
-import ForgotPasswordPage from "@/pages/auth/ForgotPassword";
-import VerifyEmailPage from "@/pages/auth/VerifyEmail";
-import ToolsIndexPage from "@/pages/tools/ToolsIndex";
-import ToolPage from "@/pages/tools/ToolPage";
+const LandingPage = lazy(() => import("@/pages/Landing"));
+const SignInPage = lazy(() => import("@/pages/auth/SignIn"));
+const RegisterPage = lazy(() => import("@/pages/auth/Register"));
+const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPassword"));
+const VerifyEmailPage = lazy(() => import("@/pages/auth/VerifyEmail"));
+const ToolsIndexPage = lazy(() => import("@/pages/tools/ToolsIndex"));
+const ToolPage = lazy(() => import("@/pages/tools/ToolPage"));
 
 // App pages (protected)
-import SessionPage from "@/pages/app/Session";
-import TemplatesPage from "@/pages/app/Templates";
-import HistoryPage from "@/pages/app/History";
-import BillingPage from "@/pages/app/Billing";
-import SettingsPage from "@/pages/app/Settings";
+const SessionPage = lazy(() => import("@/pages/app/Session"));
+const TemplatesPage = lazy(() => import("@/pages/app/Templates"));
+const HistoryPage = lazy(() => import("@/pages/app/History"));
+const BillingPage = lazy(() => import("@/pages/app/Billing"));
+const SettingsPage = lazy(() => import("@/pages/app/Settings"));
 
 // Admin
-import AdminPage from "@/pages/admin/Admin";
+const AdminPage = lazy(() => import("@/pages/admin/Admin"));
 
 // Legal
-import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicy";
-import TermsPage from "@/pages/legal/Terms";
+const PrivacyPolicyPage = lazy(() => import("@/pages/legal/PrivacyPolicy"));
+const TermsPage = lazy(() => import("@/pages/legal/Terms"));
 
 // Shared
-import ShareReportPage from "@/pages/ShareReport";
-import NotFoundPage from "@/pages/not-found";
+const ShareReportPage = lazy(() => import("@/pages/ShareReport"));
+const NotFoundPage = lazy(() => import("@/pages/not-found"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +46,7 @@ const queryClient = new QueryClient({
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user && user.emailVerified) return <Redirect to="/session" />;
+  if (user && user.emailVerified) return <Redirect to={safeNext(new URLSearchParams(window.location.search).get("next"))} />;
   return <>{children}</>;
 }
 
@@ -59,6 +61,7 @@ function ProtectedWithLayout({ children, requireAdmin }: { children: React.React
 function AppRoutes() {
   return (
     <Switch>
+      <Route path="/app/session/:sessionId">{params => <Redirect to={`/session/${encodeURIComponent(params.sessionId)}`} />}</Route>
       {/* Public */}
       <Route path="/" component={LandingPage} />
       <Route path="/sign-in">
@@ -129,7 +132,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AppRoutes />
+          <Suspense fallback={<div role="status" className="p-8 text-center">Loading…</div>}><AppRoutes /></Suspense>
         </WouterRouter>
         <Toaster richColors position="top-right" />
       </AuthProvider>

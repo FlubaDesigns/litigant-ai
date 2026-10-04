@@ -1,5 +1,6 @@
-import { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType } from "docx";
-import jsPDF from "jspdf";
+import { confidenceLabel } from "@workspace/api-zod/session";
+import type { Paragraph as DocParagraph } from "docx";
+
 import { useBrainSession } from "@/hooks/useBrainSession";
 import { applyPdfTrimGuard } from "@/lib/pdfExport";
 
@@ -11,7 +12,7 @@ export function buildMarkdown(state: SessionState): string {
     ``,
     `**Question:** ${state.question}`,
     state.template ? `**Template:** ${state.template.title}` : null,
-    `**Confidence:** ${state.confidence}%`,
+    `**AI review:** ${confidenceLabel(state.confidence)}`,
     `**Credits Used:** ${state.creditsUsed}`,
     `**Date:** ${new Date().toLocaleDateString()}`,
     ``,
@@ -70,7 +71,7 @@ export function exportPDF(state: SessionState, w: Window): void {
   <div class="meta">
     <strong>Question:</strong> ${esc(state.question)}<br/>
     ${state.template ? `<strong>Template:</strong> ${esc(state.template.title)}<br/>` : ""}
-    <strong>Confidence:</strong> <span class="badge">${esc(state.confidence)}%</span>
+    <strong>AI review:</strong> <span class="badge">${esc(confidenceLabel(state.confidence))}</span>
     &nbsp; <strong>Credits:</strong> ${esc(state.creditsUsed)}
     &nbsp; <strong>Date:</strong> ${esc(new Date().toLocaleDateString())}
   </div>
@@ -92,7 +93,8 @@ export function exportPDF(state: SessionState, w: Window): void {
 }
 
 export async function exportDocx(state: SessionState): Promise<void> {
-  const sections: Paragraph[] = [
+  const { Document, Paragraph, TextRun, HeadingLevel, Packer, AlignmentType } = await import("docx");
+  const sections: DocParagraph[] = [
     new Paragraph({ text: "Litigant AI Session Report", heading: HeadingLevel.HEADING_1 }),
     new Paragraph({
       children: [
@@ -105,8 +107,8 @@ export async function exportDocx(state: SessionState): Promise<void> {
       : []),
     new Paragraph({
       children: [
-        new TextRun({ text: "Confidence: ", bold: true }),
-        new TextRun({ text: `${state.confidence}%` }),
+        new TextRun({ text: "AI review: ", bold: true }),
+        new TextRun({ text: `${confidenceLabel(state.confidence)}` }),
         new TextRun({ text: "   Credits Used: ", bold: true }),
         new TextRun({ text: String(state.creditsUsed) }),
         new TextRun({ text: "   Date: ", bold: true }),
@@ -149,7 +151,8 @@ export async function exportDocx(state: SessionState): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-export function exportJsPdf(state: SessionState): { wasTrimmed: boolean } {
+export async function exportJsPdf(state: SessionState): Promise<{ wasTrimmed: boolean }> {
+  const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -185,7 +188,7 @@ export function exportJsPdf(state: SessionState): { wasTrimmed: boolean } {
   }
 
   addText("Litigant AI — Session Report", { size: 18, bold: true, color: [0, 150, 60], gap: 2 });
-  addText(`Confidence: ${state.confidence}%  ·  Credits: ${state.creditsUsed}  ·  ${new Date().toLocaleDateString()}`, {
+  addText(`AI review: ${confidenceLabel(state.confidence)}  ·  Credits: ${state.creditsUsed}  ·  ${new Date().toLocaleDateString()}`, {
     size: 9, color: [100, 100, 100], gap: 6,
   });
   addText(`Question: ${state.question}`, { size: 10, bold: true, gap: 8 });

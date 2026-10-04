@@ -82,10 +82,7 @@ router.get("/report/:shareId", async (req, res) => {
         //   Verdict       round: 99  (final verdict)
         // All others are actual litigants carrying real round numbers (1, 2, 3…).
         // Multiple Builder/Auditor turns appear when the Auditor retry loop fires.
-        const NON_LITIGANT_ROLES = new Set([
-          "Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict",
-        ]);
-        const debateTurns = turns.filter((t: any) => !NON_LITIGANT_ROLES.has(t["role"]));
+        const debateTurns = turns.filter((t: any) => t.round > 0 && t.round < 99);
         const rounds   = debateTurns.reduce((max: number, t: any) => Math.max(max, t["round"] ?? 0), 0);
         const litigants = new Set(debateTurns.map((t: any) => t["role"])).size;
         result["roundsCompleted"] = rounds;

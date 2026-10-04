@@ -14,7 +14,7 @@ import {
   type SeatMapConfig,
 } from "@/data/seatTypes";
 import { useAuth } from "@/contexts/AuthContext";
-import { getProviders, resolveModelByIntelligence } from "@/services/providerService";
+
 
 export type SessionPhase =
   | "idle"
@@ -150,6 +150,7 @@ type Action =
     }
   | {
       type: "PREFILL_PAUSED";
+      pauseReason?: PauseReason;
       question: string;
       config: Partial<CourtConfig>;
       sessionId: string;
@@ -521,7 +522,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         debateNotes: action.debateNotes,
         activityLog: [
           ...state.activityLog,
-          `[Court] Credit cap reached — Moderator synthesised a partial answer`,
+          `[Court] Credit cap reached — partial work saved without final approval`,
         ],
       };
 
@@ -540,7 +541,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         transcript: action.transcript,
         caveats: action.caveats,
         artifacts: action.artifacts,
-        pauseReason: "credit_cap" as const,
+        pauseReason: action.pauseReason ?? "credit_cap",
         pauseTranscript: action.pauseTranscript,
         courtHappened: true,
       };
@@ -608,6 +609,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   const { user } = useAuth();
 
   const handleSSEEvent = useCallback((event: SSEEvent) => {
+    if (event.config) dispatch({ type: "SET_CONFIG", config: event.config });
     switch (event.type) {
       case "start":
         dispatch({ type: "SESSION_STARTED", sessionId: event.sessionId!, estimatedCredits: event.estimatedCredits ?? 0 });
@@ -683,51 +685,17 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       dispatch({ type: "SET_QUESTION", question: questionOverride });
     }
 
+    dispatch({ type: "SET_PHASE", phase: "running" });
     abortRef.current = new AbortController();
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { /* guest */ }
+    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
 
     let effectiveConfig = opts?.configOverride
       ? { ...state.config, ...opts.configOverride }
       : state.config;
-
-    // Resolve intelligenceLevel → provider/model for each seat before sending to backend
-    if (effectiveConfig.intelligenceLevel !== undefined) {
-      try {
-        const data = await getProviders();
-        const providers = data.providers;
-        const globalLevel = effectiveConfig.intelligenceLevel;
-
-        const resolveSeat = (seat: SeatAssignment): SeatAssignment => {
-          const hasOwnLevel = seat.useMasterSettings === false && seat.intelligenceLevel !== undefined;
-          const level = hasOwnLevel ? seat.intelligenceLevel! : globalLevel;
-          const provPref =
-            seat.useMasterSettings === false && seat.provider && seat.provider !== "auto"
-              ? seat.provider
-              : "auto";
-          const resolved = resolveModelByIntelligence(level, provPref, providers);
-          return resolved ? { ...seat, provider: resolved.provider, model: resolved.model } : seat;
-        };
-
-        if (effectiveConfig.seatMap) {
-          const sm = effectiveConfig.seatMap;
-          effectiveConfig = {
-            ...effectiveConfig,
-            seatMap: {
-              orchestrator: resolveSeat(sm.orchestrator),
-              moderator:    resolveSeat(sm.moderator),
-              auditor:      resolveSeat(sm.auditor),
-              architect:    resolveSeat(sm.architect),
-              builder:      resolveSeat(sm.builder),
-              litigants:    sm.litigants.map(resolveSeat),
-            },
-          };
-        }
-      } catch { /* non-fatal — fall back to unresolved config */ }
-    }
 
     const request: BrainRunRequest = {
       question: effectiveQuestion,
@@ -746,7 +714,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
         dispatch({ type: "ERROR", message: err?.message || "Session failed" });
       }
     }
-  }, [state.question, state.config, state.template, user, handleSSEEvent]);
+  }, [state.question, state.config, state.template, state.caseFile, state.failoverProvider, user, handleSSEEvent]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -772,14 +740,15 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
 
   const continueSessionFn = useCallback(async (newMaxCredits?: number) => {
     const s = stateRef.current;
-    if (!s.pauseTranscript?.length) return;
+    if (!s.sessionId) return;
 
+    dispatch({ type: "SET_PHASE", phase: "running" });
     abortRef.current = new AbortController();
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { /* guest */ }
+    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
 
     const isCreditCapPause = s.pauseReason === "credit_cap";
 
@@ -794,7 +763,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       templateId: s.template?.id,
       idToken,
       sessionId: s.sessionId ?? undefined,
-      continueFromTranscript: s.pauseTranscript,
+      continueFromTranscript: s.pauseTranscript ?? [],
       ...(isCreditCapPause ? { resumeWithFixedPipeline: true } : {}),
     };
 
@@ -810,6 +779,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   }, [user, handleSSEEvent]);
 
   const loadPausedSession = useCallback((s: {
+    pauseReason?: PauseReason;
     question: string;
     config: Partial<CourtConfig>;
     sessionId: string;
@@ -889,12 +859,13 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       prevFinalAnswer: s.finalAnswer,
     });
 
+    dispatch({ type: "SET_PHASE", phase: "running" });
     abortRef.current = new AbortController();
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { /* guest */ }
+    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
 
     const rebuttalCtx: RebuttalContext = {
       challenge,
@@ -933,12 +904,13 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
       prevSessionId: s.sessionId,
     });
 
+    dispatch({ type: "SET_PHASE", phase: "running" });
     abortRef.current = new AbortController();
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { /* guest */ }
+    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
 
     const relayCtx: RelayContext = {
       missingInfo,

@@ -21,7 +21,7 @@ export default function SignInPage() {
   const [location, setLocation] = useLocation();
   const { signIn, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const next = safeNext(new URLSearchParams(location.split("?")[1] ?? "").get("next"));
+  const next = safeNext(new URLSearchParams(window.location.search).get("next"));
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),

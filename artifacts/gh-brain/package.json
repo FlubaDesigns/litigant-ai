@@ -81,6 +81,7 @@
   "dependencies": {
     "docx": "^9.7.1",
     "firebase": "^12.14.0",
-    "jspdf": "^4.2.1"
+    "jspdf": "^4.2.1",
+    "@workspace/api-zod": "workspace:*"
   }
 }

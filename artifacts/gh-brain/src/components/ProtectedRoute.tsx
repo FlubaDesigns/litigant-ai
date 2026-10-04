@@ -36,7 +36,7 @@ export function ProtectedRoute({
   }
 
   if (!user) {
-    return <Redirect to="/sign-in" />;
+    return <Redirect to={`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`} />;
   }
 
   if (requireVerified && !user.emailVerified && !import.meta.env.DEV) {

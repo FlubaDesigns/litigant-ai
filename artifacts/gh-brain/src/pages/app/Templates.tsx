@@ -1,3 +1,4 @@
+import { fetchTemplates } from "@/services/templateService";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TEMPLATES as STATIC_TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
 
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api-server/api";
+import { API_BASE } from "@/lib/apiUrl";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -40,18 +41,7 @@ const RESPONSE_MODE_LABELS: Record<string, string> = {
 };
 
 // ── Fetch helpers ─────────────────────────────────────────────────────────────
-async function fetchTemplates(): Promise<Template[]> {
-  try {
-    const res = await fetch(`${API_BASE}/templates`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const list: Template[] = Array.isArray(data) ? data : data.templates ?? [];
-    if (list.length === 0) throw new Error("empty");
-    return list;
-  } catch {
-    return STATIC_TEMPLATES;
-  }
-}
+
 
 // ── Template card ─────────────────────────────────────────────────────────────
 function TemplateCard({ template, onClick }: { template: Template; onClick: () => void }) {
@@ -71,7 +61,7 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold truncate">{template.title}</span>
             <span className="ml-auto text-xs font-mono text-muted-foreground shrink-0">
-              ~{template.estimatedCredits}cr
+              Live quote
             </span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -102,7 +92,7 @@ function TemplateDetail({ template, onClose, onLaunch }: {
 
   const configPills = [
     `${cfg.litigantCount} litigants`,
-    `${cfg.confidenceTarget ?? 80}% target`,
+    `${cfg.confidenceTarget ?? 90}/100 review target`,
     cfg.debateMode,
     RESPONSE_MODE_LABELS[cfg.responseMode ?? "balanced"] ?? cfg.responseMode,
   ].filter(Boolean);
@@ -218,7 +208,7 @@ export default function TemplatesPage() {
 
   // Fetch from API (falls back to static if unavailable)
   useEffect(() => {
-    fetchTemplates().then(setTemplates).catch(() => {});
+    fetchTemplates().then(setTemplates).catch(() => setTemplates([])).catch(() => {});
   }, []);
 
   // Filter: category + keyword search
