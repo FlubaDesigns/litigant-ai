@@ -101,6 +101,19 @@ jobs:
             --label "git.sha=${{ github.sha }}" \
             .
 
+      - name: Verify container startup
+        run: |
+          docker run -d --name api-smoke -p 127.0.0.1:8080:8080 -e PORT=8080 gcr.io/litigant-ai/api:${{ github.sha }}
+          trap 'docker rm -f api-smoke >/dev/null 2>&1' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8080/api/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs api-smoke
+          exit 1
+
       - name: Push API container to GCR
         run: docker push gcr.io/litigant-ai/api:${{ github.sha }}
 
@@ -129,9 +142,7 @@ jobs:
 
       # ── Provenance check: confirm deployed revision matches this commit ─────
       - name: Verify Cloud Run deployment matches source commit
-        # Non-blocking: warns on mismatch but never stops the Firebase Hosting deploy.
-        # SHA will read "unknown" on the very first deploy after /version was added;
-        # subsequent deploys will show the correct git SHA.
+        # Block frontend deployment unless the backend serves this exact commit.
         env:
           EXPECTED_SHA: ${{ github.sha }}
           VERSION_URL: "https://api-781960492360.us-central1.run.app/api/version"
@@ -160,3 +171,19 @@ jobs:
           npx firebase-tools deploy --only hosting,firestore:rules,firestore:indexes \
             --project litigant-ai \
             --non-interactive
+
+      - name: Verify hosted frontend and API rewrite
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 6); do
+            curl --fail --silent --show-error https://litigant-ai.web.app/ -o /tmp/hosted-index.html
+            HOSTED_SHA=$(curl --fail --silent https://litigant-ai.web.app/api-server/api/version | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
+            if cmp -s artifacts/gh-brain/dist/public/index.html /tmp/hosted-index.html && [ "$HOSTED_SHA" = "$EXPECTED_SHA" ]; then
+              echo "Hosted frontend and API match this commit."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Hosted content does not match the built revision."
+          exit 1

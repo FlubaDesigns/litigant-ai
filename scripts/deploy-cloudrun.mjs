@@ -114,7 +114,7 @@ const yamlPath = join(tmpDir, "service.yaml");
 writeFileSync(yamlPath, yaml, { encoding: "utf8", mode: 0o600 });
 console.log(`Service YAML written to ${yamlPath}`);
 console.log(`  FIREBASE_SERVICE_ACCOUNT length : ${required.sa.length}`);
-console.log(`  ANTHROPIC_API_KEY starts with   : ${required.anthropic.slice(0, 15)}…`);
+console.log("  AI provider credential configured.");
 
 try {
   execSync(

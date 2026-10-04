@@ -28,14 +28,14 @@ The product has a useful core: a configurable debate workflow, separate review a
 - PDF extraction uses the installed parser's v2 API and releases resources. URL extraction pins the connection to the vetted public IP to prevent DNS rebinding.
 - Session documents are writable only by the backend. Clearing an auto-refill redirect removes both required fields.
 - Mobile court controls have 44px add/remove targets, readable labels, correct seat/model summaries, and no nested configure button.
-- Pages and PDF/Word generators load on demand. The Docker build includes shared packages, preserves pnpm runtime links and packages seat briefs/PDF dependencies.
+- Pages and PDF/Word generators load on demand. The Docker build includes shared packages, preserves pnpm runtime links and packages seat briefs/PDF dependencies. Third-party SDKs retain their complete dependency trees, avoiding missing transitive imports at startup.
 - Deployment gates include workspace type checking, backend/frontend tests, browser tests and the production frontend build. Deployed backend commit provenance is blocking.
 
 ## Verification
 
 Regression coverage includes Firestore read/write ordering, payment deduplication and custom amounts, failure refunds, failed saves, ownership, resumed metadata/transcripts/turns, mixed-model pricing, shared configuration, low review scores, provider failures, malformed release decisions, pipeline budget limits, real PDF extraction and pinned URL connections. AI calls and payments in automated tests use fixtures; they do not spend live credits or charge cards.
 
-Local browser execution is restricted by the workspace's socket sandbox. Browser tests run in GitHub Actions before deployment. A green deploy workflow is required evidence for the shipped revision.
+Local browser execution is restricted by the workspace's socket sandbox. All 10 browser tests passed in GitHub Actions. A container startup health check also gates deployment. A green deploy workflow is required evidence for the shipped revision.
 
 ## Outstanding operational action
 
