@@ -14,27 +14,49 @@ const googleProvider = new GoogleAuthProvider();
 
 import { API_BASE } from "@/lib/apiUrl";
 
-/**
- * Server-side equivalent of a Firebase Auth onCreate Cloud Function.
- * Called after signup/first login — the server creates the user doc and
- * grants the 100-credit bonus atomically (amount & logic are server-controlled).
- */
-async function provisionUser(
-  user: User,
-  extra?: { role?: string; organization?: string }
-): Promise<void> {
+type ProfileDetails = { role?: string; organization?: string };
+let signInAttempt: Promise<User> | null = null;
+let pendingProfile: { uid: string; extra: ProfileDetails } | null = null;
+
+/** One account-setup path for sign-in, restored logins and explicit retries. */
+async function provisionUser(user: User, extra?: ProfileDetails): Promise<void> {
+  if (extra) pendingProfile = { uid: user.uid, extra };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
   try {
-    const token = await user.getIdToken();
-    await fetch(`${API_BASE}/auth/provision`, {
+    const token = await user.getIdToken(true);
+    const response = await fetch(`${API_BASE}/auth/provision`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(extra ?? {}),
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(pendingProfile?.uid === user.uid ? pendingProfile.extra : {}),
+      signal: controller.signal,
     });
-  } catch (err) {
-    console.warn("[AuthService] provisionUser failed (non-fatal):", err);
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data?.provisioned !== true) {
+      throw new Error("Account setup was not confirmed.");
+    }
+    if (pendingProfile?.uid === user.uid) pendingProfile = null;
+  } catch {
+    throw new Error("Your sign-in succeeded, but account setup could not finish. Retry setup to continue with this same account.");
+  } finally { clearTimeout(timeout); }
+}
+
+async function performSignIn(operation: () => Promise<User>): Promise<User> {
+  const attempt = operation();
+  signInAttempt = attempt;
+  try { return await attempt; }
+  finally { if (signInAttempt === attempt) signInAttempt = null; }
+}
+
+export async function ensureAccountSetup(user: User): Promise<void> {
+  // Firebase emits auth changes before the sign-in operation finishes. Wait for
+  // that operation so registration details and provisioning are not duplicated.
+  const attempt = signInAttempt;
+  if (attempt) {
+    const ready = await attempt;
+    if (ready.uid !== user.uid) throw new Error("The signed-in account changed. Please retry.");
+  } else {
+    await provisionUser(user);
   }
 }
 
@@ -68,27 +90,35 @@ export async function signUpWithEmail(
   role?: string,
   organization?: string
 ): Promise<User> {
-  const credential = await createUserWithEmailAndPassword(auth, email, password);
-  await updateProfile(credential.user, { displayName });
-  await sendVerificationViaServer(credential.user);
-  await provisionUser(credential.user, { role, organization });
-  return credential.user;
+  return performSignIn(async () => {
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    pendingProfile = { uid: credential.user.uid, extra: { role, organization } };
+    await updateProfile(credential.user, { displayName });
+    await provisionUser(credential.user, { role, organization });
+    await sendVerificationViaServer(credential.user);
+    return credential.user;
+  });
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
-  await provisionUser(credential.user);
-  return credential.user;
+  return performSignIn(async () => {
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    await provisionUser(credential.user);
+    return credential.user;
+  });
 }
 
 export async function signInWithGoogle(): Promise<User> {
-  const credential = await signInWithPopup(auth, googleProvider);
-  await provisionUser(credential.user);
-  return credential.user;
+  return performSignIn(async () => {
+    const credential = await signInWithPopup(auth, googleProvider);
+    await provisionUser(credential.user);
+    return credential.user;
+  });
 }
 
 export async function signOut(): Promise<void> {
   await firebaseSignOut(auth);
+  pendingProfile = null;
 }
 
 /**

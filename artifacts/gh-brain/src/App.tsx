@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AccountSetupNotice } from "@/components/AccountSetupNotice";
 import { AppLayout } from "@/components/AppLayout";
 
 // Public pages
@@ -44,9 +45,13 @@ const queryClient = new QueryClient({
 });
 
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, setupError } = useAuth();
   if (loading) return null;
-  if (user && user.emailVerified) return <Redirect to={safeNext(new URLSearchParams(window.location.search).get("next"))} />;
+  if (setupError) return <AccountSetupNotice />;
+  if (user) {
+    const next = safeNext(new URLSearchParams(window.location.search).get("next"));
+    return <Redirect to={user.emailVerified ? next : `/verify-email?next=${encodeURIComponent(next)}`} />;
+  }
   return <>{children}</>;
 }
 

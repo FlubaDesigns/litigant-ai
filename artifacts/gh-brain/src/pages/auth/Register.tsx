@@ -62,12 +62,16 @@ export default function RegisterPage() {
   }
 
   async function handleGoogleSignIn() {
+    if (isLoading) return;
+    setIsLoading(true);
     try {
       await signInGoogle();
       toast.success("Signed in with Google.");
       setLocation(next);
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in with Google.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -207,6 +211,7 @@ export default function RegisterPage() {
             variant="outline"
             className="w-full bg-transparent border-border hover:bg-secondary/50"
             onClick={handleGoogleSignIn}
+            disabled={isLoading}
           >
             <FcGoogle className="mr-2 w-5 h-5" />
             Continue with Google

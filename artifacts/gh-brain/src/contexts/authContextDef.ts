@@ -6,6 +6,8 @@ export interface AuthContextValue {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  setupError: string | null;
+  retryAccountSetup: () => Promise<void>;
   isAdmin: boolean;
   firebaseReady: boolean;
   signUp: (email: string, password: string, displayName: string, role?: string, organization?: string) => Promise<User>;

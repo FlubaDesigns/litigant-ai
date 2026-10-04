@@ -1,5 +1,6 @@
 import { Redirect } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import { AccountSetupNotice } from "./AccountSetupNotice";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,7 +13,7 @@ export function ProtectedRoute({
   requireVerified = true,
   requireAdmin = false,
 }: ProtectedRouteProps) {
-  const { user, loading, isAdmin, firebaseReady } = useAuth();
+  const { user, loading, setupError, isAdmin, firebaseReady } = useAuth();
 
   // When Firebase is not configured, allow all access in guest mode
   if (!firebaseReady) {
@@ -34,6 +35,8 @@ export function ProtectedRoute({
       </div>
     );
   }
+
+  if (setupError) return <AccountSetupNotice />;
 
   if (!user) {
     return <Redirect to={`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`} />;

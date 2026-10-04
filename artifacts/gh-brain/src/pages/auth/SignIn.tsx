@@ -42,12 +42,16 @@ export default function SignInPage() {
   }
 
   async function handleGoogleSignIn() {
+    if (isLoading) return;
+    setIsLoading(true);
     try {
       await signInGoogle();
       toast.success("Google authentication successful. Session initiated.");
       setLocation(next);
     } catch (error: any) {
       toast.error(error.message || "Failed to authenticate with Google.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -133,6 +137,7 @@ export default function SignInPage() {
             variant="outline"
             className="w-full bg-transparent border-border hover:bg-secondary/50 transition-colors"
             onClick={handleGoogleSignIn}
+            disabled={isLoading}
           >
             <FcGoogle className="mr-2 w-5 h-5" />
             Authenticate with Google

@@ -2,10 +2,8 @@ import type { CourtConfig } from "@workspace/api-zod/session";
 import {
   doc,
   getDoc,
-  setDoc,
   updateDoc,
   onSnapshot,
-  serverTimestamp,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -75,14 +73,6 @@ export async function saveUserConfig(
   await updateDoc(ref, { defaultSettings: JSON.parse(JSON.stringify(settings)) });
 }
 
-export async function createUserProfile(uid: string, data: Omit<UserProfile, "userId">): Promise<void> {
-  const ref = doc(db, "users", uid);
-  const existing = await getDoc(ref);
-  if (!existing.exists()) {
-    await setDoc(ref, { ...data, userId: uid });
-  }
-}
-
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
@@ -97,7 +87,8 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
 
 export function onUserProfileSnapshot(
   uid: string,
-  callback: (profile: UserProfile | null) => void
+  callback: (profile: UserProfile | null) => void,
+  onError?: (error: Error) => void,
 ): Unsubscribe {
   const ref = doc(db, "users", uid);
   return onSnapshot(ref, (snap) => {
@@ -106,5 +97,5 @@ export function onUserProfileSnapshot(
     } else {
       callback({ ...snap.data(), userId: snap.id } as UserProfile);
     }
-  });
+  }, onError);
 }

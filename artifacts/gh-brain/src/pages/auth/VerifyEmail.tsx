@@ -5,28 +5,33 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowRight, Mail, Loader2, LogOut } from "lucide-react";
+import { AccountSetupNotice } from "@/components/AccountSetupNotice";
+import { API_BASE } from "@/lib/apiUrl";
 import { safeNext } from "@/lib/authUtils";
 
 export default function VerifyEmailPage() {
-  const { resendVerification, logOut, user } = useAuth();
+  const { resendVerification, logOut, user, loading, setupError, retryAccountSetup } = useAuth();
   const [location, setLocation] = useLocation();
   const [isResending, setIsResending] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const next = safeNext(new URLSearchParams(location.split("?")[1] ?? "").get("next"));
 
   // Move side-effecting navigation out of the render path
   useEffect(() => {
-    if (user?.emailVerified) setLocation(next);
-  }, [user?.emailVerified, next, setLocation]);
+    if (user?.emailVerified && !loading && !setupError && !isChecking) setLocation(next);
+  }, [user?.emailVerified, loading, setupError, isChecking, next, setLocation]);
 
   async function handleVerifyCheck() {
-    if (!user) return;
+    if (!user || isChecking || loading) return;
+    setIsChecking(true);
     try {
       await reload(user);
       if (user.emailVerified) {
+        await retryAccountSetup();
         // Fire welcome email exactly once (idempotent on server)
         user.getIdToken().then((token) =>
           fetch(
-            `${(import.meta.env["VITE_API_URL"] as string | undefined) ?? "/api-server/api"}/auth/welcome`,
+            `${API_BASE}/auth/welcome`,
             { method: "POST", headers: { Authorization: `Bearer ${token}` } }
           )
         ).catch(() => {});
@@ -34,8 +39,10 @@ export default function VerifyEmailPage() {
       } else {
         toast.error("Email not yet verified — please click the link in your inbox.");
       }
-    } catch {
-      window.location.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Verification could not be checked. Please retry.");
+    } finally {
+      setIsChecking(false);
     }
   }
 
@@ -50,6 +57,8 @@ export default function VerifyEmailPage() {
       setIsResending(false);
     }
   }
+
+  if (setupError) return <AccountSetupNotice />;
 
   return (
     <main className="auth-main">
@@ -85,6 +94,7 @@ export default function VerifyEmailPage() {
 
           <Button
             onClick={handleVerifyCheck}
+            disabled={isChecking || loading}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
             I have verified my clearance
