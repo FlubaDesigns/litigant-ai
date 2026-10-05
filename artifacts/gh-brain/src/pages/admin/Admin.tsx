@@ -3293,8 +3293,9 @@ function AiStudioTab() {
     queryKey: ["admin-ai-studio"],
     queryFn: getAiStudioModels,
     retry: false,
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: true,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const toggleModelMut = useMutation({

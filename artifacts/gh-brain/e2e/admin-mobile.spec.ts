@@ -252,7 +252,7 @@ test("session details distinguish measured agent costs from legacy usage", async
 });
 
 
-test("AI Studio removes unverified models and shows connection failures and recovery",async({page})=>{
+test("AI Studio checks connections on request without automatic polling",async({page})=>{
   let connected=true;
   await page.clock.install();
   await page.route("**/api-server/api/admin/ai-studio/models",async route=>route.fulfill({json:{
@@ -263,7 +263,9 @@ test("AI Studio removes unverified models and shows connection failures and reco
   await expect(page.getByText("Connected",{exact:true})).toBeVisible();
   await expect(page.getByRole("button",{name:model.label,exact:true})).toBeVisible();
   connected=false;
-  await page.clock.fastForward(31000);
+  await page.clock.fastForward(120000);
+  await expect(page.getByText("Connected",{exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Check connection",exact:true}).click();
   await expect(page.getByText("Key rejected",{exact:true})).toBeVisible();
   await expect(page.getByRole("switch",{name:"Enable OpenAI",exact:true})).toHaveAttribute("data-connection","unavailable");
   await expect(page.getByRole("button",{name:model.label,exact:true})).toHaveCount(0);
