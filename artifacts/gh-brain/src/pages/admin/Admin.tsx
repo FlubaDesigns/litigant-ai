@@ -1174,8 +1174,9 @@ function TransactionsTab() {
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={filterType}
+          aria-label="Filter transactions by type"
           onChange={(e) => setFilterType(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          className="h-11 rounded-md border border-input bg-background px-3 text-sm"
         >
           <option value="">All types</option>
           <option value="purchase">Purchase</option>
@@ -1191,9 +1192,10 @@ function TransactionsTab() {
           value={filterUserId}
           onChange={(e) => setFilterUserId(e.target.value)}
           placeholder="Filter by user ID…"
+          aria-label="Filter transactions by user ID"
           className="h-11 w-full sm:w-52 text-sm font-mono"
         />
-        <Button variant="outline" size="icon" onClick={() => refetch()}>
+        <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Refresh transactions">
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -1201,76 +1203,79 @@ function TransactionsTab() {
       {isLoading ? (
         <TabSkeleton />
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table mobileCards>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>User</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Balance After</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data?.transactions ?? []).map((tx) => {
-                const isShortfall = SHORTFALL_TYPES.has(tx.type ?? "");
-                return (
-                  <TableRow
-                    key={tx.id}
-                    className={cn(
-                      "hover:bg-secondary/20",
-                      isShortfall && "bg-amber-400/5 border-l-2 border-amber-400/40"
-                    )}
+        <div className="row layout__split-2">
+          {(data?.transactions ?? []).map((tx) => {
+            const isShortfall = SHORTFALL_TYPES.has(tx.type ?? "");
+            const typeLabel = tx.type?.replace(/_/g, " ") ?? "Transaction";
+            return (
+              <article
+                key={tx.id}
+                aria-label={`Transaction ${typeLabel}`}
+                className={cn("lgt-card lgt-card--compact space-y-3", isShortfall && "border-amber-400/40 bg-amber-400/5")}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn("text-xs capitalize", isShortfall && "border-amber-400/50 text-amber-400")}
                   >
-                    <TableCell className="text-xs font-mono text-muted-foreground truncate max-w-[120px]">
-                      {tx.userId ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-xs font-mono uppercase",
-                          isShortfall && "border-amber-400/50 text-amber-400"
-                        )}
-                      >
-                        {isShortfall && <AlertTriangle className="w-3 h-3 mr-1" />}
-                        {tx.type?.replace(/_/g, " ") ?? "—"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={cn("font-mono font-semibold", (tx.amount ?? 0) > 0 ? "text-primary" : "text-destructive")}>
-                      {(tx.amount ?? 0) > 0 ? "+" : ""}{tx.amount}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{tx.balanceAfter ?? "—"}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{tx.source ?? "—"}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</TableCell>
-                    <TableCell>
-                      {(tx.type === "usage" || isShortfall) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary"
-                          onClick={() => setRefundTarget(tx)}
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          Refund
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {!data?.transactions?.length && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
-                    No transactions found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    {isShortfall && <AlertTriangle className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" />}
+                    {typeLabel}
+                  </Badge>
+                  {(tx.type === "usage" || isShortfall) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-11 shrink-0 text-xs gap-1"
+                      onClick={() => setRefundTarget(tx)}
+                    >
+                      <RefreshCw className="w-3 h-3" aria-hidden="true" />
+                      Refund
+                    </Button>
+                  )}
+                </div>
+                <dl className="space-y-3">
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Amount · credits</dt>
+                      <dd className={cn("text-sm font-semibold tabular-nums break-words", (tx.amount ?? 0) > 0 ? "text-primary" : (tx.amount ?? 0) < 0 ? "text-destructive" : "text-foreground")}>
+                        {(tx.amount ?? 0) > 0 ? "+" : ""}{tx.amount ?? "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Balance after</dt>
+                      <dd className="text-sm tabular-nums break-words">{tx.balanceAfter ?? "—"}</dd>
+                    </div>
+                  </div>
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Source</dt>
+                      <dd className="text-sm break-words">{tx.source ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Date</dt>
+                      <dd className="text-sm">{formatDate(tx.createdAt)}</dd>
+                    </div>
+                  </div>
+                </dl>
+                <details className="text-xs text-muted-foreground">
+                  <summary className="min-h-11 py-3 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Details</summary>
+                  <dl className="space-y-2 pb-2">
+                    <div>
+                      <dt>User ID</dt>
+                      <dd className="font-mono break-all text-foreground">{tx.userId ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Transaction ID</dt>
+                      <dd className="font-mono break-all text-foreground">{tx.id}</dd>
+                    </div>
+                  </dl>
+                </details>
+              </article>
+            );
+          })}
+          {!data?.transactions?.length && (
+            <p className="py-12 text-center text-muted-foreground text-sm">No transactions found</p>
+          )}
         </div>
       )}
 

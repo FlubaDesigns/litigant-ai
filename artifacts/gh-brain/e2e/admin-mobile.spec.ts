@@ -15,7 +15,7 @@ const responses: Record<string,unknown> = {
   "/admin/users":{users:[{id:longId,email:"long-address-for-mobile-layout@example.test",displayName:"Layout fixture",creditBalance:5500}],hasMore:false},
   "/admin/sessions":{sessions:[{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0,createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
   [`/admin/sessions/${longId}`]:{session:{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0},turns:[]},
-  "/admin/transactions":{transactions:[{id:longId,userId:longId,type:"purchase",amount:50,balanceAfter:100}],hasMore:false},
+  "/admin/transactions":{transactions:[{id:longId,userId:longId,type:"usage",amount:-50,balanceAfter:0,source:"session",createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
   "/admin/api-usage":{totalSessions:5,totalCreditsUsed:100,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],apiLogs:[{id:longId,model:longId,status:"error",durationMs:300}]},
   "/admin/error-logs":{logs:[{id:longId,message:longId,userId:longId}],failedSessions:[]},
   "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:longId,userId:longId,sessionId:longId}],totalCount:1},
@@ -31,6 +31,10 @@ const responses: Record<string,unknown> = {
 test.beforeEach(async ({page}) => {
   await page.route("**/api-server/api/**", async route => {
     const path = new URL(route.request().url()).pathname.replace("/api-server/api", "");
+    if (path === "/admin/transactions" && new URL(route.request().url()).searchParams.has("type")) {
+      await route.fulfill({json:{transactions:[],hasMore:false}});
+      return;
+    }
     if (Object.hasOwn(responses,path)) await route.fulfill({json:responses[path]});
     else await route.fallback();
   });
@@ -96,6 +100,34 @@ for (const width of [360, 412]) {
         await expect(detail.getByText(longId,{exact:true})).toBeVisible();
         await expect(detail.getByText("0%",{exact:true})).toBeVisible();
         await detail.getByRole("button",{name:"Close",exact:true}).click();
+      }
+      if (tab.id === "transactions") {
+        const card=page.getByRole("article",{name:"Transaction usage",exact:true});
+        const rows=card.locator("dl .layout--keep-columns");
+        await expect(rows).toHaveCount(2);
+        for (const row of await rows.all()) {
+          const [left,right]=await row.locator(":scope > div").evaluateAll(cells=>cells.map(cell=>{
+            const {x,y,width}=cell.getBoundingClientRect();return {x,y,width};
+          }));
+          expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+          expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+        }
+        expect((await card.boundingBox())!.height).toBeLessThan(300);
+        await expect(card.getByText("-50",{exact:true})).toBeVisible();
+        await expect(card.getByText("0",{exact:true})).toBeVisible();
+        await expect(card.getByText(longId,{exact:true}).first()).toBeHidden();
+        await card.locator("summary").click();
+        await expect(card.getByText(longId,{exact:true}).first()).toBeVisible();
+        await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+        await card.locator("summary").click();
+        const refund=card.getByRole("button",{name:"Refund",exact:true});
+        expect(Math.round((await refund.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+        await refund.click();
+        const dialog=page.getByRole("dialog",{name:"Issue Refund"});
+        await expect(dialog).toBeVisible();
+        await expect(dialog.getByRole("spinbutton")).toHaveValue("50");
+        await expect(dialog.getByText(longId,{exact:true})).toBeVisible();
+        await dialog.getByRole("button",{name:"Cancel",exact:true}).click();
       }
       if (tab.id === "overview" || tab.id === "health") {
         const rows=page.locator(".admin-page .row.layout__split-2");
