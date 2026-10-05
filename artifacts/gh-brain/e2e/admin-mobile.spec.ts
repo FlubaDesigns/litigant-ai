@@ -57,6 +57,22 @@ for (const width of [360, 412]) {
         return rect.width>0 && (rect.left< -1 || rect.right>window.innerWidth+1);
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
+      if (tab.id === "users") {
+        const card=page.getByRole("article",{name:"User Layout fixture"});
+        const rows=card.locator("dl .layout--keep-columns");
+        await expect(rows).toHaveCount(2);
+        for (const row of await rows.all()) {
+          const cells=await row.locator(":scope > div").all();
+          const left=await cells[0].boundingBox(),right=await cells[1].boundingBox();
+          expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+          expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+        }
+        expect((await card.boundingBox())!.height).toBeLessThan(270);
+        await card.getByRole("button",{name:"Actions for Layout fixture"}).click();
+        await page.getByRole("menuitem",{name:"Adjust credits"}).click();
+        await expect(page.getByRole("dialog",{name:"Adjust Credits"})).toBeVisible();
+        await page.getByRole("button",{name:"Cancel",exact:true}).click();
+      }
       if (tab.id === "overview" || tab.id === "health") {
         const rows=page.locator(".admin-page .row.layout__split-2");
         await expect(rows).toHaveCount(tab.id === "health" ? 4 : 2);

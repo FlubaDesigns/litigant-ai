@@ -322,16 +322,17 @@ function UsersTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email or name…"
+            placeholder="Name or email"
+            aria-label="Search users by name or email"
             className="pl-9"
           />
         </div>
-        <Button variant="outline" size="icon" onClick={() => refetch()}>
+        <Button variant="outline" size="icon" aria-label="Refresh users" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -340,77 +341,67 @@ function UsersTab() {
         <TabSkeleton />
       ) : (
         <>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table mobileCards>
-              <TableHeader>
-                <TableRow className="bg-secondary/30">
-                  <TableHead>User</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Credits</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-secondary/20 cursor-pointer" onClick={() => setSelectedUid(user.id)}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{user.displayName ?? "—"}</p>
-                        <p className="text-xs text-muted-foreground">{user.email ?? user.id}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-mono uppercase">
-                        {user.plan ?? "free"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{user.creditBalance ?? 0}</TableCell>
-                    <TableCell>
-                      {user.banned ? (
+          <div className="row layout__split-2">
+            {users.map(user => (
+              <article key={user.id} className="lgt-card lgt-card--compact space-y-3" aria-label={`User ${user.displayName ?? user.email ?? user.id}`}>
+                <div className="flex items-start gap-2">
+                  <button type="button" className="flex-1 min-w-0 text-left" onClick={() => setSelectedUid(user.id)} aria-label={`View profile for ${user.displayName ?? user.email ?? user.id}`}>
+                    <span className="block font-medium text-sm">{user.displayName ?? "—"}</span>
+                    <span className="block text-xs text-muted-foreground break-words">{user.email ?? user.id}</span>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={`Actions for ${user.displayName ?? user.email ?? user.id}`}>
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setSelectedUid(user.id)}>
+                        <ChevronRight className="w-4 h-4 mr-2" />View profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setAdjustTarget(user)}>
+                        <Zap className="w-4 h-4 mr-2" />Adjust credits
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className={user.banned ? "text-primary" : "text-destructive"}
+                        onClick={() => setBanTarget({ user, banned: !user.banned })}
+                      >
+                        <Ban className="w-4 h-4 mr-2" />
+                        {user.banned ? "Unban" : "Ban"} user
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <dl className="space-y-3">
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Plan</dt>
+                      <dd><Badge variant="outline" className="text-xs font-mono uppercase">{user.plan ?? "free"}</Badge></dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Credits</dt>
+                      <dd className="font-mono text-sm">{user.creditBalance ?? 0}</dd>
+                    </div>
+                  </div>
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Status</dt>
+                      <dd>{user.banned ? (
                         <Badge variant="destructive" className="text-xs">Banned</Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs text-primary border-primary/30 bg-primary/10">Active</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedUid(user.id)}>
-                            <ChevronRight className="w-4 h-4 mr-2" />View profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setAdjustTarget(user)}>
-                            <Zap className="w-4 h-4 mr-2" />Adjust credits
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className={user.banned ? "text-primary" : "text-destructive"}
-                            onClick={() => setBanTarget({ user, banned: !user.banned })}
-                          >
-                            <Ban className="w-4 h-4 mr-2" />
-                            {user.banned ? "Unban" : "Ban"} user
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!users.length && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-sm">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                      )}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Joined</dt>
+                      <dd className="text-xs text-muted-foreground">{formatDate(user.createdAt)}</dd>
+                    </div>
+                  </div>
+                </dl>
+              </article>
+            ))}
           </div>
+          {!users.length && <p className="py-6 text-center text-muted-foreground text-sm">No users found</p>}
 
           {/* Pagination */}
           {hasNextPage && (
