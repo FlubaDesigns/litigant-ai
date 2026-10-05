@@ -1,3 +1,5 @@
+import { InvalidBillingDefaultsError } from "../lib/billingDefaultsConfig.js";
+import { DEFAULT_LIMITS, LIMIT_RANGES, getAdminLimits } from "../lib/adminLimitsConfig.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { getTemplates } from "../lib/templateStore.js";
 import { Router } from "express";
@@ -589,7 +591,7 @@ router.get("/admin/email-templates/:id/preview", requireAdmin, async (req: any, 
   }
   const { headline, introText } = req.query as { headline?: string; introText?: string };
   try {
-    const html = renderTemplatePreview(id, { headline, introText });
+    const html = await renderTemplatePreview(id, { headline, introText });
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     return res.send(html);
@@ -959,31 +961,10 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
 
 // ── Admin Limits (public read, admin write) ───────────────────────────────────
 //
-// Numeric platform limits controlled from the admin centre.
-// Stored in Firestore config/adminLimits. Defaults apply when the document
-// doesn't exist or Firestore is unavailable (fail-open, not fail-closed).
-
-const DEFAULT_LIMITS: Record<string, number> = {
-  maxLitigants: 10,
-  overdraftLimit: 500,
-};
-
-const LIMIT_RANGES: Record<string, { min: number; max: number }> = {
-  maxLitigants: { min: 2, max: 20 },
-  overdraftLimit: { min: 0, max: 5000 },
-};
-
-// Public — the frontend needs this before auth to render pickers correctly.
+// The same saved limits govern public controls, estimates and session runs.
 router.get("/limits", async (_req, res) => {
-  const db = getFirestoreDb();
-  if (!db) return res.json({ limits: DEFAULT_LIMITS });
-  try {
-    const doc = await db.collection("config").doc("adminLimits").get();
-    if (!doc.exists) return res.json({ limits: DEFAULT_LIMITS });
-    return res.json({ limits: { ...DEFAULT_LIMITS, ...(doc.data() ?? {}) } });
-  } catch {
-    return res.status(503).json({error:"Platform limits are temporarily unavailable"});
-  }
+  try { return res.json({ limits: await getAdminLimits() }); }
+  catch { return res.status(503).json({error:"Platform limits are temporarily unavailable"}); }
 });
 
 router.put("/admin/limits/:name", requireAdmin, async (req, res) => {
@@ -1477,43 +1458,14 @@ router.get("/admin/billing-defaults", requireAdmin, async (_req: any, res) => {
  * Updates the billing defaults stored in Firestore config/billingDefaults.
  */
 router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
-  const { autoRefillAmounts, defaultAutoRefillAmount, defaultThresholdCredits, defaultWarningThresholdCredits, signupBonusCredits } = req.body as {
+  const { autoRefillAmounts, defaultAutoRefillAmount, defaultThresholdCredits, defaultWarningThresholdCredits, signupBonusCredits, emailCreditWarningThreshold } = req.body as {
     autoRefillAmounts?: number[];
     defaultAutoRefillAmount?: number;
     defaultThresholdCredits?: number;
     defaultWarningThresholdCredits?: number;
     signupBonusCredits?: number;
+    emailCreditWarningThreshold?: number;
   };
-
-  if (autoRefillAmounts !== undefined) {
-    if (!Array.isArray(autoRefillAmounts) || autoRefillAmounts.length === 0 ||
-        autoRefillAmounts.some((a) => !Number.isInteger(a) || a < 1 || a > 500)) {
-      return res.status(400).json({ error: "autoRefillAmounts must be a non-empty array of integers between 1 and 500" });
-    }
-  }
-  if (defaultAutoRefillAmount !== undefined) {
-    if (!Number.isInteger(defaultAutoRefillAmount) || defaultAutoRefillAmount < 1 || defaultAutoRefillAmount > 500) {
-      return res.status(400).json({ error: "defaultAutoRefillAmount must be an integer between 1 and 500" });
-    }
-    if (autoRefillAmounts !== undefined && !autoRefillAmounts.includes(defaultAutoRefillAmount)) {
-      return res.status(400).json({ error: "defaultAutoRefillAmount must be one of the autoRefillAmounts values" });
-    }
-  }
-  if (defaultThresholdCredits !== undefined) {
-    if (!Number.isInteger(defaultThresholdCredits) || defaultThresholdCredits < 0 || defaultThresholdCredits > 100000) {
-      return res.status(400).json({ error: "defaultThresholdCredits must be an integer between 0 and 100000" });
-    }
-  }
-  if (defaultWarningThresholdCredits !== undefined) {
-    if (!Number.isInteger(defaultWarningThresholdCredits) || defaultWarningThresholdCredits < 0 || defaultWarningThresholdCredits > 100000) {
-      return res.status(400).json({ error: "defaultWarningThresholdCredits must be an integer between 0 and 100000" });
-    }
-  }
-  if (signupBonusCredits !== undefined) {
-    if (!Number.isInteger(signupBonusCredits) || signupBonusCredits < 0 || signupBonusCredits > 100000) {
-      return res.status(400).json({ error: "signupBonusCredits must be an integer between 0 and 100000" });
-    }
-  }
 
   try {
     const updated = await saveBillingDefaults({
@@ -1522,10 +1474,11 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
       ...(defaultThresholdCredits !== undefined && { defaultThresholdCredits }),
       ...(defaultWarningThresholdCredits !== undefined && { defaultWarningThresholdCredits }),
       ...(signupBonusCredits !== undefined && { signupBonusCredits }),
+      ...(emailCreditWarningThreshold !== undefined && { emailCreditWarningThreshold }),
     });
     return res.json(updated);
   } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
+    return res.status(err instanceof InvalidBillingDefaultsError ? 400 : 500).json({ error: err instanceof InvalidBillingDefaultsError ? err.message : safeError(err) });
   }
 });
 

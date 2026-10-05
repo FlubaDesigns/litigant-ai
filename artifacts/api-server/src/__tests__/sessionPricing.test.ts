@@ -1,6 +1,8 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {CourtConfigSchema, parseReviewScore, confidenceLabel} from "@workspace/api-zod/session";
 import {TEMPLATES, normalizeTemplate} from "@workspace/api-zod/templates";
+vi.mock("../lib/adminLimitsConfig.js", () => ({getAdminLimits:vi.fn(async () => ({maxLitigants:10,overdraftLimit:500}))}));
+import {getAdminLimits} from "../lib/adminLimitsConfig.js";
 vi.mock("../lib/providerCatalog.js", () => ({getProviderCatalog: vi.fn()}));
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: () => null}));
 import {getProviderCatalog} from "../lib/providerCatalog.js";
@@ -18,6 +20,18 @@ beforeEach(() => {
   vi.mocked(getProviderCatalog).mockResolvedValue(catalog());
 });
 describe("shared session contract and pricing", () => {
+  it("applies the saved limit before building seats and estimating a session", async () => {
+    vi.mocked(getAdminLimits).mockResolvedValueOnce({maxLitigants:2,overdraftLimit:100});
+    const prepared = await prepareSession({litigantCount:10});
+    expect(prepared.config.litigantCount).toBe(2);
+    expect(prepared.config.seatMap!.litigants).toHaveLength(2);
+    expect(prepared.limits.overdraftLimit).toBe(100);
+  });
+  it("refuses preparation when saved limits cannot be read", async () => {
+    vi.mocked(getAdminLimits).mockRejectedValueOnce(new Error("Limits unavailable"));
+    await expect(prepareSession({litigantCount:10})).rejects.toThrow("Limits unavailable");
+  });
+
   it("keeps every seat, intelligence setting and output preference through API validation", () => {
     const seat = {provider:"gemini",model:"gemini-2.5-flash",intelligenceLevel:50,useMasterSettings:false};
     const config = CourtConfigSchema.parse({outputPreferenceMode:"answer-only", intelligenceLevel:80,

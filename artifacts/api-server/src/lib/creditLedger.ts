@@ -254,7 +254,7 @@ export async function updateUserPlan(
  */
 export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean; amount: number }> {
   const { signupBonusCredits } = await getBillingDefaults();
-  const amount = signupBonusCredits ?? 500;
+  const amount = signupBonusCredits;
   const result = await addCredits(uid, amount, "signup_bonus", {
     source:          "signup_trial",
     idempotencyKey:  `signup_bonus_${uid}`,

@@ -1,9 +1,8 @@
 import { useBillingDefaults } from "./useConfiguration";
-import { STATIC_BILLING_DEFAULTS } from "@/services/billingService";
 
-export interface PublicConfig { signupBonusCredits: number; }
+export interface PublicConfig { signupBonusCredits: number | null; }
 
 export function usePublicConfig(): PublicConfig {
   const {data} = useBillingDefaults();
-  return {signupBonusCredits:data?.signupBonusCredits ?? STATIC_BILLING_DEFAULTS.signupBonusCredits};
+  return {signupBonusCredits:data?.signupBonusCredits ?? null};
 }

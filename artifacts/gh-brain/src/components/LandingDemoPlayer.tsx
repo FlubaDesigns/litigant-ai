@@ -289,7 +289,7 @@ export default function LandingDemoPlayer() {
               )}
 
               <Link href="/register" className="demo-cta">
-                {`Put your question on trial — ${signupBonus} credits free →`}
+                {signupBonus === null ? "Put your question on trial →" : `Put your question on trial — ${signupBonus} credits free →`}
               </Link>
             </div>
           )}

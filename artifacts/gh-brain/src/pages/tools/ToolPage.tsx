@@ -377,7 +377,7 @@ export default function ToolPage() {
               <p className="text-muted-foreground mb-8 leading-relaxed">
                 {user
                   ? "Your credits are ready. Pick how you want to start."
-                  : `${signupBonus} free credits on signup. No credit card required.`}
+                  : signupBonus === null ? "No credit card required." : `${signupBonus} free credits on signup. No credit card required.`}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href={hrefs.useTemplate}>

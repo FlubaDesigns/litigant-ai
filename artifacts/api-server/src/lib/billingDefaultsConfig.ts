@@ -86,6 +86,23 @@ export async function getBillingDefaults(): Promise<BillingDefaults> {
   return merged;
 }
 
+export class InvalidBillingDefaultsError extends Error {}
+
+function validateBillingDefaults(values: BillingDefaults): void {
+  if (!Array.isArray(values.autoRefillAmounts) || values.autoRefillAmounts.length === 0 ||
+      values.autoRefillAmounts.some(n => !Number.isInteger(n) || n < 1 || n > 500)) {
+    throw new InvalidBillingDefaultsError("Top-up amounts must be whole dollars between $1 and $500.");
+  }
+  if (!Number.isInteger(values.defaultAutoRefillAmount) || !values.autoRefillAmounts.includes(values.defaultAutoRefillAmount)) {
+    throw new InvalidBillingDefaultsError("Default charge must be one of the top-up amounts.");
+  }
+  for (const key of ["defaultThresholdCredits", "defaultWarningThresholdCredits", "signupBonusCredits", "emailCreditWarningThreshold"] as const) {
+    if (!Number.isInteger(values[key]) || values[key] < 0 || values[key] > 100000) {
+      throw new InvalidBillingDefaultsError(`${key} must be a whole number from 0 to 100,000.`);
+    }
+  }
+}
+
 export async function saveBillingDefaults(
   updates: Partial<BillingDefaults>
 ): Promise<BillingDefaults> {
@@ -94,6 +111,7 @@ export async function saveBillingDefaults(
 
   const current = await getBillingDefaults();
   const next: BillingDefaults = { ...current, ...updates };
+  validateBillingDefaults(next);
 
   await db
     .collection("config")

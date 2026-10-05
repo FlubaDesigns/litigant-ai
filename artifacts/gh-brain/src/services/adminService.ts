@@ -248,10 +248,11 @@ export async function setChecklistItemChecked(id: string, checked: boolean): Pro
 }
 
 export async function getAdminLimits(): Promise<Record<string, number>> {
-  const res = await fetch(`${API_BASE}/limits`);
-  if (!res.ok) return { maxLitigants: 10 };
+  const res = await fetch(`${API_BASE}/limits`, {cache:"no-store"});
+  if (!res.ok) throw new Error("Unable to load platform limits");
   const data = await res.json();
-  return data.limits ?? { maxLitigants: 10 };
+  if (!data.limits) throw new Error("Platform limits are missing");
+  return data.limits;
 }
 
 export async function setAdminLimit(name: string, value: number): Promise<void> {

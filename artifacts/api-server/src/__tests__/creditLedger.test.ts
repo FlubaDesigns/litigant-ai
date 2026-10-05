@@ -1,3 +1,4 @@
+import {getBillingDefaults} from "../lib/billingDefaultsConfig.js";
 /**
  * Credit ledger unit tests.
  *
@@ -315,6 +316,14 @@ describe("grantSignupBonus()", () => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+  });
+
+  it("grants the configured 100-credit signup bonus without changing prior grants", async () => {
+    await grantSignupBonus("existing-bonus-user");
+    vi.mocked(getBillingDefaults).mockResolvedValueOnce({signupBonusCredits:100} as any);
+    expect(await grantSignupBonus("new-bonus-user")).toMatchObject({amount:100,skipped:false});
+    expect(mockDb._store["users/new-bonus-user"].creditBalance).toBe(100);
+    expect(mockDb._store["users/existing-bonus-user"].creditBalance).toBe(500);
   });
 
   it("grants 500 credits on the first call and records a ledger entry", async () => {

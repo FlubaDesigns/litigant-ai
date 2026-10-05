@@ -14,7 +14,7 @@ let docs:Record<string,any>,failRead:boolean,failWrite:boolean;
 beforeEach(()=>{
   failRead=false;failWrite=false;
   docs={aiStudio:{customProviders:[{id:"acme",label:"Acme AI",models:[{id:model,label:"Acme Model",inputRatePer1k:.01,outputRatePer1k:.02,multiplier:3,qualityScore:50}]}]},pricing:{multipliers:{other:7}},modelScores:{}};
-  const ref=(id:string)=>({id,get:async()=>{if(failRead)throw Error("read failed");return {exists:!!docs[id],data:()=>structuredClone(docs[id])};},set:async(v:any)=>{if(failWrite)throw Error("write failed");docs[id]={...docs[id],...v,multipliers:{...docs[id]?.multipliers,...v.multipliers}};}});
+  const ref=(id:string)=>({id,get:async()=>{if(failRead && id!=="adminLimits")throw Error("read failed");return {exists:!!docs[id],data:()=>structuredClone(docs[id])};},set:async(v:any)=>{if(failWrite)throw Error("write failed");docs[id]={...docs[id],...v,multipliers:{...docs[id]?.multipliers,...v.multipliers}};}});
   vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({doc:ref,orderBy:()=>({limit:()=>({get:async()=>({docs:[]})})})}),runTransaction:async(fn:any)=>fn({get:(r:any)=>r.get(),update:(r:any,field:FieldPath)=>{if(failWrite)throw Error("write failed");expect(field.isEqual(new FieldPath("multipliers",model))).toBe(true);delete docs[r.id].multipliers[model];}})} as any);
 });
 const api=(method:"get"|"put"|"delete",path:string)=>request(app)[method](path).set("Authorization","Bearer test");

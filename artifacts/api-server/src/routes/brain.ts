@@ -1,3 +1,4 @@
+import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
@@ -333,23 +334,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     outputFormat: config.outputFormat ?? "report",
   };
 
-  // Enforce the admin-configured max litigant count before cost estimation so
-  // the credit reservation is never based on a higher count than will actually
-  // run. Non-fatal — if Firestore is unavailable we proceed with the client's
-  // requested count (fail-open, not fail-closed).
-  {
-    const limitDb = getFirestoreDb();
-    if (limitDb) {
-      try {
-        const limitsDoc = await limitDb.collection("config").doc("adminLimits").get();
-        if (limitsDoc.exists) {
-          const maxLitigants = (limitsDoc.data()?.["maxLitigants"] as number) ?? 10;
-          effectiveConfig.litigantCount = Math.min(effectiveConfig.litigantCount, maxLitigants);
-        }
-      } catch { /* non-fatal */ }
-    }
-  }
-
   let prepared: Awaited<ReturnType<typeof prepareSession>>;
   let estimatedCost = 0;
   let previousSession: Record<string, any> | null = null;
@@ -471,7 +455,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       templateSystemPrompt = template.systemPrompt;
     }
   } catch (error) {
-    res.status(400).json({message: error instanceof Error ? error.message : "Invalid session configuration"});
+    res.status(error instanceof LimitsUnavailableError ? 503 : 400).json({message: error instanceof Error ? error.message : "Invalid session configuration"});
     return;
   }
   if (!uid) {
@@ -484,7 +468,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       const { signupBonusCredits } = await getBillingDefaults();
       res.status(402).json({
         message:
-          `Guest sessions are limited to one free trial. Create a free account to continue — you'll receive ${signupBonusCredits ?? 500} credits.`,
+          `Guest sessions are limited to one free trial. Create a free account to continue — you'll receive ${signupBonusCredits} credits.`,
         guestLimitReached: true,
       });
       return;
@@ -507,13 +491,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       const overdraftRequested = overdraft === true;
       if (overdraftRequested && db) {
         try {
-          const [flagDoc, limitDoc] = await Promise.all([
-            db.collection("config").doc("featureFlags").get(),
-            db.collection("config").doc("adminLimits").get(),
-          ]);
+          const flagDoc = await db.collection("config").doc("featureFlags").get();
           const overdraftEnabled = flagDoc.exists ? (flagDoc.data()?.["creditOverdraft"] === true) : false;
           if (overdraftEnabled) {
-            overdraftLimit = limitDoc.exists ? ((limitDoc.data()?.["overdraftLimit"] as number) ?? 500) : 500;
+            overdraftLimit = prepared.limits.overdraftLimit!;
           }
         } catch { /* non-fatal — no overdraft */ }
       }
@@ -880,6 +861,6 @@ router.post("/session-estimate", makeRateLimiter({ keyFn: req => `quote:${getCli
   try {
     const quote = await prepareSession(parsed.data);
     return res.json({config:quote.config, estimatedCredits:quote.estimatedCredits, maxCredits:quote.config.maxCredits});
-  } catch (e) { return res.status(400).json({message:e instanceof Error ? e.message : "Estimate unavailable"}); }
+  } catch (e) { return res.status(e instanceof LimitsUnavailableError ? 503 : 400).json({message:e instanceof Error ? e.message : "Estimate unavailable"}); }
 });
 export default router;

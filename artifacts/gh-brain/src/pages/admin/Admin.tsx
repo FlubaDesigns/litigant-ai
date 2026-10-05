@@ -79,7 +79,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "errors",       label: "Error Logs",      icon: AlertCircle },
   { id: "abuse",        label: "Feedback Flags",     icon: HeartCrack },
   { id: "credit-packs", label: "Credit Packs",    icon: Package },
-  { id: "limits",       label: "Limits",          icon: SlidersHorizontal },
+  { id: "limits",       label: "Limits & Defaults",          icon: SlidersHorizontal },
   { id: "flags",        label: "Feature Flags",   icon: Flag },
   { id: "templates",    label: "Templates",       icon: LayoutTemplate },
   { id: "emails",       label: "Emails",          icon: Mail },
@@ -1677,9 +1677,14 @@ function CreditPackDialog({
 // ─── Limits Tab ───────────────────────────────────────────────────────────────
 
 const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
+  overdraftLimit: {
+    label: "Overdraft allowance",
+    description: "Extra credits available when overdraft is enabled and the user opts in.",
+    min: 0, max: 5000,
+  },
   maxLitigants: {
-    label: "Max Litigants",
-    description: "Maximum number of AI debaters a user can select per session. Default: 10. Range: 2–20.",
+    label: "Maximum litigants",
+    description: "Maximum AI debaters per session.",
     min: 2,
     max: 20,
   },
@@ -1687,8 +1692,9 @@ const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; m
 
 function LimitsTab() {
   const qc = useQueryClient();
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
-  const { data: limits, isLoading, refetch } = useQuery({
+  const { data: limits, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-limits"],
     queryFn: getAdminLimits,
   });
@@ -1696,53 +1702,40 @@ function LimitsTab() {
   const { mutate: save, isPending } = useMutation({
     mutationFn: ({ name, value }: { name: string; value: number }) => setAdminLimit(name, value),
     onSuccess: (_, { name, value }) => {
-      toast.success(`${name} set to ${value}`);
+      toast.success(`${LIMIT_DESCRIPTIONS[name].label} saved.`);
+      setDrafts(prev => { const next = {...prev}; delete next[name]; return next; });
       qc.invalidateQueries({ queryKey: ["admin-limits"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   if (isLoading) return <TabSkeleton />;
+  if (isError || !limits) return <div role="alert" className="lgt-card lgt-card--compact space-y-3"><p>Could not load limits.</p><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>;
 
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="admin-row flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Numeric platform limits stored in Firestore{" "}
-            <code className="bg-secondary px-1 rounded text-xs">config/adminLimits</code>.
-            Changes take effect immediately for new sessions.
-          </p>
+          <h3 className="text-sm font-semibold">Session Limits</h3>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
           </Button>
         </div>
 
-        <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
+        <div className="row layout__split-2">
           {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
-            const current = (limits as Record<string, number>)?.[name] ?? meta.min;
+            const current = limits[name];
             return (
-              <div key={name} className="admin-row flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-6">
+              <div key={name} className="lgt-card lgt-card--compact space-y-3">
                 <div className="flex-1 space-y-0.5 min-w-0">
-                  <p className="font-medium text-sm font-mono">{name}</p>
+                  <p className="font-medium text-sm">{meta.label}</p>
                   <p className="text-xs text-muted-foreground">{meta.description}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    aria-label={`Decrease ${name}`}
-                    onClick={() => save({ name, value: Math.max(meta.min, current - 1) })}
-                    disabled={isPending || current <= meta.min}
-                    className="w-11 h-11 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
-                  >−</button>
-                  <span className="w-8 text-center font-mono font-semibold text-sm tabular-nums">{current}</span>
-                  <button
-                    aria-label={`Increase ${name}`}
-                    onClick={() => save({ name, value: Math.min(meta.max, current + 1) })}
-                    disabled={isPending || current >= meta.max}
-                    className="w-11 h-11 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
-                  >+</button>
-                  <span className="text-xs text-muted-foreground w-14 text-right">{meta.min}–{meta.max}</span>
-                </div>
+                <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); save({name, value:Number(drafts[name] ?? current)}); }}>
+                  <input aria-label={meta.label} type="number" min={meta.min} max={meta.max} step={1} required disabled={isPending} value={drafts[name] ?? current} onChange={event => setDrafts(prev => ({...prev,[name]:event.target.value}))} className="min-h-11 min-w-0 w-full rounded border border-border bg-background px-3 text-sm font-mono" />
+                  <Button type="submit" variant="outline" className="min-h-11" disabled={isPending || drafts[name] === undefined || Number(drafts[name]) === current}>Save</Button>
+                </form>
+                <p className="text-xs text-muted-foreground">{meta.min}–{meta.max.toLocaleString()}{name === "overdraftLimit" ? " credits" : " litigants"}</p>
               </div>
             );
           })}
@@ -1754,161 +1747,69 @@ function LimitsTab() {
   );
 }
 
+const BILLING_FIELDS = [
+  { key: "defaultAutoRefillAmount", label: "Default charge", unit: "USD", min: 1, max: 500, description: "Starting top-up amount for users without a saved preference." },
+  { key: "defaultThresholdCredits", label: "Top-up trigger", unit: "credits", min: 0, max: 100000, description: "Opens checkout below this balance when the user enables top-up." },
+  { key: "defaultWarningThresholdCredits", label: "Low-balance warning", unit: "credits", min: 0, max: 100000, description: "Starting balance threshold for the warning banner." },
+  { key: "signupBonusCredits", label: "Signup bonus", unit: "credits", min: 0, max: 100000, description: "New-account grant, free-trial cards, signup offers and verification emails." },
+  { key: "emailCreditWarningThreshold", label: "Email warning", unit: "credits", min: 0, max: 100000, description: "Email below this balance; 0 disables it." },
+] as const;
+
 function BillingDefaultsSection() {
   const qc = useQueryClient();
-  const [amountsInput, setAmountsInput] = useState("");
-  const [edited, setEdited] = useState<Partial<BillingDefaults>>({});
-
-  const { data: defaults, isLoading } = useQuery({
-    queryKey: ["admin-billing-defaults"],
-    queryFn: getAdminBillingDefaults,
-    onSuccess: (d: BillingDefaults) => {
-      setAmountsInput(d.autoRefillAmounts.join(", "));
-    },
-  } as any);
-
+  const [amountsInput, setAmountsInput] = useState<string | null>(null);
+  const [edited, setEdited] = useState<Partial<Record<Exclude<keyof BillingDefaults, "autoRefillAmounts">, string>>>({});
+  const { data: defaults, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-billing-defaults"], queryFn: getAdminBillingDefaults,
+  });
   const { mutate: saveDefs, isPending } = useMutation({
-    mutationFn: (updates: Partial<BillingDefaults>) => saveAdminBillingDefaults(updates),
-    onSuccess: () => {
+    mutationFn: saveAdminBillingDefaults,
+    onSuccess: (saved) => {
+      qc.setQueryData(["admin-billing-defaults"], saved);
+      setEdited({}); setAmountsInput(null);
       toast.success("Billing defaults saved.");
-      setEdited({});
-      qc.invalidateQueries({ queryKey: ["admin-billing-defaults"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
+  if (isLoading) return <TabSkeleton />;
+  if (isError || !defaults) return <div role="alert" className="lgt-card lgt-card--compact space-y-3"><p>Could not load billing defaults.</p><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>;
 
-  const BILLING_FALLBACK: BillingDefaults = {
-    autoRefillAmounts: [10, 20, 50, 100, 200],
-    defaultAutoRefillAmount: 20,
-    defaultThresholdCredits: 100,
-    defaultWarningThresholdCredits: 200,
-    signupBonusCredits: 500,
-    emailCreditWarningThreshold: 100,
-  };
-  const current: BillingDefaults = {
-    ...(defaults ?? BILLING_FALLBACK),
-    ...Object.fromEntries(Object.entries(edited).filter(([, v]) => v !== undefined)),
-  } as BillingDefaults;
-
-  function handleSave() {
-    const parsedAmounts = amountsInput
-      .split(",")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !isNaN(n) && n > 0);
-    saveDefs({ ...edited, autoRefillAmounts: parsedAmounts });
+  function handleSave(event: React.FormEvent) {
+    event.preventDefault();
+    const updates: Partial<BillingDefaults> = {};
+    for (const field of BILLING_FIELDS) {
+      const value = edited[field.key];
+      if (value !== undefined) {
+        if (!value.trim() || !Number.isInteger(Number(value))) { toast.error(`${field.label} needs a whole number.`); return; }
+        updates[field.key] = Number(value);
+      }
+    }
+    if (amountsInput !== null) {
+      const entries = amountsInput.split(",").map(value => value.trim());
+      if (entries.some(value => !/^\d+$/.test(value))) { toast.error("Enter whole-dollar amounts separated by commas."); return; }
+      updates.autoRefillAmounts = entries.map(Number);
+    }
+    saveDefs(updates);
   }
-
-  if (isLoading) return <div className="h-32 rounded-xl border border-border/40 animate-pulse" />;
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-sm font-semibold">Billing Defaults</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Default values pre-populated for users on the Billing page. Stored in{" "}
-          <code className="bg-secondary px-1 rounded text-xs">config/billingDefaults</code>.
-        </p>
+  return <form onSubmit={handleSave} className="space-y-4">
+    <div><h3 className="text-sm font-semibold">Billing Defaults</h3><p className="text-xs text-muted-foreground mt-1">Signup changes apply to new grants and public offers. Existing balances and saved top-up preferences stay as they are.</p></div>
+    <fieldset disabled={isPending} className="row layout__split-2 min-w-0 w-full">
+      <div className="lgt-card lgt-card--compact space-y-2">
+        <label htmlFor="billing-top-up-amounts" className="block text-sm font-medium">Top-up amounts</label>
+        <input id="billing-top-up-amounts" type="text" value={amountsInput ?? defaults.autoRefillAmounts.join(", ")} onChange={event => setAmountsInput(event.target.value)} className="w-full min-h-11 rounded border border-border bg-background px-3 text-sm" />
+        <p className="text-xs text-muted-foreground">Quick-pick dollar amounts, separated by commas.</p>
       </div>
-
-      <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-        {/* Auto-refill amounts */}
-        <div className="px-5 py-4 space-y-2">
-          <p className="text-sm font-medium">Auto Top-Up Amounts</p>
-          <p className="text-xs text-muted-foreground">Comma-separated dollar amounts shown as quick-pick options.</p>
-          <input
-            type="text"
-            value={amountsInput}
-            onChange={(e) => setAmountsInput(e.target.value)}
-            placeholder="10, 20, 50, 100, 200"
-            className="w-full h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
+      {BILLING_FIELDS.map(field => <div key={field.key} className="lgt-card lgt-card--compact space-y-2">
+        <label htmlFor={`billing-${field.key}`} className="block text-sm font-medium">{field.label}</label>
+        <div className="flex items-center gap-2">
+          <input id={`billing-${field.key}`} type="number" min={field.min} max={field.max} step={1} required value={edited[field.key] ?? defaults[field.key]} onChange={event => setEdited(prev => ({...prev,[field.key]:event.target.value}))} className="w-full min-w-0 min-h-11 rounded border border-border bg-background px-3 text-sm font-mono" />
+          <span className="text-xs text-muted-foreground">{field.unit}</span>
         </div>
-
-        {/* Default amount */}
-        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">Default Charge Amount</p>
-            <p className="text-xs text-muted-foreground">Pre-selected dollar amount for new users.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">$</span>
-            <input
-              type="number"
-              min={1}
-              max={500}
-              value={current.defaultAutoRefillAmount}
-              onChange={(e) => setEdited((prev) => ({ ...prev, defaultAutoRefillAmount: parseInt(e.target.value) || 20 }))}
-              className="w-20 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-          </div>
-        </div>
-
-        {/* Default trigger threshold */}
-        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">Default Top-Up Trigger</p>
-            <p className="text-xs text-muted-foreground">Charge fires when balance drops below this many credits.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              max={10000}
-              value={current.defaultThresholdCredits}
-              onChange={(e) => setEdited((prev) => ({ ...prev, defaultThresholdCredits: parseInt(e.target.value) || 100 }))}
-              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-            <span className="text-xs text-muted-foreground">credits</span>
-          </div>
-        </div>
-
-        {/* Default warning threshold */}
-        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">Default Warning Threshold</p>
-            <p className="text-xs text-muted-foreground">Show low-balance banner when credits drop below this.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              max={100000}
-              value={current.defaultWarningThresholdCredits}
-              onChange={(e) => setEdited((prev) => ({ ...prev, defaultWarningThresholdCredits: parseInt(e.target.value) || 200 }))}
-              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-            <span className="text-xs text-muted-foreground">credits</span>
-          </div>
-        </div>
-
-        {/* Signup bonus */}
-        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">Signup Bonus</p>
-            <p className="text-xs text-muted-foreground">Credits granted to every new user on first verified sign-in. Propagates to all marketing copy and emails.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              max={100000}
-              value={current.signupBonusCredits}
-              onChange={(e) => setEdited((prev) => ({ ...prev, signupBonusCredits: parseInt(e.target.value) || 0 }))}
-              className="w-24 h-8 rounded-lg border border-border/60 bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-            <span className="text-xs text-muted-foreground">credits</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button size="sm" onClick={handleSave} disabled={isPending}>
-          {isPending && <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />}
-          Save Billing Defaults
-        </Button>
-      </div>
-    </div>
-  );
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      </div>)}
+    </fieldset>
+    <Button type="submit" className="min-h-11" disabled={isPending || (amountsInput === null && Object.keys(edited).length === 0)}>{isPending ? "Saving…" : "Save Billing Defaults"}</Button>
+  </form>;
 }
 
 function FeatureFlagsTab() {
@@ -3236,7 +3137,7 @@ function EmailsTab() {
     queryFn: getEmailTemplates,
   } as any);
 
-  const { data: defaults, isLoading: defaultsLoading } = useQuery({
+  const { data: defaults, isLoading: defaultsLoading, isError: defaultsError } = useQuery({
     queryKey: ["admin-billing-defaults"],
     queryFn: getAdminBillingDefaults,
   } as any);
@@ -3251,23 +3152,13 @@ function EmailsTab() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const EMAIL_FALLBACK: BillingDefaults = {
-    autoRefillAmounts: [10, 20, 50, 100, 200],
-    defaultAutoRefillAmount: 20,
-    defaultThresholdCredits: 100,
-    defaultWarningThresholdCredits: 200,
-    signupBonusCredits: 500,
-    emailCreditWarningThreshold: 100,
-  };
-  const current: BillingDefaults = {
-    ...(defaults ?? EMAIL_FALLBACK),
-    ...Object.fromEntries(Object.entries(edited).filter(([, v]) => v !== undefined)),
-  } as BillingDefaults;
+  const current = defaults ? { ...defaults, ...edited } : null;
 
   const allTemplates: EmailTemplate[] = (templates as any) ?? [];
   const editingTemplate = allTemplates.find(t => t.id === editingId) ?? null;
 
   if (templatesLoading || defaultsLoading) return <TabSkeleton />;
+  if (defaultsError || !current) return <p role="alert">Could not load billing defaults. Reload to try again.</p>;
 
   const liveCount = allTemplates.filter(t => t.enabled).length;
 

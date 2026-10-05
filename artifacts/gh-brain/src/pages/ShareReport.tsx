@@ -378,7 +378,7 @@ export default function ShareReportPage() {
             </Button>
           </Link>
           <p className="text-xs text-muted-foreground">
-            {`No credit card required · ${signupBonus} free credits on signup`}
+            {signupBonus === null ? "No credit card required" : `No credit card required · ${signupBonus} free credits on signup`}
           </p>
         </motion.div>
       </div>

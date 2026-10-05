@@ -395,7 +395,7 @@ function zeroCreditsTemplate(intro: string, headline: string): string {
 // ── Preview helper (used by admin preview endpoint) ───────────────────────────
 
 const SAMPLE_VARS: Record<EmailTemplateId, Record<string, string | number>> = {
-  verification:        { name: "Alex", bonusCredits: 500 },
+  verification:        { name: "Alex" },
   passwordReset:       { name: "Alex" },
   welcome:             { name: "Alex" },
   lowCredits:          { name: "Alex", balance: 42, threshold: 100 },
@@ -408,13 +408,15 @@ const SAMPLE_VARS: Record<EmailTemplateId, Record<string, string | number>> = {
   zeroCredits:         { name: "Alex" },
 };
 
-export function renderTemplatePreview(id: EmailTemplateId, overrides?: {
+export async function renderTemplatePreview(id: EmailTemplateId, overrides?: {
   subject?: string; headline?: string; introText?: string;
-}): string {
+}): Promise<string> {
   const meta = EMAIL_TEMPLATE_META[id];
-  const sampleVars = SAMPLE_VARS[id];
-  const rawHeadline = overrides?.headline ?? meta.defaultHeadline;
-  const rawIntro    = overrides?.introText ?? meta.defaultIntroText;
+  const saved = await getTemplateConfig(id);
+  const billing = await getBillingDefaults();
+  const sampleVars = { ...SAMPLE_VARS[id], bonusCredits: billing.signupBonusCredits, threshold: billing.emailCreditWarningThreshold };
+  const rawHeadline = overrides?.headline ?? saved.headline ?? meta.defaultHeadline;
+  const rawIntro    = overrides?.introText ?? saved.introText ?? meta.defaultIntroText;
   const headline    = escapeHtml(interpolate(rawHeadline, sampleVars));
   const intro       = interpolate(rawIntro, sampleVars);
 

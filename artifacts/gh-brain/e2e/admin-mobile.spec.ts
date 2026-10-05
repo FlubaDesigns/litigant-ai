@@ -20,7 +20,7 @@ const responses: Record<string,unknown> = {
   "/admin/error-logs":{logs:[],failedSessions:[{id:longId,sessionId:longId,message:"Session timed out.",userId:longId,status:"complete",createdAt:"2026-10-04T12:00:00Z"}],hasMore:false},
   "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:"The response was inaccurate.",userId:longId,sessionId:longId,createdAt:"2026-10-04T12:00:00Z"}],totalCount:1,hasMore:false},
   "/admin/credit-packs":{packs:[{id:"fixture",name:"Example pack",description:"A test fixture only",active:true,metadata:{creditAmount:"500"},prices:[{id:"price",unit_amount:500,currency:"usd"}]},{id:"inactive",name:"Inactive pack",active:false,metadata:{creditAmount:"500"},prices:[]}],bounds:{MIN_UNIT_AMOUNT_CENTS:100,MAX_UNIT_AMOUNT_CENTS:100000,MIN_CREDIT_AMOUNT:1,MAX_CREDIT_AMOUNT:1000000}},
-  "/limits":{limits:{maxLitigants:10}},
+  "/limits":{limits:{maxLitigants:10,overdraftLimit:500}},
   "/feature-flags":{flags:{creditOverdraft:true}},
   "/admin/templates":{templates:[]},
   "/admin/email-templates":{templates:[email]},
@@ -633,3 +633,32 @@ for (const [tab,path] of [["api-usage","/admin/api-usage"],["errors","/admin/err
     expect(reads).toBe(before+1);
   });
 }
+
+
+test("changing only signup bonus saves, survives reload and updates the public trial card", async ({page}) => {
+  let saved={...(responses["/admin/billing-defaults"] as Record<string,unknown>)};
+  let submitted:unknown;
+  await page.route("**/api-server/api/**",async route=>{
+    const path=new URL(route.request().url()).pathname;
+    if(path.endsWith("/admin/billing-defaults")) {
+      if(route.request().method()==="PUT") {submitted=route.request().postDataJSON();saved={...saved,...submitted as any};}
+      return route.fulfill({json:saved});
+    }
+    if(path.endsWith("/billing/defaults")) return route.fulfill({json:saved});
+    await route.fallback();
+  });
+  await page.setViewportSize({width:360,height:800});
+  await page.goto("/admin?tab=limits&e2e=1");
+  await expect(page.getByLabel("Top-up amounts",{exact:true})).toHaveValue("10, 20, 50");
+  await page.getByLabel("Signup bonus",{exact:true}).fill("100");
+  await page.getByRole("button",{name:"Save Billing Defaults",exact:true}).click();
+  await expect(page.getByText("Billing defaults saved.",{exact:true})).toBeVisible();
+  expect(submitted).toEqual({signupBonusCredits:100});
+  await page.reload();
+  await expect(page.getByLabel("Signup bonus",{exact:true})).toHaveValue("100");
+  await expect(page.getByLabel("Top-up amounts",{exact:true})).toHaveValue("10, 20, 50");
+  await page.goto("/?e2e=1");
+  await expect(page.getByTestId("pricing-trial")).toContainText("100 credits on signup");
+  await page.goto("/register");
+  await expect(page.getByText("100 free credits on signup",{exact:true})).toBeVisible();
+});

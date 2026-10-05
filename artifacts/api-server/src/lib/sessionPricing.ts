@@ -1,3 +1,4 @@
+import { getAdminLimits } from "./adminLimitsConfig.js";
 import { CourtConfigSchema, resolveModelByIntelligence, type CourtConfig, type SeatAssignment } from "@workspace/api-zod/session";
 import { getProviderCatalog } from "./providerCatalog.js";
 import { CREDIT_VALUE_USD, estimateSessionCredits, creditsForTokens, tokenCostUSD, type ModelPrice } from "./creditEngine.js";
@@ -31,6 +32,8 @@ export function priceCalls(calls: CallUsage[], rates: Record<string, PriceRate>)
 /** One accepted config and immutable price snapshot for quote, cap and settlement. */
 export async function prepareSession(input: unknown, pipelineOnly = false) {
   const config = CourtConfigSchema.parse(input);
+  const limits = await getAdminLimits();
+  config.litigantCount = Math.min(config.litigantCount, limits.maxLitigants!);
   const catalog = await getProviderCatalog();
   if (config.provider && !catalog.providers.some(p => p.name === config.provider)) throw new Error(`Provider ${config.provider} is disabled or unavailable.`);
   const providers = catalog.providers.filter(p => p.models.length > 0).map(p => ({...p, defaultModel: p.models.some(m => m.id === p.defaultModel) ? p.defaultModel : p.models[0]!.id}));
@@ -69,5 +72,5 @@ export async function prepareSession(input: unknown, pipelineOnly = false) {
     return pipelineOnly ? creditsForTokens(price, fixed.input, fixed.output) : estimateSessionCredits(config, price, fixed);
   });
   const estimatedCredits = Math.min(config.maxCredits, Math.max(...estimates));
-  return { config, rates, estimatedCredits, enabledProviders: providers.map(p => p.name), fallbackModels: Object.fromEntries(providers.map(p => [p.name, p.defaultModel])) };
+  return { config, rates, estimatedCredits, limits, enabledProviders: providers.map(p => p.name), fallbackModels: Object.fromEntries(providers.map(p => [p.name, p.defaultModel])) };
 }

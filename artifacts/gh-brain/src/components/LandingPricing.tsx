@@ -8,7 +8,7 @@ import { getProducts } from "@/services/billingService";
 import { CONFIGURATION_REFRESH } from "@/lib/queryClient";
 
 /** Public pack estimates use the same catalog and quote endpoint as checkout and the court. */
-export function LandingPricing({isSignedIn, signupBonus}: {isSignedIn:boolean; signupBonus:number}) {
+export function LandingPricing({isSignedIn, signupBonus}: {isSignedIn:boolean; signupBonus:number | null}) {
   const {data:catalog} = useProviders();
   const {data:products = [], isPending:loadingPacks} = useQuery({
     queryKey:["configuration", "credit-packs"], queryFn:getProducts, ...CONFIGURATION_REFRESH,
@@ -62,13 +62,13 @@ export function LandingPricing({isSignedIn, signupBonus}: {isSignedIn:boolean; s
       <div className="row">
         <div className="layout__split-4">
           {plans.map(plan => {
-            const count = sessionCredits && sessionCredits > 0 ? Math.floor(plan.credits / sessionCredits) : null;
+            const count = plan.credits !== null && sessionCredits && sessionCredits > 0 ? Math.floor(plan.credits / sessionCredits) : null;
             return (
               <div key={plan.id} data-testid={`pricing-${plan.id}`} className="border border-white/[0.08] p-6 flex flex-col">
                 <div className="mb-4">
                   <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest mb-2">{plan.name}</div>
                   <div className="text-3xl font-bold text-white">{plan.price}</div>
-                  <div className="text-xs text-zinc-400 font-mono mt-1">{plan.credits.toLocaleString()} credits{plan.free ? " on signup" : ""}</div>
+                  <div className="text-xs text-zinc-400 font-mono mt-1">{plan.credits === null ? "Signup offer unavailable" : `${plan.credits.toLocaleString()} credits${plan.free ? " on signup" : ""}`}</div>
                 </div>
                 <p className="text-sm text-zinc-300 mb-4" data-testid="session-count">
                   {count === null ? "Session estimate unavailable" : count === 0 ? "Below the estimated cost of one session at these settings" : `About ${count.toLocaleString()} ${count === 1 ? "session" : "sessions"} at these settings`}

@@ -160,7 +160,7 @@ export default function ToolsIndexPage() {
             <div className="row">
               <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {`${signupBonus} free credits on signup. No credit card required.`}
+                {signupBonus === null ? "No credit card required." : `${signupBonus} free credits on signup. No credit card required.`}
               </p>
               <Link href="/register">
                 <Button size="lg" className="font-semibold gap-2">

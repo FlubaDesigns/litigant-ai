@@ -296,7 +296,7 @@ export default function LandingPage() {
               <div className="btn-row center">
                 <Link href={isSignedIn ? "/session" : "/register"}>
                   <button className="btn btn--cta">
-                    {isSignedIn ? "Enter the Court" : `Start Free — ${signupBonus} credits`}
+                    {isSignedIn ? "Enter the Court" : signupBonus === null ? "Start Free" : `Start Free — ${signupBonus} credits`}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>
@@ -539,12 +539,12 @@ export default function LandingPage() {
                 Ready to convene the court?
               </h2>
               <p className="text-zinc-500 mb-10 text-sm">
-                {`Start free. No credit card required. Your first ${signupBonus} credits are on us.`}
+                {signupBonus === null ? "Start free. No credit card required." : `Start free. No credit card required. Your first ${signupBonus} credits are on us.`}
               </p>
               <div className="btn-row btn-row--center">
                 <Link href={isSignedIn ? "/session" : "/register"}>
                   <button className="btn btn--cta btn--lg">
-                    {isSignedIn ? "Enter the Court" : `Start Free — ${signupBonus} credits included`}
+                    {isSignedIn ? "Enter the Court" : signupBonus === null ? "Start Free" : `Start Free — ${signupBonus} credits included`}
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </Link>

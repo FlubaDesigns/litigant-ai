@@ -89,7 +89,7 @@ export default function RegisterPage() {
           </Link>
           <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Create an account</h1>
           <p className="text-muted-foreground text-center text-sm">
-            {`Get ${signupBonus} free credits to explore the adversarial reasoning engine.`}
+            {signupBonus === null ? "Create your account to explore the adversarial reasoning engine." : `Get ${signupBonus} free credits to explore the adversarial reasoning engine.`}
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function RegisterPage() {
           <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
             <Zap className="w-4 h-4 text-primary shrink-0" />
             <div>
-              <div className="text-sm font-semibold text-primary">{signupBonus} free credits on signup</div>
+              <div className="text-sm font-semibold text-primary">{signupBonus === null ? "Loading signup offer…" : `${signupBonus} free credits on signup`}</div>
               <div className="text-xs text-muted-foreground mt-0.5">No card required. Top up anytime — credits never expire.</div>
             </div>
           </div>
