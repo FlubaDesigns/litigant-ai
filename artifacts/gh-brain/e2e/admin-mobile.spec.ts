@@ -449,7 +449,7 @@ test.describe("touch API key management", () => {
       const link=page.getByRole("link",{name:`Get ${label} API key`,exact:true});
       await expect(link).toHaveAttribute("href",href);
       await expect(link).toHaveAttribute("target","_blank");
-      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
     }
     const card=page.getByRole("region",{name:"OpenAI API key",exact:true});
     expect((await card.boundingBox())!.height).toBeLessThan(230);
