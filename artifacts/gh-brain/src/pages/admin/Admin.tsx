@@ -1,6 +1,6 @@
 import "./admin.css";
 import { useState, useEffect, useRef } from "react";
-import { useSearch, useLocation } from "wouter";
+import { Link, useSearch, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -128,6 +128,9 @@ function OverviewTab() {
 
   return (
     <div>
+      <Button asChild variant="outline" className="mb-4 min-h-11">
+        <Link href="/admin?tab=checklist"><ListChecks className="mr-2 h-4 w-4" />To-do list</Link>
+      </Button>
       {isError && !data && <p role="alert" className="text-sm text-amber-400 mb-4">Unable to load statistics.</p>}
       <div className="row layout__split-2 layout--keep-columns">
         <StatCard label="Total Users" value={value(data?.userCount)} icon={Users} />
