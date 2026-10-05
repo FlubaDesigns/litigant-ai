@@ -1679,12 +1679,12 @@ function CreditPackDialog({
 const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
   overdraftLimit: {
     label: "Overdraft allowance",
-    description: "Extra credits available when overdraft is enabled and the user opts in.",
+    description: "Requires enabled overdraft and user opt-in.",
     min: 0, max: 5000,
   },
   maxLitigants: {
     label: "Maximum litigants",
-    description: "Maximum AI debaters per session.",
+    description: "AI debaters per session.",
     min: 2,
     max: 20,
   },
@@ -1713,12 +1713,12 @@ function LimitsTab() {
   if (isError || !limits) return <div role="alert" className="lgt-card lgt-card--compact space-y-3"><p>Could not load limits.</p><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <div className="space-y-4">
+      <div className="space-y-3">
         <div className="admin-row flex items-center justify-between">
           <h3 className="text-sm font-semibold">Session Limits</h3>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+          <Button variant="outline" size="icon" aria-label="Refresh limits" title="Refresh limits" className="min-h-11 min-w-11 shrink-0" onClick={() => refetch()}>
+            <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
 
@@ -1726,17 +1726,17 @@ function LimitsTab() {
           {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
             const current = limits[name];
             return (
-              <div key={name} className="lgt-card lgt-card--compact space-y-3">
+              <article key={name} aria-label={meta.label} className="lgt-card lgt-card--compact space-y-2">
                 <div className="flex-1 space-y-0.5 min-w-0">
                   <p className="font-medium text-sm">{meta.label}</p>
-                  <p className="text-xs text-muted-foreground">{meta.description}</p>
+                  <p className="text-xs text-muted-foreground">{meta.min}–{meta.max.toLocaleString()}{name === "overdraftLimit" ? " credits" : " AI debaters per session"}</p>
                 </div>
-                <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); save({name, value:Number(drafts[name] ?? current)}); }}>
+                <form className="row layout__split-2 layout--keep-columns items-center" onSubmit={event => { event.preventDefault(); save({name, value:Number(drafts[name] ?? current)}); }}>
                   <input aria-label={meta.label} type="number" min={meta.min} max={meta.max} step={1} required disabled={isPending} value={drafts[name] ?? current} onChange={event => setDrafts(prev => ({...prev,[name]:event.target.value}))} className="min-h-11 min-w-0 w-full rounded border border-border bg-background px-3 text-sm font-mono" />
-                  <Button type="submit" variant="outline" className="min-h-11" disabled={isPending || drafts[name] === undefined || Number(drafts[name]) === current}>Save</Button>
+                  <Button type="submit" variant="outline" className="min-h-11 w-full" disabled={isPending || drafts[name] === undefined || Number(drafts[name]) === current}>Save</Button>
                 </form>
-                <p className="text-xs text-muted-foreground">{meta.min}–{meta.max.toLocaleString()}{name === "overdraftLimit" ? " credits" : " litigants"}</p>
-              </div>
+                {name === "overdraftLimit" && <p className="text-xs text-muted-foreground">{meta.description}</p>}
+              </article>
             );
           })}
         </div>

@@ -62,6 +62,25 @@ for (const width of [360, 412]) {
         return rect.width>0 && (rect.left< -1 || rect.right>window.innerWidth+1);
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
+      if (tab.id === "limits") {
+        for (const name of ["Overdraft allowance", "Maximum litigants"]) {
+          const card=page.getByRole("article",{name,exact:true});
+          const [input,button]=await card.locator("form > *").evaluateAll(controls=>controls.map(control=>{
+            const {x,y,width,height}=control.getBoundingClientRect();return {x,y,width,height};
+          }));
+          expect(Math.abs(input.y-button.y)).toBeLessThan(1);
+          expect(Math.abs(input.width-button.width)).toBeLessThan(1);
+          expect(Math.round(button.height)).toBeGreaterThanOrEqual(44);
+          expect(button.width).toBeGreaterThan(90);
+          const lines=await card.getByRole("button",{name:"Save",exact:true}).evaluate(button=>{
+            const range=document.createRange();range.selectNodeContents(button);
+            return Array.from(range.getClientRects()).filter(rect=>rect.width>0).length;
+          });
+          expect(lines).toBe(1);
+          expect((await card.boundingBox())!.height).toBeLessThan(175);
+        }
+        expect(Math.round((await page.getByRole("button",{name:"Refresh limits",exact:true}).boundingBox())!.width)).toBe(44);
+      }
       if (tab.id === "pricing") {
         const card=page.getByRole("article",{name:`Pricing for ${model.label}`,exact:true});
         const rows=card.locator("dl .layout--keep-columns");
