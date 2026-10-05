@@ -102,7 +102,7 @@ vi.mock("pino-http", () => ({
 // Imports (after mocks)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
+import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, reserveCredits, getCourtesyCreditEligibility } from "../lib/creditLedger.js";
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
 import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
@@ -640,13 +640,14 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     expect(overageEntry.amount).toBe(-100);
   });
 
-  it("writes a usage_shortfall entry and does not drive balance negative when overage cannot be collected", async () => {
-    // estimated = 200, user balance = 200 (exactly covers reservation)
-    // actual = 350 → overage = 150, but post-reservation balance = 0 → uncollectable
-    const mockDb = createRouteMockDb(FAKE_UID, 200);
+  it("records a shortfall if another completed run consumes funds before settlement", async () => {
+    const mockDb = createRouteMockDb(FAKE_UID, 350);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed: 350}));
-    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({ creditsUsed: 350 }));
+    const finish = makeBrainMock({creditsUsed:350});
+    vi.mocked(runBrainSession).mockImplementation(async opts => {
+      mockDb._store[`users/${FAKE_UID}`].creditBalance = 0;
+      return finish(opts);
+    });
 
     const res = await request(app)
       .post("/api/run-brain")
@@ -1308,5 +1309,40 @@ describe("saved context for restored sessions and child runs", () => {
     expect(response.status).toBe(403);
     expect(runBrainSession).not.toHaveBeenCalled();
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+  });
+});
+
+describe("courtesy credit ceiling and repeat borrowing",()=>{
+  it("allows Pro debt up to the approved ceiling and refuses one credit more",async()=>{
+    const db=createMockDb({"users/pro":{plan:"pro",creditBalance:10}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect(await reserveCredits("pro",35,"one","brain_reservation",25)).toBe(true);
+    expect(db._store["users/pro"].creditBalance).toBe(-25);
+    expect(await reserveCredits("pro",1,"one","brain_overage",25)).toBe(false);
+  });
+  it("blocks another conversation while owing credits",async()=>{
+    const db=createMockDb({"users/pro":{plan:"pro",creditBalance:-1}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect(await reserveCredits("pro",1,"new","brain_reservation",25)).toBe(false);
+  });
+  it("does not lend to Free users even when an allowance is passed",async()=>{
+    const db=createMockDb({"users/free":{plan:"free",creditBalance:10}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    expect(await reserveCredits("free",11,"one","brain_reservation",25)).toBe(false);
+  });
+});
+
+describe("courtesy eligibility uses recorded successful payments",()=>{
+  it.each([
+    ["free",[{paymentId:"paid",amount:100}],false],
+    ["pro",[],false],
+    ["pro",[{amount:100}],false],
+    ["pro",[{paymentId:"paid",amount:0}],false],
+    ["pro",[{paymentId:"paid",amount:100}],true],
+  ])("checks plan %s and genuine payment history",async(plan,purchases,expected)=>{
+    const query:any={where:vi.fn(()=>query),get:async()=>({docs:(purchases as any[]).map(p=>({data:()=>p}))})};
+    vi.mocked(getFirestoreDb).mockReturnValue({collection:(name:string)=>name==="users"?{doc:()=>({get:async()=>({data:()=>({plan})})})}:query} as any);
+    expect(await getCourtesyCreditEligibility("user")).toBe(expected);
+    if(plan==="pro") expect(query.where).toHaveBeenCalledWith("source","==","square_checkout");
   });
 });

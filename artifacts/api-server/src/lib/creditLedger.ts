@@ -347,6 +347,19 @@ export async function checkAndTriggerAutoRefill(
   }
 }
 
+export async function getCourtesyCreditEligibility(uid: string): Promise<boolean> {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firestore not configured");
+  const user = (await db.collection("users").doc(uid).get()).data();
+  if (user?.plan !== "pro") return false;
+  const purchases = await db.collection("credit_transactions").where("userId", "==", uid)
+    .where("type", "==", "purchase").where("source", "==", "square_checkout").get();
+  return purchases.docs.some(d => {
+    const payment = d.data();
+    return typeof payment.paymentId === "string" && payment.paymentId.length > 0 && payment.amount > 0;
+  });
+}
+
 export async function reserveCredits(
   uid: string,
   amount: number,
@@ -361,7 +374,10 @@ export async function reserveCredits(
     const userRef = db.collection("users").doc(uid);
     const userDoc = await txn.get(userRef);
     const balance = (userDoc.data()?.creditBalance as number) ?? 0;
-    if (balance - amount < -overdraftLimit) return false;
+    // Recheck under the balance transaction so simultaneous new runs cannot extend debt.
+    if (source === "brain_reservation" && balance < 0) return false;
+    const permittedDebt = userDoc.data()?.plan === "pro" ? overdraftLimit : 0;
+    if (balance - amount < -permittedDebt) return false;
 
     const newBalance = balance - amount;
 

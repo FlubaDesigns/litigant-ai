@@ -33,7 +33,13 @@ export function summarizeApiUsage(sessions: Record<string, any>[]) {
   }
   const models=[...byModel.values()].sort((a,b)=>b.costUSD-a.costUSD || a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model));
   const days=[...byDay.values()].sort((a,b)=>b.date.localeCompare(a.date));
+  const completed = sessions.filter(s => s.status === "complete");
+  const measured = completed.filter(s => typeof s.creditsUsed === "number" && Number.isFinite(s.creditsUsed) && s.creditsUsed >= 0);
+  const completedCredits = measured.reduce((sum, s) => sum + s.creditsUsed, 0);
   return {
+    completedSessionCount: measured.length,
+    completedSessionsMissingCredits: completed.length - measured.length,
+    averageConversationCredits: measured.length ? completedCredits / measured.length : null,
     totalSessions:sessions.length,
     totalCreditsUsed:days.reduce((sum,d)=>sum+d.creditsUsed,0),
     totalCalls:models.reduce((sum,m)=>sum+m.calls,0),

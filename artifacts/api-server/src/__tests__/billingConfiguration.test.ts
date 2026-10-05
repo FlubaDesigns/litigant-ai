@@ -47,7 +47,7 @@ it("reads the same saved limits and never replaces an unreadable configuration w
   expect((await request(app).get("/limits")).status).toBe(503);
 });
 it("uses installation defaults only for absent limits and rejects corrupt settings",async()=>{
-  expect(await getAdminLimits()).toEqual({maxLitigants:10,overdraftLimit:500});
+  expect(await getAdminLimits()).toEqual({maxLitigants:10,overdraftLimit:25});
   docs["config/adminLimits"]={maxLitigants:99};
   await expect(getAdminLimits()).rejects.toThrow(/temporarily unavailable/);
 });

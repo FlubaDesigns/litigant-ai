@@ -34,7 +34,7 @@ it("reports saved model costs and settled credits without counting unrelated tra
   expect(r.body.byModel[0]).toMatchObject({provider:"openai",model:"shared",calls:2,cachedInputTokens:20});
   expect(r.body.byDay[0]).toMatchObject({sessions:2,creditsUsed:8});
   expect(queries.some(q=>q[0]==="credit_transactions" || q[0]==="api_logs")).toBe(false);
-  expect(queries).toContainEqual(["sessions","select","createdAt","creditsUsed","callUsage"]);
+  expect(queries).toContainEqual(["sessions","select","createdAt","creditsUsed","callUsage","status"]);
 });
 it("keeps missing prices distinct from zero cost and reports missing credit totals",async()=>{
   records.sessions=[{createdAt:now(),callUsage:[{provider:"gemini",model:"a",inputTokens:5,outputTokens:0,costUSD:0,usageSource:"provider"},{provider:"gemini",model:"a",inputTokens:5,outputTokens:0}]}];
@@ -63,4 +63,17 @@ it.each([["api-usage","sessions"],["error-logs","api_logs"],["error-logs","sessi
 });
 it.each(["api-usage","error-logs","abuse-flags"])("returns unavailable if %s has no database",async path=>{
   vi.mocked(getFirestoreDb).mockReturnValue(null);expect((await read(path)).status).toBe(503);
+});
+
+it("averages only completed conversations with finite nonnegative recorded credits",async()=>{
+  records.sessions=[{status:"complete",creditsUsed:40,createdAt:now()}, {status:"complete",creditsUsed:60,createdAt:now()}, {status:"complete",creditsUsed:0,createdAt:now()}, {status:"complete",createdAt:now()}, {status:"complete",creditsUsed:-2,createdAt:now()}, {status:"error",creditsUsed:500,createdAt:now()}, {status:"paused_credit_cap",creditsUsed:500,createdAt:now()}, {creditsUsed:500,createdAt:now()}];
+  const result=await read("api-usage");
+  expect(result.status).toBe(200);
+  expect(result.body).toMatchObject({completedSessionCount:3,completedSessionsMissingCredits:2});
+  expect(result.body.averageConversationCredits).toBeCloseTo(100/3);
+  expect(queries).toContainEqual(["sessions","select","createdAt","creditsUsed","callUsage","status"]);
+});
+it("returns no average rather than zero when no completed conversations can be measured",async()=>{
+  records.sessions=[{status:"error",creditsUsed:50,createdAt:now()}];
+  expect((await read("api-usage")).body).toMatchObject({averageConversationCredits:null,completedSessionCount:0});
 });

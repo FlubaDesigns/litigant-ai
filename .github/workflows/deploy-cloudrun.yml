@@ -107,6 +107,13 @@ jobs:
           initializeApp({projectId:'litigant-ai'});
           await getFirestore().collection('templates').limit(1).get();
           await getAuth().listUsers(1);
+          // Owner-approved starting courtesy ceiling. Subsequent admin edits remain authoritative.
+          await getFirestore().runTransaction(async tx => {
+            const marker = getFirestore().doc('config_migrations/courtesy_ceiling_25_20261005');
+            if ((await tx.get(marker)).exists) return;
+            tx.set(getFirestore().doc('config/adminLimits'), {overdraftLimit:25}, {merge:true});
+            tx.set(marker, {appliedAt:new Date().toISOString()});
+          });
           console.log('Keyless identity can read Firestore and Firebase Auth.');
           // Idempotent mitigation for the credential formerly committed in the e2e test.
           const marker=getFirestore().doc('security_migrations/exposed_e2e_session_2026');

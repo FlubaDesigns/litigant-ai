@@ -10,6 +10,12 @@ async function authHeaders(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${token}` };
 }
 
+export async function getCourtesyCredit(): Promise<{eligible:boolean;limit:number}> {
+  const res = await fetch(`${API_BASE}/billing/courtesy-credit`, {headers:await authHeaders(), cache:"no-store"});
+  if (!res.ok) throw new Error("Could not check courtesy credit");
+  return res.json();
+}
+
 export interface CreditTransaction {
   transactionId: string;
   userId: string;

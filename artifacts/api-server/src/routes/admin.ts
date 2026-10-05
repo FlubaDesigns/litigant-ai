@@ -809,7 +809,7 @@ router.get("/admin/api-usage", requireAdmin, async (_req, res) => {
     const snap = await db.collection("sessions")
       .where("createdAt", ">=", since).where("createdAt", "<=", through)
       .orderBy("createdAt", "desc")
-      .select("createdAt", "creditsUsed", "callUsage")
+      .select("createdAt", "creditsUsed", "callUsage", "status")
       .limit(limit + 1).get();
     return res.json({
       ...summarizeApiUsage(snap.docs.slice(0, limit).map(doc => doc.data())),
@@ -895,7 +895,6 @@ const DEFAULT_FLAGS: Record<string, boolean> = {
   shareReports: true,
   templateLibrary: true,
   autoRefill: false,
-  creditOverdraft: false,
 };
 
 router.get("/feature-flags", async (_req, res) => {
@@ -905,7 +904,13 @@ router.get("/feature-flags", async (_req, res) => {
   try {
     const doc = await db.collection("config").doc("featureFlags").get();
     if (!doc.exists) return res.json({ flags: DEFAULT_FLAGS });
-    return res.json({ flags: { ...DEFAULT_FLAGS, ...(doc.data() ?? {}) } });
+    const saved = doc.data() ?? {};
+    const flags: Record<string, boolean|string> = {...DEFAULT_FLAGS};
+    for (const name of Object.keys(DEFAULT_FLAGS)) {
+      if (typeof saved[name] === "boolean") flags[name] = saved[name];
+      if (["all", "pro", "free"].includes(saved[`${name}_scope`])) flags[`${name}_scope`] = saved[`${name}_scope`];
+    }
+    return res.json({ flags });
   } catch {
     return res.status(503).json({error:"Feature flags are temporarily unavailable"});
   }

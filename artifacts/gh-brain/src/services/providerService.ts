@@ -11,7 +11,7 @@ export async function getLimits(): Promise<PlatformLimits> {
   const res = await fetch(`${API_BASE}/limits`, {cache:"no-store"});
   if (!res.ok) throw new Error("Unable to load platform limits");
   const data = await res.json();
-  return {maxLitigants:data.limits?.maxLitigants ?? 10, overdraftLimit:data.limits?.overdraftLimit ?? 500};
+  return {maxLitigants:data.limits?.maxLitigants ?? 10, overdraftLimit:data.limits?.overdraftLimit ?? 25};
 }
 
 export interface ModelCreditInfo {

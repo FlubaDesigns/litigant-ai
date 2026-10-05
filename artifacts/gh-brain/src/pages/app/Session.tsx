@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 import { buildPdfToastActions } from "@/lib/pdfExport";
 import { buildMarkdown, buildText, exportPDF, exportDocx, exportJsPdf } from "@/lib/sessionExport";
 import { useBrainSession } from "@/hooks/useBrainSession";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useQuery } from "@tanstack/react-query";
+import { getCourtesyCredit } from "@/services/billingService";
 import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
 import type { CourtConfig } from "@/data/templates";
 import { makeDefaultSeatMap, type SeatAssignment } from "@/data/seatTypes";
@@ -185,8 +186,8 @@ export default function SessionPage() {
 
   // ── Computed values ──────────────────────────────────────────────────────────
 
-  const { maxLitigants, overdraftLimit } = useLimits();
-  const overdraftFlag = useFeatureFlag("creditOverdraft");
+  const { maxLitigants } = useLimits();
+  const {data:courtesy} = useQuery({queryKey:["configuration", "courtesy-credit", user?.uid, credits, plan], queryFn:getCourtesyCredit, enabled:!!user && !isAdmin, retry:false});
 
   const isRunning     = state.phase === "running";
   const isPaused      = state.phase === "paused";
@@ -201,8 +202,8 @@ export default function SessionPage() {
   const creditsCritical    = credits < 10;
   const creditsLow         = credits < 50 && !creditsCritical;
   const hasDebt            = credits < 0;
-  const overdraftAvailable = overdraftFlag && credits > -overdraftLimit;
-  const insufficientCredits = !isAdmin && credits < estimatedCreditsHigh && !overdraftAvailable;
+  const overdraftAvailable = !!courtesy?.eligible && courtesy.limit > 0 && !hasDebt;
+  const insufficientCredits = !isAdmin && (hasDebt || credits + (overdraftAvailable ? courtesy!.limit : 0) < estimatedCreditsHigh);
 
   const filteredTemplates =
     activeCategory === "all" ? templates : templates.filter((t) => t.category === activeCategory);
@@ -234,8 +235,9 @@ export default function SessionPage() {
       toast.error("Please enter a question first.");
       return;
     }
+    if (!isAdmin && hasDebt) { toast.error("Top up before starting another conversation.", {action:{label:"Top up",onClick:()=>navigate("/billing")}}); return; }
     if (!isAdmin && userProfile && userProfile.creditBalance < estimatedCreditsHigh) {
-      if (overdraftAvailable) {
+      if (overdraftAvailable && credits + courtesy!.limit >= estimatedCreditsHigh) {
         setOverdraftDialogOpen(true);
         return;
       }
@@ -359,6 +361,11 @@ export default function SessionPage() {
 
   return (
     <>
+      {!isAdmin && !isRunning && (isComplete || isRelayNeeded || isPaused) && credits <= 0 && <div role="alert" className="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 space-y-2">
+        <p className="font-semibold">Top up to continue</p>
+        <p className="text-sm">{hasDebt ? `You used ${Math.abs(credits)} courtesy credits. Your next top-up clears this balance.` : "You have used your available credits."} Your conversation is saved.</p>
+        <button className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground" onClick={()=>navigate("/billing")}>Top up</button>
+      </div>}
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -369,7 +376,7 @@ export default function SessionPage() {
                 <p className="font-semibold text-amber-300 text-sm">Out of credits</p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   This session costs ~{estimatedCreditsHigh} credits. Your balance is {credits.toLocaleString()} cr.
-                  You can continue on credit — the debt ({Math.abs(Math.min(0, credits - estimatedCreditsHigh)).toLocaleString()} cr max) will be cleared automatically on your next top-up.
+                  Your courtesy ceiling is {courtesy?.limit ?? 0} credits. Any credits owed are deducted from your next top-up, which is required before another conversation.
                 </p>
               </div>
             </div>

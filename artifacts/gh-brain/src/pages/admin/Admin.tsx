@@ -115,6 +115,16 @@ function StatCard({
   );
 }
 
+function ConversationAverage() {
+  const {data, isLoading, isError} = useQuery({queryKey:["admin-api-usage"], queryFn:getApiUsage, retry:false});
+  return <section className="lgt-card lgt-card--compact space-y-2 mb-4" aria-label="Average conversation credits">
+    <p className="text-sm font-medium">Average conversation</p>
+    <p className="text-lg font-semibold">{isLoading ? "Loading…" : isError ? "Unavailable" : data?.averageConversationCredits == null ? "No completed conversations yet" : `${data.averageConversationCredits.toLocaleString(undefined, {maximumFractionDigits:1})} credits`}</p>
+    {data && <p className="text-xs text-muted-foreground">{data.completedSessionCount ?? 0} completed conversations · started in the last 30 days{data.truncated ? " · partial report (latest 1,000 sessions)" : ""}{data.completedSessionsMissingCredits ? ` · ${data.completedSessionsMissingCredits} excluded without recorded credits` : ""}.</p>}
+    <p className="text-xs text-muted-foreground">Actual recorded credits. The courtesy ceiling only changes when you save it.</p>
+  </section>;
+}
+
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 function OverviewTab() {
   const { data, isLoading, isError } = useQuery({
@@ -131,6 +141,7 @@ function OverviewTab() {
       <Button asChild variant="outline" className="mb-4 min-h-11">
         <Link href="/admin?tab=checklist"><ListChecks className="mr-2 h-4 w-4" />To-do list</Link>
       </Button>
+      <ConversationAverage />
       {isError && !data && <p role="alert" className="text-sm text-amber-400 mb-4">Unable to load statistics.</p>}
       <div className="row layout__split-2 layout--keep-columns">
         <StatCard label="Total Users" value={value(data?.userCount)} icon={Users} />
@@ -1362,7 +1373,6 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   shareReports: "Allow users to generate public share links for sessions",
   templateLibrary: "Show the templates page and template selector in session",
   autoRefill: "Enable auto-refill credit top-up when balance falls below threshold",
-  creditOverdraft: "Allow users to continue sessions on credit when their balance hits zero — debt is cleared on next top-up",
 };
 
 const PLAN_SCOPE_LABELS: Record<string, string> = {
@@ -1681,8 +1691,8 @@ function CreditPackDialog({
 
 const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
   overdraftLimit: {
-    label: "Overdraft allowance",
-    description: "Requires enabled overdraft and user opt-in.",
+    label: "Courtesy credit ceiling",
+    description: "Maximum debt for Pro users with a recorded successful top-up. A top-up is required before another conversation while owing credits.",
     min: 0, max: 5000,
   },
   maxLitigants: {
@@ -1745,6 +1755,7 @@ function LimitsTab() {
         </div>
       </div>
 
+      <ConversationAverage />
       <BillingDefaultsSection />
     </div>
   );

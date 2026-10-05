@@ -48,6 +48,7 @@ import {
   sendZeroCreditsEmail,
   isResendConfigured,
 } from "../lib/emailService.js";
+import { getCourtesyCreditEligibility } from "../lib/creditLedger.js";
 import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 
@@ -336,6 +337,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
   let prepared: Awaited<ReturnType<typeof prepareSession>>;
   let estimatedCost = 0;
+  let courtesyLimit = 0;
   let previousSession: Record<string, any> | null = null;
   const runCalls: CallUsage[] = [];
   let parentSession: Record<string, any> | null = null;
@@ -486,27 +488,30 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
     }
     if (!isAdminRun) {
-      // Resolve overdraft limit if user opted in
-      let overdraftLimit = 0;
-      const overdraftRequested = overdraft === true;
-      if (overdraftRequested && db) {
-        try {
-          const flagDoc = await db.collection("config").doc("featureFlags").get();
-          const overdraftEnabled = flagDoc.exists ? (flagDoc.data()?.["creditOverdraft"] === true) : false;
-          if (overdraftEnabled) {
-            overdraftLimit = prepared.limits.overdraftLimit!;
-          }
-        } catch { /* non-fatal — no overdraft */ }
+      // Account and paid top-up history govern courtesy credit; the admin ceiling is authoritative.
+      const account = (await db!.collection("users").doc(uid).get()).data();
+      const balance = Number(account?.creditBalance ?? 0);
+      if (balance < 0) {
+        res.status(402).json({message:"Please top up to clear your balance before another conversation.", topUpRequired:true});
+        return;
+      }
+      if (await getCourtesyCreditEligibility(uid)) courtesyLimit = prepared.limits?.overdraftLimit ?? 0;
+      effectiveConfig.maxCredits = Math.min(effectiveConfig.maxCredits!, balance + courtesyLimit);
+      // Keep the saved config and execution budget aligned.
+      prepared.config.maxCredits = Number(previousSession?.creditsUsed ?? 0) + effectiveConfig.maxCredits;
+      if (estimatedCost <= 0) {
+        res.status(402).json({message:"Please top up before starting a conversation.", topUpRequired:true});
+        return;
       }
 
       // Optimistic credit reservation: deduct estimatedCost upfront.
       // Every balance change (reservation, refund, failure refund) is ledgered atomically.
       try {
-        const reserved = await reserveCredits(uid, estimatedCost, sessionId, "brain_reservation", overdraftLimit);
+        const reserved = await reserveCredits(uid, estimatedCost, sessionId, "brain_reservation", courtesyLimit);
         if (!reserved) {
           res.status(402).json({
             message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
-            overdraftLimit,
+            overdraftLimit: courtesyLimit,
           });
           return;
         }
@@ -610,7 +615,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           // gap can remain, so this is not a rare path.
           if (actualCost > estimatedCost) {
             const overage = actualCost - estimatedCost;
-            const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage")
+            const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage", courtesyLimit)
               .catch(() => false);
             if (!overageCollected) {
               actualCost = estimatedCost; // Charge/report only the amount actually collected.

@@ -418,6 +418,8 @@ export interface ApiUsageModel {
   costUSD:number; unpricedCalls:number; estimatedCalls:number;
 }
 export interface ApiUsageReport {
+  completedSessionCount:number; completedSessionsMissingCredits:number;
+  averageConversationCredits:number|null;
   byDay:ApiUsageDay[]; byModel:ApiUsageModel[];
   totalSessions:number; totalCreditsUsed:number; totalCalls:number;
   totalInputTokens:number; totalOutputTokens:number; costUSD:number;

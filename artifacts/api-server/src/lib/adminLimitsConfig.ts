@@ -1,6 +1,6 @@
 import { getFirestoreDb } from "./firebaseAdmin.js";
 
-export const DEFAULT_LIMITS: Record<string, number> = { maxLitigants: 10, overdraftLimit: 500 };
+export const DEFAULT_LIMITS: Record<string, number> = { maxLitigants: 10, overdraftLimit: 25 };
 export const LIMIT_RANGES: Record<string, { min: number; max: number }> = {
   maxLitigants: { min: 2, max: 20 },
   overdraftLimit: { min: 0, max: 5000 },

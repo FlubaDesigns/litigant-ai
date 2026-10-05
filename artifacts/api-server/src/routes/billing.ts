@@ -7,11 +7,22 @@ import {
   updateUserPlan,
   grantSignupBonus,
   setAutoRefillPreference,
+  getCourtesyCreditEligibility,
 } from "../lib/creditLedger.js";
 import { CREDITS_PER_DOLLAR } from "../lib/creditPacks.js";
 import { getActiveCreditPacks, findCreditPackByPriceId } from "../lib/creditPacksConfig.js";
 
+import { getAdminLimits } from "../lib/adminLimitsConfig.js";
 const router = Router();
+
+router.get("/billing/courtesy-credit", async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  try {
+    const [eligible, limits] = await Promise.all([getCourtesyCreditEligibility(user.uid), getAdminLimits()]);
+    return res.json({eligible, limit: eligible ? limits.overdraftLimit : 0});
+  } catch { return res.status(503).json({error:"Courtesy credit information is unavailable"}); }
+});
 
 async function requireAuth(
   req: any,
