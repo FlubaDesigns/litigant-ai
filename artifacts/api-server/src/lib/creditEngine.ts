@@ -7,8 +7,8 @@ export const CREDIT_VALUE_USD = 0.01;
 import { PROVIDER_MODELS, DEFAULT_MODELS, resolveModelPrice } from "./providers/types.js";
 
 export interface ModelRate {
-  input: number; output: number; cachedInput?: number;
-  longContext?: { threshold: number; inclusive?: boolean; input: number; output: number; cachedInput: number };
+  input: number; output: number; cachedInput?: number; cacheWriteInput?: number; cacheWriteInput1h?: number;
+  longContext?: { threshold: number; inclusive?: boolean; input: number; output: number; cachedInput: number; cacheWriteInput?: number; cacheWriteInput1h?: number };
 }
 export interface ModelPrice extends ModelRate { multiplier: number; }
 // Derived compatibility views; model definitions live only in providers/types.ts.
@@ -20,10 +20,14 @@ export const MODEL_MULTIPLIERS: Record<string, number> = Object.fromEntries(
 );
 
 /** Shared USD calculation for quotes, credit settlement and agent telemetry. */
-export function tokenCostUSD(rate: ModelRate, input: number, output: number, cachedInput = 0): number {
+export function tokenCostUSD(rate: ModelRate, input: number, output: number, cachedInput = 0, cacheWrites = 0, cacheWrites1h = 0): number {
   const tier = rate.longContext && (rate.longContext.inclusive ? input >= rate.longContext.threshold : input > rate.longContext.threshold) ? rate.longContext : rate;
   const cached = Math.max(0, Math.min(input, cachedInput));
-  return ((input - cached) * tier.input + cached * (tier.cachedInput ?? tier.input) + output * tier.output) / 1000;
+  const writes = Math.max(0, Math.min(input - cached, cacheWrites));
+  const writes1h = Math.max(0, Math.min(writes, cacheWrites1h));
+  return ((input - cached - writes) * tier.input + cached * (tier.cachedInput ?? tier.input)
+    + (writes - writes1h) * (tier.cacheWriteInput ?? tier.input)
+    + writes1h * (tier.cacheWriteInput1h ?? tier.cacheWriteInput ?? tier.input) + output * tier.output) / 1000;
 }
 export function creditsForTokens(price: ModelPrice, input: number, output: number): number {
   return Math.max(1, Math.ceil(tokenCostUSD(price, input, output) * price.multiplier / CREDIT_VALUE_USD));
@@ -37,7 +41,8 @@ const DEFAULT_MULTIPLIER = MODEL_MULTIPLIERS[DEFAULT_MODELS.openai]!;
 
 /** Returns the token rate for a model, falling back to DEFAULT_RATE. */
 export function getModelRate(model: string): ModelRate {
-  return MODEL_RATES[model] ?? DEFAULT_RATE;
+  const definition = Object.values(PROVIDER_MODELS).flat().find(m => m.id === model);
+  return definition ? resolveModelPrice(definition) : DEFAULT_RATE;
 }
 
 /** Built-in default, for synchronous internal estimates only. */

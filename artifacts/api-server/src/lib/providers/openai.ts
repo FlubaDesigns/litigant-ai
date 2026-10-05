@@ -57,6 +57,7 @@ export class OpenAIProvider implements AIProvider {
           inputTokens: chunk.usage.prompt_tokens ?? 0,
           outputTokens: chunk.usage.completion_tokens ?? 0,
           cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens ?? 0,
+          cacheWriteTokens: (chunk.usage.prompt_tokens_details as {cache_write_tokens?: number} | undefined)?.cache_write_tokens ?? 0,
         };
       }
     }

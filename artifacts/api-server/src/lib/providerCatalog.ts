@@ -71,8 +71,8 @@ export async function getModelRegistry(refreshAvailability = false) {
         const price = resolveModelPrice(m, multiplier);
         return {
           id:m.id, label:m.label, qualityScore:modelScores[m.id] ?? m.qualityScore, defaultQualityScore:m.qualityScore,
-          enabled:!disabledModels.includes(m.id), defaultMultiplier:m.multiplier,
-          pricing:m.pricing ?? {note:"Custom rate entered by administrator."},
+          unsupportedReason:m.unsupportedReason, enabled:!disabledModels.includes(m.id), defaultMultiplier:m.multiplier,
+          pricing:m.pricing ? {...m.pricing, ...(price.cachedInput !== undefined ? {cachedInputPer1k:price.cachedInput} : {})} : {note:"Custom rate entered by administrator."},
           price, creditInfo:getModelCreditInfo(m.id, price, fixed),
         };
       }),
@@ -84,7 +84,7 @@ export async function getModelRegistry(refreshAvailability = false) {
 export async function getProviderCatalog() {
   const registry = await getModelRegistry();
   const providers = registry.providers.filter(p => p.configured && p.enabled).map(p => {
-    const models = p.models.filter(m => m.enabled);
+    const models = p.models.filter(m => m.enabled && !m.unsupportedReason);
     const {discoveredModels:_discovered, pricingUrl:_pricingUrl, connection:{discoveredModels:_listed, ...connection}, ...publicProvider} = p;
     return {...publicProvider, connection, models, defaultModel:models.some(m => m.id === p.defaultModel) ? p.defaultModel : models[0]?.id ?? ""};
   }).filter(p => p.models.length > 0);
@@ -101,7 +101,7 @@ export async function getAdminPricingTable(refreshAvailability = false) {
     })),
     models:registry.providers.flatMap(p => p.models.map(m => ({
       model:m.id, provider:p.name, providerLabel:p.displayName, label:m.label, pricing:m.pricing,
-      available:p.configured && p.enabled && m.enabled,
+      available:p.configured && p.enabled && m.enabled && !m.unsupportedReason,
       inputRatePer1k:m.creditInfo.inputRatePer1k, outputRatePer1k:m.creditInfo.outputRatePer1k,
       defaultMultiplier:m.defaultMultiplier, effectiveMultiplier:m.creditInfo.multiplier,
       isOverridden:m.defaultMultiplier !== m.creditInfo.multiplier,
@@ -119,13 +119,13 @@ export async function getAiStudioModels() {
       connection:{state:p.connection.state,checkedAt:p.connection.checkedAt},
     })),
     models:registry.providers.flatMap(p => p.models.map(m => ({
-      id:m.id, label:m.label, provider:p.name, providerLabel:p.displayName, pricing:m.pricing,
+      id:m.id, label:m.label, provider:p.name, providerLabel:p.displayName, pricing:m.pricing, unsupportedReason:m.unsupportedReason,
       inputRatePer1k:m.creditInfo.inputRatePer1k, outputRatePer1k:m.creditInfo.outputRatePer1k,
       multiplier:m.creditInfo.multiplier,
       userInputPer1k:m.creditInfo.inputRatePer1k * m.creditInfo.multiplier,
       userOutputPer1k:m.creditInfo.outputRatePer1k * m.creditInfo.multiplier,
       exampleCredits:m.creditInfo.exampleSessionCredits, qualityScore:m.qualityScore,
-      enabled:m.enabled, available:p.configured && p.enabled && m.enabled, custom:p.custom,
+      enabled:m.enabled, available:p.configured && p.enabled && m.enabled && !m.unsupportedReason, custom:p.custom,
     }))),
   };
 }

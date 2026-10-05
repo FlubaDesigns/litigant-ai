@@ -367,6 +367,8 @@ async function streamRole(
     const call: CallUsage = {provider:provider.name, model:provider.model ?? "gpt-5", inputTokens, outputTokens,
       ...(seat ? {seat} : {}), usageSource:realUsage && !realUsage.estimated ? "provider" : "estimated",
       ...(realUsage?.cachedInputTokens !== undefined ? {cachedInputTokens:realUsage.cachedInputTokens} : {}),
+      ...(realUsage?.cacheWriteTokens !== undefined ? {cacheWriteTokens:realUsage.cacheWriteTokens} : {}),
+      ...(realUsage?.cacheWrite1hTokens !== undefined ? {cacheWrite1hTokens:realUsage.cacheWrite1hTokens} : {}),
     };
     usage.calls?.push(call);
     onCallUsage?.(call);

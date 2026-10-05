@@ -2718,6 +2718,7 @@ function ModelRateDetails({pricing}: {pricing: AiStudioModel["pricing"]}) {
       {pricing?.sourceUrl && <> · <a href={pricing.sourceUrl} target="_blank" rel="noreferrer" className="text-primary underline">Source</a></>}
     </p>
     {pricing?.cachedInputPer1k !== undefined && <p>Cached input: {fmtRate(pricing.cachedInputPer1k)}</p>}
+    {pricing?.cacheWriteInputPer1k !== undefined && <p>Cache writes: {fmtRate(pricing.cacheWriteInputPer1k)}{pricing.cacheWriteInput1hPer1k !== undefined && ` · 1-hour: ${fmtRate(pricing.cacheWriteInput1hPer1k)}`}</p>}
     {pricing?.longContext && <p>{pricing.longContext.inclusive ? "At or above" : "Above"} {pricing.longContext.threshold.toLocaleString()} input tokens: {fmtRate(pricing.longContext.input)} in · {fmtRate(pricing.longContext.output)} out.</p>}
     {pricing?.note && <p>{pricing.note}</p>}
   </div>;
@@ -2928,7 +2929,7 @@ function AiStudioProviderSection({
       <div className="studio-heading">
         <button className="studio-disclosure" onClick={onOpen} aria-label={label} aria-expanded={open} aria-controls={`provider-${pid}`}>
           <ChevronDown className={cn("w-4 h-4 shrink-0 transition-transform", open && "rotate-180")} />
-          <span><strong>{label}</strong><span className="text-muted-foreground ml-2 text-xs">{provModels.length} ready{discoveredModels.length > 0 && ` · ${discoveredModels.length} new`}</span>
+          <span><strong>{label}</strong><span className="text-muted-foreground ml-2 text-xs">{provModels.filter(m => !m.unsupportedReason).length} ready{discoveredModels.length > 0 && ` · ${discoveredModels.length} new`}</span>
             <span role="status" className={cn("block text-xs", checking ? "text-muted-foreground" : connected ? "text-green-400" : "text-destructive")} title={`Checked ${new Date(connection.checkedAt).toLocaleString()}`}>{status}</span>
             <span className="block text-xs text-muted-foreground">Checked {formatDateTime(connection.checkedAt)}</span>
           </span>
@@ -2943,9 +2944,9 @@ function AiStudioProviderSection({
             <div className="studio-heading">
               <button className="studio-disclosure" onClick={() => setExpandedModel(expanded ? null : m.id)} aria-expanded={expanded} aria-controls={`model-${m.id}`}>
                 <ChevronRight className={cn("w-4 h-4 shrink-0 transition-transform", expanded && "rotate-90")} />
-                <span>{m.label}{!m.available && <span className="block text-xs text-muted-foreground">{!m.enabled || !providerEnabled ? "Disabled" : "Not configured"}</span>}</span>
+                <span>{m.label}{!m.available && <span className="block text-xs text-muted-foreground">{m.unsupportedReason ?? (!m.enabled || !providerEnabled ? "Disabled" : "Not configured")}</span>}</span>
               </button>
-              <Switch aria-label={`Enable ${m.label}`} checked={m.enabled} onCheckedChange={checked => onToggleModel(m.id, checked)} disabled={busy || !providerEnabled} />
+              <Switch aria-label={`Enable ${m.label}`} checked={m.enabled && !m.unsupportedReason} onCheckedChange={checked => onToggleModel(m.id, checked)} disabled={busy || !providerEnabled || !!m.unsupportedReason} />
             </div>
             {expanded && <div id={`model-${m.id}`} className="studio-details space-y-3">
               <div className="row layout__split-2 layout--keep-columns">

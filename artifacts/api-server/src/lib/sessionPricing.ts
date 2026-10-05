@@ -4,13 +4,13 @@ import { CREDIT_VALUE_USD, estimateSessionCredits, creditsForTokens, tokenCostUS
 
 export interface CallUsage {
   provider: string; model: string; inputTokens: number; outputTokens: number;
-  seat?: string; usageSource?: "provider" | "estimated"; cachedInputTokens?: number;
+  seat?: string; usageSource?: "provider" | "estimated"; cachedInputTokens?: number; cacheWriteTokens?: number; cacheWrite1hTokens?: number;
   costUSD?: number; rateVerifiedAt?: string;
 }
 export interface PriceRate extends ModelPrice { verifiedAt?: string; }
 /** Standard text API cost; excludes account discounts, taxes and invoice adjustments. */
 export function callCostUSD(call: CallUsage, rate: PriceRate): number {
-  return tokenCostUSD(rate, call.inputTokens, call.outputTokens, call.cachedInputTokens);
+  return tokenCostUSD(rate, call.inputTokens, call.outputTokens, call.cachedInputTokens, call.cacheWriteTokens, call.cacheWrite1hTokens);
 }
 export function annotateCalls(calls: CallUsage[], rates: Record<string, PriceRate>): CallUsage[] {
   return calls.map(call => {

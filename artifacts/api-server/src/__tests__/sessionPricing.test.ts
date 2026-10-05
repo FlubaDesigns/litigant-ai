@@ -120,3 +120,37 @@ it("uses verified Grok rates including the inclusive 200k long-context boundary"
   expect(tokenCostUSD(rate,200000,1000)).toBeCloseTo(.812);
   expect(tokenCostUSD(rate,199999,1000)).toBeCloseTo(.405998);
 });
+
+
+describe("published model rates",()=>{
+  it("prices cache reads, writes and output once on each side of the OpenAI long-context boundary",async()=>{
+    const {PROVIDER_MODELS,resolveModelPrice}=await import("../lib/providers/types.js");
+    const rate=resolveModelPrice(PROVIDER_MODELS.openai.find(m=>m.id==="gpt-6.1-sol")!);
+    const call={provider:"openai",model:"gpt-6.1-sol",inputTokens:272000,outputTokens:1000,cachedInputTokens:100000,cacheWriteTokens:100000};
+    expect(callCostUSD(call,rate)).toBeCloseTo(.144+.01+.25+.01);
+    expect(callCostUSD({...call,inputTokens:272001},rate)).toBeCloseTo(.288004+.02+.5+.015);
+    expect(priceCalls([call,call],{[call.model]:rate})).toBe(414);
+  });
+  it("uses Claude's distinct cache discounts and write durations",async()=>{
+    const {PROVIDER_MODELS,resolveModelPrice}=await import("../lib/providers/types.js");
+    const rate=resolveModelPrice(PROVIDER_MODELS.anthropic.find(m=>m.id==="claude-opus-5-5")!);
+    const call={provider:"anthropic",model:"claude-opus-5-5",inputTokens:1000,outputTokens:100,cachedInputTokens:400,cacheWriteTokens:500,cacheWrite1hTokens:200};
+    expect(callCostUSD(call,rate)).toBeCloseTo(.0004+.00008+.0015+.0016+.002);
+  });
+  it("switches published Gemini promotional rates for new sessions while keeping old snapshots",async()=>{
+    const {PROVIDER_MODELS,resolveModelPrice}=await import("../lib/providers/types.js");
+    const m=PROVIDER_MODELS.gemini.find(m=>m.id==="gemini-3.8-flash")!;
+    const old=resolveModelPrice(m,5,Date.parse("2026-12-31T23:59:59Z"));
+    const next=resolveModelPrice(m,5,Date.parse("2027-01-01T00:00:00Z"));
+    expect(old).toMatchObject({input:.00075,output:.00375,cachedInput:.000075});
+    expect(next).toMatchObject({input:.0015,output:.0075,cachedInput:.00015});
+    expect(old.input).toBe(.00075);
+  });
+  it("keeps exact dated snapshots on the same pricing source and preserves a separately priced old GPT-4o",async()=>{
+    const {PROVIDER_MODELS,resolveModelPrice}=await import("../lib/providers/types.js");
+    const models=PROVIDER_MODELS.openai;
+    expect(resolveModelPrice(models.find(m=>m.id==="gpt-5.5-2026-04-23")!)).toEqual(resolveModelPrice(models.find(m=>m.id==="gpt-5.5")!));
+    expect(resolveModelPrice(models.find(m=>m.id==="gpt-4o-2024-05-13")!).input).toBe(.005);
+    expect(new Set(Object.values(PROVIDER_MODELS).flat().map(m=>m.id)).size).toBe(Object.values(PROVIDER_MODELS).flat().length);
+  });
+});

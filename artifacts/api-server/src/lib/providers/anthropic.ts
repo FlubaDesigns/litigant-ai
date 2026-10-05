@@ -48,9 +48,11 @@ export class AnthropicProvider implements AIProvider {
 
       if (event.type === "message_start" && event.message?.usage) {
         const cachedInputTokens = event.message.usage.cache_read_input_tokens ?? 0;
-        inputTokens = (event.message.usage.input_tokens ?? 0) + cachedInputTokens;
+        const cacheWriteTokens = event.message.usage.cache_creation_input_tokens ?? 0;
+        const cacheWrite1hTokens = (event.message.usage as {cache_creation?: {ephemeral_1h_input_tokens?: number}}).cache_creation?.ephemeral_1h_input_tokens ?? 0;
+        inputTokens = (event.message.usage.input_tokens ?? 0) + cachedInputTokens + cacheWriteTokens;
         outputTokens = event.message.usage.output_tokens ?? 0;
-        this._lastUsage = {inputTokens, outputTokens, cachedInputTokens, estimated:true};
+        this._lastUsage = {inputTokens, outputTokens, cachedInputTokens, cacheWriteTokens, cacheWrite1hTokens, estimated:true};
       }
       if (event.type === "message_delta" && event.usage) {
         outputTokens = event.usage.output_tokens ?? 0;

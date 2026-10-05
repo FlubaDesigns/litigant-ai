@@ -564,7 +564,8 @@ export interface BillingDefaults {
 }
 
 export interface AiStudioModel {
-  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; cachedInputPer1k?: number; longContext?: {threshold: number; inclusive?: boolean; input: number; output: number} };
+  unsupportedReason?: string;
+  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; cachedInputPer1k?: number; cacheWriteInputPer1k?: number; cacheWriteInput1hPer1k?: number; longContext?: {threshold: number; inclusive?: boolean; input: number; output: number} };
   id: string;
   label: string;
   provider: string;

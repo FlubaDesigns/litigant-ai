@@ -24,6 +24,7 @@ beforeEach(() => {
 });
 describe("one provider and pricing catalog", () => {
   it("uses identical prices and examples in Admin, AI Studio, selection, quotes and settlement", async () => {
+    vi.mocked(getConfiguredProvidersAsync).mockResolvedValue(["openai","anthropic","grok","gemini","acme"]);
     const catalog = await getProviderCatalog();
     const studio = await getAiStudioModels();
     const pricing = await getAdminPricingTable();
@@ -41,6 +42,13 @@ describe("one provider and pricing catalog", () => {
       expect(quote.rates[model.id]).toMatchObject({input:ai.inputRatePer1k,output:ai.outputRatePer1k,multiplier:ai.multiplier});
       expect(priceCalls([{provider:provider.name,model:model.id,inputTokens:1000,outputTokens:2000}],quote.rates)).toBe(creditsForTokens(quote.rates[model.id]!,1000,2000));
     }
+  });
+  it("shows verified prices for Responses-only models without allowing a streaming session",async()=>{
+    const studio=await getAiStudioModels();
+    expect(studio.models.find(m=>m.id==="gpt-5.5-pro")).toMatchObject({inputRatePer1k:.03,outputRatePer1k:.18,available:false,unsupportedReason:expect.stringContaining("Responses")});
+    expect((await getProviderCatalog()).providers.flatMap(p=>p.models).some(m=>m.id==="gpt-5.5-pro")).toBe(false);
+    expect((await getAdminPricingTable()).models.find(m=>m.model==="gpt-5.5-pro")).toMatchObject({inputRatePer1k:.03,available:false});
+    await expect(prepareSession({provider:"openai",model:"gpt-5.5-pro"})).rejects.toThrow(/disabled or unavailable/);
   });
   it("takes a new override immediately while retaining the old session snapshot", async () => {
     const first = await prepareSession({provider:"acme",model:"acme/model",maxCredits:100000});
