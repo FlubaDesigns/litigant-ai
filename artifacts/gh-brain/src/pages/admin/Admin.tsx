@@ -2222,266 +2222,161 @@ function SystemHealthTab() {
 
 // ─── API Usage Tab ────────────────────────────────────────────────────────────
 function ApiUsageTab() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-api-usage"],
-    queryFn: getApiUsage,
-    retry: false,
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["admin-api-usage"], queryFn: getApiUsage, retry: false,
+    staleTime: 0, refetchOnMount: "always", refetchOnWindowFocus: false, refetchOnReconnect: false,
   });
-
+  const money = (n:number) => n > 0 && n < .0001 ? "<$0.0001" : `$${n.toFixed(4)}`;
+  const count = (n:number) => n.toLocaleString();
   if (isLoading) return <TabSkeleton />;
-
-  if (isError || !data) {
-    return (
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Failed to load API usage data — the server returned an error.</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      <div className="admin-row flex items-center justify-between">
-        <div className="flex gap-6 text-sm">
-          <div>
-            <p className="text-2xl font-bold font-mono text-primary">{data.totalCreditsUsed}</p>
-            <p className="text-xs text-muted-foreground">credits used (30d)</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold font-mono">{data.totalSessions}</p>
-            <p className="text-xs text-muted-foreground">usage transactions (30d)</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
-        </Button>
-      </div>
-
-      {data.byDay.length > 0 ? (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table mobileCards>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>Date</TableHead>
-                <TableHead>Sessions</TableHead>
-                <TableHead>Credits Used</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.byDay.map((day) => (
-                <TableRow key={day.date} className="hover:bg-secondary/10">
-                  <TableCell className="font-mono text-sm">{day.date}</TableCell>
-                  <TableCell className="font-mono">{day.sessions}</TableCell>
-                  <TableCell className="font-mono text-primary">{day.creditsUsed}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
-          No usage data for the last 30 days.
-          <p className="mt-1 text-xs">Usage data populates from <code className="bg-secondary px-1 rounded">credit_transactions</code> where type=&#39;usage&#39;.</p>
-        </div>
-      )}
-
-      {data.apiLogs.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">api_logs (last 200)</p>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table mobileCards>
-              <TableHeader>
-                <TableRow className="bg-secondary/30">
-                  <TableHead>Model</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.apiLogs.slice(0, 30).map((log: any) => (
-                  <TableRow key={log.id} className="hover:bg-secondary/10">
-                    <TableCell className="font-mono text-xs">{log.model ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("text-xs", log.status === "error" ? "text-destructive" : "text-primary border-primary/30")}>
-                        {log.status ?? "—"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{log.durationMs ? `${log.durationMs}ms` : "—"}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDate(log.createdAt as string)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
+  if (isError || !data) return <div role="alert" className="lgt-card lgt-card--compact space-y-3">
+    <p>Unable to load API usage.</p>
+    <Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Retry</Button>
+  </div>;
+  const incomplete = data.sessionsMissingCallDetails > 0 || data.unpricedCalls > 0;
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm text-muted-foreground">Sessions started in the last 30 days · UTC</p>
+      <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}>
+        <RefreshCw className={cn("w-4 h-4 mr-1", isFetching && "animate-spin")} />{isFetching ? "Refreshing…" : "Refresh"}
+      </Button>
     </div>
-  );
+    <p className="text-xs text-muted-foreground">{data.since.slice(0, 16).replace("T", " ")} – {data.through.slice(0, 16).replace("T", " ")} UTC. Includes saved activity from resumed sessions in this group. Older sessions are excluded.</p>
+    {data.truncated && <p role="status" className="text-sm text-amber-400">Partial report: showing the latest {count(data.limit)} sessions in this period.</p>}
+    <div className="lgt-card lgt-card--compact">
+      <dl className="space-y-3">
+        <div className="row layout__split-2 layout--keep-columns">
+          <div><dt className="text-xs text-muted-foreground mb-1">Recorded API cost{incomplete ? " · partial" : ""}</dt><dd className="text-lg font-semibold text-primary break-words">{money(data.costUSD)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground mb-1">Customer credits{data.sessionsMissingCredits ? " · partial" : ""}</dt><dd className="text-lg font-semibold break-words">{count(data.totalCreditsUsed)}</dd></div>
+        </div>
+        <div className="row layout__split-2 layout--keep-columns">
+          <div><dt className="text-xs text-muted-foreground mb-1">Sessions</dt><dd className="text-sm">{count(data.totalSessions)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground mb-1">Recorded model calls</dt><dd className="text-sm">{count(data.totalCalls)}</dd></div>
+        </div>
+        <div className="row layout__split-2 layout--keep-columns">
+          <div><dt className="text-xs text-muted-foreground mb-1">Input tokens</dt><dd className="text-sm">{count(data.totalInputTokens)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground mb-1">Output tokens</dt><dd className="text-sm">{count(data.totalOutputTokens)}</dd></div>
+        </div>
+      </dl>
+    </div>
+    <details className="lgt-card lgt-card--compact text-xs text-muted-foreground">
+      <summary className="min-h-11 py-3 cursor-pointer">What these totals include</summary>
+      <p>API cost uses the rates saved with each call, before your multiplier. It is not a provider invoice. Customer credits are the charges saved with these sessions after settlement; later manual refunds are shown in Transactions. Calls that failed before usage could be saved are not included.</p>
+      <p className="mt-2">Input tokens include cached input and cache writes. Cache counts below are subsets, not extra tokens.</p>
+    </details>
+    {(incomplete || data.estimatedCalls > 0 || data.sessionsMissingCredits > 0) && <div role="status" className="lgt-card lgt-card--compact text-xs text-amber-400 space-y-1">
+      {data.sessionsMissingCallDetails > 0 && <p>{count(data.sessionsMissingCallDetails)} sessions have no recorded call details. Their model usage and API costs are unavailable.</p>}
+      {data.unpricedCalls > 0 && <p>{count(data.unpricedCalls)} calls have no saved price and are excluded from API cost.</p>}
+      {data.estimatedCalls > 0 && <p>{count(data.estimatedCalls)} calls use estimated or unconfirmed token counts.</p>}
+      {data.sessionsMissingCredits > 0 && <p>{count(data.sessionsMissingCredits)} sessions have no saved credit total.</p>}
+    </div>}
+    <h3 className="text-sm font-semibold">Usage by provider and model</h3>
+    {data.byModel.length ? <div className="row layout__split-2">
+      {data.byModel.map(m => <article key={JSON.stringify([m.provider,m.model])} aria-label={`Usage for ${m.provider} ${m.model}`} className="lgt-card lgt-card--compact space-y-3">
+        <div><p className="text-xs text-muted-foreground break-words">{m.provider}</p><h4 className="text-sm font-semibold break-all">{m.model}</h4></div>
+        <dl className="space-y-3">
+          <div className="row layout__split-2 layout--keep-columns">
+            <div><dt className="text-xs text-muted-foreground mb-1">Calls</dt><dd className="text-sm">{count(m.calls)}</dd></div>
+            <div><dt className="text-xs text-muted-foreground mb-1">API cost{m.unpricedCalls ? " · partial" : ""}</dt><dd className="text-sm font-semibold text-primary break-words">{money(m.costUSD)}</dd></div>
+          </div>
+          <div className="row layout__split-2 layout--keep-columns">
+            <div><dt className="text-xs text-muted-foreground mb-1">Input tokens</dt><dd className="text-sm">{count(m.inputTokens)}</dd></div>
+            <div><dt className="text-xs text-muted-foreground mb-1">Output tokens</dt><dd className="text-sm">{count(m.outputTokens)}</dd></div>
+          </div>
+        </dl>
+        <details className="text-xs text-muted-foreground">
+          <summary className="min-h-11 py-3 cursor-pointer">Cache &amp; accuracy details</summary>
+          <p>Cached input: {count(m.cachedInputTokens)} tokens</p>
+          <p>Cache writes (standard): {count(m.cacheWriteTokens)} tokens</p>
+          <p>Cache writes (1-hour): {count(m.cacheWrite1hTokens)} tokens</p>
+          <p>Estimated or unconfirmed usage: {count(m.estimatedCalls)} calls</p>
+          <p>Missing saved price: {count(m.unpricedCalls)} calls</p>
+        </details>
+      </article>)}
+    </div> : <p className="lgt-card lgt-card--compact text-sm text-muted-foreground">No recorded model calls for these sessions.</p>}
+    {!!data.byDay.length && <details className="lgt-card lgt-card--compact text-sm">
+      <summary className="min-h-11 py-3 cursor-pointer">Sessions by start date</summary>
+      <div className="divide-y divide-border">{data.byDay.map(day => <div key={day.date} className="flex flex-wrap justify-between gap-2 py-3 text-xs">
+        <span>{day.date}</span><span>{count(day.sessions)} sessions · {count(day.creditsUsed)} credits</span>
+      </div>)}</div>
+    </details>}
+  </div>;
 }
 
 // ─── Error Logs Tab ───────────────────────────────────────────────────────────
 function ErrorLogsTab() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-error-logs"],
-    queryFn: getErrorLogs,
-    retry: false,
+  const [selectedId,setSelectedId] = useState<string | null>(null);
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["admin-error-logs"], queryFn: getErrorLogs, retry: false,
+    staleTime: 0, refetchOnMount: "always", refetchOnWindowFocus: false, refetchOnReconnect: false,
   });
-
   if (isLoading) return <TabSkeleton />;
-
-  if (isError || !data) {
-    return (
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Failed to load error logs — the server returned an error.</span>
-      </div>
-    );
-  }
-
-  const allEntries = [
-    ...data.logs.map((l) => ({ ...l, source: "api_log" })),
-    ...data.failedSessions.map((s) => ({ ...s, source: "session" })),
-  ].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
-
-  return (
-    <div className="space-y-4">
-      <div className="admin-row flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Shows failed sessions + <code className="bg-secondary px-1 rounded text-xs">api_logs</code> error entries.
-        </p>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
-        </Button>
-      </div>
-
-      {allEntries.length === 0 ? (
-        <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
-          No error logs found.
-          <p className="mt-1 text-xs">Failed brain sessions will appear here automatically.</p>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table mobileCards>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>Source</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allEntries.slice(0, 50).map((entry: any) => (
-                <TableRow key={entry.id} className="hover:bg-secondary/10">
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
-                      {entry.source}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm max-w-xs truncate">
-                    {entry.message ?? entry.title ?? entry.question?.slice(0, 60) ?? entry.id}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[120px]">
-                    {entry.userId ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+  if (isError || !data) return <div role="alert" className="lgt-card lgt-card--compact space-y-3">
+    <p>Unable to load error records.</p><Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Retry</Button>
+  </div>;
+  const entries = [
+    ...data.logs.map(l => ({...l,source:"Historical API error"})),
+    ...data.failedSessions.map(s => ({...s,source:"Session failure"})),
+  ].sort((a,b)=>(b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm text-muted-foreground">{entries.length} error records shown{data.hasMore ? " · more available" : ""}</p>
+      <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-1" />{isFetching ? "Refreshing…" : "Refresh"}</Button>
     </div>
-  );
+    <p className="text-xs text-muted-foreground">Latest failure per session, including failed resumes. A recovered session can still show its last failure. Historical API errors are included where available. This is not a complete history of every failed provider attempt.</p>
+    {data.hasMore && <p role="status" className="text-xs text-amber-400">Showing up to 50 records from each source.</p>}
+    {entries.length ? <div className="row layout__split-2">{entries.map(entry => <article key={`${entry.source}:${entry.id}`} aria-label={`Error ${entry.id}`} className="lgt-card lgt-card--compact space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2"><Badge variant="outline" className="text-xs text-destructive">{entry.source}</Badge>
+        {entry.sessionId && <Button variant="ghost" size="sm" className="min-h-11" onClick={() => setSelectedId(entry.sessionId!)}>Open session<ChevronRight className="w-4 h-4" /></Button>}
+      </div>
+      <p className="text-sm break-words">{entry.message ?? "No error description recorded."}</p>
+      <dl className="row layout__split-2 layout--keep-columns">
+        <div><dt className="text-xs text-muted-foreground mb-1">When</dt><dd className="text-xs">{formatDateTime(entry.createdAt)}</dd></div>
+        <div><dt className="text-xs text-muted-foreground mb-1">Current status</dt><dd className="text-xs break-words">{entry.status ?? "Unknown"}</dd></div>
+      </dl>
+      <details className="text-xs text-muted-foreground"><summary className="min-h-11 py-3 cursor-pointer">Record details</summary>
+        <p className="break-all">User: {entry.userId ?? "Unknown"}</p><p className="break-all">Session: {entry.sessionId ?? "Not recorded"}</p>
+        {entry.model && <p className="break-all">Model: {entry.model}</p>}<p className="break-all">Record: {entry.id}</p>
+      </details>
+    </article>)}</div> : <p className="lgt-card lgt-card--compact text-sm text-muted-foreground">No recorded session failures or historical API errors found.</p>}
+    {selectedId && <SessionDetailSheet id={selectedId} onClose={() => setSelectedId(null)} />}
+  </div>;
 }
 
 // ─── Abuse Flags Tab ──────────────────────────────────────────────────────────
 function AbuseFlagsTab() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-abuse-flags"],
-    queryFn: getAbuseFlags,
-    retry: false,
+  const [selectedId,setSelectedId] = useState<string | null>(null);
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["admin-abuse-flags"], queryFn: getAbuseFlags, retry: false,
+    staleTime: 0, refetchOnMount: "always", refetchOnWindowFocus: false, refetchOnReconnect: false,
   });
-
   if (isLoading) return <TabSkeleton />;
-
-  if (isError || !data) {
-    return (
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Failed to load abuse flag data — the server returned an error.</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="admin-row flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Sessions flagged as <code className="bg-secondary px-1 rounded text-xs">bad</code> or{" "}
-          <code className="bg-secondary px-1 rounded text-xs">warn</code> by user feedback.
-          Total: <span className="font-mono text-foreground">{data.totalCount}</span>
-        </p>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
-        </Button>
-      </div>
-
-      {data.flags.length === 0 ? (
-        <div className="rounded-xl border border-border py-16 text-center text-sm text-muted-foreground">
-          No abuse flags found.
-          <p className="mt-1 text-xs">Negative feedback from sessions appears here.</p>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table mobileCards>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>Rating</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Session</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.flags.map((flag) => (
-                <TableRow key={flag.id} className="hover:bg-secondary/10">
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs gap-1",
-                        flag.rating === "bad"
-                          ? "text-destructive border-destructive/30 bg-destructive/10"
-                          : "text-amber-400 border-amber-400/30 bg-amber-400/10"
-                      )}
-                    >
-                      <ThumbsDown className="w-3 h-3" />
-                      {flag.rating}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono">{flag.role ?? "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
-                    {flag.reason ?? flag.notes ?? "—"}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[100px]">
-                    {flag.sessionId ?? "—"}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[100px]">
-                    {flag.userId ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(flag.createdAt)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+  if (isError || !data) return <div role="alert" className="lgt-card lgt-card--compact space-y-3">
+    <p>Unable to load feedback flags.</p><Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Retry</Button>
+  </div>;
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm text-muted-foreground">{data.flags.length} feedback flags shown{data.hasMore ? " · latest 50" : ""}</p>
+      <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-1" />{isFetching ? "Refreshing…" : "Refresh"}</Button>
     </div>
-  );
+    <p className="text-xs text-muted-foreground">User feedback marked bad or warn. These are reports to review, not confirmed abuse or an automatic abuse detector.</p>
+    {data.hasMore && <p role="status" className="text-xs text-amber-400">More feedback flags exist. Showing the 50 most recent.</p>}
+    {data.flags.length ? <div className="row layout__split-2">{data.flags.map(flag => <article key={flag.id} aria-label={`Feedback flag ${flag.id}`} className="lgt-card lgt-card--compact space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Badge variant="outline" className={cn("text-xs",flag.rating === "bad" ? "text-destructive" : "text-amber-400")}>{flag.rating === "bad" ? "Negative feedback" : "Warning feedback"}</Badge>
+        {flag.sessionId && <Button variant="ghost" size="sm" className="min-h-11" onClick={() => setSelectedId(flag.sessionId!)}>Open session<ChevronRight className="w-4 h-4" /></Button>}
+      </div>
+      <p className="text-sm break-words">{flag.reason ?? flag.notes ?? "No reason supplied."}</p>
+      <dl className="row layout__split-2 layout--keep-columns">
+        <div><dt className="text-xs text-muted-foreground mb-1">When</dt><dd className="text-xs">{formatDateTime(flag.createdAt)}</dd></div>
+        <div><dt className="text-xs text-muted-foreground mb-1">Response role</dt><dd className="text-xs break-words">{flag.role ?? "Not recorded"}</dd></div>
+      </dl>
+      <details className="text-xs text-muted-foreground"><summary className="min-h-11 py-3 cursor-pointer">Record details</summary>
+        <p className="break-all">User: {flag.userId ?? "Guest"}</p><p className="break-all">Session: {flag.sessionId ?? "Not recorded"}</p><p className="break-all">Record: {flag.id}</p>
+      </details>
+    </article>)}</div> : <p className="lgt-card lgt-card--compact text-sm text-muted-foreground">No negative or warning feedback recorded.</p>}
+    {selectedId && <SessionDetailSheet id={selectedId} onClose={() => setSelectedId(null)} />}
+  </div>;
 }
 
 // ─── API Keys Tab ────────────────────────────────────────────────────────────

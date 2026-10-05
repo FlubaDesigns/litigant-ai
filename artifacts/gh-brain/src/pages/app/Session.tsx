@@ -321,10 +321,6 @@ export default function SessionPage() {
   }
 
   async function handleFeedback(rating: "good" | "bad" | "warn") {
-    setFeedbackGiven(rating);
-    if (rating === "good" || rating === "bad") {
-      applyFeedbackGrades(rating, state.courtHappened ? "answer" : "answer");
-    }
     try {
       await submitFeedback({
         userId: user?.uid ?? null,
@@ -333,7 +329,9 @@ export default function SessionPage() {
         role: "Verdict",
         rating,
       });
-      toast.success("Feedback recorded — grades updated.");
+      setFeedbackGiven(rating);
+      if (rating === "good" || rating === "bad") applyFeedbackGrades(rating, "answer");
+      toast.success("Feedback recorded.");
     } catch { toast.error("Failed to save feedback."); }
   }
 

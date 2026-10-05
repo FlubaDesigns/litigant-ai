@@ -404,7 +404,8 @@ describe("system health metrics", () => {
         count:()=>({get:async()=>{if(error)throw new Error("Query unavailable");return {data:()=>({count:rows.length})};}}),
         orderBy:(field:string)=>query(rows.filter(row=>row[field]).sort((a,b)=>b[field]-a[field])),
         limit:(n:number)=>query(rows.slice(0,n)),
-        get:async()=>({docs:rows.map(row=>({id:row.id,data:()=>row}))}),
+        select:()=>query(rows,error),
+        get:async()=>({size:rows.length,docs:rows.map(row=>({id:row.id,data:()=>row}))}),
       };
     }
     return {collection:(name:string)=>query(records[name]??[])};

@@ -19,8 +19,7 @@ export interface FeedbackEntry {
 
 export async function submitFeedback(entry: FeedbackEntry): Promise<void> {
   if (!isConfigured) {
-    console.log("[Litigant AI] Feedback (Firebase not configured):", entry);
-    return;
+    throw new Error("Feedback is unavailable while the connection is not configured.");
   }
 
   try {

@@ -411,12 +411,20 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   return res.json();
 }
 
-export async function getApiUsage(): Promise<{
-  byDay: ApiUsageDay[];
-  totalSessions: number;
-  totalCreditsUsed: number;
-  apiLogs: Record<string, unknown>[];
-}> {
+export interface ApiUsageModel {
+  provider:string; model:string; calls:number; inputTokens:number; outputTokens:number;
+  cachedInputTokens:number; cacheWriteTokens:number; cacheWrite1hTokens:number;
+  costUSD:number; unpricedCalls:number; estimatedCalls:number;
+}
+export interface ApiUsageReport {
+  byDay:ApiUsageDay[]; byModel:ApiUsageModel[];
+  totalSessions:number; totalCreditsUsed:number; totalCalls:number;
+  totalInputTokens:number; totalOutputTokens:number; costUSD:number;
+  sessionsMissingCallDetails:number; sessionsMissingCredits:number;
+  unpricedCalls:number; estimatedCalls:number;
+  since:string; through:string; truncated:boolean; limit:number;
+}
+export async function getApiUsage(): Promise<ApiUsageReport> {
   const res = await adminFetch("/admin/api-usage");
   if (!res.ok) throw new Error("Failed to load API usage");
   return res.json();
@@ -425,6 +433,7 @@ export async function getApiUsage(): Promise<{
 export async function getErrorLogs(): Promise<{
   logs: ErrorLogEntry[];
   failedSessions: ErrorLogEntry[];
+  hasMore:boolean;
 }> {
   const res = await adminFetch("/admin/error-logs");
   if (!res.ok) throw new Error("Failed to load error logs");
@@ -434,6 +443,7 @@ export async function getErrorLogs(): Promise<{
 export async function getAbuseFlags(): Promise<{
   flags: AbuseFlag[];
   totalCount: number;
+  hasMore:boolean;
 }> {
   const res = await adminFetch("/admin/abuse-flags");
   if (!res.ok) throw new Error("Failed to load abuse flags");

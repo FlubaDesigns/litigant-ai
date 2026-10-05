@@ -32,6 +32,7 @@ import {
   resetMultiplierToDefault,
 } from "../lib/pricingConfig.js";
 import { safeError } from "../lib/safeError.js";
+import { summarizeApiUsage } from "../lib/apiUsage.js";
 import {
   getAllConfiguredProviders,
   saveApiKey,
@@ -796,53 +797,23 @@ router.post("/admin/credits/refund", requireAdmin, async (req: any, res) => {
 
 router.get("/admin/api-usage", requireAdmin, async (_req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ byDay: [], totalSessions: 0, totalCreditsUsed: 0, apiLogs: [] });
-
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
+  if (!db) return res.status(503).json({ error: "Usage data is unavailable" });
+  const through = new Date();
+  const since = new Date(through.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const limit = 1000;
   try {
-    // Single-field index only (createdAt) — filter type in-memory to avoid composite index requirement.
-    const usageSnap = await db
-      .collection("credit_transactions")
-      .where("createdAt", ">=", since)
+    // Read the same per-call cost snapshots and settled credits saved by brain.ts.
+    // Projection avoids loading questions, transcripts or other session content.
+    const snap = await db.collection("sessions")
+      .where("createdAt", ">=", since).where("createdAt", "<=", through)
       .orderBy("createdAt", "desc")
-      .limit(1000)
-      .get();
-
-    const byDay: Record<string, { date: string; sessions: number; creditsUsed: number }> = {};
-    for (const doc of usageSnap.docs) {
-      const data = doc.data();
-      if ((data["type"] as string) !== "usage") continue; // filter in-memory
-      const date =
-        data["createdAt"]?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "unknown";
-      if (!byDay[date]) byDay[date] = { date, sessions: 0, creditsUsed: 0 };
-      byDay[date]!.sessions++;
-      byDay[date]!.creditsUsed += Math.abs((data["amount"] as number) ?? 0);
-    }
-
-    // Also read from api_logs if it exists (may be empty until brain.ts writes there)
-    let apiLogs: Record<string, unknown>[] = [];
-    try {
-      const logsSnap = await db
-        .collection("api_logs")
-        .where("createdAt", ">=", since)
-        .orderBy("createdAt", "desc")
-        .limit(200)
-        .get();
-      apiLogs = logsSnap.docs.map((d) => serializeDoc(d));
-    } catch {
-      /* api_logs collection may not exist yet */
-    }
-
-    const byDayArr = Object.values(byDay).sort((a, b) =>
-      b.date.localeCompare(a.date)
-    );
-
+      .select("createdAt", "creditsUsed", "callUsage")
+      .limit(limit + 1).get();
     return res.json({
-      byDay: byDayArr,
-      totalSessions: usageSnap.size,
-      totalCreditsUsed: byDayArr.reduce((s, d) => s + d.creditsUsed, 0),
-      apiLogs,
+      ...summarizeApiUsage(snap.docs.slice(0, limit).map(doc => doc.data())),
+      apiLogs: [], // Compatibility for open tabs running the previous frontend.
+      since: since.toISOString(), through: through.toISOString(),
+      truncated: snap.size > limit, limit,
     });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
@@ -853,36 +824,32 @@ router.get("/admin/api-usage", requireAdmin, async (_req, res) => {
 
 router.get("/admin/error-logs", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ logs: [], failedSessions: [] });
+  if (!db) return res.status(503).json({ error: "Error records are unavailable" });
 
-  const limit = Math.min(Number(req.query["limit"]) || 50, 200);
+  const limit = Math.max(1, Math.min(Math.floor(Number(req.query["limit"])) || 50, 200));
 
   try {
-    // Read from api_logs (may be empty until brain.ts writes there)
-    let logs: Record<string, unknown>[] = [];
-    try {
-      const snap = await db
-        .collection("api_logs")
-        .where("status", "==", "error")
-        .orderBy("createdAt", "desc")
-        .limit(limit)
-        .get();
-      logs = snap.docs.map((d) => serializeDoc(d));
-    } catch {
-      /* api_logs may not exist */
-    }
+    // Preserve historical API error records. Current execution failures are
+    // written to the session marker below. Read failures must not look empty.
+    const logsSnap = await db.collection("api_logs")
+      .where("status", "==", "error").orderBy("createdAt", "desc")
+      .limit(limit + 1).get();
+    const logs = logsSnap.docs.slice(0, limit).map(d => serializeDoc(d));
 
     // The same failure marker used by System Health, including failed resumes.
     const failedSnap = await db
       .collection("sessions")
       .orderBy("lastRunErrorAt", "desc")
-      .limit(limit)
+      .select("lastRunErrorAt", "lastRunErrorMessage", "title", "userId", "status")
+      .limit(limit + 1)
       .get();
 
     return res.json({
       logs,
-      failedSessions: failedSnap.docs.map((d) => ({
+      hasMore: logsSnap.size > limit || failedSnap.size > limit,
+      failedSessions: failedSnap.docs.slice(0, limit).map((d) => ({
         ...serializeDoc(d),
+        sessionId: d.id,
         message: d.data().lastRunErrorMessage,
         createdAt: d.data().lastRunErrorAt?.toDate?.()?.toISOString() ?? null,
         _type: "session_error",
@@ -897,25 +864,20 @@ router.get("/admin/error-logs", requireAdmin, async (req, res) => {
 
 router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ flags: [], totalCount: 0 });
+  if (!db) return res.status(503).json({ error: "Feedback records are unavailable" });
 
-  const limit = Math.min(Number(req.query["limit"]) || 50, 200);
+  const limit = Math.max(1, Math.min(Math.floor(Number(req.query["limit"])) || 50, 200));
 
   try {
-    // Single-field index only (createdAt) — filter rating in-memory to avoid composite index requirement.
-    const snap = await db
-      .collection("feedback")
-      .orderBy("createdAt", "desc")
-      .limit(limit * 10)
-      .get();
-
-    const flagDocs = snap.docs
-      .filter((d) => ["bad", "warn"].includes(d.data()["rating"] as string))
-      .slice(0, limit);
-
+    // Filter before limiting: positive feedback must not crowd out flags.
+    const snap = await db.collection("feedback")
+      .where("rating", "in", ["bad", "warn"])
+      .orderBy("createdAt", "desc").limit(limit + 1).get();
+    const flagDocs = snap.docs.slice(0, limit);
     return res.json({
-      flags: flagDocs.map((d) => serializeDoc(d)),
+      flags: flagDocs.map(d => serializeDoc(d)),
       totalCount: flagDocs.length,
+      hasMore: snap.size > limit,
     });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });

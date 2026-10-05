@@ -16,9 +16,9 @@ const responses: Record<string,unknown> = {
   "/admin/sessions":{sessions:[{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0,createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
   [`/admin/sessions/${longId}`]:{session:{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0},turns:[]},
   "/admin/transactions":{transactions:[{id:longId,userId:longId,type:"usage",amount:-50,balanceAfter:0,source:"session",createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
-  "/admin/api-usage":{totalSessions:5,totalCreditsUsed:100,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],apiLogs:[{id:longId,model:longId,status:"error",durationMs:300}]},
-  "/admin/error-logs":{logs:[{id:longId,message:longId,userId:longId}],failedSessions:[]},
-  "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:longId,userId:longId,sessionId:longId}],totalCount:1},
+  "/admin/api-usage":{totalSessions:5,totalCreditsUsed:100,totalCalls:2,totalInputTokens:200,totalOutputTokens:50,costUSD:.005,sessionsMissingCallDetails:1,sessionsMissingCredits:0,unpricedCalls:0,estimatedCalls:0,since:"2026-09-05T00:00:00Z",through:"2026-10-05T00:00:00Z",truncated:false,limit:1000,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],byModel:[{provider:"openai",model:longId,calls:2,inputTokens:200,outputTokens:50,cachedInputTokens:20,cacheWriteTokens:0,cacheWrite1hTokens:0,costUSD:.005,unpricedCalls:0,estimatedCalls:0}]},
+  "/admin/error-logs":{logs:[],failedSessions:[{id:longId,sessionId:longId,message:"Session timed out.",userId:longId,status:"complete",createdAt:"2026-10-04T12:00:00Z"}],hasMore:false},
+  "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:"The response was inaccurate.",userId:longId,sessionId:longId,createdAt:"2026-10-04T12:00:00Z"}],totalCount:1,hasMore:false},
   "/admin/credit-packs":{packs:[{id:"fixture",name:"Example pack",description:"A test fixture only",active:true,metadata:{creditAmount:"500"},prices:[{id:"price",unit_amount:500,currency:"usd"}]},{id:"inactive",name:"Inactive pack",active:false,metadata:{creditAmount:"500"},prices:[]}],bounds:{}},
   "/limits":{limits:{maxLitigants:10}},
   "/feature-flags":{flags:{creditOverdraft:true}},
@@ -84,6 +84,23 @@ for (const width of [360, 412]) {
         await card.locator("summary").click();
         const edit=card.getByRole("button",{name:"Edit multiplier for gpt-5"});
         expect(Math.round((await edit.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+      }
+      if (tab.id === "api-usage") {
+        const card=page.getByRole("article",{name:`Usage for openai ${longId}`,exact:true});
+        await expect(card.getByText("$0.0050",{exact:true})).toBeVisible();
+        await expect(card.getByText("200",{exact:true})).toBeVisible();
+        await card.locator("summary").click();
+        await expect(card.getByText("Cached input: 20 tokens",{exact:true})).toBeVisible();
+        await expect(page.getByText(/1 sessions have no recorded call details/)).toBeVisible();
+      }
+      if (tab.id === "errors" || tab.id === "abuse") {
+        const card=page.getByRole("article",{name:tab.id === "errors" ? `Error ${longId}` : `Feedback flag ${longId}`,exact:true});
+        await expect(card.getByText(tab.id === "errors" ? "Session timed out." : "The response was inaccurate.",{exact:true})).toBeVisible();
+        await card.getByRole("button",{name:"Open session",exact:true}).click();
+        const detail=page.getByRole("dialog",{name:"Session Detail"});
+        await expect(detail).toBeVisible();
+        await expect(detail.getByText(longId,{exact:true})).toBeVisible();
+        await detail.getByRole("button",{name:"Close",exact:true}).click();
       }
       if (tab.id === "users") {
         const card=page.getByRole("article",{name:"User Layout fixture"});
@@ -569,3 +586,25 @@ test("AI Studio shows discovered models awaiting pricing only after an on-demand
   await expect(page.getByRole("switch",{name:"Enable New provider model",exact:true})).toHaveCount(0);
   await expect(page.getByRole("link",{name:"Provider models & pricing"})).toHaveAttribute("href","https://developers.openai.com/api/docs/pricing");
 });
+
+for (const [tab,path] of [["api-usage","/admin/api-usage"],["errors","/admin/error-logs"],["abuse","/admin/abuse-flags"]]) {
+  test(`${tab} exposes read failures, retries, and refreshes without polling`,async({page})=>{
+    await page.setViewportSize({width:360,height:800});
+    let fail=true,reads=0;
+    await page.route(`**/api-server/api${path}`,async route=>{
+      reads++;
+      await route.fulfill(fail?{status:503,json:{error:"Unavailable"}}:{json:responses[path]});
+    });
+    await page.goto(`/admin?tab=${tab}&e2e=1`);
+    await expect(page.getByRole("alert")).toBeVisible();
+    fail=false;
+    await page.getByRole("button",{name:"Retry",exact:true}).click();
+    await expect(page.getByRole("article").first()).toBeVisible();
+    const before=reads;
+    await page.getByRole("button",{name:"Refresh",exact:true}).click();
+    await expect.poll(()=>reads).toBe(before+1);
+    await expect(page.getByRole("button",{name:"Refresh",exact:true})).toBeEnabled();
+    await page.clock.install();await page.clock.fastForward(90000);
+    expect(reads).toBe(before+1);
+  });
+}

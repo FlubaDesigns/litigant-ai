@@ -233,6 +233,10 @@ jobs:
             --project litigant-ai \
             --non-interactive
 
+      - name: Verify live admin monitoring queries
+        working-directory: artifacts/api-server
+        run: node scripts/verify-admin-monitoring.mjs
+
       - name: Verify hosted frontend and API rewrite
         env:
           EXPECTED_SHA: ${{ github.sha }}
