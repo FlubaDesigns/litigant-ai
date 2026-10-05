@@ -1691,8 +1691,8 @@ function CreditPackDialog({
 
 const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
   overdraftLimit: {
-    label: "Courtesy credit ceiling",
-    description: "Maximum debt for Pro users with a recorded successful top-up. A top-up is required before another conversation while owing credits.",
+    label: "Courtesy ceiling",
+    description: "Paid Pro only. Repay before next run.",
     min: 0, max: 5000,
   },
   maxLitigants: {

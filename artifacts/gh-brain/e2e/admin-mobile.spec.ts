@@ -16,7 +16,7 @@ const responses: Record<string,unknown> = {
   "/admin/sessions":{sessions:[{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0,createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
   [`/admin/sessions/${longId}`]:{session:{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0},turns:[]},
   "/admin/transactions":{transactions:[{id:longId,userId:longId,type:"usage",amount:-50,balanceAfter:0,source:"session",createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
-  "/admin/api-usage":{totalSessions:5,totalCreditsUsed:100,totalCalls:2,totalInputTokens:200,totalOutputTokens:50,costUSD:.005,sessionsMissingCallDetails:1,sessionsMissingCredits:0,unpricedCalls:0,estimatedCalls:0,since:"2026-09-05T00:00:00Z",through:"2026-10-05T00:00:00Z",truncated:false,limit:1000,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],byModel:[{provider:"openai",model:longId,calls:2,inputTokens:200,outputTokens:50,cachedInputTokens:20,cacheWriteTokens:0,cacheWrite1hTokens:0,costUSD:.005,unpricedCalls:0,estimatedCalls:0}]},
+  "/admin/api-usage":{completedSessionCount:2,completedSessionsMissingCredits:0,averageConversationCredits:50,totalSessions:5,totalCreditsUsed:100,totalCalls:2,totalInputTokens:200,totalOutputTokens:50,costUSD:.005,sessionsMissingCallDetails:1,sessionsMissingCredits:0,unpricedCalls:0,estimatedCalls:0,since:"2026-09-05T00:00:00Z",through:"2026-10-05T00:00:00Z",truncated:false,limit:1000,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],byModel:[{provider:"openai",model:longId,calls:2,inputTokens:200,outputTokens:50,cachedInputTokens:20,cacheWriteTokens:0,cacheWrite1hTokens:0,costUSD:.005,unpricedCalls:0,estimatedCalls:0}]},
   "/admin/error-logs":{logs:[],failedSessions:[{id:longId,sessionId:longId,message:"Session timed out.",userId:longId,status:"complete",createdAt:"2026-10-04T12:00:00Z"}],hasMore:false},
   "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:"The response was inaccurate.",userId:longId,sessionId:longId,createdAt:"2026-10-04T12:00:00Z"}],totalCount:1,hasMore:false},
   "/admin/credit-packs":{packs:[{id:"fixture",name:"Example pack",description:"A test fixture only",active:true,metadata:{creditAmount:"500"},prices:[{id:"price",unit_amount:500,currency:"usd"}]},{id:"inactive",name:"Inactive pack",active:false,metadata:{creditAmount:"500"},prices:[]}],bounds:{MIN_UNIT_AMOUNT_CENTS:100,MAX_UNIT_AMOUNT_CENTS:100000,MIN_CREDIT_AMOUNT:1,MAX_CREDIT_AMOUNT:1000000}},
@@ -62,8 +62,9 @@ for (const width of [360, 412]) {
         return rect.width>0 && (rect.left< -1 || rect.right>window.innerWidth+1);
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
+      if (tab.id === "overview" || tab.id === "limits") await expect(page.getByRole("region",{name:"Average conversation credits"}).getByText("50 credits",{exact:true})).toBeVisible();
       if (tab.id === "limits") {
-        for (const name of ["Overdraft allowance", "Maximum litigants"]) {
+        for (const name of ["Courtesy ceiling", "Maximum litigants"]) {
           const card=page.getByRole("article",{name,exact:true});
           const [input,button]=await card.locator("form > *").evaluateAll(controls=>controls.map(control=>{
             const {x,y,width,height}=control.getBoundingClientRect();return {x,y,width,height};
