@@ -275,3 +275,36 @@ test("AI Studio checks connections on request without automatic polling",async({
   await expect(page.getByText("Connected",{exact:true})).toBeVisible();
   await expect(page.getByRole("button",{name:model.label,exact:true})).toBeVisible();
 });
+
+test("seat orders save, reload, cancel, and retain drafts on failure",async({page})=>{
+  let saved="Original rules",fail=false;
+  await page.route("**/api-server/api/admin/seat-briefs**",async route=>{
+    if(route.request().method()==="PATCH"){
+      if(fail)return route.fulfill({status:500,json:{error:"Could not save"}});
+      saved=route.request().postDataJSON().text.trim();
+      return route.fulfill({json:{success:true}});
+    }
+    return route.fulfill({json:{seatIds:["orchestrator"],active:{orchestrator:saved},defaults:{orchestrator:"Default"},overrides:{orchestrator:saved}}});
+  });
+  await page.goto("/admin?tab=seat-orders&e2e=1");
+  await expect(page.getByRole("heading",{name:"Seat Orders",exact:true})).toHaveCount(1);
+  const edit=page.getByRole("button",{name:"Edit Orchestrator",exact:true});
+  await edit.click();
+  const field=page.getByRole("textbox",{name:"Orchestrator instructions"});
+  await field.fill("New saved rules");
+  await page.getByRole("button",{name:"Save",exact:true}).click();
+  await expect(field).toHaveCount(0);
+  await page.reload();
+  await edit.click();
+  await expect(field).toHaveValue("New saved rules");
+  await field.fill("Discard this draft");
+  await page.getByRole("button",{name:"Cancel",exact:true}).click();
+  await edit.click();
+  await expect(field).toHaveValue("New saved rules");
+  fail=true;
+  await field.fill("Keep this failed draft");
+  await page.getByRole("button",{name:"Save",exact:true}).click();
+  await expect(page.getByText("Could not save",{exact:true})).toBeVisible();
+  await expect(field).toHaveValue("Keep this failed draft");
+  expect(saved).toBe("New saved rules");
+});

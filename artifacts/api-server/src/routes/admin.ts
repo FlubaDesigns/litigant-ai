@@ -54,9 +54,7 @@ import {
 } from "../lib/conscienceConfig.js";
 import {
   SEAT_IDS,
-  getAllSeatBriefs,
-  getSeatBriefFileDefault,
-  invalidateSeatBriefsCache,
+  getSeatBriefsConfig,
   type SeatId,
 } from "../lib/seatBriefs.js";
 
@@ -1433,27 +1431,8 @@ router.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
  * the factory-default file text for comparison.
  */
 router.get("/admin/seat-briefs", requireAdmin, async (_req, res) => {
-  const db = getFirestoreDb();
-
   try {
-    const active = await getAllSeatBriefs();
-    const defaults: Record<string, string> = {};
-    for (const id of SEAT_IDS) {
-      defaults[id] = getSeatBriefFileDefault(id);
-    }
-
-    let overrides: Record<string, unknown> = {};
-    if (db) {
-      const doc = await db.collection("system_config").doc("seat_briefs").get();
-      if (doc.exists) overrides = doc.data() ?? {};
-    }
-
-    return res.json({
-      active,
-      defaults,
-      overrides,
-      seatIds: SEAT_IDS,
-    });
+    return res.json(await getSeatBriefsConfig());
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
@@ -1462,7 +1441,7 @@ router.get("/admin/seat-briefs", requireAdmin, async (_req, res) => {
 /**
  * PATCH /admin/seat-briefs/:seatId
  * Body: { text: string }
- * Writes an override for a single seat brief to Firestore and invalidates cache.
+ * Writes an override for a single seat brief to Firestore.
  */
 router.patch("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) => {
   const { seatId } = req.params as { seatId: string };
@@ -1476,7 +1455,7 @@ router.patch("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) =
   }
 
   const { text } = req.body as { text?: string };
-  if (!text?.trim()) {
+  if (typeof text !== "string" || !text.trim()) {
     return res.status(400).json({ error: "text (string) is required and must not be empty" });
   }
 
@@ -1489,8 +1468,6 @@ router.patch("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) =
       },
       { merge: true }
     );
-
-    invalidateSeatBriefsCache();
 
     return res.json({ success: true, seatId, length: text.trim().length });
   } catch (err: any) {
@@ -1516,8 +1493,6 @@ router.delete("/admin/seat-briefs/:seatId", requireAdmin, async (req: any, res) 
       { [seatId]: FieldValue.delete() },
       { merge: true }
     );
-
-    invalidateSeatBriefsCache();
 
     return res.json({
       success: true,

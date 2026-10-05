@@ -15,8 +15,7 @@
  *   updatedAt:    Timestamp
  *   updatedBy:    string  — admin uid
  *
- * Cache: module-level, 5-minute TTL. Call invalidateSeatBriefsCache() from
- * the admin PATCH route to force an immediate refresh on the local instance.
+ * Read once when a run starts; no per-instance cache or background polling.
  */
 
 import { readFileSync, existsSync } from "fs";
@@ -56,68 +55,28 @@ const FILE_FALLBACKS: Record<SeatId, string> = {
   litigant:     loadFileFallback("litigant"),
 };
 
-// ── In-process TTL cache ──────────────────────────────────────────────────────
-const TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-interface BriefsCache {
-  briefs: Record<SeatId, string>;
-  fetchedAt: number;
-}
-
-let _cache: BriefsCache | null = null;
-
-/**
- * Returns all seat briefs. Reads from Firestore at most once per TTL window;
- * merges with file fallbacks so missing Firestore keys still get a brief.
- */
-export async function getAllSeatBriefs(): Promise<Record<SeatId, string>> {
-  if (_cache && Date.now() - _cache.fetchedAt < TTL_MS) {
-    return _cache.briefs;
-  }
-
+/** One persisted snapshot for both the editor and the execution engine. */
+export async function getSeatBriefsConfig() {
   const db = getFirestoreDb();
-  if (!db) {
-    return { ...FILE_FALLBACKS };
+  const doc = db ? await db.collection("system_config").doc("seat_briefs").get() : null;
+  const data = doc?.exists ? (doc.data() ?? {}) : {};
+  const overrides: Partial<Record<SeatId, string>> = {};
+  for (const id of SEAT_IDS) {
+    if (typeof data[id] === "string" && data[id].trim()) overrides[id] = data[id];
   }
-
-  try {
-    const doc = await db.collection("system_config").doc("seat_briefs").get();
-    const data = doc.exists ? (doc.data() ?? {}) : {};
-
-    const briefs = { ...FILE_FALLBACKS };
-    for (const id of SEAT_IDS) {
-      const override = (data[id] as string | undefined)?.trim();
-      if (override) briefs[id] = override;
-    }
-
-    _cache = { briefs, fetchedAt: Date.now() };
-    return briefs;
-  } catch (err) {
-    console.warn("[seatBriefs] Firestore read failed, using file fallbacks:", err);
-    return { ...FILE_FALLBACKS };
-  }
+  return {
+    active: { ...FILE_FALLBACKS, ...overrides },
+    defaults: { ...FILE_FALLBACKS },
+    overrides,
+    seatIds: SEAT_IDS,
+  };
 }
 
-/**
- * Returns a single seat brief by id.
- */
+/** Reads the saved rules at run start. Read failures must not replace them with defaults. */
+export async function getAllSeatBriefs(): Promise<Record<SeatId, string>> {
+  return (await getSeatBriefsConfig()).active;
+}
+
 export async function getSeatBrief(seatId: SeatId): Promise<string> {
-  const all = await getAllSeatBriefs();
-  return all[seatId] ?? FILE_FALLBACKS[seatId];
-}
-
-/**
- * Force-clears the in-process cache.
- * Called by the admin PATCH endpoint after writing to Firestore.
- */
-export function invalidateSeatBriefsCache(): void {
-  _cache = null;
-}
-
-/**
- * Returns the raw file content for a seat (not the Firestore override).
- * Used by the admin UI to display the "factory default" text.
- */
-export function getSeatBriefFileDefault(seatId: SeatId): string {
-  return FILE_FALLBACKS[seatId];
+  return (await getAllSeatBriefs())[seatId];
 }

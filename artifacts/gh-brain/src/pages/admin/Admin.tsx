@@ -3110,176 +3110,72 @@ function AiStudioProviderSection({
 
 // ─── Seat Orders Tab ──────────────────────────────────────────────────────────
 
-const SEAT_META: Record<string, { label: string; description: string }> = {
-  orchestrator: { label: "Orchestrator", description: "Directs the flow of proceedings and coordinates all roles" },
-  moderator:    { label: "Moderator",    description: "Maintains order, enforces rules, and manages debate timing" },
-  auditor:      { label: "Auditor",      description: "Reviews arguments for quality and assigns grades" },
-  architect:    { label: "Architect",    description: "Designs the high-level solution structure" },
-  builder:      { label: "Builder",      description: "Implements and details the solution" },
-  litigant:     { label: "Litigant",     description: "Argues a position in the courtroom debate" },
+const SEAT_LABELS: Record<string, string> = {
+  orchestrator: "Orchestrator", moderator: "Moderator", architect: "Architect",
+  builder: "Builder", auditor: "Auditor", litigant: "Litigant",
 };
 
 function SeatOrdersTab() {
   const qc = useQueryClient();
   const [editingSeat, setEditingSeat] = useState<string | null>(null);
   const [draftText, setDraftText] = useState("");
-
   const { data, isLoading, isError, refetch } = useQuery<SeatBriefsData>({
-    queryKey: ["admin-seat-orders"],
-    queryFn: getSeatBriefs,
-    retry: false,
+    queryKey: ["admin-seat-orders"], queryFn: getSeatBriefs, retry: false,
+    refetchOnWindowFocus: false, refetchOnReconnect: false,
   });
-
   const saveMut = useMutation({
-    mutationFn: ({ seatId, text }: { seatId: string; text: string }) =>
-      patchSeatBrief(seatId, text),
-    onSuccess: (_d, { seatId }) => {
-      toast.success(`${SEAT_META[seatId]?.label ?? seatId} order saved`);
-      qc.invalidateQueries({ queryKey: ["admin-seat-orders"] });
+    mutationFn: async ({ seatId, text }: { seatId: string; text: string }) => {
+      await patchSeatBrief(seatId, text);
+      const saved = await getSeatBriefs();
+      if (saved.active[seatId] !== text.trim()) throw new Error("Saved rules could not be verified. Your draft is still here.");
+      return saved;
+    },
+    onSuccess: (saved) => {
+      qc.setQueryData(["admin-seat-orders"], saved);
       setEditingSeat(null);
+      toast.success("Order saved");
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const resetMut = useMutation({
-    mutationFn: (seatId: string) => deleteSeatBrief(seatId),
-    onSuccess: (_d, seatId) => {
-      toast.success(`${SEAT_META[seatId]?.label ?? seatId} order reset to default`);
-      qc.invalidateQueries({ queryKey: ["admin-seat-orders"] });
+    mutationFn: async (seatId: string) => {
+      await deleteSeatBrief(seatId);
+      return getSeatBriefs();
+    },
+    onSuccess: (saved) => {
+      qc.setQueryData(["admin-seat-orders"], saved);
       setEditingSeat(null);
+      toast.success("Default restored");
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  function openEditor(seatId: string) {
-    if (!data) return;
-    setDraftText(data.active[seatId] ?? "");
-    setEditingSeat(seatId);
-  }
-
   if (isLoading) return <TabSkeleton />;
-
-  if (isError || !data) {
-    return (
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Failed to load seat orders.
-        <button onClick={() => refetch()} className="ml-auto text-xs underline">Retry</button>
-      </div>
-    );
-  }
-
-  const seatIds = data.seatIds.length > 0 ? data.seatIds : Object.keys(SEAT_META);
+  if (isError || !data) return <div role="alert">Failed to load seat orders. <Button variant="outline" onClick={() => refetch()}>Retry</Button></div>;
   const busy = saveMut.isPending || resetMut.isPending;
-  const editingMeta = editingSeat ? (SEAT_META[editingSeat] ?? { label: editingSeat, description: "" }) : null;
-  const isCustom = (seatId: string) => !!data.overrides?.[seatId];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
-        <div>
-          <h2 className="text-base font-semibold">Seat Orders</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            The standing procedure for each courtroom role. These instructions shape how each AI seat behaves across every session.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {seatIds.map((seatId) => {
-          const meta = SEAT_META[seatId] ?? { label: seatId, description: "" };
-          const text = data.active[seatId] ?? "";
-          const custom = isCustom(seatId);
-          return (
-            <button
-              key={seatId}
-              onClick={() => openEditor(seatId)}
-              className="text-left rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-all p-5 space-y-3 group"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <ScrollText className="w-4 h-4 text-primary/60 shrink-0" />
-                  <span className="font-semibold text-sm">{meta.label}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {custom && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                      Custom
-                    </span>
-                  )}
-                  <Pencil className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">{meta.description}</p>
-              <div className="text-[10px] font-mono text-muted-foreground/60">
-                {text.length.toLocaleString()} chars · {text.split("\n").length} lines
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Editor Dialog */}
-      <Dialog open={!!editingSeat} onOpenChange={(o) => !o && setEditingSeat(null)}>
-        <DialogContent data-admin-panel="" className="max-w-3xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ScrollText className="w-4 h-4 text-primary" />
-              {editingMeta?.label} Order
-              {editingSeat && isCustom(editingSeat) && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 ml-1">
-                  Custom
-                </span>
-              )}
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              {editingMeta?.description}. Edit the markdown below and save to apply across all sessions.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <Textarea
-              value={draftText}
-              onChange={(e) => setDraftText(e.target.value)}
-              className="h-[50vh] resize-none font-mono text-xs leading-relaxed"
-              placeholder="Enter the seat order in markdown…"
-              disabled={busy}
-            />
+  return <div className="space-y-2">
+    {data.seatIds.map(seatId => {
+      const open = editingSeat === seatId;
+      const label = SEAT_LABELS[seatId] ?? seatId;
+      return <section key={seatId} className="lgt-card lgt-card--compact">
+        <button type="button" className="flex items-center justify-between gap-3 w-full min-h-11 text-left" aria-expanded={open} aria-controls={`seat-order-${seatId}`} aria-label={`Edit ${label}`} disabled={busy || (!!editingSeat && !open)} onClick={() => {
+          if (open) return;
+          setDraftText(data.active[seatId] ?? "");
+          setEditingSeat(seatId);
+        }}>
+          <span className="font-semibold">{label}</span>
+          <span className="text-sm text-primary">{open ? "Editing" : "Edit"}</span>
+        </button>
+        {open && <div id={`seat-order-${seatId}`} className="space-y-3 pt-2">
+          <Textarea aria-label={`${label} instructions`} value={draftText} onChange={e => setDraftText(e.target.value)} className="min-h-[40vh] font-mono text-base leading-relaxed" disabled={busy} />
+          <div className="row layout__split-2 layout--keep-columns">
+            <Button variant="outline" onClick={() => setEditingSeat(null)} disabled={busy}>Cancel</Button>
+            <Button onClick={() => saveMut.mutate({seatId,text:draftText})} disabled={busy || !draftText.trim()}>{saveMut.isPending ? "Saving…" : "Save"}</Button>
           </div>
-
-          <div className="text-[10px] font-mono text-muted-foreground/60 -mt-1">
-            {draftText.length.toLocaleString()} chars · {draftText.split("\n").length} lines
-          </div>
-
-          <DialogFooter className="gap-2 flex-wrap">
-            {editingSeat && isCustom(editingSeat) && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                onClick={() => editingSeat && resetMut.mutate(editingSeat)}
-                className="text-amber-400 border-amber-400/30 hover:bg-amber-400/5 mr-auto"
-              >
-                <ResetIcon className="w-3.5 h-3.5 mr-1.5" />
-                Reset to default
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setEditingSeat(null)} disabled={busy}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={busy || !draftText.trim()}
-              onClick={() => editingSeat && saveMut.mutate({ seatId: editingSeat, text: draftText })}
-            >
-              {saveMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
-              Save Order
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+          {!!data.overrides?.[seatId] && <Button variant="ghost" size="sm" disabled={busy} onClick={() => resetMut.mutate(seatId)}>Reset to default</Button>}
+        </div>}
+      </section>;
+    })}
+  </div>;
 }
 
 // ─── AI Studio Tab ────────────────────────────────────────────────────────────
