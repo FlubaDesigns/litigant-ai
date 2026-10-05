@@ -84,7 +84,8 @@ test("desktop retains table columns and mobile key editing uses the same form", 
   await page.setViewportSize({width:360,height:800});
   await expect(table).toHaveCSS("display","block");
   const edit=page.getByRole("button",{name:"Edit OpenAI API key"});
-  expect((await edit.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  // Buttons animate their dimensions when crossing the desktop/mobile breakpoint.
+  await expect.poll(async () => (await edit.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await edit.click();
   await expect(page.getByRole("button",{name:/Save/}).last()).toBeVisible();
 });
