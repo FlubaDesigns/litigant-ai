@@ -1,0 +1,52 @@
+import {beforeEach, expect, it, vi} from "vitest";
+import express from "express";
+import request from "supertest";
+import {FieldPath} from "firebase-admin/firestore";
+vi.mock("../lib/firebaseAdmin.js",()=>({getFirestoreDb:vi.fn(),isFirebaseConfigured:()=>true,verifyIdToken:async()=>({uid:"admin",admin:true})}));
+vi.mock("../lib/providerAvailability.js",()=>({getProviderAvailability:async(id:string,models:string[])=>({state:"connected",checkedAt:"2026-10-05T00:00:00Z",modelIds:id==="acme"?models:[]})}));
+import {getFirestoreDb} from "../lib/firebaseAdmin.js";
+import adminRouter from "../routes/admin.js";
+import {getProviderCatalog} from "../lib/providerCatalog.js";
+import {prepareSession,priceCalls} from "../lib/sessionPricing.js";
+const app=express().use(express.json()).use(adminRouter);
+const model="acme/model.v1";
+let docs:Record<string,any>,failRead:boolean,failWrite:boolean;
+beforeEach(()=>{
+  failRead=false;failWrite=false;
+  docs={aiStudio:{customProviders:[{id:"acme",label:"Acme AI",models:[{id:model,label:"Acme Model",inputRatePer1k:.01,outputRatePer1k:.02,multiplier:3,qualityScore:50}]}]},pricing:{multipliers:{other:7}},modelScores:{}};
+  const ref=(id:string)=>({id,get:async()=>{if(failRead)throw Error("read failed");return {exists:!!docs[id],data:()=>structuredClone(docs[id])};},set:async(v:any)=>{if(failWrite)throw Error("write failed");docs[id]={...docs[id],...v,multipliers:{...docs[id]?.multipliers,...v.multipliers}};}});
+  vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({doc:ref,orderBy:()=>({limit:()=>({get:async()=>({docs:[]})})})}),runTransaction:async(fn:any)=>fn({get:(r:any)=>r.get(),update:(r:any,field:FieldPath)=>{if(failWrite)throw Error("write failed");expect(field.isEqual(new FieldPath("multipliers",model))).toBe(true);delete docs[r.id].multipliers[model];}})} as any);
+});
+const api=(method:"get"|"put"|"delete",path:string)=>request(app)[method](path).set("Authorization","Bearer test");
+it("persists save/reset through the routes and uses the same value in every consumer",async()=>{
+  const old=await prepareSession({provider:"acme",model,maxCredits:100000});
+  expect((await api("put",`/admin/pricing/${encodeURIComponent(model)}`).send({multiplier:6.5})).status).toBe(200);
+  const pricing=await api("get","/admin/pricing"),studio=await api("get","/admin/ai-studio/models");
+  expect(pricing.body.models[0]).toMatchObject({model,providerLabel:"Acme AI",available:true,effectiveMultiplier:6.5,isOverridden:true,pricing:{note:"Custom rate entered by administrator."}});
+  expect(studio.body.models[0].multiplier).toBe(6.5);
+  expect((await getProviderCatalog()).providers[0].models[0].price.multiplier).toBe(6.5);
+  const fresh=await prepareSession({provider:"acme",model,litigantCount:3,maxIterations:2,responseMode:"balanced",maxCredits:100000});
+  expect(fresh.estimatedCredits).toBe(pricing.body.models[0].exampleCredits);
+  expect(studio.body.models[0].exampleCredits).toBe(fresh.estimatedCredits);
+  const calls=[{provider:"acme",model,inputTokens:1000,outputTokens:1000}];
+  expect(priceCalls(calls,fresh.rates)).toBe(20);
+  expect(priceCalls(calls,old.rates)).toBe(9);
+  expect((await api("delete",`/admin/pricing/${encodeURIComponent(model)}`)).status).toBe(200);
+  expect((await api("get","/admin/pricing")).body.models[0]).toMatchObject({effectiveMultiplier:3,isOverridden:false});
+  expect(docs.pricing.multipliers).toEqual({other:7});
+  expect(fresh.rates[model].multiplier).toBe(6.5);
+});
+it("rejects invalid values instead of coercing booleans, arrays or strings into prices",async()=>{
+  for(const multiplier of [true,false,null,"2",[2],{},0,101])expect((await api("put",`/admin/pricing/${encodeURIComponent(model)}`).send({multiplier})).status).toBe(400);
+  expect((await api("put","/admin/pricing/missing").send({multiplier:2})).status).toBe(404);
+  expect(docs.pricing.multipliers).toEqual({other:7});
+});
+it("does not report failed writes or unreadable pricing as success",async()=>{
+  failWrite=true;
+  expect((await api("put",`/admin/pricing/${encodeURIComponent(model)}`).send({multiplier:4})).status).toBe(500);
+  expect((await api("delete",`/admin/pricing/${encodeURIComponent(model)}`)).status).toBe(500);
+  expect(docs.pricing.multipliers).toEqual({other:7});
+  failRead=true;
+  expect((await api("get","/admin/pricing")).status).toBe(500);
+  await expect(prepareSession({provider:"acme",model})).rejects.toThrow("read failed");
+});

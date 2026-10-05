@@ -308,3 +308,48 @@ test("seat orders save, reload, cancel, and retain drafts on failure",async({pag
   await expect(field).toHaveValue("Keep this failed draft");
   expect(saved).toBe("New saved rules");
 });
+
+test("pricing saves, reloads, resets, and keeps a failed draft on a phone",async({page})=>{
+  await page.setViewportSize({width:360,height:800});
+  let multiplier=5,fail=false,reads=0,writes=0;
+  await page.route("**/api-server/api/admin/pricing**",async route=>{
+    const method=route.request().method();
+    if(method!=="GET"){
+      writes++;
+      if(fail)return route.fulfill({status:500,json:{error:"Could not save pricing"}});
+      multiplier=method==="DELETE"?5:route.request().postDataJSON().multiplier;
+      return route.fulfill({json:{success:true}});
+    }
+    reads++;
+    return route.fulfill({json:{creditValueUsd:.01,models:[{...model,label:"GPT-5",providerLabel:"OpenAI",defaultMultiplier:5,effectiveMultiplier:multiplier,isOverridden:multiplier!==5,exampleCredits:multiplier*10,pricing:{sourceUrl:"https://example.test/pricing",verifiedAt:"2026-10-05",cachedInputPer1k:.0001}}]}});
+  });
+  await page.goto("/admin?tab=pricing&e2e=1");
+  await expect(page.getByText("API Input /1M",{exact:true}).last()).toBeVisible();
+  await expect(page.getByRole("link",{name:"Source",exact:true})).toHaveAttribute("href","https://example.test/pricing");
+  await page.getByRole("button",{name:"Edit multiplier for gpt-5"}).click();
+  const field=page.getByRole("spinbutton",{name:"GPT-5 multiplier"}),save=page.getByRole("button",{name:"Save",exact:true});
+  await field.fill("");await expect(save).toBeDisabled();
+  await field.press("Enter");expect(writes).toBe(0);
+  await field.fill("6.5");await save.click();
+  await expect(field).toHaveCount(0);
+  await expect(page.getByText("6.5×",{exact:true})).toBeVisible();
+  await expect(page.getByText("$0.65",{exact:true})).toBeVisible();
+  await page.reload();await expect(page.getByText("6.5×",{exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Reset gpt-5 multiplier to default"}).click();
+  await expect(page.getByText("5×",{exact:true})).toBeVisible();
+  fail=true;
+  await page.getByRole("button",{name:"Edit multiplier for gpt-5"}).click();
+  await field.fill("9");await save.click();
+  await expect(page.getByText("Could not save pricing",{exact:true})).toBeVisible();
+  await expect(field).toHaveValue("9");expect(multiplier).toBe(5);
+  await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  await page.getByRole("button",{name:"Cancel",exact:true}).click();
+  const nav=page.getByRole("navigation",{name:"Admin navigation"});
+  await nav.getByRole("button",{name:"Overview",exact:true}).click();
+  multiplier=8;
+  await nav.getByRole("button",{name:"Pricing",exact:true}).click();
+  await expect(page.getByText("8×",{exact:true})).toBeVisible();
+  await page.clock.install();const before=reads;
+  await page.clock.fastForward(90000);
+  expect(reads).toBe(before);
+});

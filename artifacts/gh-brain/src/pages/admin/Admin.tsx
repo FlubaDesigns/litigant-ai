@@ -2765,11 +2765,7 @@ function ApiKeysTab() {
 }
 
 // ─── Pricing Tab ─────────────────────────────────────────────────────────────
-const PROVIDER_LABELS: Record<string, string> = {
-  openai: "🤖 OpenAI", anthropic: "🔮 Anthropic", grok: "⚡ xAI Grok", gemini: "✨ Google Gemini",
-};
-
-function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => void }) {
+function MultiplierCell({ row }: { row: PricingModel }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(row.effectiveMultiplier));
   const qc = useQueryClient();
@@ -2779,7 +2775,6 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
     onSuccess: () => {
       toast.success(`${row.label} → ${draft}× saved`);
       setEditing(false);
-      onSaved();
       qc.invalidateQueries({ queryKey: ["admin-pricing"] });
       qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
     },
@@ -2790,44 +2785,46 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
     mutationFn: () => resetModelMultiplier(row.model),
     onSuccess: () => {
       toast.success(`${row.label} reset to default (${row.defaultMultiplier}×)`);
-      onSaved();
       qc.invalidateQueries({ queryKey: ["admin-pricing"] });
       qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const valid = draft.trim() !== "" && Number.isFinite(Number(draft)) && Number(draft) >= 1 && Number(draft) <= 100;
   if (editing) {
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
         <Input
-          type="number" min={1} max={100} step={0.5}
-          value={draft}
+          aria-label={`${row.label} multiplier`}
+          type="number" min={1} max={100} step="any" inputMode="decimal"
+          value={draft} disabled={saveMut.isPending}
           onChange={(e) => setDraft(e.target.value)}
-          className="h-7 w-20 text-xs font-mono"
+          className="min-h-[44px] w-24 font-mono"
           autoFocus
           onKeyDown={(e) => {
-            if (e.key === "Enter") saveMut.mutate();
-            if (e.key === "Escape") setEditing(false);
+            if (e.key === "Enter" && valid && !saveMut.isPending) saveMut.mutate();
+            if (e.key === "Escape" && !saveMut.isPending) setEditing(false);
           }}
         />
-        <Button size="sm" className="h-7 px-2 text-xs" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-          {saveMut.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+        <Button className="min-h-[44px]" onClick={() => saveMut.mutate()} disabled={!valid || saveMut.isPending}>
+          {saveMut.isPending ? "Saving…" : "Save"}
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditing(false)}>✕</Button>
+        <Button variant="ghost" className="min-h-[44px]" disabled={saveMut.isPending} onClick={() => setEditing(false)}>Cancel</Button>
+        {!valid && <p className="w-full text-xs text-destructive">Enter a number from 1 to 100.</p>}
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       <span className={cn("text-sm font-mono font-bold", row.isOverridden ? "text-primary" : "text-foreground")}>
         {row.effectiveMultiplier}×
       </span>
       {row.isOverridden && (
         <span className="text-xs text-muted-foreground">(default: {row.defaultMultiplier}×)</span>
       )}
-      <button onClick={() => { setDraft(String(row.effectiveMultiplier)); setEditing(true); }}
+      <button disabled={resetMut.isPending} onClick={() => { setDraft(String(row.effectiveMultiplier)); setEditing(true); }}
         className="ml-1 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground opacity-70 hover:text-foreground hover:opacity-100 focus-visible:opacity-100 transition-opacity"
         aria-label={`Edit multiplier for ${row.model}`}>
         <Edit3 className="w-3.5 h-3.5" />
@@ -2849,6 +2846,17 @@ function fmtRate(ratePerK: number): string {
   const perM = ratePerK * 1000;
   if (perM < 0.01) return `$${perM.toFixed(4)}/1M`;
   return `$${perM.toFixed(2)}/1M`;
+}
+
+function ModelRateDetails({pricing}: {pricing: AiStudioModel["pricing"]}) {
+  return <div className="space-y-1 text-xs text-muted-foreground">
+    <p>{pricing?.verifiedAt ? `Verified ${pricing.verifiedAt}` : "Rate unverified"}
+      {pricing?.sourceUrl && <> · <a href={pricing.sourceUrl} target="_blank" rel="noreferrer" className="text-primary underline">Source</a></>}
+    </p>
+    {pricing?.cachedInputPer1k !== undefined && <p>Cached input: {fmtRate(pricing.cachedInputPer1k)}</p>}
+    {pricing?.longContext && <p>Above {pricing.longContext.threshold.toLocaleString()} input tokens: {fmtRate(pricing.longContext.input)} in · {fmtRate(pricing.longContext.output)} out.</p>}
+    {pricing?.note && <p>{pricing.note}</p>}
+  </div>;
 }
 
 const EMPTY_MODEL = (): AiStudioCustomModel => ({
@@ -3090,12 +3098,7 @@ function AiStudioProviderSection({
                 </tbody>
               </table>
               <p className="text-xs text-muted-foreground">Example session: {m.exampleCredits} credits</p>
-              <p className="text-xs text-muted-foreground">
-                {m.pricing?.verifiedAt ? `Verified ${m.pricing.verifiedAt}` : "Rate unverified"}
-                {m.pricing?.sourceUrl && <> · <a href={m.pricing.sourceUrl} target="_blank" rel="noreferrer" className="text-primary underline">Source</a></>}
-              </p>
-              {m.pricing?.longContext && <p className="text-xs text-muted-foreground">Above {m.pricing.longContext.threshold.toLocaleString()} input tokens: {fmtRate(m.pricing.longContext.input)} in · {fmtRate(m.pricing.longContext.output)} out.</p>}
-              {m.pricing?.note && <p className="text-xs text-muted-foreground">{m.pricing.note}</p>}
+              <ModelRateDetails pricing={m.pricing} />
             </div>}
           </div>;
         })}
@@ -3605,10 +3608,13 @@ function EmailsTab() {
 }
 
 function PricingTab() {
-  const qc = useQueryClient();
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["admin-pricing"],
     queryFn: getPricingConfig,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: false,
   });
 
@@ -3618,7 +3624,7 @@ function PricingTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Failed to load pricing config — the server returned an error.
+        <div>Unable to load current pricing. <Button variant="ghost" disabled={isFetching} onClick={() => refetch()}>Retry</Button></div>
       </div>
     );
   }
@@ -3658,22 +3664,23 @@ function PricingTab() {
         <DollarSign className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <div>
           <span className="font-medium text-foreground">How pricing works: </span>
-          Credit cost = (input tokens × input rate + output tokens × output rate) × <strong>your multiplier</strong> ÷ $0.01.
+          Credits = API cost × <strong>your multiplier</strong> ÷ ${data.creditValueUsd.toFixed(2)}, rounded up after combining all calls. Rates below are USD per million tokens; cached input and long-context rates apply where listed.
           Edit any multiplier inline — changes apply to new sessions. Active sessions keep their agreed pricing.
           The <em>Example</em> column shows credits for a default session (3 litigants, 2 rounds, balanced).
         </div>
       </div>
 
+      {!totalModels && <p className="text-sm text-muted-foreground">No provider-confirmed models available. Check connections in AI Studio.</p>}
       {byProvider.map(({ provider, models }) => (
         <div key={provider} className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">{PROVIDER_LABELS[provider] ?? provider}</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground">{models[0]?.providerLabel ?? provider}</h3>
           <div className="rounded-xl border border-border overflow-hidden">
             <Table mobileCards>
               <TableHeader>
                 <TableRow className="bg-secondary/30">
                   <TableHead className="text-xs">Model</TableHead>
-                  <TableHead className="text-xs text-right">Input /1K</TableHead>
-                  <TableHead className="text-xs text-right">Output /1K</TableHead>
+                  <TableHead className="text-xs text-right">API Input /1M</TableHead>
+                  <TableHead className="text-xs text-right">API Output /1M</TableHead>
                   <TableHead className="text-xs">Your Multiplier</TableHead>
                   <TableHead className="text-xs text-right">Example Credits</TableHead>
                   <TableHead className="text-xs text-right">Example Cost to User</TableHead>
@@ -3684,18 +3691,20 @@ function PricingTab() {
                   <TableRow key={m.model} className="group">
                     <TableCell className="font-medium text-sm">
                       {m.label}
+                      {m.available === false && <span className="block text-xs text-muted-foreground">Disabled for new sessions</span>}
+                      <ModelRateDetails pricing={m.pricing} />
                       {m.isOverridden && (
                         <Badge className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20">custom</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      ${(m.inputRatePer1k * 1000).toFixed(4)}/M
+                      {fmtRate(m.inputRatePer1k)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      ${(m.outputRatePer1k * 1000).toFixed(4)}/M
+                      {fmtRate(m.outputRatePer1k)}
                     </TableCell>
                     <TableCell>
-                      <MultiplierCell row={m} onSaved={() => refetch()} />
+                      <MultiplierCell row={m} />
                     </TableCell>
                     <TableCell className="text-right font-mono font-bold text-primary">
                       {m.exampleCredits}

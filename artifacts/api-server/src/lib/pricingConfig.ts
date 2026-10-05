@@ -1,6 +1,9 @@
 /** Persisted multiplier overrides. Resolution and all display projections live in providerCatalog.ts. */
+import { z } from "zod";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 import { FieldValue, FieldPath } from "firebase-admin/firestore";
+
+export const MultiplierSchema = z.number().finite().min(1).max(100);
 
 interface PricingDoc {
   multipliers?: Record<string, number>;
@@ -26,11 +29,12 @@ export async function getMultiplierOverrides(): Promise<Record<string, number>> 
  * @param multiplier - New multiplier. Must be validated (1–100) before calling.
  */
 export async function saveMultiplierOverride(model: string, multiplier: number): Promise<void> {
+  const value = MultiplierSchema.parse(multiplier);
   const db = getFirestoreDb();
   if (!db) throw new Error("Firebase not configured");
 
   await db.collection("config").doc("pricing").set(
-    { multipliers: { [model]: multiplier }, updatedAt: FieldValue.serverTimestamp() },
+    { multipliers: { [model]: value }, updatedAt: FieldValue.serverTimestamp() },
     { merge: true }
   );
 }

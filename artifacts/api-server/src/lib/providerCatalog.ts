@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getProviderAvailability } from "./providerAvailability.js";
 import { resolveModelPrice, type ModelDefinition } from "./providers/types.js";
-import { getMultiplierOverrides } from "./pricingConfig.js";
+import { getMultiplierOverrides, MultiplierSchema } from "./pricingConfig.js";
 import { PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_MODELS } from "./providers/index.js";
 import { CREDIT_VALUE_USD, getCalibratedFixedStageTokens, getModelCreditInfo } from "./creditEngine.js";
 import { getFirestoreDb } from "./firebaseAdmin.js";
@@ -12,7 +12,7 @@ const ModelSchema = z.object({
   label: z.string().trim().min(1).max(200),
   inputRatePer1k: z.number().finite().nonnegative(),
   outputRatePer1k: z.number().finite().nonnegative(),
-  multiplier: z.number().finite().min(1).max(100),
+  multiplier: MultiplierSchema,
   qualityScore: z.number().finite().min(0).max(100).default(50),
 });
 export const CustomProviderSchema = z.object({
@@ -65,7 +65,7 @@ export async function getModelRegistry(refreshAvailability = false) {
       name:p.id, displayName:p.label, defaultModel:p.defaultModel, custom:p.custom,
       configured:connection.state !== "not_configured", connection, enabled:!disabledProviders.includes(p.id),
       models:candidates.filter(m => connection.modelIds.includes(m.id)).map((m: ModelDefinition) => {
-        const multiplier = z.number().finite().min(1).max(100).parse(overrides[m.id] ?? m.multiplier);
+        const multiplier = MultiplierSchema.parse(overrides[m.id] ?? m.multiplier);
         const price = resolveModelPrice(m, multiplier);
         return {
           id:m.id, label:m.label, qualityScore:modelScores[m.id] ?? m.qualityScore, defaultQualityScore:m.qualityScore,
@@ -93,7 +93,8 @@ export async function getAdminPricingTable() {
   return {
     creditValueUsd:registry.creditValueUsd,
     models:registry.providers.flatMap(p => p.models.map(m => ({
-      model:m.id, provider:p.name, label:m.label,
+      model:m.id, provider:p.name, providerLabel:p.displayName, label:m.label, pricing:m.pricing,
+      available:p.configured && p.enabled && m.enabled,
       inputRatePer1k:m.creditInfo.inputRatePer1k, outputRatePer1k:m.creditInfo.outputRatePer1k,
       defaultMultiplier:m.defaultMultiplier, effectiveMultiplier:m.creditInfo.multiplier,
       isOverridden:m.defaultMultiplier !== m.creditInfo.multiplier,

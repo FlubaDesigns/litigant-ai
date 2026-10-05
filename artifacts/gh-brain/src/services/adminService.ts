@@ -466,6 +466,9 @@ export async function listAdminTemplates(): Promise<any[]> {
 // ── Pricing ───────────────────────────────────────────────────────────────────
 
 export interface PricingModel {
+  providerLabel: string;
+  available: boolean;
+  pricing?: AiStudioModel["pricing"];
   model: string;
   provider: string;
   label: string;
@@ -560,7 +563,7 @@ export interface BillingDefaults {
 }
 
 export interface AiStudioModel {
-  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; longContext?: {threshold: number; input: number; output: number} };
+  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; cachedInputPer1k?: number; longContext?: {threshold: number; input: number; output: number} };
   id: string;
   label: string;
   provider: string;

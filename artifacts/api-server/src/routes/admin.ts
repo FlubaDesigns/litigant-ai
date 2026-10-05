@@ -27,6 +27,7 @@ import {
   type EmailTemplateId,
 } from "../lib/emailTemplateStore.js";
 import {
+  MultiplierSchema,
   saveMultiplierOverride,
   resetMultiplierToDefault,
 } from "../lib/pricingConfig.js";
@@ -1342,15 +1343,11 @@ router.get("/admin/pricing", requireAdmin, async (_req, res) => {
 
 router.put("/admin/pricing/:model", requireAdmin, async (req, res) => {
   const { model } = req.params as { model: string };
-  const { multiplier } = req.body as { multiplier?: number };
-
-  if (multiplier === undefined || isNaN(Number(multiplier))) {
-    return res.status(400).json({ error: "multiplier (number) is required" });
+  const parsed = MultiplierSchema.safeParse(req.body?.multiplier);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "multiplier must be a number between 1 and 100" });
   }
-  const value = Number(multiplier);
-  if (value < 1 || value > 100) {
-    return res.status(400).json({ error: "multiplier must be between 1 and 100" });
-  }
+  const value = parsed.data;
 
   try {
     const registry = await getModelRegistry();
