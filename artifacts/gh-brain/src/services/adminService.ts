@@ -226,6 +226,7 @@ export interface ChecklistItem {
   text: string;
   note?: string;
   steps?: string[];
+  recurring?: boolean;
   checked: boolean;
 }
 

@@ -26,6 +26,7 @@ export interface ChecklistItemDef {
   text: string;
   note?: string;
   steps?: string[];
+  recurring?: boolean;
 }
 
 export interface ChecklistItem extends ChecklistItemDef {

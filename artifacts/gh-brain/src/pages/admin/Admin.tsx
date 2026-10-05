@@ -154,6 +154,7 @@ function ChecklistRow({
     <div className="divide-y divide-border/50">
       <div className="flex items-start gap-3 p-4 hover:bg-secondary/20 transition-colors">
         <Checkbox
+          aria-label={item.text}
           checked={item.checked}
           onCheckedChange={(v) => onToggle(item.id, v === true)}
           className="mt-0.5 shrink-0"
@@ -162,14 +163,12 @@ function ChecklistRow({
           <p className={cn("text-sm", item.checked ? "text-muted-foreground line-through" : "text-foreground")}>
             {item.text}
           </p>
-          {item.note && (
-            <p className="text-xs text-muted-foreground mt-1">{item.note}</p>
-          )}
+          {item.recurring && <Badge variant="outline" className="mt-1 text-xs">Recurring</Badge>}
           {hasSteps && (
             <Accordion type="single" collapsible className="mt-2 -mx-0.5">
               <AccordionItem value="steps" className="border border-border/40 rounded-lg overflow-hidden">
                 <AccordionTrigger className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-primary/70 hover:text-primary hover:no-underline hover:bg-primary/5 transition-colors">
-                  Step-by-step instructions
+                  Details
                 </AccordionTrigger>
                 <AccordionContent className="px-0 pb-0">
                   <ol className="flex flex-col divide-y divide-border/30">
@@ -206,22 +205,20 @@ function ChecklistRow({
 }
 
 function ChecklistSection({
-  title, subtitle, items, onToggle,
+  title, items, onToggle,
 }: {
   title: string;
-  subtitle: string;
   items: ChecklistItem[];
   onToggle: (id: string, checked: boolean) => void;
 }) {
-  const done = items.filter((i) => i.checked).length;
+  if (items.length === 0) return null;
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
         </div>
-        <Badge variant="outline" className="font-mono text-xs">{done}/{items.length}</Badge>
+        <Badge variant="outline" className="font-mono text-xs">{items.length}</Badge>
       </div>
       <div className="divide-y divide-border">
         {items.map((item) => (
@@ -268,32 +265,22 @@ function ChecklistTab() {
     );
   }
 
-  const agentItems = data.filter((i) => i.section === "agent");
-  const ownerItems = data.filter((i) => i.section === "owner");
+  const visibleItems = data.filter((item) => !item.checked || item.recurring);
+  const agentItems = visibleItems.filter((i) => i.section === "agent");
+  const ownerItems = visibleItems.filter((i) => i.section === "owner");
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
-        <ListChecks className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div>
-          <span className="font-medium text-foreground">Launch readiness checklist. </span>
-          Compiled from a full codebase audit. "Your action items" are things only you can do
-          (secrets, third-party accounts, product decisions, legal content, deployment). "Agent
-          work items" are code-level fixes tracked here so nothing falls through the cracks — check
-          them off as they're completed.
-        </div>
-      </div>
+      {visibleItems.length === 0 && <p className="text-sm text-muted-foreground">Nothing left to do.</p>}
 
       <ChecklistSection
         title="Your action items"
-        subtitle="Manual setup, accounts, decisions, and content only you can complete"
         items={ownerItems}
         onToggle={(id, checked) => toggleMut.mutate({ id, checked })}
       />
 
       <ChecklistSection
         title="Agent work items"
-        subtitle="Code-level fixes and audit follow-ups"
         items={agentItems}
         onToggle={(id, checked) => toggleMut.mutate({ id, checked })}
       />

@@ -103,3 +103,49 @@ test("desktop retains table columns and mobile key editing uses the same form", 
   await edit.click();
   await expect(page.getByRole("button",{name:"Update Key",exact:true})).toBeVisible();
 });
+
+test("checklist shows outstanding and recurring tasks and keeps completion after reload", async ({page}) => {
+  await page.setViewportSize({width:360,height:800});
+  const items = [
+    {id:"finished",section:"owner",text:"Completed setup",checked:true},
+    {id:"pending",section:"owner",text:"Remaining setup",checked:false,note:"Long explanation"},
+    {id:"recurring",section:"agent",text:"Repeat review",checked:true,recurring:true},
+  ];
+  await page.route("**/api-server/api/admin/checklist**", async route => {
+    if (route.request().method() === "PATCH") {
+      const id = new URL(route.request().url()).pathname.split("/").pop();
+      items.find(item => item.id === id)!.checked = route.request().postDataJSON().checked;
+      await route.fulfill({json:{ok:true}});
+    } else await route.fulfill({json:{items}});
+  });
+  await page.goto("/admin?tab=checklist&e2e=1");
+  await expect(page.getByText("Launch readiness checklist.")).toHaveCount(0);
+  await expect(page.getByText("Completed setup",{exact:true})).toHaveCount(0);
+  await expect(page.getByText("Long explanation",{exact:true})).toHaveCount(0);
+  await expect(page.getByRole("checkbox",{name:"Repeat review"})).toBeChecked();
+  await page.getByRole("checkbox",{name:"Remaining setup"}).click();
+  await expect(page.getByText("Your action items",{exact:true})).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("checkbox",{name:"Repeat review"})).toBeChecked();
+  await expect(page.getByText("Remaining setup",{exact:true})).toHaveCount(0);
+  await page.getByRole("checkbox",{name:"Repeat review"}).click();
+  await expect(page.getByRole("checkbox",{name:"Repeat review"})).not.toBeChecked();
+});
+
+test("checklist restores a task when saving fails and hides empty completed sections", async ({page}) => {
+  let finished = false;
+  await page.route("**/api-server/api/admin/checklist**", async route => {
+    if (route.request().method() === "PATCH") {
+      await route.fulfill({status:500,json:{error:"Save failed"}});
+    } else await route.fulfill({json:{items:[{id:"pending",section:"owner",text:"Remaining setup",checked:finished}]}});
+  });
+  await page.goto("/admin?tab=checklist&e2e=1");
+  await page.getByRole("checkbox",{name:"Remaining setup"}).click();
+  await expect(page.getByText("Failed to update checklist item")).toBeVisible();
+  await expect(page.getByRole("checkbox",{name:"Remaining setup"})).not.toBeChecked();
+  finished = true;
+  await page.reload();
+  await expect(page.getByText("Nothing left to do.")).toBeVisible();
+  await expect(page.getByText("Your action items",{exact:true})).toHaveCount(0);
+  await expect(page.getByText("Agent work items",{exact:true})).toHaveCount(0);
+});
