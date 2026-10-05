@@ -890,11 +890,6 @@ router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
 
 const DEFAULT_FLAGS: Record<string, boolean> = {
   guestMode: true,
-  proUpgrade: true,
-  exportPdf: false,
-  shareReports: true,
-  templateLibrary: true,
-  autoRefill: false,
 };
 
 router.get("/feature-flags", async (_req, res) => {

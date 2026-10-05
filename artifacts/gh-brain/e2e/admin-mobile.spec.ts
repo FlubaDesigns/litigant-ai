@@ -63,6 +63,12 @@ for (const width of [360, 412]) {
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
       if (tab.id === "overview" || tab.id === "limits") await expect(page.getByRole("region",{name:"Average conversation credits"}).getByText("50 credits",{exact:true})).toBeVisible();
+      if (tab.id === "flags") {
+        await expect(page.getByRole("region",{name:"Guest invitations"})).toBeVisible();
+        await expect(page.getByText("Not yet implemented",{exact:true})).toBeVisible();
+        await expect(page.locator(".admin-page").getByRole("switch")).toHaveCount(0);
+        await expect(page.locator(".admin-page").getByRole("combobox")).toHaveCount(0);
+      }
       if (tab.id === "limits") {
         for (const name of ["Courtesy ceiling", "Maximum litigants"]) {
           const card=page.getByRole("article",{name,exact:true});
