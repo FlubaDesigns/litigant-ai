@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ModelDefinition } from "./providers/types.js";
 import { getMultiplierOverrides } from "./pricingConfig.js";
 import { getConfiguredProvidersAsync, PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_MODELS } from "./providers/index.js";
 import { CREDIT_VALUE_USD, getCalibratedFixedStageTokens, getModelCreditInfo } from "./creditEngine.js";
@@ -60,12 +61,13 @@ export async function getModelRegistry() {
   const providers = definitions.map(p => ({
     name:p.id, displayName:p.label, defaultModel:p.defaultModel, custom:p.custom,
     configured:configured.includes(p.id), enabled:!disabledProviders.includes(p.id),
-    models:p.models.map(m => {
+    models:p.models.map((m: ModelDefinition) => {
       const multiplier = z.number().finite().min(1).max(100).parse(overrides[m.id] ?? m.multiplier);
       const price = {input:m.inputRatePer1k, output:m.outputRatePer1k, multiplier};
       return {
         id:m.id, label:m.label, qualityScore:modelScores[m.id] ?? m.qualityScore, defaultQualityScore:m.qualityScore,
         enabled:!disabledModels.includes(m.id), defaultMultiplier:m.multiplier,
+        pricing:m.pricing ?? {note:"Custom rate entered by administrator."},
         creditInfo:getModelCreditInfo(m.id, price, fixed),
       };
     }),
@@ -101,7 +103,7 @@ export async function getAiStudioModels() {
   return {
     disabledProviders:registry.disabledProviders, customProviders:registry.customProviders,
     models:registry.providers.flatMap(p => p.models.map(m => ({
-      id:m.id, label:m.label, provider:p.name, providerLabel:p.displayName,
+      id:m.id, label:m.label, provider:p.name, providerLabel:p.displayName, pricing:m.pricing,
       inputRatePer1k:m.creditInfo.inputRatePer1k, outputRatePer1k:m.creditInfo.outputRatePer1k,
       multiplier:m.creditInfo.multiplier,
       userInputPer1k:m.creditInfo.inputRatePer1k * m.creditInfo.multiplier,

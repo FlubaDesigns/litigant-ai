@@ -179,3 +179,53 @@ test("health distinguishes unavailable metrics, no activity, and real zeros", as
   await page.getByRole("button",{name:"Retry",exact:true}).click();
   await expect(card("Error rate")).toContainText("0.0%");
 });
+
+for (const width of [360,412]) test(`AI Studio controls and pricing fit ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:800});
+  const models=[{...model,label:"GPT-5",pricing:{verifiedAt:"2026-10-05",sourceUrl:"https://developers.openai.com/api/docs/models/gpt-5"}},
+    {...model,id:"gemini-2.5-pro",label:"Gemini 2.5 Pro",provider:"gemini",providerLabel:"Google Gemini"}];
+  let disabledProviders:string[]=[];
+  await page.route("**/api-server/api/admin/**",async route=>{
+    const path=new URL(route.request().url()).pathname;
+    if (path.endsWith("/ai-studio/models")) return route.fulfill({json:{models,disabledProviders,customProviders:[]}});
+    if (route.request().method()==="GET") return route.fallback();
+    const body=route.request().postDataJSON();
+    if(path.endsWith("/pricing/gpt-5")) {models[0].multiplier=body.multiplier;models[0].userInputPer1k=models[0].inputRatePer1k*body.multiplier;}
+    else if(path.endsWith("/model-scores/gpt-5")) models[0].qualityScore=body.qualityScore;
+    else if(path.endsWith("/ai-studio/models/gpt-5")) models[0].enabled=body.enabled;
+    else if(path.endsWith("/ai-studio/providers/openai")) disabledProviders=body.enabled?[]:["openai"];
+    else return route.fallback();
+    return route.fulfill({json:{ok:true}});
+  });
+  await page.goto("/admin?tab=ai-studio&e2e=1");
+  await expect(page.getByText("You control the catalog.")).toHaveCount(0);
+  await expect(page.getByRole("table")).toHaveCount(0);
+  await page.getByRole("button",{name:"GPT-5",exact:true}).click();
+  const table=page.locator(".studio-rates");
+  await expect(table).toBeVisible();
+  await expect(table).toHaveCSS("display","table");
+  const iq=page.getByRole("spinbutton",{name:"GPT-5 IQ score"});
+  const markup=page.getByRole("spinbutton",{name:"GPT-5 multiplier"});
+  const left=await iq.boundingBox(),right=await markup.boundingBox();
+  expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+  expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+  await iq.fill("91"); await iq.press("Enter");
+  await expect.poll(()=>models[0].qualityScore).toBe(91);
+  await expect(iq).toBeEnabled();
+  await markup.fill("7"); await markup.press("Enter");
+  await expect.poll(()=>models[0].multiplier).toBe(7);
+  await expect(table).toContainText("$7.00");
+  const toggle=page.getByRole("switch",{name:"Enable GPT-5",exact:true});
+  await expect(toggle).toBeEnabled();
+  await expect(toggle).toHaveCSS("height","44px");
+  expect(await toggle.evaluate(el=>getComputedStyle(el,"::before").height)).toBe("20px");
+  await toggle.click(); await expect(toggle).not.toBeChecked();
+  await expect(page.getByRole("switch",{name:"Enable OpenAI",exact:true})).toBeEnabled();
+  await page.getByRole("switch",{name:"Enable OpenAI",exact:true}).click();
+  await expect(toggle).toBeDisabled();
+  await page.getByRole("button",{name:"Google Gemini 1 models",exact:true}).click();
+  await expect(iq).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("switch",{name:"Enable GPT-5",exact:true})).not.toBeChecked();
+  await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+});

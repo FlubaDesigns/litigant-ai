@@ -176,6 +176,7 @@ export interface BrainRunOptions {
   /** Route owns terminal delivery after persistence and settlement. */
   deferCompletion?: boolean;
   priceCalls?: (calls: CallUsage[]) => number;
+  onCallUsage?: (call: CallUsage) => void;
   enabledProviders?: string[];
   fallbackModels?: Record<string, string>;
   estimatedCredits?: number;
@@ -340,7 +341,9 @@ async function streamRole(
   maxTokens: number,
   onChunk: (text: string) => void,
   usage: TokenUsage,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  seat?: string,
+  onCallUsage?: (call: CallUsage) => void,
 ): Promise<string> {
   // Optimistic estimate for input (used only if provider doesn't return real counts)
   const inputChars = messages.reduce((sum, m) => sum + m.content.length, 0);
@@ -358,10 +361,15 @@ async function streamRole(
   const realUsage = provider.getLastUsage?.();
   if (realUsage || output) {
     const inputTokens = realUsage?.inputTokens ?? estimatedInput;
-    const outputTokens = realUsage?.outputTokens ?? charsToTokens(output.length);
+    const outputTokens = realUsage?.estimated ? Math.max(realUsage.outputTokens, charsToTokens(output.length)) : realUsage?.outputTokens ?? charsToTokens(output.length);
     usage.inputTokens += inputTokens;
     usage.outputTokens += outputTokens;
-    usage.calls?.push({ provider: provider.name, model: provider.model ?? "gpt-5", inputTokens, outputTokens });
+    const call: CallUsage = {provider:provider.name, model:provider.model ?? "gpt-5", inputTokens, outputTokens,
+      ...(seat ? {seat} : {}), usageSource:realUsage && !realUsage.estimated ? "provider" : "estimated",
+      ...(realUsage?.cachedInputTokens !== undefined ? {cachedInputTokens:realUsage.cachedInputTokens} : {}),
+    };
+    usage.calls?.push(call);
+    onCallUsage?.(call);
   }
   throwIfAborted(signal);
   if (failure instanceof Error && failure.message === "Session aborted by client") throw failure;
@@ -424,6 +432,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   }
 
   async function callRole(
+    seat: string,
     requested: AIProvider,
     messages: ChatMessage[],
     maxTokens: number,
@@ -436,7 +445,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       throwIfAborted(abortSignal);
       checkCallBudget(candidate, messages, maxTokens);
       try {
-        return await streamRole(candidate, messages, maxTokens, onChunk, usage, abortSignal);
+        return await streamRole(candidate, messages, maxTokens, onChunk, usage, abortSignal, seat, opts.onCallUsage);
       } catch (error) {
         throwIfAborted(abortSignal);
         if (!(error instanceof ProviderFailureError)) throw error;
@@ -519,7 +528,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ];
 
     const orchestratorFrame = await callRole(
-      orchProvider, orchMessages, 400,
+      "Orchestrator", orchProvider, orchMessages, 400,
       (chunk) => sendSSE(res, { type: "content", role: "Orchestrator", content: chunk }),
     );
 
@@ -579,7 +588,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         ];
 
         const roleOutput = await callRole(
-          litProvider, messages, maxTokens,
+          role.name, litProvider, messages, maxTokens,
           (chunk) => sendSSE(res, { type: "content", role: role.name, content: chunk }),
         );
 
@@ -668,7 +677,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ];
 
     moderatorSummary = await callRole(
-      modProvider, moderatorMessages, 800,
+      "Moderator", modProvider, moderatorMessages, 800,
       (chunk) => sendSSE(res, { type: "content", role: "Moderator", content: chunk }),
     );
 
@@ -750,7 +759,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ];
 
     const noArtifactAuditOutput = await callRole(
-      auditProvider, noArtifactAuditMessages, 800,
+      "Auditor", auditProvider, noArtifactAuditMessages, 800,
       (chunk) => sendSSE(res, { type: "content", role: "Auditor (Release)", content: chunk }),
     );
 
@@ -813,7 +822,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ];
 
     const architectBlueprint = await callRole(
-      archProvider, architectMessages, 600,
+      "Architect", archProvider, architectMessages, 600,
       (chunk) => sendSSE(res, { type: "content", role: "Architect", content: chunk }),
     );
 
@@ -843,7 +852,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       ];
 
       let builtArtifact = await callRole(
-        buildProvider, builderMessages, 1800,
+        "Builder", buildProvider, builderMessages, 1800,
         (chunk) => sendSSE(res, { type: "content", role: buildLabel, content: chunk }),
       );
 
@@ -864,7 +873,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       ];
 
       const archReviewOutput = await callRole(
-        archProvider, archReviewMessages, 400,
+        "Architect", archProvider, archReviewMessages, 400,
         (chunk) => sendSSE(res, { type: "content", role: "Architect (Review)", content: chunk }),
       );
 
@@ -890,7 +899,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         ];
 
         builtArtifact = await callRole(
-          buildProvider, correctionMessages, 1800,
+          "Builder", buildProvider, correctionMessages, 1800,
           (chunk) => sendSSE(res, { type: "content", role: "Builder (Correction)", content: chunk }),
         );
 
@@ -920,7 +929,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       ];
 
       auditorOutput = await callRole(
-        auditProvider, auditorMessages, 1200,
+        "Auditor", auditProvider, auditorMessages, 1200,
         (chunk) => sendSSE(res, { type: "content", role: auditLabel, content: chunk }),
       );
 
@@ -962,7 +971,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       ];
 
       currentBlueprint = await callRole(
-        archProvider, blueprintReworkMessages, 600,
+        "Architect", archProvider, blueprintReworkMessages, 600,
         (chunk) => sendSSE(res, { type: "content", role: "Architect (Blueprint)", content: chunk }),
       );
 
@@ -1020,7 +1029,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   ];
 
   const finalAnswer = await callRole(
-    orchProvider, orchestratorCloseMessages, Math.max(600, maxTokens),
+    "Orchestrator", orchProvider, orchestratorCloseMessages, Math.max(600, maxTokens),
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
   );
 

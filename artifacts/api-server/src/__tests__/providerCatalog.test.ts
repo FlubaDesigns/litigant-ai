@@ -32,7 +32,7 @@ describe("one provider and pricing catalog", () => {
       expect(admin.effectiveMultiplier).toBe(ai.multiplier);
       expect(admin.exampleCredits).toBe(ai.exampleCredits);
       expect(quote.estimatedCredits).toBe(ai.exampleCredits);
-      expect(quote.rates[model.id]).toEqual({input:ai.inputRatePer1k,output:ai.outputRatePer1k,multiplier:ai.multiplier});
+      expect(quote.rates[model.id]).toMatchObject({input:ai.inputRatePer1k,output:ai.outputRatePer1k,multiplier:ai.multiplier});
       expect(priceCalls([{provider:provider.name,model:model.id,inputTokens:1000,outputTokens:2000}],quote.rates)).toBe(creditsForTokens(quote.rates[model.id]!,1000,2000));
     }
   });

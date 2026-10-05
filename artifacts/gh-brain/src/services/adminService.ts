@@ -38,6 +38,8 @@ export interface AdminUser {
 }
 
 export interface AdminSession {
+  costUSD?: number;
+  callUsage?: {seat?: string; provider: string; model: string; inputTokens: number; outputTokens: number; costUSD?: number; usageSource?: "provider" | "estimated"; rateVerifiedAt?: string}[];
   id: string;
   userId?: string;
   title?: string;
@@ -558,6 +560,7 @@ export interface BillingDefaults {
 }
 
 export interface AiStudioModel {
+  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string };
   id: string;
   label: string;
   provider: string;

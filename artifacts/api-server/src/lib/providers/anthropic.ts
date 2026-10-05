@@ -46,16 +46,20 @@ export class AnthropicProvider implements AIProvider {
       if (signal?.aborted) break;
 
       if (event.type === "message_start" && event.message?.usage) {
-        inputTokens = event.message.usage.input_tokens ?? 0;
+        const cachedInputTokens = event.message.usage.cache_read_input_tokens ?? 0;
+        inputTokens = (event.message.usage.input_tokens ?? 0) + cachedInputTokens;
+        outputTokens = event.message.usage.output_tokens ?? 0;
+        this._lastUsage = {inputTokens, outputTokens, cachedInputTokens, estimated:true};
       }
       if (event.type === "message_delta" && event.usage) {
         outputTokens = event.usage.output_tokens ?? 0;
+        if (this._lastUsage) { this._lastUsage.outputTokens = outputTokens; this._lastUsage.estimated = false; }
       }
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
         yield event.delta.text;
       }
     }
 
-    this._lastUsage = { inputTokens, outputTokens };
+    // Keep null if no provider usage arrived; preserve partial usage on errors.
   }
 }

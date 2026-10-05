@@ -15,7 +15,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
-vi.mock("../lib/sessionPricing.js", () => ({
+vi.mock("../lib/sessionPricing.js", async importOriginal => ({
+  ...await importOriginal<typeof import("../lib/sessionPricing.js")>(),
   prepareSession: vi.fn(async (config: any) => {
     const {estimateSessionCreditsCalibrated} = await import("../lib/creditEngine.js");
     return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {}, enabledProviders: ["openai"]};

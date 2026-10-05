@@ -55,6 +55,7 @@ export class OpenAIProvider implements AIProvider {
         this._lastUsage = {
           inputTokens: chunk.usage.prompt_tokens ?? 0,
           outputTokens: chunk.usage.completion_tokens ?? 0,
+          cachedInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens ?? 0,
         };
       }
     }

@@ -1021,6 +1021,32 @@ function TurnCard({ turn }: { turn: SessionTurn }) {
   );
 }
 
+function AgentCosts({ session }: { session: AdminSession }) {
+  const calls = session.callUsage ?? [];
+  const groups = new Map<string, { seat: string; model: string; cost: number; missing: boolean; estimated: boolean; unverified: boolean }>();
+  for (const call of calls) {
+    const seat = call.seat ?? "Unassigned (legacy)";
+    const key = `${seat}/${call.provider}/${call.model}`;
+    const row = groups.get(key) ?? {seat, model:call.model, cost:0, missing:false, estimated:false, unverified:false};
+    row.cost += call.costUSD ?? 0;
+    row.missing ||= call.costUSD === undefined;
+    row.estimated ||= call.usageSource !== "provider";
+    row.unverified ||= !call.rateVerifiedAt;
+    groups.set(key, row);
+  }
+  return <section className="space-y-2" aria-label="Agent costs">
+    <h3 className="font-semibold">Agent costs</h3>
+    <p className="text-xs text-muted-foreground">Calculated API cost · USD</p>
+    {groups.size ? [...groups].map(([key, row]) => <div key={key} className="flex justify-between items-start gap-3 border-b border-border py-2">
+      <div className="min-w-0"><p>{row.seat}</p><p className="text-xs text-muted-foreground break-all">{row.model}</p>
+        <p className="text-xs text-muted-foreground">{row.estimated ? "Estimated tokens" : "Provider token counts"}{row.unverified ? " · Unverified rate" : ""}</p></div>
+      <span className="shrink-0 font-mono">{row.missing ? "Unavailable" : `$${row.cost.toFixed(5)}`}</span>
+    </div>) : <p className="text-xs text-muted-foreground">Per-agent usage was not recorded for this session.</p>}
+    {session.costUSD !== undefined && <p className="text-sm">Session total: <strong>${session.costUSD.toFixed(5)}</strong></p>}
+    <p className="text-xs text-muted-foreground">Not reconciled to provider invoices.</p>
+  </section>;
+}
+
 function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-session", id],
@@ -1059,6 +1085,8 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
                 <p>{formatDateTime(data.session.createdAt)}</p>
               </div>
             </div>
+
+            <AgentCosts session={data.session} />
 
             {data.session.finalAnswer && (
               <div className="space-y-1">
@@ -3002,129 +3030,75 @@ function AddProviderModal({
 }
 
 function AiStudioProviderSection({
-  id: pid,
-  label,
-  provModels,
-  providerEnabled,
-  custom,
-  onToggleProvider,
-  onToggleModel,
-  onSetScore,
-  onDelete,
-  busy,
+  id: pid, label, provModels, providerEnabled, custom, open, onOpen,
+  onToggleProvider, onToggleModel, onSetScore, onSetMultiplier, onDelete, busy,
 }: {
-  id: string;
-  label: string;
-  provModels: AiStudioModel[];
-  providerEnabled: boolean;
-  custom: boolean;
+  id: string; label: string; provModels: AiStudioModel[]; providerEnabled: boolean;
+  custom: boolean; open: boolean; onOpen: () => void;
   onToggleProvider: (enabled: boolean) => void;
   onToggleModel: (modelId: string, enabled: boolean) => void;
   onSetScore: (modelId: string, score: number) => void;
-  onDelete: () => void;
-  busy: boolean;
+  onSetMultiplier: (modelId: string, multiplier: number) => void;
+  onDelete: () => void; busy: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-
+  const [expandedModel, setExpandedModel] = useState<string | null>(null);
   return (
-    <div className={cn("space-y-2 transition-opacity", !providerEnabled && "opacity-50")}>
-      {/* Provider header row */}
-      <div className="admin-row flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold">{label}</h3>
-          {custom && (
-            <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">custom</span>
-          )}
-          <span className="text-xs text-muted-foreground font-mono">{provModels.length} model{provModels.length !== 1 ? "s" : ""}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">{providerEnabled ? "On" : "Off"}</span>
-            <Switch
-              checked={providerEnabled}
-              onCheckedChange={onToggleProvider}
-              disabled={busy}
-              className="data-[state=checked]:bg-primary"
-            />
-          </div>
-          {custom && (
-            confirmDelete ? (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-destructive">Delete?</span>
-                <button onClick={onDelete} className="text-xs text-destructive font-semibold hover:underline">Yes</button>
-                <button onClick={() => setConfirmDelete(false)} className="text-xs text-muted-foreground hover:underline">No</button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="text-muted-foreground hover:text-destructive transition-colors"
-                title="Delete provider"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
+    <section className="lgt-card lgt-card--compact studio-provider" aria-label={label}>
+      <div className="studio-heading">
+        <button className="studio-disclosure" onClick={onOpen} aria-expanded={open} aria-controls={`provider-${pid}`}>
+          <ChevronDown className={cn("w-4 h-4 shrink-0 transition-transform", open && "rotate-180")} />
+          <span><strong>{label}</strong><span className="text-muted-foreground ml-2 text-xs">{provModels.length} models</span></span>
+        </button>
+        <Switch aria-label={`Enable ${label}`} checked={providerEnabled} onCheckedChange={onToggleProvider} disabled={busy} />
+      </div>
+      {open && <div id={`provider-${pid}`}>
+        {provModels.map(m => {
+          const expanded = expandedModel === m.id;
+          return <div key={m.id} className="studio-model">
+            <div className="studio-heading">
+              <button className="studio-disclosure" onClick={() => setExpandedModel(expanded ? null : m.id)} aria-expanded={expanded} aria-controls={`model-${m.id}`}>
+                <ChevronRight className={cn("w-4 h-4 shrink-0 transition-transform", expanded && "rotate-90")} />
+                <span>{m.label}{!m.available && <span className="block text-xs text-muted-foreground">{!m.enabled || !providerEnabled ? "Disabled" : "Not configured"}</span>}</span>
               </button>
-            )
-          )}
-        </div>
-      </div>
-
-      {/* Models table */}
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table mobileCards>
-          <TableHeader>
-            <TableRow className="bg-secondary/30">
-              <TableHead className="text-xs">Model</TableHead>
-              <TableHead className="text-xs text-right">API In /1M</TableHead>
-              <TableHead className="text-xs text-right">API Out /1M</TableHead>
-              <TableHead className="text-xs text-right text-amber-400">User In /1M</TableHead>
-              <TableHead className="text-xs text-right text-amber-400">User Out /1M</TableHead>
-              <TableHead className="text-xs text-right">×Mult</TableHead>
-              <TableHead className="text-xs text-right">Est. Credits</TableHead>
-              <TableHead className="text-xs text-center text-primary/80">IQ Score</TableHead>
-              <TableHead className="text-xs text-center">Available</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {provModels.map((m: AiStudioModel) => (
-              <TableRow key={m.id} className={cn("transition-opacity", !m.enabled && "opacity-40")}>
-                <TableCell>
-                  <span className="font-mono text-xs font-medium">{m.label}</span>
-                  <span className="block text-[10px] text-muted-foreground font-mono">{m.id}</span>
-                </TableCell>
-                <TableCell className="text-right text-xs font-mono text-muted-foreground">{fmtRate(m.inputRatePer1k)}</TableCell>
-                <TableCell className="text-right text-xs font-mono text-muted-foreground">{fmtRate(m.outputRatePer1k)}</TableCell>
-                <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">{fmtRate(m.userInputPer1k)}</TableCell>
-                <TableCell className="text-right text-xs font-mono text-amber-400 font-medium">{fmtRate(m.userOutputPer1k)}</TableCell>
-                <TableCell className="text-right text-xs font-mono">×{m.multiplier}</TableCell>
-                <TableCell className="text-right text-xs font-bold font-mono">{m.exampleCredits}</TableCell>
-                <TableCell className="text-center">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    defaultValue={m.qualityScore ?? 50}
-                    onBlur={(e) => {
-                      const v = Math.max(0, Math.min(100, Number(e.target.value)));
-                      if (v !== (m.qualityScore ?? 50)) onSetScore(m.id, v);
-                    }}
-                    onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                    disabled={busy}
-                    className="w-14 text-center text-xs font-mono bg-transparent border border-border/40 rounded px-1 py-0.5 focus:outline-none focus:border-primary/50 text-primary"
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <Switch
-                    checked={m.enabled}
-                    onCheckedChange={(checked) => onToggleModel(m.id, checked)}
-                    disabled={busy || !providerEnabled}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+              <Switch aria-label={`Enable ${m.label}`} checked={m.enabled} onCheckedChange={checked => onToggleModel(m.id, checked)} disabled={busy || !providerEnabled} />
+            </div>
+            {expanded && <div id={`model-${m.id}`} className="studio-details space-y-3">
+              <div className="row layout__split-2 layout--keep-columns">
+                <label className="text-xs text-muted-foreground">IQ score
+                  <Input key={`score-${m.qualityScore}`} aria-label={`${m.label} IQ score`} type="number" min={0} max={100} defaultValue={m.qualityScore ?? 50} disabled={busy}
+                    onBlur={e => { const v = Number(e.target.value); if (e.target.value.trim() && Number.isFinite(v) && v >= 0 && v <= 100) { if (v !== (m.qualityScore ?? 50)) onSetScore(m.id, v); e.target.value = String(m.qualityScore ?? 50); } else e.target.value = String(m.qualityScore ?? 50); }}
+                    onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }} />
+                </label>
+                <label className="text-xs text-muted-foreground">Markup ×
+                  <Input key={`multiplier-${m.multiplier}`} aria-label={`${m.label} multiplier`} type="number" min={1} max={100} step="0.1" defaultValue={m.multiplier} disabled={busy}
+                    onBlur={e => { const v = Number(e.target.value); if (e.target.value.trim() && Number.isFinite(v) && v >= 1 && v <= 100) { if (v !== m.multiplier) onSetMultiplier(m.id, v); e.target.value = String(m.multiplier); } else e.target.value = String(m.multiplier); }}
+                    onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }} />
+                </label>
+              </div>
+              <table className="studio-rates">
+                <caption>USD / 1M tokens</caption>
+                <thead><tr><th scope="col"></th><th scope="col">API cost</th><th scope="col">User price</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Input</th><td>{fmtRate(m.inputRatePer1k).replace("/1M", "")}</td><td>{fmtRate(m.userInputPer1k).replace("/1M", "")}</td></tr>
+                  <tr><th scope="row">Output</th><td>{fmtRate(m.outputRatePer1k).replace("/1M", "")}</td><td>{fmtRate(m.userOutputPer1k).replace("/1M", "")}</td></tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-muted-foreground">Example session: {m.exampleCredits} credits</p>
+              <p className="text-xs text-muted-foreground">
+                {m.pricing?.verifiedAt ? `Verified ${m.pricing.verifiedAt}` : "Rate unverified"}
+                {m.pricing?.sourceUrl && <> · <a href={m.pricing.sourceUrl} target="_blank" rel="noreferrer" className="text-primary underline">Source</a></>}
+              </p>
+              {m.pricing?.note && <p className="text-xs text-muted-foreground">{m.pricing.note}</p>}
+            </div>}
+          </div>;
+        })}
+        {custom && <div className="flex items-center gap-3 pt-2">
+          {confirmDelete ? <><span className="text-xs">Delete provider?</span><Button size="sm" variant="destructive" disabled={busy} onClick={onDelete}>Delete</Button><Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button></> :
+            <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(true)}>Delete provider</Button>}
+        </div>}
+      </div>}
+    </section>
   );
 }
 
@@ -3307,6 +3281,7 @@ function SeatOrdersTab() {
 function AiStudioTab() {
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
+  const [openProvider, setOpenProvider] = useState<string | null>("openai");
 
   const { data, isLoading, isError, refetch } = useQuery<AiStudioData>({
     queryKey: ["admin-ai-studio"],
@@ -3357,6 +3332,16 @@ function AiStudioTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const multiplierMut = useMutation({
+    mutationFn: ({ modelId, multiplier }: { modelId: string; multiplier: number }) => updateModelMultiplier(modelId, multiplier),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
+      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
+      toast.success("Markup saved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <TabSkeleton />;
 
   if (isError || !data) {
@@ -3370,7 +3355,7 @@ function AiStudioTab() {
   }
 
   const { models = [], disabledProviders = [], customProviders = [] } = data ?? {};
-  const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending;
+  const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending || multiplierMut.isPending;
   const enabledCount = models.filter((m) => m.available).length;
 
   // Build ordered provider list: built-ins first, then custom
@@ -3390,41 +3375,9 @@ function AiStudioTab() {
 
   return (
     <div className="space-y-6">
-      {/* Summary + Add button */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-          <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Total Models</p>
-            <p className="text-2xl font-bold font-mono">{models.length}</p>
-            <p className="text-xs text-muted-foreground">across {byProvider.length} providers</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Enabled</p>
-            <p className="text-2xl font-bold font-mono text-primary">{enabledCount}</p>
-            <p className="text-xs text-muted-foreground">available to users</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-            <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Disabled</p>
-            <p className="text-2xl font-bold font-mono text-muted-foreground">{models.length - enabledCount}</p>
-            <p className="text-xs text-muted-foreground">hidden from users</p>
-          </div>
-        </div>
-        <Button
-          onClick={() => setAddOpen(true)}
-          className="gap-2 shrink-0 mt-1"
-          size="sm"
-        >
-          <Plus className="w-4 h-4" /> Add Provider
-        </Button>
-      </div>
-
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
-        <Bot className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div>
-          <span className="font-medium text-foreground">You control the catalog. </span>
-          Provider toggle gates the whole company. Individual toggles gate each model.
-          Only enabled models appear when users assign AI to their roles.
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">{models.length} models · {enabledCount} available · {models.length - enabledCount} unavailable</p>
+        <Button onClick={() => setAddOpen(true)} variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" />Add Provider</Button>
       </div>
 
       {byProvider.map(({ id: pid, label, models: provModels, custom, enabled: provEnabled }) => (
@@ -3435,6 +3388,9 @@ function AiStudioTab() {
           provModels={provModels}
           providerEnabled={provEnabled}
           custom={custom}
+          open={openProvider === pid}
+          onOpen={() => setOpenProvider(openProvider === pid ? null : pid)}
+          onSetMultiplier={(modelId, multiplier) => multiplierMut.mutate({ modelId, multiplier })}
           busy={busy}
           onToggleProvider={(en) => toggleProviderMut.mutate({ providerId: pid, enabled: en })}
           onToggleModel={(modelId, en) => toggleModelMut.mutate({ modelId, enabled: en })}

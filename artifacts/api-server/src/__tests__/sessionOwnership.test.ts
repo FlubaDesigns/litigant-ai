@@ -8,10 +8,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
-vi.mock("../lib/sessionPricing.js", () => ({
+vi.mock("../lib/sessionPricing.js", async importOriginal => ({
+  ...await importOriginal<typeof import("../lib/sessionPricing.js")>(),
   prepareSession: vi.fn(async (config: any) => {
     const {estimateSessionCreditsCalibrated} = await import("../lib/creditEngine.js");
-    return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {}, enabledProviders: ["openai"]};
+    return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {"gpt-4":{input:.002,output:.008,multiplier:5,verifiedAt:"2026-10-05"}}, enabledProviders: ["openai"]};
   }),
   priceCalls: vi.fn(() => 100),
 }));
@@ -355,6 +356,22 @@ describe("session failure telemetry", () => {
     expect(saved.finalAnswer).toBe("Newer answer");
     expect(saved.activeRun.id).toBe("successor");
     expect(saved.lastRunErrorAt).toBeUndefined();
+  });
+  it("retains previous costs and records failed agent calls once on resume", async () => {
+    const oldCall={seat:"Builder",provider:"openai",model:"old-model",inputTokens:10,outputTokens:10,costUSD:.5};
+    const db=createMockDb({saved:{userId:"owner",status:"incomplete",finalAnswer:"Saved answer",costUSD:.5,callUsage:[oldCall]}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockImplementation(async opts => {
+      opts.onCallUsage?.({seat:"Auditor",provider:"openai",model:"gpt-4",inputTokens:1000,outputTokens:1000,usageSource:"provider"});
+      throw new Error("Failed after billed call");
+    });
+    await run({sessionId:"saved",continueFromTranscript:["prior turn"]});
+    const saved=(await db.collection("sessions").doc("saved").get()).data();
+    expect(saved.callUsage).toHaveLength(2);
+    expect(saved.callUsage[0]).toEqual(oldCall);
+    expect(saved.callUsage[1]).toMatchObject({seat:"Auditor",costUSD:.01,rateVerifiedAt:"2026-10-05"});
+    expect(saved.costUSD).toBeCloseTo(.51);
+    expect(saved.finalAnswer).toBe("Saved answer");
   });
   it("still refunds the reserved credits", async () => {
     const db=createMockDb();

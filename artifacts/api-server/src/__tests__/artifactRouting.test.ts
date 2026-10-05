@@ -724,3 +724,20 @@ describe("provider fallback recovery", () => {
     expect(result.tokenUsage.calls?.[0].outputTokens).toBe(400);
   });
 });
+
+
+describe("per-agent usage attribution", () => {
+  it("tags every seat and keeps failed and fallback calls separate", async () => {
+    vi.clearAllMocks();
+    const first={...makeProvider([]),name:"openai",model:"o3",streamChat:vi.fn(async function*(){yield "partial";throw new Error("failure");}),getLastUsage:()=>null};
+    const backup={...makeProvider(["Open","Argument","ARTIFACT_NEEDED: no","APPROVED\nCONFIDENCE: 80","Final"]),name:"anthropic",model:"claude-sonnet-4-5"};
+    vi.mocked(createProviderAsync).mockImplementation(async name=>(name==="openai"?first:backup) as any);
+    const onCallUsage=vi.fn();
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,provider:"openai",outputPreferenceMode:"answer-only"},res:makeMockRes(),enabledProviders:["openai","anthropic"],onCallUsage});
+    expect(result.tokenUsage.calls).toHaveLength(6);
+    expect(result.tokenUsage.calls?.[0]).toMatchObject({seat:"Orchestrator",model:"o3",usageSource:"estimated"});
+    expect(result.tokenUsage.calls?.[1]).toMatchObject({seat:"Orchestrator",model:"claude-sonnet-4-5",usageSource:"provider"});
+    expect(result.tokenUsage.calls?.map(c=>c.seat)).toEqual(["Orchestrator","Orchestrator",expect.any(String),"Moderator","Auditor","Orchestrator"]);
+    expect(onCallUsage.mock.calls.map(([call])=>call)).toEqual(result.tokenUsage.calls);
+  });
+});

@@ -5,7 +5,7 @@ vi.mock("../lib/providerCatalog.js", () => ({getProviderCatalog: vi.fn()}));
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: () => null}));
 import {getProviderCatalog} from "../lib/providerCatalog.js";
 import {getModelCreditInfo} from "../lib/creditEngine.js";
-import {prepareSession, priceCalls} from "../lib/sessionPricing.js";
+import {prepareSession, priceCalls, annotateCalls, callCostUSD} from "../lib/sessionPricing.js";
 
 function catalog(multiplier = 5) {
   const model = (id: string, qualityScore: number) => ({id, label:id, qualityScore, creditInfo:getModelCreditInfo(id, {input:.0025,output:.01,multiplier})});
@@ -83,5 +83,30 @@ describe("master model inheritance", () => {
   it("rejects the old unsupported 25-round option", () => {
     expect(CourtConfigSchema.safeParse({maxIterations:25}).success).toBe(false);
     expect(CourtConfigSchema.safeParse({maxIterations:20}).success).toBe(true);
+  });
+});
+
+
+describe("measured agent pricing", () => {
+  it("prices cached input once and rounds only the combined user charge", () => {
+    const rate={input:.002,output:.008,cachedInput:.0005,multiplier:4};
+    const call={seat:"Auditor",provider:"openai",model:"o3",inputTokens:1000,cachedInputTokens:800,outputTokens:100};
+    expect(callCostUSD(call,rate)).toBeCloseTo(.0016);
+    expect(priceCalls([call,call],{o3:rate})).toBe(2);
+  });
+  it("uses the long-context tier on both input and output above the boundary", () => {
+    const rate={input:.00125,output:.01,cachedInput:.000125,multiplier:5,longContext:{threshold:200000,input:.0025,output:.015,cachedInput:.00025}};
+    const call={provider:"gemini",model:"gemini-2.5-pro",inputTokens:200000,outputTokens:1000};
+    expect(callCostUSD(call,rate)).toBeCloseTo(.26);
+    expect(callCostUSD({...call,inputTokens:200001},rate)).toBeCloseTo(.5150025);
+  });
+  it("freezes each call's cost and provenance without inventing historical seats", () => {
+    const calls=[{provider:"openai",model:"a",seat:"Builder",usageSource:"provider" as const,inputTokens:1000,outputTokens:1000}];
+    const rates={a:{input:.01,output:.02,multiplier:2,verifiedAt:"2026-10-05"}};
+    const saved=annotateCalls(calls,rates);
+    rates.a.input=1;
+    expect(saved[0]).toMatchObject({seat:"Builder",costUSD:.03,rateVerifiedAt:"2026-10-05",usageSource:"provider"});
+    expect(calls[0]).not.toHaveProperty("costUSD");
+    expect(annotateCalls([{provider:"old",model:"a",inputTokens:0,outputTokens:0}],rates)[0].seat).toBeUndefined();
   });
 });

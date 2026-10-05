@@ -1,4 +1,4 @@
-import { prepareSession, priceCalls } from "../lib/sessionPricing.js";
+import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
 import { claimSessionRun, writeSessionRun, releaseSessionRun, SessionRunError, type SessionRunLease } from "../lib/sessionRunLock.js";
@@ -353,6 +353,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   let prepared: Awaited<ReturnType<typeof prepareSession>>;
   let estimatedCost = 0;
   let previousSession: Record<string, any> | null = null;
+  const runCalls: CallUsage[] = [];
   let parentSession: Record<string, any> | null = null;
   let templateSystemPrompt: string | undefined;
 
@@ -570,6 +571,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       templateSystemPrompt,
       deferCompletion: true,
       priceCalls: calls => priceCalls(calls, prepared.rates),
+      onCallUsage: call => runCalls.push(...annotateCalls([call], prepared.rates)),
       enabledProviders: prepared.enabledProviders,
       fallbackModels: prepared.fallbackModels,
       estimatedCredits: estimatedCost,
@@ -671,6 +673,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       // A completion event is sent only after persistence. Failure here causes
       // an error event and a refund of the remaining collected charge.
       try {
+        const pricedCalls = annotateCalls(result.tokenUsage.calls ?? [], prepared.rates);
         const savedResult = {
           sessionId: result.sessionId,
           userId: uid,
@@ -678,7 +681,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           config: prepared.config,
           caseFile: caseFile ?? [],
           priceSnapshot: prepared.rates,
-          callUsage: [...(previousSession?.callUsage ?? []), ...(result.tokenUsage.calls ?? [])],
+          callUsage: [...(previousSession?.callUsage ?? []), ...pricedCalls],
+          inputTokens: Number(previousSession?.inputTokens ?? 0) + result.tokenUsage.inputTokens,
+          outputTokens: Number(previousSession?.outputTokens ?? 0) + result.tokenUsage.outputTokens,
+          costUSD: Number(previousSession?.costUSD ?? 0) + pricedCalls.reduce((sum, c) => sum + c.costUSD!, 0),
+          model: result.model || "gpt-5",
           question,
           templateId: templateId ?? null,
           pauseReason: result.pauseReason ?? null,
@@ -717,25 +724,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       } catch (e) {
         console.error("[brain] Session persistence failed:", e);
         throw new Error("The result could not be saved. Your session was not marked complete. Please contact support.");
-      }
-
-      // ── Step 3: Token usage + USD cost annotation ─────────────────────────
-      // Best-effort update — provides accurate cost telemetry in the dashboard.
-      try {
-        const usageAnnotation = {
-          inputTokens: Number(previousSession?.inputTokens ?? 0) + result.tokenUsage.inputTokens,
-          outputTokens: Number(previousSession?.outputTokens ?? 0) + result.tokenUsage.outputTokens,
-          costUSD: Number(previousSession?.costUSD ?? 0) + Math.round((result.tokenUsage.calls ?? []).reduce((sum, c) => {
-            const rate = prepared.rates[c.model];
-            return sum + (c.inputTokens * rate.input + c.outputTokens * rate.output) / 1000;
-          }, 0) * 100000) / 100000,
-          creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
-          model: result.model || "gpt-5",
-        };
-        if (runLease) await writeSessionRun(db, runLease, usageAnnotation);
-        else await sessionRef.update(usageAnnotation);
-      } catch (e) {
-        console.error("[brain] Token usage annotation failed (non-fatal):", e);
       }
 
       // ── Step 4: Post-session notifications ───────────────────────────────
@@ -832,6 +820,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     if (db && uid && !resultSaved && (!abortCtrl.signal.aborted || timedOut)) {
       try {
         const failure = {
+          callUsage: [...(previousSession?.callUsage ?? []), ...runCalls],
+          priceSnapshot: prepared.rates,
+          costUSD: Number(previousSession?.costUSD ?? 0) + runCalls.reduce((sum, c) => sum + (c.costUSD ?? 0), 0),
+          inputTokens: Number(previousSession?.inputTokens ?? 0) + runCalls.reduce((sum, c) => sum + c.inputTokens, 0),
+          outputTokens: Number(previousSession?.outputTokens ?? 0) + runCalls.reduce((sum, c) => sum + c.outputTokens, 0),
           lastRunErrorAt: FieldValue.serverTimestamp(),
           lastRunErrorMessage: timedOut ? "Session timed out." : "Session failed before completion.",
           updatedAt: FieldValue.serverTimestamp(),
