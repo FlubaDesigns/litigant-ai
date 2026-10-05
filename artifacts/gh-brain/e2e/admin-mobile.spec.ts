@@ -87,5 +87,5 @@ test("desktop retains table columns and mobile key editing uses the same form", 
   // Buttons animate their dimensions when crossing the desktop/mobile breakpoint.
   await expect.poll(async () => (await edit.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await edit.click();
-  await expect(page.getByRole("button",{name:/Save/}).last()).toBeVisible();
+  await expect(page.getByRole("button",{name:"Update Key",exact:true})).toBeVisible();
 });
