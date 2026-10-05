@@ -77,7 +77,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "transactions", label: "Transactions",    icon: CreditCard },
   { id: "api-usage",    label: "API Usage",       icon: BarChart2 },
   { id: "errors",       label: "Error Logs",      icon: AlertCircle },
-  { id: "abuse",        label: "Abuse Flags",     icon: HeartCrack },
+  { id: "abuse",        label: "Feedback Flags",     icon: HeartCrack },
   { id: "credit-packs", label: "Credit Packs",    icon: Package },
   { id: "limits",       label: "Limits",          icon: SlidersHorizontal },
   { id: "flags",        label: "Feature Flags",   icon: Flag },
@@ -2343,8 +2343,8 @@ function ErrorLogsTab() {
   </div>;
 }
 
-// ─── Abuse Flags Tab ──────────────────────────────────────────────────────────
-function AbuseFlagsTab() {
+// ─── Feedback Flags Tab ──────────────────────────────────────────────────────────
+function FeedbackFlagsTab() {
   const [selectedId,setSelectedId] = useState<string | null>(null);
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["admin-abuse-flags"], queryFn: getAbuseFlags, retry: false,
@@ -3607,7 +3607,7 @@ export default function AdminPage() {
           {activeTab === "transactions" && <TransactionsTab />}
           {activeTab === "api-usage"    && <ApiUsageTab />}
           {activeTab === "errors"       && <ErrorLogsTab />}
-          {activeTab === "abuse"        && <AbuseFlagsTab />}
+          {activeTab === "abuse"        && <FeedbackFlagsTab />}
           {activeTab === "credit-packs" && <CreditPacksTab />}
           {activeTab === "limits"       && <LimitsTab />}
           {activeTab === "flags"        && <FeatureFlagsTab />}

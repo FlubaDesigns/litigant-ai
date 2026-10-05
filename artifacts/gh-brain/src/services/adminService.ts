@@ -446,7 +446,7 @@ export async function getAbuseFlags(): Promise<{
   hasMore:boolean;
 }> {
   const res = await adminFetch("/admin/abuse-flags");
-  if (!res.ok) throw new Error("Failed to load abuse flags");
+  if (!res.ok) throw new Error("Failed to load feedback flags");
   return res.json();
 }
 
