@@ -1415,115 +1415,79 @@ function CreditPacksTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
-        <Package className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div>
-          <span className="font-medium text-foreground">How credit packs work: </span>
-          These are the one-time top-up packs customers see on the Billing page. A pack's id is
-          permanent once created — Square's checkout note embeds it, and renaming it would break the
-          lookup for any in-flight or historical purchase. Deactivating hides a pack from checkout
-          without losing its history; it can be reactivated any time.
-        </div>
-      </div>
+      <details className="lgt-card lgt-card--compact text-sm text-muted-foreground">
+        <summary className="min-h-11 py-3 cursor-pointer font-medium text-foreground">How credit packs work</summary>
+        <p className="pt-2">One-time top-ups sold on Billing. Pack IDs are permanent so Square can track pending and past purchases. Deactivate to hide a pack from checkout; its history stays and you can reactivate it anytime.</p>
+      </details>
 
       <div className="admin-row flex items-center justify-between">
         <h3 className="text-sm font-semibold text-muted-foreground">Active packs</h3>
-        <Button size="sm" onClick={() => setCreating(true)} className="gap-1.5">
+        <Button size="sm" onClick={() => setCreating(true)} className="min-h-11 gap-1.5">
           <Plus className="w-3.5 h-3.5" /> New pack
         </Button>
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table mobileCards>
-          <TableHeader>
-            <TableRow className="bg-secondary/30">
-              <TableHead className="text-xs">Pack</TableHead>
-              <TableHead className="text-xs">Description</TableHead>
-              <TableHead className="text-xs text-right">Price</TableHead>
-              <TableHead className="text-xs text-right">Credits</TableHead>
-              <TableHead className="text-xs text-right">Rate</TableHead>
-              <TableHead className="text-xs text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {activePacks.map((pack) => {
-              const price = pack.prices[0];
-              const credits = parseInt(pack.metadata.creditAmount, 10) || 0;
-              const dollars = (price?.unit_amount ?? 0) / 100;
-              const rate = dollars > 0 ? credits / dollars : 0;
-              return (
-                <TableRow key={pack.id} className="group">
-                  <TableCell className="font-medium text-sm">
-                    {pack.name}
-                    <div className="text-[10px] font-mono text-muted-foreground">{pack.id}</div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
-                    {pack.description}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    ${dollars.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-primary font-bold">
-                    {credits.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                    {rate.toFixed(1)}/$
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1" onClick={() => setEditingPack(pack)}>
-                        <Edit3 className="w-3 h-3" /> Edit
-                      </Button>
-                      <Button
-                        size="sm" variant="ghost"
-                        className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive"
-                        onClick={() => setPendingDeactivate(pack)}
-                        disabled={deactivateMut.isPending}
-                      >
-                        <Trash2 className="w-3 h-3" /> Deactivate
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {activePacks.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
-                  No active packs. Create one to start selling credits.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {activePacks.length > 0 ? <div className="row layout__split-2">
+        {activePacks.map((pack) => {
+          const price = pack.prices[0];
+          const credits = parseInt(pack.metadata.creditAmount, 10) || 0;
+          const dollars = (price?.unit_amount ?? 0) / 100;
+          const rate = dollars > 0 ? credits / dollars : 0;
+          return (
+            <article key={pack.id} aria-label={`Credit pack ${pack.name}`} className="lgt-card lgt-card--compact space-y-3">
+              <div>
+                <h4 className="text-sm font-semibold break-words">{pack.name}</h4>
+                <p className="text-xs font-mono text-muted-foreground break-all">{pack.id}</p>
+              </div>
+              {pack.description && <p className="text-xs text-muted-foreground break-words">{pack.description}</p>}
+              <dl className="row layout__split-2 layout--keep-columns">
+                <div>
+                  <dt className="text-xs text-muted-foreground mb-1">Price</dt>
+                  <dd className="text-sm font-mono">${dollars.toFixed(2)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground mb-1">Credits</dt>
+                  <dd className="text-sm font-mono text-primary font-bold">{credits.toLocaleString()}</dd>
+                </div>
+              </dl>
+              <p className="text-xs text-muted-foreground">Rate: {rate.toFixed(1)} credits / $1</p>
+              <div className="row layout__split-2 layout--keep-columns border-t border-border pt-2">
+                <Button size="sm" variant="ghost" className="min-h-11 px-2 text-xs gap-1.5" onClick={() => setEditingPack(pack)}>
+                  <Edit3 className="w-3.5 h-3.5" /> Edit
+                </Button>
+                <Button
+                  size="sm" variant="ghost"
+                  className="min-h-11 px-2 text-xs gap-1.5 text-destructive hover:text-destructive"
+                  onClick={() => setPendingDeactivate(pack)}
+                  disabled={deactivateMut.isPending}
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Deactivate
+                </Button>
+              </div>
+            </article>
+          );
+        })}
+      </div> : <p className="lgt-card lgt-card--compact text-sm text-muted-foreground">No active packs. Create one to start selling credits.</p>}
 
       {inactivePacks.length > 0 && (
         <>
           <h3 className="text-sm font-semibold text-muted-foreground">Deactivated</h3>
-          <div className="rounded-xl border border-border overflow-hidden opacity-70">
-            <Table mobileCards>
-              <TableHeader><TableRow><TableHead>Pack</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {inactivePacks.map((pack) => (
-                  <TableRow key={pack.id}>
-                    <TableCell className="font-medium text-sm">
-                      {pack.name}
-                      <div className="text-[10px] font-mono text-muted-foreground">{pack.id}</div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1"
-                        onClick={() => reactivateMut.mutate(pack.id)}
-                        disabled={reactivateMut.isPending}
-                      >
-                        <RotateCcw className="w-3 h-3" /> Reactivate
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="row layout__split-2">
+            {inactivePacks.map((pack) => (
+              <article key={pack.id} aria-label={`Deactivated credit pack ${pack.name}`} className="lgt-card lgt-card--compact space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold break-words">{pack.name}</h4>
+                  <p className="text-xs font-mono text-muted-foreground break-all">{pack.id}</p>
+                </div>
+                <Button
+                  size="sm" variant="outline" className="min-h-11 w-full text-xs gap-1.5"
+                  onClick={() => reactivateMut.mutate(pack.id)}
+                  disabled={reactivateMut.isPending}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Reactivate
+                </Button>
+              </article>
+            ))}
           </div>
         </>
       )}

@@ -85,6 +85,31 @@ for (const width of [360, 412]) {
         const edit=card.getByRole("button",{name:"Edit multiplier for gpt-5"});
         expect(Math.round((await edit.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
       }
+      if (tab.id === "credit-packs") {
+        const card=page.getByRole("article",{name:"Credit pack Example pack",exact:true});
+        const [left,right]=await card.locator("dl > div").evaluateAll(cells=>cells.map(cell=>{
+          const {x,y,width}=cell.getBoundingClientRect();return {x,y,width};
+        }));
+        expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+        expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+        expect((await card.boundingBox())!.height).toBeLessThan(300);
+        for (const text of ["fixture","A test fixture only","$5.00","500","Rate: 100.0 credits / $1"]) {
+          await expect(card.getByText(text,{exact:true})).toBeVisible();
+        }
+        for (const action of ["Edit","Deactivate"]) {
+          const button=card.getByRole("button",{name:action,exact:true});
+          expect(Math.round((await button.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+          await button.click();
+          const dialog=page.getByRole("dialog",{name:action === "Edit" ? "Edit Example pack" : "Deactivate Credit Pack"});
+          await expect(dialog).toBeVisible();
+          await dialog.getByRole("button",{name:"Cancel",exact:true}).click();
+        }
+        await page.getByRole("button",{name:"New pack",exact:true}).click();
+        const dialog=page.getByRole("dialog",{name:"New credit pack"});
+        await expect(dialog).toBeVisible();
+        await dialog.getByRole("button",{name:"Cancel",exact:true}).click();
+        await expect(page.getByRole("article",{name:"Deactivated credit pack Inactive pack",exact:true}).getByRole("button",{name:"Reactivate",exact:true})).toBeVisible();
+      }
       if (tab.id === "api-usage") {
         const card=page.getByRole("article",{name:`Usage for openai ${longId}`,exact:true});
         await expect(card.getByText("$0.0050",{exact:true})).toBeVisible();
