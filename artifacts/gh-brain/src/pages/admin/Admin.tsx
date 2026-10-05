@@ -891,6 +891,7 @@ function SessionsTab() {
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={filterStatus}
+          aria-label="Filter sessions by status"
           onChange={(e) => setFilterStatus(e.target.value)}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         >
@@ -903,15 +904,17 @@ function SessionsTab() {
           value={filterUserId}
           onChange={(e) => setFilterUserId(e.target.value)}
           placeholder="Filter by user ID…"
+          aria-label="Filter sessions by user ID"
           className="h-11 w-full sm:w-52 text-sm font-mono"
         />
         <Input
           value={filterTemplateId}
           onChange={(e) => setFilterTemplateId(e.target.value)}
           placeholder="Filter by template ID…"
+          aria-label="Filter sessions by template ID"
           className="h-11 w-full sm:w-48 text-sm font-mono"
         />
-        <Button variant="outline" size="icon" onClick={() => refetch()}>
+        <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Refresh sessions">
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>
@@ -919,65 +922,62 @@ function SessionsTab() {
       {isLoading ? (
         <TabSkeleton />
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table mobileCards>
-            <TableHeader>
-              <TableRow className="bg-secondary/30">
-                <TableHead>Session</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Conf.</TableHead>
-                <TableHead>Credits</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data?.sessions ?? []).map((s) => (
-                <TableRow
-                  key={s.id}
-                  className="hover:bg-secondary/20 cursor-pointer"
+        <div className="row layout__split-2">
+          {(data?.sessions ?? []).map((s) => {
+            const title = s.title ?? s.question ?? "Untitled";
+            return (
+              <article key={s.id} className="lgt-card lgt-card--compact space-y-3" aria-label={`Session ${title}`}>
+                <button
+                  type="button"
+                  className="flex items-start gap-2 w-full text-left rounded-md hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => setSelectedId(s.id)}
+                  aria-label={`Open session: ${title}`}
                 >
-                  <TableCell>
-                    <p className="text-sm font-medium truncate max-w-[240px]">
-                      {s.title ?? s.question?.slice(0, 60) ?? "Untitled"}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono">{s.userId}</p>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        s.status === "complete"
-                          ? "text-primary border-primary/30 bg-primary/10"
-                          : s.status === "error"
-                            ? "text-destructive border-destructive/30"
-                            : "text-amber-400 border-amber-400/30"
-                      )}
-                    >
-                      {s.status ?? "—"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {s.confidence ? `${s.confidence}%` : "—"}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{s.creditsUsed ?? "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(s.createdAt)}</TableCell>
-                  <TableCell>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!data?.sessions?.length && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-sm">
-                    No sessions found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                  <span className="flex-1 min-w-0 text-sm font-medium leading-snug line-clamp-3 break-words">{title}</span>
+                  <ChevronRight className="w-5 h-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                </button>
+                <dl className="space-y-3">
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Status</dt>
+                      <dd>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs",
+                            s.status === "complete"
+                              ? "text-primary border-primary/30 bg-primary/10"
+                              : s.status === "error"
+                                ? "text-destructive border-destructive/30"
+                                : "text-amber-400 border-amber-400/30"
+                          )}
+                        >
+                          {s.status ?? "—"}
+                        </Badge>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Confidence</dt>
+                      <dd className="text-sm tabular-nums">{s.confidence != null ? `${s.confidence}%` : "—"}</dd>
+                    </div>
+                  </div>
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Credits</dt>
+                      <dd className="text-sm tabular-nums">{s.creditsUsed ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Created</dt>
+                      <dd className="text-sm">{formatDate(s.createdAt)}</dd>
+                    </div>
+                  </div>
+                </dl>
+              </article>
+            );
+          })}
+          {!data?.sessions?.length && (
+            <p className="py-12 text-center text-muted-foreground text-sm">No sessions found</p>
+          )}
         </div>
       )}
 
@@ -1065,7 +1065,7 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
               </div>
               <div className="bg-secondary/30 rounded p-2">
                 <p className="text-muted-foreground">Confidence</p>
-                <p>{data.session.confidence ? `${data.session.confidence}%` : "—"}</p>
+                <p>{data.session.confidence != null ? `${data.session.confidence}%` : "—"}</p>
               </div>
               <div className="bg-secondary/30 rounded p-2">
                 <p className="text-muted-foreground">Credits Used</p>
@@ -1076,6 +1076,13 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
                 <p>{formatDateTime(data.session.createdAt)}</p>
               </div>
             </div>
+
+            {data.session.userId && (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">User ID</p>
+                <p className="text-xs font-mono break-all">{data.session.userId}</p>
+              </div>
+            )}
 
             <AgentCosts session={data.session} />
 

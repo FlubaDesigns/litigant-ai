@@ -13,7 +13,8 @@ const responses: Record<string,unknown> = {
   "/admin/pricing":{creditValueUsd:0.01,models:[model]},
   "/admin/api-keys":{providers:[{id:"openai",label:"OpenAI",maskedKey:"••••hidden",source:"env",baseUrl:"https://api.example.test/very/long/provider/address"}]},
   "/admin/users":{users:[{id:longId,email:"long-address-for-mobile-layout@example.test",displayName:"Layout fixture",creditBalance:5500}],hasMore:false},
-  "/admin/sessions":{sessions:[{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete"}],hasMore:false},
+  "/admin/sessions":{sessions:[{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0,createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
+  [`/admin/sessions/${longId}`]:{session:{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0},turns:[]},
   "/admin/transactions":{transactions:[{id:longId,userId:longId,type:"purchase",amount:50,balanceAfter:100}],hasMore:false},
   "/admin/api-usage":{totalSessions:5,totalCreditsUsed:100,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],apiLogs:[{id:longId,model:longId,status:"error",durationMs:300}]},
   "/admin/error-logs":{logs:[{id:longId,message:longId,userId:longId}],failedSessions:[]},
@@ -72,6 +73,27 @@ for (const width of [360, 412]) {
         await page.getByRole("menuitem",{name:"Adjust credits"}).click();
         await expect(page.getByRole("dialog",{name:"Adjust Credits"})).toBeVisible();
         await page.getByRole("button",{name:"Cancel",exact:true}).click();
+      }
+      if (tab.id === "sessions") {
+        const card=page.getByRole("article",{name:"Session A session question that should remain readable on a narrow phone"});
+        const rows=card.locator("dl .layout--keep-columns");
+        await expect(rows).toHaveCount(2);
+        for (const row of await rows.all()) {
+          const cells=await row.locator(":scope > div").all();
+          const left=await cells[0].boundingBox(),right=await cells[1].boundingBox();
+          expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+          expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+        }
+        expect((await card.boundingBox())!.height).toBeLessThan(270);
+        await expect(card.getByText("0%",{exact:true})).toBeVisible();
+        await expect(card.getByText("0",{exact:true})).toBeVisible();
+        await expect(card).not.toContainText(longId);
+        await card.getByRole("button",{name:/Open session:/}).click();
+        const detail=page.getByRole("dialog",{name:"Session Detail"});
+        await expect(detail).toBeVisible();
+        await expect(detail.getByText(longId,{exact:true})).toBeVisible();
+        await expect(detail.getByText("0%",{exact:true})).toBeVisible();
+        await detail.getByRole("button",{name:"Close",exact:true}).click();
       }
       if (tab.id === "overview" || tab.id === "health") {
         const rows=page.locator(".admin-page .row.layout__split-2");
