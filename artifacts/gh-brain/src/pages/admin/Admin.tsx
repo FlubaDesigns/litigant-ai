@@ -1,3 +1,4 @@
+import "./admin.css";
 import { useState, useEffect } from "react";
 import { useSearch, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
@@ -103,10 +104,10 @@ function StatCard({
   label, value, icon: Icon, sub,
 }: { label: string; value: string | number; icon: React.ElementType; sub?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{label}</p>
-        <Icon className="w-4 h-4 text-muted-foreground" />
+    <div className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-5 space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-xs font-mono text-muted-foreground uppercase tracking-wider">{label}</p>
+        <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
       </div>
       <p className="text-2xl font-bold font-mono">{value}</p>
       {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
@@ -125,19 +126,19 @@ function SystemNotesCard() {
       <ul className="space-y-2 text-sm text-muted-foreground">
         <li className="flex items-start gap-2">
           <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          Admin routes enforce Firebase custom claim <code className="text-xs bg-secondary px-1 rounded">admin: true</code>
+          <span>Only administrators can access these pages.</span>
         </li>
         <li className="flex items-start gap-2">
           <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          All credit mutations write an immutable <code className="text-xs bg-secondary px-1 rounded">credit_transactions</code> ledger entry
+          <span>Every credit change is recorded in the transaction history.</span>
         </li>
         <li className="flex items-start gap-2">
           <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          Ban toggles both Firestore flag and Firebase Auth disabled state
+          <span>Banning a user disables their account and sign-in.</span>
         </li>
         <li className="flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-          Auto-refill via Square not yet wired into usage flow — manual refund available below
+          <span>Low-balance top-ups use a Square checkout link and require payment confirmation.</span>
         </li>
       </ul>
     </div>
@@ -163,7 +164,7 @@ function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
             Firebase is not configured — connect it to see real admin data.
           </span>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {["Total Users", "Sessions", "Transactions", "Last 7 Days"].map((l) => (
             <div key={l} className="rounded-xl border border-border bg-card p-5 opacity-40">
               <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{l}</p>
@@ -178,7 +179,7 @@ function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total Users"   value={data?.userCount ?? 0}        icon={Users}    />
         <StatCard label="Sessions"      value={data?.sessionCount ?? 0}      icon={Brain}    />
         <StatCard label="Transactions"  value={data?.txCount ?? 0}           icon={CreditCard} />
@@ -439,7 +440,7 @@ function UsersTab() {
       ) : (
         <>
           <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
+            <Table mobileCards>
               <TableHeader>
                 <TableRow className="bg-secondary/30">
                   <TableHead>User</TableHead>
@@ -698,7 +699,7 @@ function UserProfileSheet({
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl bg-card border-l border-border overflow-y-auto">
+      <SheetContent data-admin-panel="" side="right" className="w-full sm:max-w-xl bg-card border-l border-border overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle>User Profile</SheetTitle>
         </SheetHeader>
@@ -752,7 +753,7 @@ function UserProfileSheet({
 
             {/* ── Test model override ── */}
             <div className="rounded-lg border border-border bg-background p-3 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="admin-row flex items-center justify-between">
                 <div>
                   <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Test Model</p>
                   {data.user.testModel ? (
@@ -1010,13 +1011,13 @@ function SessionsTab() {
           value={filterUserId}
           onChange={(e) => setFilterUserId(e.target.value)}
           placeholder="Filter by user ID…"
-          className="h-9 w-52 text-sm font-mono"
+          className="h-11 w-full sm:w-52 text-sm font-mono"
         />
         <Input
           value={filterTemplateId}
           onChange={(e) => setFilterTemplateId(e.target.value)}
           placeholder="Filter by template ID…"
-          className="h-9 w-48 text-sm font-mono"
+          className="h-11 w-full sm:w-48 text-sm font-mono"
         />
         <Button variant="outline" size="icon" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4" />
@@ -1027,7 +1028,7 @@ function SessionsTab() {
         <TabSkeleton />
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          <Table mobileCards>
             <TableHeader>
               <TableRow className="bg-secondary/30">
                 <TableHead>Session</TableHead>
@@ -1128,7 +1129,7 @@ function SessionDetailSheet({ id, onClose }: { id: string; onClose: () => void }
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-xl bg-card border-l border-border overflow-y-auto">
+      <SheetContent data-admin-panel="" side="right" className="w-full sm:max-w-xl bg-card border-l border-border overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle>Session Detail</SheetTitle>
         </SheetHeader>
@@ -1263,7 +1264,7 @@ function TransactionsTab() {
           value={filterUserId}
           onChange={(e) => setFilterUserId(e.target.value)}
           placeholder="Filter by user ID…"
-          className="h-9 w-52 text-sm font-mono"
+          className="h-11 w-full sm:w-52 text-sm font-mono"
         />
         <Button variant="outline" size="icon" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4" />
@@ -1274,7 +1275,7 @@ function TransactionsTab() {
         <TabSkeleton />
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          <Table mobileCards>
             <TableHeader>
               <TableRow className="bg-secondary/30">
                 <TableHead>User</TableHead>
@@ -1493,7 +1494,7 @@ function CreditPacksTab() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <h3 className="text-sm font-semibold text-muted-foreground">Active packs</h3>
         <Button size="sm" onClick={() => setCreating(true)} className="gap-1.5">
           <Plus className="w-3.5 h-3.5" /> New pack
@@ -1501,7 +1502,7 @@ function CreditPacksTab() {
       </div>
 
       <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
+        <Table mobileCards>
           <TableHeader>
             <TableRow className="bg-secondary/30">
               <TableHead className="text-xs">Pack</TableHead>
@@ -1569,7 +1570,8 @@ function CreditPacksTab() {
         <>
           <h3 className="text-sm font-semibold text-muted-foreground">Deactivated</h3>
           <div className="rounded-xl border border-border overflow-hidden opacity-70">
-            <Table>
+            <Table mobileCards>
+              <TableHeader><TableRow><TableHead>Pack</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
               <TableBody>
                 {inactivePacks.map((pack) => (
                   <TableRow key={pack.id}>
@@ -1809,7 +1811,7 @@ function LimitsTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="admin-row flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Numeric platform limits stored in Firestore{" "}
             <code className="bg-secondary px-1 rounded text-xs">config/adminLimits</code>.
@@ -1824,22 +1826,24 @@ function LimitsTab() {
           {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
             const current = (limits as Record<string, number>)?.[name] ?? meta.min;
             return (
-              <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-6">
+              <div key={name} className="admin-row flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-6">
                 <div className="flex-1 space-y-0.5 min-w-0">
                   <p className="font-medium text-sm font-mono">{name}</p>
                   <p className="text-xs text-muted-foreground">{meta.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
+                    aria-label={`Decrease ${name}`}
                     onClick={() => save({ name, value: Math.max(meta.min, current - 1) })}
                     disabled={isPending || current <= meta.min}
-                    className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
+                    className="w-11 h-11 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
                   >−</button>
                   <span className="w-8 text-center font-mono font-semibold text-sm tabular-nums">{current}</span>
                   <button
+                    aria-label={`Increase ${name}`}
                     onClick={() => save({ name, value: Math.min(meta.max, current + 1) })}
                     disabled={isPending || current >= meta.max}
-                    className="w-7 h-7 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
+                    className="w-11 h-11 rounded border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 transition-colors"
                   >+</button>
                   <span className="text-xs text-muted-foreground w-14 text-right">{meta.min}–{meta.max}</span>
                 </div>
@@ -1925,7 +1929,7 @@ function BillingDefaultsSection() {
         </div>
 
         {/* Default amount */}
-        <div className="flex items-center justify-between px-5 py-4 gap-6">
+        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
           <div className="space-y-0.5">
             <p className="text-sm font-medium">Default Charge Amount</p>
             <p className="text-xs text-muted-foreground">Pre-selected dollar amount for new users.</p>
@@ -1944,7 +1948,7 @@ function BillingDefaultsSection() {
         </div>
 
         {/* Default trigger threshold */}
-        <div className="flex items-center justify-between px-5 py-4 gap-6">
+        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
           <div className="space-y-0.5">
             <p className="text-sm font-medium">Default Top-Up Trigger</p>
             <p className="text-xs text-muted-foreground">Charge fires when balance drops below this many credits.</p>
@@ -1963,7 +1967,7 @@ function BillingDefaultsSection() {
         </div>
 
         {/* Default warning threshold */}
-        <div className="flex items-center justify-between px-5 py-4 gap-6">
+        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
           <div className="space-y-0.5">
             <p className="text-sm font-medium">Default Warning Threshold</p>
             <p className="text-xs text-muted-foreground">Show low-balance banner when credits drop below this.</p>
@@ -1982,7 +1986,7 @@ function BillingDefaultsSection() {
         </div>
 
         {/* Signup bonus */}
-        <div className="flex items-center justify-between px-5 py-4 gap-6">
+        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
           <div className="space-y-0.5">
             <p className="text-sm font-medium">Signup Bonus</p>
             <p className="text-xs text-muted-foreground">Credits granted to every new user on first verified sign-in. Propagates to all marketing copy and emails.</p>
@@ -2042,7 +2046,7 @@ function FeatureFlagsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Flags stored in Firestore <code className="bg-secondary px-1 rounded text-xs">config/featureFlags</code>.
           Each flag can be scoped to all users or a specific plan tier.
@@ -2054,7 +2058,7 @@ function FeatureFlagsTab() {
 
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
         {flagEntries.map(([name, value]) => (
-          <div key={name} className="flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-4">
+          <div key={name} className="admin-row flex items-center justify-between px-5 py-4 hover:bg-secondary/10 transition-colors gap-4">
             <div className="flex-1 space-y-0.5 min-w-0">
               <p className="font-medium text-sm font-mono">{name}</p>
               <p className="text-xs text-muted-foreground">{FLAG_DESCRIPTIONS[name] ?? ""}</p>
@@ -2113,7 +2117,7 @@ function TemplatesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Edit the shared template catalogue used by the session page and AI engine.
         </p>
@@ -2183,7 +2187,7 @@ function TemplateEditModal({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent data-admin-panel="" className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Template</DialogTitle>
           <DialogDescription>ID: <span className="font-mono text-xs">{template.id}</span></DialogDescription>
@@ -2249,7 +2253,7 @@ function SystemHealthTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <p className="text-xs text-muted-foreground font-mono">
           Server time: {serverTime ? new Date(serverTime).toLocaleString() : "—"}
         </p>
@@ -2263,7 +2267,7 @@ function SystemHealthTab() {
         <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <Database className="w-3.5 h-3.5" />Collection sizes
         </p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {Object.entries(collections ?? {}).map(([col, count]) => (
             <div key={col} className="rounded-xl border border-border bg-card p-4 text-center">
               <p className="text-2xl font-bold font-mono">{count as number}</p>
@@ -2291,7 +2295,7 @@ function SystemHealthTab() {
         <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
           <TrendingUp className="w-3.5 h-3.5" />Last 7 days
         </p>
-        <div className="flex items-center gap-8 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
           <div>
             <p className="text-2xl font-bold font-mono text-destructive">{(last7d as any)?.errorSessions ?? 0}</p>
             <p className="text-xs text-muted-foreground">error sessions</p>
@@ -2331,7 +2335,7 @@ function ApiUsageTab() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <div className="flex gap-6 text-sm">
           <div>
             <p className="text-2xl font-bold font-mono text-primary">{data.totalCreditsUsed}</p>
@@ -2349,7 +2353,7 @@ function ApiUsageTab() {
 
       {data.byDay.length > 0 ? (
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          <Table mobileCards>
             <TableHeader>
               <TableRow className="bg-secondary/30">
                 <TableHead>Date</TableHead>
@@ -2379,7 +2383,7 @@ function ApiUsageTab() {
         <div className="space-y-2">
           <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">api_logs (last 200)</p>
           <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
+            <Table mobileCards>
               <TableHeader>
                 <TableRow className="bg-secondary/30">
                   <TableHead>Model</TableHead>
@@ -2436,7 +2440,7 @@ function ErrorLogsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Shows failed sessions + <code className="bg-secondary px-1 rounded text-xs">api_logs</code> error entries.
         </p>
@@ -2452,7 +2456,7 @@ function ErrorLogsTab() {
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          <Table mobileCards>
             <TableHeader>
               <TableRow className="bg-secondary/30">
                 <TableHead>Source</TableHead>
@@ -2507,7 +2511,7 @@ function AbuseFlagsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="admin-row flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Sessions flagged as <code className="bg-secondary px-1 rounded text-xs">bad</code> or{" "}
           <code className="bg-secondary px-1 rounded text-xs">warn</code> by user feedback.
@@ -2525,7 +2529,7 @@ function AbuseFlagsTab() {
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          <Table mobileCards>
             <TableHeader>
               <TableRow className="bg-secondary/30">
                 <TableHead>Rating</TableHead>
@@ -2722,7 +2726,7 @@ function ApiKeysTab() {
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">Configured Providers</h3>
           <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
+            <Table mobileCards>
               <TableHeader>
                 <TableRow className="bg-secondary/30">
                   <TableHead className="text-xs">Provider</TableHead>
@@ -2993,7 +2997,7 @@ function AddProviderModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent data-admin-panel="" className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-primary" /> Add Provider
@@ -3026,7 +3030,7 @@ function AddProviderModal({
 
           {/* Models */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="admin-row flex items-center justify-between">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Models</p>
               <Button
                 size="sm" variant="ghost"
@@ -3039,7 +3043,7 @@ function AddProviderModal({
 
             {models.map((m, i) => (
               <div key={i} className="rounded-lg border border-border p-3 space-y-2 bg-secondary/20">
-                <div className="flex items-center justify-between">
+                <div className="admin-row flex items-center justify-between">
                   <p className="text-xs font-mono text-muted-foreground">Model {i + 1}</p>
                   {models.length > 1 && (
                     <button
@@ -3070,7 +3074,7 @@ function AddProviderModal({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">Input $/1K tokens</label>
                     <Input
@@ -3150,7 +3154,7 @@ function AiStudioProviderSection({
   return (
     <div className={cn("space-y-2 transition-opacity", !providerEnabled && "opacity-50")}>
       {/* Provider header row */}
-      <div className="flex items-center justify-between px-1">
+      <div className="admin-row flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold">{label}</h3>
           {custom && (
@@ -3190,7 +3194,7 @@ function AiStudioProviderSection({
 
       {/* Models table */}
       <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
+        <Table mobileCards>
           <TableHeader>
             <TableRow className="bg-secondary/30">
               <TableHead className="text-xs">Model</TableHead>
@@ -3317,7 +3321,7 @@ function SeatOrdersTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold">Seat Orders</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -3362,7 +3366,7 @@ function SeatOrdersTab() {
 
       {/* Editor Dialog */}
       <Dialog open={!!editingSeat} onOpenChange={(o) => !o && setEditingSeat(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent data-admin-panel="" className="max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ScrollText className="w-4 h-4 text-primary" />
@@ -3512,8 +3516,8 @@ function AiStudioTab() {
   return (
     <div className="space-y-6">
       {/* Summary + Add button */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="grid grid-cols-3 gap-4 flex-1">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
           <div className="rounded-xl border border-border bg-card p-4 space-y-1">
             <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Total Models</p>
             <p className="text-2xl font-bold font-mono">{models.length}</p>
@@ -3724,7 +3728,7 @@ function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSave
 
 function EmailRow({ template, onEdit, onToggle }: { template: EmailTemplate; onEdit: () => void; onToggle: (v: boolean) => void }) {
   return (
-    <div className="px-5 py-4 flex items-center gap-4">
+    <div className="admin-row px-5 py-4 flex items-center gap-4">
       <div className="flex-1 min-w-0 space-y-0.5">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-medium">{template.label}</p>
@@ -3831,7 +3835,7 @@ function EmailsTab() {
         <div className="px-5 py-3 bg-muted/20">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Credit Alert Threshold</p>
         </div>
-        <div className="flex items-center justify-between px-5 py-4 gap-6">
+        <div className="admin-row flex items-center justify-between px-5 py-4 gap-6">
           <div className="space-y-0.5 flex-1">
             <p className="text-sm font-medium">Send low-credits warning when balance falls below</p>
             <p className="text-xs text-muted-foreground">
@@ -3861,7 +3865,7 @@ function EmailsTab() {
 
       {/* Edit sheet */}
       <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setEditingId(null); }}>
-        <SheetContent className="w-[540px] sm:max-w-[540px] flex flex-col gap-0 p-0 overflow-hidden">
+        <SheetContent data-admin-panel="" className="w-full sm:max-w-[540px] flex flex-col gap-0 p-0 overflow-hidden">
           {editingTemplate && (
             <EmailEditPanel
               template={editingTemplate}
@@ -3904,7 +3908,7 @@ function PricingTab() {
   return (
     <div className="space-y-6">
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border border-border bg-card p-4 space-y-1">
           <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Credit Value</p>
           <p className="text-2xl font-bold font-mono text-primary">${data.creditValueUsd.toFixed(2)}</p>
@@ -3938,7 +3942,7 @@ function PricingTab() {
         <div key={provider} className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">{PROVIDER_LABELS[provider] ?? provider}</h3>
           <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
+            <Table mobileCards>
               <TableHeader>
                 <TableRow className="bg-secondary/30">
                   <TableHead className="text-xs">Model</TableHead>
@@ -4004,18 +4008,17 @@ export default function AdminPage() {
   const [activeTab, setActiveTabState] = useState<AdminTab>(validTab);
 
   useEffect(() => {
-    if (tabFromUrl && TABS.some((t) => t.id === tabFromUrl)) {
-      setActiveTabState(tabFromUrl as AdminTab);
-    }
-  }, [tabFromUrl]);
+    setActiveTabState(validTab);
+  }, [validTab]);
 
   function setActiveTab(tab: AdminTab) {
     setActiveTabState(tab);
-    setLocation(`/admin?tab=${tab}`, { replace: true });
+    setLocation(`/admin?tab=${tab}`);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="admin-page min-w-0 bg-background text-foreground flex flex-col">
       <div className="flex flex-1">
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-52 shrink-0 border-r border-border bg-card/40 py-6 px-3 gap-1">
@@ -4040,25 +4043,16 @@ export default function AdminPage() {
         ))}
       </aside>
 
-      {/* Mobile tab strip */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card flex overflow-x-auto">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-2 text-xs min-w-[72px] shrink-0 transition-colors",
-              activeTab === id ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            <span className="truncate">{label}</span>
-          </button>
-        ))}
-      </div>
+      {/* One native selector keeps every page reachable without sideways swiping. */}
+      <nav aria-label="Admin navigation" className="admin-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card px-4 pt-2">
+        <label htmlFor="admin-page-select" className="block text-xs text-muted-foreground mb-1">Admin page</label>
+        <select id="admin-page-select" value={activeTab} onChange={event => setActiveTab(event.target.value as AdminTab)} className="w-full min-h-12 rounded-lg border border-border bg-background px-3 text-base text-foreground">
+          {TABS.map(({id, label}) => <option key={id} value={id}>{label}</option>)}
+        </select>
+      </nav>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 pb-24 lg:pb-8 max-w-5xl">
+      <div className="flex-1 min-w-0 px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 pb-28 lg:pb-8 max-w-5xl">
         <div className="mb-6 flex items-center gap-3">
           <h1 className="text-xl font-bold">
             {TABS.find((t) => t.id === activeTab)?.label}

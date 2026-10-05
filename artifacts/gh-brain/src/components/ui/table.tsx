@@ -1,18 +1,34 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import "./table.css"
+
+const MobileTableLabels = React.createContext<React.ReactNode[] | null>(null)
+
+// Use the existing column headings for mobile labels; rows and actions render once.
+function columnLabels(children: React.ReactNode): React.ReactNode[] {
+  return React.Children.toArray(children).flatMap(child => {
+    if (!React.isValidElement<{children?: React.ReactNode}>(child)) return []
+    if (child.type === TableHead) return [child.props.children || "Actions"]
+    if (child.type === TableHeader || child.type === TableRow) return columnLabels(child.props.children)
+    return []
+  })
+}
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableElement> & { mobileCards?: boolean }
+>(({ className, children, mobileCards = false, ...props }, ref) => (
+  <MobileTableLabels.Provider value={mobileCards ? columnLabels(children) : null}>
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
+      data-mobile-cards={mobileCards || undefined}
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
-    />
+    >{children}</table>
   </div>
+  </MobileTableLabels.Provider>
 ))
 Table.displayName = "Table"
 
@@ -54,16 +70,20 @@ TableFooter.displayName = "TableFooter"
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, ref) => {
+  const labels = React.useContext(MobileTableLabels)
+  return (
+    <tr ref={ref} className={cn("border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted", className)} {...props}>
+      {React.Children.map(children, (child, index) => {
+        if (!labels || !React.isValidElement<React.ComponentProps<typeof TableCell>>(child) || child.type !== TableCell || (child.props.colSpan ?? 1) > 1) return child
+        return React.cloneElement(child, {}, <>
+          <span className="mobile-table-label" aria-hidden="true">{labels[index]}</span>
+          <div className="mobile-table-value">{child.props.children}</div>
+        </>)
+      })}
+    </tr>
+  )
+})
 TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
