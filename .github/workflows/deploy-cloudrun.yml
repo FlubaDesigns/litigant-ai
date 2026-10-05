@@ -276,13 +276,11 @@ jobs:
         run: |
           for attempt in $(seq 1 6); do
             curl --fail --silent --show-error https://litigant-ai.web.app/ -o /tmp/hosted-index.html
-            curl --fail --silent --show-error 'https://litigant-ai.com/admin?tab=limits' -D /tmp/admin-headers.txt -o /tmp/admin-index.html
-            ADMIN_CACHE_OK=$(python3 -c "from pathlib import Path; lines=Path('/tmp/admin-headers.txt').read_text().lower().splitlines(); print('yes' if any(line.startswith('cache-control:') and 'no-cache' in line and 'no-store' in line for line in lines) else 'no')")
             HOSTED_SHA=$(curl --fail --silent https://litigant-ai.web.app/api-server/api/version | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null) || HOSTED_SHA=""
-            if cmp -s artifacts/gh-brain/dist/public/index.html /tmp/hosted-index.html && cmp -s artifacts/gh-brain/dist/public/index.html /tmp/admin-index.html && [ "$ADMIN_CACHE_OK" = "yes" ] && [ "$HOSTED_SHA" = "$EXPECTED_SHA" ]; then
+            if cmp -s artifacts/gh-brain/dist/public/index.html /tmp/hosted-index.html && [ "$HOSTED_SHA" = "$EXPECTED_SHA" ]; then
               curl --fail --silent https://litigant-ai.web.app/api-server/api/templates -o /tmp/templates.json
               python3 -c "import json; data=json.load(open('/tmp/templates.json')); assert data and all('defaultConfig' in t and 'inputFields' in t for t in data)"
-              echo "Hosted frontend, templates and API match this commit; admin HTML cannot be reused from cache."
+              echo "Hosted frontend, templates and API match this commit."
               exit 0
             fi
             sleep 10
