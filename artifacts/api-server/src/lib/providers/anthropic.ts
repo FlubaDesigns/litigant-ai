@@ -1,3 +1,4 @@
+import { PROVIDER_BASE_URLS } from "./types.js";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
 
@@ -12,7 +13,7 @@ export class AnthropicProvider implements AIProvider {
     this.model = model;
     const apiKey = credentials?.key ?? process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("Anthropic not configured — set ANTHROPIC_API_KEY or add key in Admin → API Keys");
-    this.client = new Anthropic({ apiKey });
+    this.client = new Anthropic({ apiKey, baseURL: credentials?.baseUrl ?? PROVIDER_BASE_URLS.anthropic });
   }
 
   getLastUsage(): TokenUsageSnapshot | null {

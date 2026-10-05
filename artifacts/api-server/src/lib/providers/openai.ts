@@ -1,3 +1,4 @@
+import { PROVIDER_BASE_URLS } from "./types.js";
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
 
@@ -13,14 +14,14 @@ export class OpenAIProvider implements AIProvider {
     if (credentials) {
       this.client = new OpenAI({
         apiKey: credentials.key,
-        ...(credentials.baseUrl ? { baseURL: credentials.baseUrl } : {}),
+        baseURL: credentials.baseUrl ?? PROVIDER_BASE_URLS.openai,
       });
     } else {
       const directKey = process.env["OPENAI_API_KEY"];
       const replitBase = process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"];
       const replitKey = process.env["AI_INTEGRATIONS_OPENAI_API_KEY"];
       if (directKey) {
-        this.client = new OpenAI({ apiKey: directKey });
+        this.client = new OpenAI({ apiKey: directKey, baseURL: PROVIDER_BASE_URLS.openai });
       } else if (replitBase && replitKey) {
         this.client = new OpenAI({ baseURL: replitBase, apiKey: replitKey });
       } else {

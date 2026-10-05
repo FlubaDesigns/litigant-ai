@@ -1,3 +1,4 @@
+import { PROVIDER_BASE_URLS } from "./types.js";
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
 
@@ -13,7 +14,7 @@ export class GrokProvider implements AIProvider {
     const apiKey = credentials?.key ?? process.env["XAI_API_KEY"];
     if (!apiKey) throw new Error("Grok not configured — set XAI_API_KEY or add key in Admin → API Keys");
     this.client = new OpenAI({
-      baseURL: credentials?.baseUrl ?? "https://api.x.ai/v1",
+      baseURL: credentials?.baseUrl ?? PROVIDER_BASE_URLS.grok,
       apiKey,
     });
   }

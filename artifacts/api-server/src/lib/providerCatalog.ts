@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { getProviderAvailability } from "./providerAvailability.js";
 import { resolveModelPrice, type ModelDefinition } from "./providers/types.js";
 import { getMultiplierOverrides } from "./pricingConfig.js";
-import { getConfiguredProvidersAsync, PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_MODELS } from "./providers/index.js";
+import { PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_MODELS } from "./providers/index.js";
 import { CREDIT_VALUE_USD, getCalibratedFixedStageTokens, getModelCreditInfo } from "./creditEngine.js";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 
@@ -35,13 +36,12 @@ export function validateCustomProviders(custom: CustomProviderDefinition[]): voi
   }
 }
 
-/** One resolved catalog. Admin sees all definitions; execution selects available entries below.
+/** One verified catalog for Admin, selection, quotes and execution.
  * Configuration reads fail closed so a failed read cannot enable disabled models or change prices.
  */
-export async function getModelRegistry() {
+export async function getModelRegistry(refreshAvailability = false) {
   const db = getFirestoreDb();
-  const [configured, studio, scores, overrides, fixed] = await Promise.all([
-    getConfiguredProvidersAsync(),
+  const [studio, scores, overrides, fixed] = await Promise.all([
     db?.collection("system_config").doc("aiStudio").get(),
     db?.collection("system_config").doc("modelScores").get(),
     getMultiplierOverrides(),
@@ -58,19 +58,23 @@ export async function getModelRegistry() {
     ...Object.entries(PROVIDER_MODELS).map(([id, models]) => ({id, label:PROVIDER_DISPLAY_NAMES[id]!, defaultModel:DEFAULT_MODELS[id]!, models, custom:false})),
     ...customProviders.map(p => ({...p, defaultModel:p.models[0]!.id, custom:true})),
   ];
-  const providers = definitions.map(p => ({
-    name:p.id, displayName:p.label, defaultModel:p.defaultModel, custom:p.custom,
-    configured:configured.includes(p.id), enabled:!disabledProviders.includes(p.id),
-    models:p.models.map((m: ModelDefinition) => {
-      const multiplier = z.number().finite().min(1).max(100).parse(overrides[m.id] ?? m.multiplier);
-      const price = resolveModelPrice(m, multiplier);
-      return {
-        id:m.id, label:m.label, qualityScore:modelScores[m.id] ?? m.qualityScore, defaultQualityScore:m.qualityScore,
-        enabled:!disabledModels.includes(m.id), defaultMultiplier:m.multiplier,
-        pricing:m.pricing ?? {note:"Custom rate entered by administrator."},
-        price, creditInfo:getModelCreditInfo(m.id, price, fixed),
-      };
-    }),
+  const providers = await Promise.all(definitions.map(async p => {
+    const candidates = p.models.filter((m: ModelDefinition) => !m.retired);
+    const connection = await getProviderAvailability(p.id, candidates.map(m => m.id), refreshAvailability);
+    return {
+      name:p.id, displayName:p.label, defaultModel:p.defaultModel, custom:p.custom,
+      configured:connection.state !== "not_configured", connection, enabled:!disabledProviders.includes(p.id),
+      models:candidates.filter(m => connection.modelIds.includes(m.id)).map((m: ModelDefinition) => {
+        const multiplier = z.number().finite().min(1).max(100).parse(overrides[m.id] ?? m.multiplier);
+        const price = resolveModelPrice(m, multiplier);
+        return {
+          id:m.id, label:m.label, qualityScore:modelScores[m.id] ?? m.qualityScore, defaultQualityScore:m.qualityScore,
+          enabled:!disabledModels.includes(m.id), defaultMultiplier:m.multiplier,
+          pricing:m.pricing ?? {note:"Custom rate entered by administrator."},
+          price, creditInfo:getModelCreditInfo(m.id, price, fixed),
+        };
+      }),
+    };
   }));
   return {creditValueUsd:CREDIT_VALUE_USD, providers, disabledProviders, customProviders};
 }
@@ -99,9 +103,12 @@ export async function getAdminPricingTable() {
 }
 
 export async function getAiStudioModels() {
-  const registry = await getModelRegistry();
+  const registry = await getModelRegistry(true);
   return {
     disabledProviders:registry.disabledProviders, customProviders:registry.customProviders,
+    providers:registry.providers.filter(p => p.configured).map(p => ({id:p.name,label:p.displayName,custom:p.custom,enabled:p.enabled,
+      connection:{state:p.connection.state,checkedAt:p.connection.checkedAt},
+    })),
     models:registry.providers.flatMap(p => p.models.map(m => ({
       id:m.id, label:m.label, provider:p.name, providerLabel:p.displayName, pricing:m.pricing,
       inputRatePer1k:m.creditInfo.inputRatePer1k, outputRatePer1k:m.creditInfo.outputRatePer1k,

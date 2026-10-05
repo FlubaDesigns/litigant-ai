@@ -1,6 +1,8 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 vi.mock("../lib/providers/index.js", async () => ({...await import("../lib/providers/types.js"), getConfiguredProvidersAsync:vi.fn()}));
+vi.mock("../lib/providerAvailability.js", () => ({getProviderAvailability:vi.fn()}));
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb:vi.fn()}));
+import {getProviderAvailability} from "../lib/providerAvailability.js";
 import {getConfiguredProvidersAsync} from "../lib/providers/index.js";
 import {getFirestoreDb} from "../lib/firebaseAdmin.js";
 import {getProviderCatalog, getAiStudioModels, getAdminPricingTable, CustomProviderSchema, validateCustomProviders} from "../lib/providerCatalog.js";
@@ -11,6 +13,10 @@ let docs: Record<string, any>;
 beforeEach(() => {
   docs = {aiStudio:{customProviders:[structuredClone(custom)]}, modelScores:{updatedAt:{seconds:1}}, pricing:{multipliers:{"gpt-4o":9,"acme/model":7}}};
   vi.mocked(getConfiguredProvidersAsync).mockResolvedValue(["openai","acme"]);
+  vi.mocked(getProviderAvailability).mockImplementation(async (id,candidates) => {
+    const configured=(await getConfiguredProvidersAsync()).includes(id);
+    return {state:configured ? "connected" : "not_configured",checkedAt:"2026-10-05T02:00:00Z",modelIds:configured ? candidates : []};
+  });
   vi.mocked(getFirestoreDb).mockReturnValue({collection:() => ({
     doc:(id:string) => ({get:async () => ({exists:true,data:() => docs[id] ?? {}})}),
     orderBy:() => ({limit:() => ({get:async () => ({docs:[]})})}),
@@ -66,7 +72,26 @@ describe("one provider and pricing catalog", () => {
     docs.aiStudio.disabledProviders = [];
     vi.mocked(getConfiguredProvidersAsync).mockResolvedValue(["openai"]);
     expect((await getProviderCatalog()).configured).toEqual(["openai"]);
-    expect((await getAiStudioModels()).models.find(m => m.id === "acme/model")!.available).toBe(false);
+    expect((await getAiStudioModels()).models.some(m => m.id === "acme/model")).toBe(false);
+  });
+  it("uses only provider-confirmed models for admin, selection and execution", async () => {
+    vi.mocked(getProviderAvailability).mockResolvedValue({state:"connected",checkedAt:"2026-10-05T02:00:00Z",modelIds:["gpt-4o"]});
+    expect((await getAiStudioModels()).models.map(m=>m.id)).toEqual(["gpt-4o"]);
+    expect((await getAdminPricingTable()).models.map(m=>m.model)).toEqual(["gpt-4o"]);
+    expect((await getProviderCatalog()).providers.flatMap(p=>p.models.map(m=>m.id))).toEqual(["gpt-4o"]);
+    await expect(prepareSession({provider:"openai",model:"gpt-5"})).rejects.toThrow(/disabled or unavailable/);
+  });
+  it("hides retired redirects even if a provider still lists the old slug", async () => {
+    vi.mocked(getProviderAvailability).mockResolvedValue({state:"connected",checkedAt:"2026-10-05T02:00:00Z",modelIds:["grok-3"]});
+    expect((await getAiStudioModels()).models).toEqual([]);
+  });
+  it("reports rejected keys without showing models or silently enabling them", async () => {
+    vi.mocked(getProviderAvailability).mockResolvedValue({state:"key_rejected",checkedAt:"2026-10-05T02:00:00Z",modelIds:[]});
+    const studio=await getAiStudioModels();
+    expect(studio.models).toEqual([]);
+    expect(studio.providers[0].connection.state).toBe("key_rejected");
+    expect((await getProviderCatalog()).providers).toEqual([]);
+    await expect(prepareSession({})).rejects.toThrow(/No enabled/);
   });
   it("rejects ambiguous IDs and invalid custom prices before billing", async () => {
     expect(CustomProviderSchema.safeParse({...custom, id:"auto"}).success).toBe(false);

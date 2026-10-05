@@ -55,7 +55,7 @@ import {
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
   type PricingModel, type ProviderKeyInfo, type AdminCreditPack, type CreditPackBounds,
   type BillingDefaults, type ChecklistItem,
-  type AiStudioModel, type AiStudioData, type AiStudioCustomProvider, type AiStudioCustomModel,
+  type AiStudioModel, type AiStudioData, type AiStudioProvider, type AiStudioCustomProvider, type AiStudioCustomModel,
   type SeatBriefsData,
 } from "@/services/adminService";
 
@@ -2844,7 +2844,6 @@ function MultiplierCell({ row, onSaved }: { row: PricingModel; onSaved: () => vo
 }
 
 // ─── AI Studio Tab ────────────────────────────────────────────────────────────
-const BUILT_IN_PROVIDER_ORDER = ["openai", "anthropic", "grok", "gemini"];
 
 function fmtRate(ratePerK: number): string {
   const perM = ratePerK * 1000;
@@ -3030,11 +3029,12 @@ function AddProviderModal({
 }
 
 function AiStudioProviderSection({
-  id: pid, label, provModels, providerEnabled, custom, open, onOpen,
+  id: pid, label, provModels, providerEnabled, custom, open, onOpen, connection, checking,
   onToggleProvider, onToggleModel, onSetScore, onSetMultiplier, onDelete, busy,
 }: {
   id: string; label: string; provModels: AiStudioModel[]; providerEnabled: boolean;
   custom: boolean; open: boolean; onOpen: () => void;
+  connection: AiStudioProvider["connection"]; checking: boolean;
   onToggleProvider: (enabled: boolean) => void;
   onToggleModel: (modelId: string, enabled: boolean) => void;
   onSetScore: (modelId: string, score: number) => void;
@@ -3043,16 +3043,21 @@ function AiStudioProviderSection({
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expandedModel, setExpandedModel] = useState<string | null>(null);
+  const connected = connection.state === "connected";
+  const status = checking ? "Checking…" : ({connected:"Connected",key_rejected:"Key rejected",rate_limited:"Rate limited",unavailable:"Unavailable",not_configured:"Not configured"})[connection.state];
   return (
     <section className="lgt-card lgt-card--compact studio-provider" aria-label={label}>
       <div className="studio-heading">
         <button className="studio-disclosure" onClick={onOpen} aria-label={label} aria-expanded={open} aria-controls={`provider-${pid}`}>
           <ChevronDown className={cn("w-4 h-4 shrink-0 transition-transform", open && "rotate-180")} />
-          <span><strong>{label}</strong><span className="text-muted-foreground ml-2 text-xs">{provModels.length} models</span></span>
+          <span><strong>{label}</strong><span className="text-muted-foreground ml-2 text-xs">{provModels.length} models</span>
+            <span role="status" className={cn("block text-xs", checking ? "text-muted-foreground" : connected ? "text-green-400" : "text-destructive")} title={`Checked ${new Date(connection.checkedAt).toLocaleString()}`}>{status}</span>
+          </span>
         </button>
-        <Switch aria-label={`Enable ${label}`} checked={providerEnabled} onCheckedChange={onToggleProvider} disabled={busy} />
+        <Switch aria-label={`Enable ${label}`} data-connection={checking ? "checking" : connected ? "connected" : "unavailable"} checked={providerEnabled} onCheckedChange={onToggleProvider} disabled={busy} />
       </div>
       {open && <div id={`provider-${pid}`}>
+        {!checking && !provModels.length && <p className="text-xs text-muted-foreground py-2">{connected ? "No supported models available." : "Connection not verified."} <a className="text-primary underline" href="/admin?tab=api-keys">API Keys</a></p>}
         {provModels.map(m => {
           const expanded = expandedModel === m.id;
           return <div key={m.id} className="studio-model">
@@ -3284,10 +3289,12 @@ function AiStudioTab() {
   const [addOpen, setAddOpen] = useState(false);
   const [openProvider, setOpenProvider] = useState<string | null>("openai");
 
-  const { data, isLoading, isError, refetch } = useQuery<AiStudioData>({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery<AiStudioData>({
     queryKey: ["admin-ai-studio"],
     queryFn: getAiStudioModels,
     retry: false,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   const toggleModelMut = useMutation({
@@ -3349,44 +3356,34 @@ function AiStudioTab() {
     return (
       <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        Failed to load AI Studio. Firebase may not be configured.
+        Connection checks unavailable.
         <button onClick={() => refetch()} className="ml-auto text-xs underline">Retry</button>
       </div>
     );
   }
 
-  const { models = [], disabledProviders = [], customProviders = [] } = data ?? {};
+  const { models = [], providers = [] } = data;
   const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending || multiplierMut.isPending;
-  const enabledCount = models.filter((m) => m.available).length;
-
-  // Build ordered provider list: built-ins first, then custom
-  const customProviderIds = customProviders.map((cp) => cp.id);
-  const allProviderIds = [
-    ...BUILT_IN_PROVIDER_ORDER.filter((pid) => models.some((m) => m.provider === pid)),
-    ...customProviderIds,
-  ];
-
-  const byProvider = allProviderIds.map((pid) => ({
-    id: pid,
-    label: models.find((m) => m.provider === pid)?.providerLabel ?? pid,
-    models: models.filter((m) => m.provider === pid),
-    custom: customProviderIds.includes(pid),
-    enabled: !disabledProviders.includes(pid),
-  }));
+  const enabledCount = models.filter(m => m.available).length;
+  const byProvider = providers.map(provider => ({...provider, models:models.filter(m => m.provider === provider.id)}));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{models.length} models · {enabledCount} available · {models.length - enabledCount} unavailable</p>
+        <p className="text-sm text-muted-foreground">{models.length} verified models · {enabledCount} enabled</p>
+        <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}><RefreshCw className={cn("w-4 h-4 mr-1",isFetching && "animate-spin")} />Check connection</Button>
         <Button onClick={() => setAddOpen(true)} variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" />Add Provider</Button>
       </div>
 
-      {byProvider.map(({ id: pid, label, models: provModels, custom, enabled: provEnabled }) => (
+      {!providers.length && <p className="text-sm text-muted-foreground">No connected providers. <a className="text-primary underline" href="/admin?tab=api-keys">API Keys</a></p>}
+      {byProvider.map(({ id: pid, label, models: provModels, custom, enabled: provEnabled, connection }) => (
         <AiStudioProviderSection
           key={pid}
           id={pid}
           label={label}
           provModels={provModels}
+          connection={connection}
+          checking={isFetching}
           providerEnabled={provEnabled}
           custom={custom}
           open={openProvider === pid}

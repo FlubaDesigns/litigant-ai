@@ -1130,3 +1130,5 @@ button.lgt-switch {
   transform: translateX(0); transition: transform .15s;
 }
 .lgt-switch[data-state="checked"] .lgt-switch__thumb { transform: translateX(16px); }
+
+.lgt-switch[data-connection="unavailable"][data-state="checked"]::before { background: hsl(var(--destructive)); }

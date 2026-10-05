@@ -31,6 +31,14 @@ export interface ProviderConfig {
   model?: string;
 }
 
+/** Shared endpoints for generation and authenticated connection checks. */
+export const PROVIDER_BASE_URLS: Record<string, string> = {
+  openai: "https://api.openai.com/v1",
+  anthropic: "https://api.anthropic.com",
+  grok: "https://api.x.ai/v1",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/openai",
+};
+
 export const DEFAULT_MODELS: Record<ProviderName, string> = {
   openai: "gpt-5",
   anthropic: "claude-haiku-4-5",
@@ -54,7 +62,7 @@ export interface ModelPricing {
 }
 export interface ModelDefinition {
   id: string; label: string; qualityScore: number; inputRatePer1k: number;
-  outputRatePer1k: number; multiplier: number; pricing?: ModelPricing;
+  outputRatePer1k: number; multiplier: number; pricing?: ModelPricing; retired?: boolean;
 }
 /** Resolve one model's API rates and markup for every pricing consumer. */
 export function resolveModelPrice(model: ModelDefinition, multiplier = model.multiplier) {
@@ -84,7 +92,8 @@ export const PROVIDER_MODELS: Record<ProviderName, ModelDefinition[]> = {
     { id: "claude-haiku-4-5",  label: "Claude Haiku 4.5",  qualityScore: 42, inputRatePer1k: 0.0010, outputRatePer1k: 0.0050, multiplier: 8, pricing: claudePricing(0.0001) },
   ],
   grok: [
-    { id: "grok-3",      label: "Grok 3",      qualityScore: 74, inputRatePer1k: 0.0030, outputRatePer1k: 0.0150, multiplier: 5, pricing: legacyGrok },
+    // Retired slug redirects to a different model: https://docs.x.ai/developers/migration/may-15-retirement
+    { id: "grok-3", retired: true, label: "Grok 3",      qualityScore: 74, inputRatePer1k: 0.0030, outputRatePer1k: 0.0150, multiplier: 5, pricing: legacyGrok },
     { id: "grok-3-mini", label: "Grok 3 Mini", qualityScore: 32, inputRatePer1k: 0.0003, outputRatePer1k: 0.0005, multiplier: 8, pricing: legacyGrok },
     { id: "grok-2",      label: "Grok 2",      qualityScore: 58, inputRatePer1k: 0.0020, outputRatePer1k: 0.0100, multiplier: 5, pricing: legacyGrok },
   ],

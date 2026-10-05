@@ -592,7 +592,12 @@ export interface AiStudioCustomProvider {
   models: AiStudioCustomModel[];
 }
 
+export interface AiStudioProvider {
+  id: string; label: string; custom: boolean; enabled: boolean;
+  connection: {state: "connected" | "key_rejected" | "rate_limited" | "unavailable" | "not_configured"; checkedAt: string};
+}
 export interface AiStudioData {
+  providers: AiStudioProvider[];
   models: AiStudioModel[];
   disabledProviders: string[];
   customProviders: AiStudioCustomProvider[];
@@ -676,7 +681,7 @@ export async function deleteSeatBrief(seatId: string): Promise<void> {
 export async function setModelQualityScore(modelId: string, qualityScore: number): Promise<void> {
   const res = await adminFetch(`/admin/model-scores/${encodeURIComponent(modelId)}`, {
     method: "PATCH",
-    body: JSON.stringify({ qualityScore }),
+    body: JSON.stringify({ score: qualityScore }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

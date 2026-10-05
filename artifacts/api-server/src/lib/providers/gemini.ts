@@ -1,3 +1,4 @@
+import { PROVIDER_BASE_URLS } from "./types.js";
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
 
@@ -13,7 +14,7 @@ export class GeminiProvider implements AIProvider {
     const apiKey = credentials?.key ?? process.env["GEMINI_API_KEY"];
     if (!apiKey) throw new Error("Gemini not configured — set GEMINI_API_KEY or add key in Admin → API Keys");
     this.client = new OpenAI({
-      baseURL: credentials?.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta/openai",
+      baseURL: credentials?.baseUrl ?? PROVIDER_BASE_URLS.gemini,
       apiKey,
     });
   }

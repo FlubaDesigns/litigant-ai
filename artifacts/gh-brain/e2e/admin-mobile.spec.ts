@@ -2,12 +2,13 @@ import {test, expect} from "./fixtures";
 
 const longId = "a-long-existing-record-identifier-that-must-wrap-on-a-phone";
 const model = {id:"gpt-5",model:"gpt-5",label:"GPT model with a long descriptive name",provider:"openai",providerLabel:"OpenAI",inputRatePer1k:0.001,outputRatePer1k:0.002,userInputPer1k:0.002,userOutputPer1k:0.004,multiplier:2,exampleCredits:12,qualityScore:80,enabled:true,available:true};
+const studioProvider = {id:"openai",label:"OpenAI",custom:false,enabled:true,connection:{state:"connected",checkedAt:"2026-10-05T02:00:00Z"}};
 const email = {id:"welcome",label:"Welcome email",trigger:longId,tokens:[],canDisable:true,enabled:true,defaultSubject:"Welcome",defaultHeadline:"Welcome",defaultIntroText:"Hello"};
 const responses: Record<string,unknown> = {
   "/admin/stats":{userCount:9,sessionCount:12,txCount:9,recentSessions:0},
   "/admin/checklist":{items:[{id:"owner-item",section:"owner",text:"Review the provider configuration on your phone",checked:false,steps:["Open API Keys"]}]},
   "/admin/system-health":{status:"ok",collections:{credit_transactions:9},last24h:{newSessions:0},last7d:{errorSessions:1,feedbackEntries:2,activeSessions:100,errorRate:"1.0"}},
-  "/admin/ai-studio/models":{models:[model],disabledProviders:[],customProviders:[]},
+  "/admin/ai-studio/models":{providers:[studioProvider],models:[model],disabledProviders:[],customProviders:[]},
   "/admin/seat-briefs":{seatIds:["orchestrator"],active:{orchestrator:"Coordinate the discussion."},overrides:{}},
   "/admin/pricing":{creditValueUsd:0.01,models:[model]},
   "/admin/api-keys":{providers:[{id:"openai",label:"OpenAI",maskedKey:"••••hidden",source:"env",baseUrl:"https://api.example.test/very/long/provider/address"}]},
@@ -187,11 +188,11 @@ for (const width of [360,412]) test(`AI Studio controls and pricing fit ${width}
   let disabledProviders:string[]=[];
   await page.route("**/api-server/api/admin/**",async route=>{
     const path=new URL(route.request().url()).pathname;
-    if (path.endsWith("/ai-studio/models")) return route.fulfill({json:{models,disabledProviders,customProviders:[]}});
+    if (path.endsWith("/ai-studio/models")) return route.fulfill({json:{models,providers:[{...studioProvider,enabled:!disabledProviders.includes("openai")},{...studioProvider,id:"gemini",label:"Google Gemini"}],disabledProviders,customProviders:[]}});
     if (route.request().method()==="GET") return route.fallback();
     const body=route.request().postDataJSON();
     if(path.endsWith("/pricing/gpt-5")) {models[0].multiplier=body.multiplier;models[0].userInputPer1k=models[0].inputRatePer1k*body.multiplier;}
-    else if(path.endsWith("/model-scores/gpt-5")) models[0].qualityScore=body.qualityScore;
+    else if(path.endsWith("/model-scores/gpt-5")) models[0].qualityScore=body.score;
     else if(path.endsWith("/ai-studio/models/gpt-5")) models[0].enabled=body.enabled;
     else if(path.endsWith("/ai-studio/providers/openai")) disabledProviders=body.enabled?[]:["openai"];
     else return route.fallback();
@@ -248,4 +249,27 @@ test("session details distinguish measured agent costs from legacy usage", async
   await expect(costs).toContainText("Unassigned (legacy)");
   await expect(costs).toContainText("Unavailable");
   await expect(costs).toContainText("Not reconciled to provider invoices.");
+});
+
+
+test("AI Studio removes unverified models and shows connection failures and recovery",async({page})=>{
+  let connected=true;
+  await page.clock.install();
+  await page.route("**/api-server/api/admin/ai-studio/models",async route=>route.fulfill({json:{
+    providers:[{...studioProvider,connection:{state:connected?"connected":"key_rejected",checkedAt:new Date().toISOString()}}],
+    models:connected?[model]:[],disabledProviders:[],customProviders:[],
+  }}));
+  await page.goto("/admin?tab=ai-studio&e2e=1");
+  await expect(page.getByText("Connected",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:model.label,exact:true})).toBeVisible();
+  connected=false;
+  await page.clock.fastForward(31000);
+  await expect(page.getByText("Key rejected",{exact:true})).toBeVisible();
+  await expect(page.getByRole("switch",{name:"Enable OpenAI",exact:true})).toHaveAttribute("data-connection","unavailable");
+  await expect(page.getByRole("button",{name:model.label,exact:true})).toHaveCount(0);
+  await expect(page.getByText("0 verified models · 0 enabled",{exact:true})).toBeVisible();
+  connected=true;
+  await page.getByRole("button",{name:"Check connection",exact:true}).click();
+  await expect(page.getByText("Connected",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:model.label,exact:true})).toBeVisible();
 });

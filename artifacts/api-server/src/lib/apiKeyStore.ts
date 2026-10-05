@@ -11,6 +11,7 @@
  *   }
  * }
  */
+import { PROVIDER_BASE_URLS } from "./providers/types.js";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -42,8 +43,8 @@ const ENV_KEY_MAP: Record<string, string> = {
 const ENV_BASE_URL_MAP: Record<string, string | undefined> = {
   openai:    process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"],
   anthropic: undefined,
-  grok:      "https://api.x.ai/v1",
-  gemini:    "https://generativelanguage.googleapis.com/v1beta/openai",
+  grok:      PROVIDER_BASE_URLS.grok,
+  gemini:    PROVIDER_BASE_URLS.gemini,
 };
 
 const ENV_LABEL_MAP: Record<string, string> = {
