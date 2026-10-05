@@ -27,21 +27,6 @@
   [data-admin-panel] .grid-cols-2 { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Shared admin switch: 44px hit area around a 36 × 20px track. */
-:is(.admin-page, [data-admin-panel]) button.lgt-switch {
-  position: relative; width: 44px; height: 44px; min-width: 44px; min-height: 44px;
-  padding: 0; border: 0; background: transparent; box-shadow: none;
-}
-:is(.admin-page, [data-admin-panel]) .lgt-switch::before {
-  content: ""; position: absolute; left: 4px; top: 12px; width: 36px; height: 20px;
-  border-radius: 999px; background: hsl(var(--input));
-}
-:is(.admin-page, [data-admin-panel]) .lgt-switch[data-state="checked"]::before { background: hsl(var(--primary)); }
-:is(.admin-page, [data-admin-panel]) .lgt-switch > span {
-  position: absolute; left: 6px; top: 14px; width: 16px; height: 16px; transform: translateX(0);
-}
-:is(.admin-page, [data-admin-panel]) .lgt-switch[data-state="checked"] > span { transform: translateX(16px); }
-.studio-provider { padding: 8px 12px; }
 .studio-heading { display: flex; align-items: center; gap: 8px; }
 .studio-disclosure { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; min-height: 44px; text-align: left; font-size: 14px; }
 .studio-model { border-top: 1px solid hsl(var(--border)); }

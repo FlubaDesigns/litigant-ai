@@ -560,7 +560,7 @@ export interface BillingDefaults {
 }
 
 export interface AiStudioModel {
-  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string };
+  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; longContext?: {threshold: number; input: number; output: number} };
   id: string;
   label: string;
   provider: string;

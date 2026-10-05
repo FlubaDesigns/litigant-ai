@@ -1109,3 +1109,24 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 
 /* .center — centres block or inline-block elements + text */
 .center { text-align: center; margin-left: auto; margin-right: auto; }
+
+
+/* Shared switch: one 44px touch target and compact track across the app. */
+button.lgt-switch {
+  display: inline-flex; flex-shrink: 0; position: relative;
+  width: 44px; height: 44px; min-width: 44px; min-height: 44px;
+  padding: 0; border: 0; border-radius: 999px; background: transparent; box-shadow: none; cursor: pointer;
+}
+.lgt-switch:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.lgt-switch:disabled { cursor: not-allowed; opacity: .5; }
+.lgt-switch::before {
+  content: ""; position: absolute; left: 4px; top: 12px; width: 36px; height: 20px;
+  border-radius: 999px; background: hsl(var(--input)); transition: background-color .15s;
+}
+.lgt-switch[data-state="checked"]::before { background: hsl(var(--primary)); }
+.lgt-switch__thumb {
+  pointer-events: none; position: absolute; left: 6px; top: 14px; width: 16px; height: 16px;
+  border-radius: 999px; background: hsl(var(--background)); translate: none;
+  transform: translateX(0); transition: transform .15s;
+}
+.lgt-switch[data-state="checked"] .lgt-switch__thumb { transform: translateX(16px); }

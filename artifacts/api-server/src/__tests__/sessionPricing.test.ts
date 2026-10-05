@@ -8,7 +8,7 @@ import {getModelCreditInfo} from "../lib/creditEngine.js";
 import {prepareSession, priceCalls, annotateCalls, callCostUSD} from "../lib/sessionPricing.js";
 
 function catalog(multiplier = 5) {
-  const model = (id: string, qualityScore: number) => ({id, label:id, qualityScore, creditInfo:getModelCreditInfo(id, {input:.0025,output:.01,multiplier})});
+  const model = (id: string, qualityScore: number) => ({id, label:id, qualityScore, price:{input:.0025,output:.01,multiplier}, creditInfo:getModelCreditInfo(id, {input:.0025,output:.01,multiplier})});
   return {providers:[
     {name:"openai",defaultModel:"gpt-4o",models:[model("gpt-4o",80),model("gpt-4o-mini",30)]},
     {name:"gemini",defaultModel:"gemini-2.5-flash",models:[model("gemini-2.5-flash",50)]},

@@ -62,7 +62,8 @@ vi.mock("../lib/brainEngine.js", () => ({
   runBrainSession: vi.fn(),
 }));
 
-vi.mock("../lib/creditEngine.js", () => ({
+vi.mock("../lib/creditEngine.js", async importOriginal => ({
+  ...await importOriginal<typeof import("../lib/creditEngine.js")>(),
   estimateSessionCreditsCalibrated: vi.fn(() => Promise.resolve(200)),
   estimateFixedPipelineCost:        vi.fn(() => 50),
   calculateActualCredits:           vi.fn(() => 100),

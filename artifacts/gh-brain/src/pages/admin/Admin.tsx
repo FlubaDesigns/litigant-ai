@@ -3046,7 +3046,7 @@ function AiStudioProviderSection({
   return (
     <section className="lgt-card lgt-card--compact studio-provider" aria-label={label}>
       <div className="studio-heading">
-        <button className="studio-disclosure" onClick={onOpen} aria-expanded={open} aria-controls={`provider-${pid}`}>
+        <button className="studio-disclosure" onClick={onOpen} aria-label={label} aria-expanded={open} aria-controls={`provider-${pid}`}>
           <ChevronDown className={cn("w-4 h-4 shrink-0 transition-transform", open && "rotate-180")} />
           <span><strong>{label}</strong><span className="text-muted-foreground ml-2 text-xs">{provModels.length} models</span></span>
         </button>
@@ -3089,6 +3089,7 @@ function AiStudioProviderSection({
                 {m.pricing?.verifiedAt ? `Verified ${m.pricing.verifiedAt}` : "Rate unverified"}
                 {m.pricing?.sourceUrl && <> · <a href={m.pricing.sourceUrl} target="_blank" rel="noreferrer" className="text-primary underline">Source</a></>}
               </p>
+              {m.pricing?.longContext && <p className="text-xs text-muted-foreground">Above {m.pricing.longContext.threshold.toLocaleString()} input tokens: {fmtRate(m.pricing.longContext.input)} in · {fmtRate(m.pricing.longContext.output)} out.</p>}
               {m.pricing?.note && <p className="text-xs text-muted-foreground">{m.pricing.note}</p>}
             </div>}
           </div>;

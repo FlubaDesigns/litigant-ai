@@ -1,22 +1,16 @@
 import { CourtConfigSchema, resolveModelByIntelligence, type CourtConfig, type SeatAssignment } from "@workspace/api-zod/session";
 import { getProviderCatalog } from "./providerCatalog.js";
-import { CREDIT_VALUE_USD, estimateSessionCredits, creditsForTokens } from "./creditEngine.js";
+import { CREDIT_VALUE_USD, estimateSessionCredits, creditsForTokens, tokenCostUSD, type ModelPrice } from "./creditEngine.js";
 
 export interface CallUsage {
   provider: string; model: string; inputTokens: number; outputTokens: number;
   seat?: string; usageSource?: "provider" | "estimated"; cachedInputTokens?: number;
   costUSD?: number; rateVerifiedAt?: string;
 }
-export interface PriceRate {
-  input: number; output: number; multiplier: number; cachedInput?: number;
-  verifiedAt?: string;
-  longContext?: { threshold: number; input: number; output: number; cachedInput: number };
-}
+export interface PriceRate extends ModelPrice { verifiedAt?: string; }
 /** Standard text API cost; excludes account discounts, taxes and invoice adjustments. */
 export function callCostUSD(call: CallUsage, rate: PriceRate): number {
-  const tier = rate.longContext && call.inputTokens > rate.longContext.threshold ? rate.longContext : rate;
-  const cached = Math.max(0, Math.min(call.inputTokens, call.cachedInputTokens ?? 0));
-  return ((call.inputTokens - cached) * tier.input + cached * (tier.cachedInput ?? tier.input) + call.outputTokens * tier.output) / 1000;
+  return tokenCostUSD(rate, call.inputTokens, call.outputTokens, call.cachedInputTokens);
 }
 export function annotateCalls(calls: CallUsage[], rates: Record<string, PriceRate>): CallUsage[] {
   return calls.map(call => {
@@ -64,11 +58,7 @@ export async function prepareSession(input: unknown, pipelineOnly = false) {
   };
   // Include enabled backup models so failover uses the same price snapshot.
   const rates: Record<string, PriceRate> = {};
-  for (const p of providers) for (const m of p.models) rates[m.id] = {input:m.creditInfo.inputRatePer1k, output:m.creditInfo.outputRatePer1k, multiplier:m.creditInfo.multiplier,
-    ...(m.pricing?.cachedInputPer1k !== undefined ? {cachedInput:m.pricing.cachedInputPer1k} : {}),
-    ...(m.pricing?.verifiedAt ? {verifiedAt:m.pricing.verifiedAt} : {}),
-    ...(m.pricing?.longContext ? {longContext:m.pricing.longContext} : {}),
-  };
+  for (const p of providers) for (const m of p.models) rates[m.id] = {...m.price};
   const seats = [config.seatMap.orchestrator, config.seatMap.moderator, config.seatMap.architect, config.seatMap.builder, config.seatMap.auditor, ...config.seatMap.litigants];
   // Conservative reservation uses the most expensive selected model. Settlement
   // uses the actual model of EVERY call and refunds any unused reservation.

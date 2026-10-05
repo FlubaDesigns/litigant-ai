@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ModelDefinition } from "./providers/types.js";
+import { resolveModelPrice, type ModelDefinition } from "./providers/types.js";
 import { getMultiplierOverrides } from "./pricingConfig.js";
 import { getConfiguredProvidersAsync, PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_MODELS } from "./providers/index.js";
 import { CREDIT_VALUE_USD, getCalibratedFixedStageTokens, getModelCreditInfo } from "./creditEngine.js";
@@ -63,12 +63,12 @@ export async function getModelRegistry() {
     configured:configured.includes(p.id), enabled:!disabledProviders.includes(p.id),
     models:p.models.map((m: ModelDefinition) => {
       const multiplier = z.number().finite().min(1).max(100).parse(overrides[m.id] ?? m.multiplier);
-      const price = {input:m.inputRatePer1k, output:m.outputRatePer1k, multiplier};
+      const price = resolveModelPrice(m, multiplier);
       return {
         id:m.id, label:m.label, qualityScore:modelScores[m.id] ?? m.qualityScore, defaultQualityScore:m.qualityScore,
         enabled:!disabledModels.includes(m.id), defaultMultiplier:m.multiplier,
         pricing:m.pricing ?? {note:"Custom rate entered by administrator."},
-        creditInfo:getModelCreditInfo(m.id, price, fixed),
+        price, creditInfo:getModelCreditInfo(m.id, price, fixed),
       };
     }),
   }));

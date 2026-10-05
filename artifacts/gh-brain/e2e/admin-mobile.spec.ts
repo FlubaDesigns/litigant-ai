@@ -219,13 +219,33 @@ for (const width of [360,412]) test(`AI Studio controls and pricing fit ${width}
   await expect(toggle).toBeEnabled();
   await expect(toggle).toHaveCSS("height","44px");
   expect(await toggle.evaluate(el=>getComputedStyle(el,"::before").height)).toBe("20px");
+  await expect(toggle.locator("span")).toHaveCSS("translate","none");
   await toggle.click(); await expect(toggle).not.toBeChecked();
   await expect(page.getByRole("switch",{name:"Enable OpenAI",exact:true})).toBeEnabled();
   await page.getByRole("switch",{name:"Enable OpenAI",exact:true}).click();
   await expect(toggle).toBeDisabled();
-  await page.getByRole("button",{name:"Google Gemini 1 models",exact:true}).click();
+  await page.getByRole("button",{name:"Google Gemini",exact:true}).click();
   await expect(iq).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("switch",{name:"Enable GPT-5",exact:true})).not.toBeChecked();
   await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+});
+
+
+test("session details distinguish measured agent costs from legacy usage", async ({page}) => {
+  await page.setViewportSize({width:360,height:800});
+  await page.route(`**/api-server/api/admin/sessions/${longId}`,async route=>route.fulfill({json:{session:{id:longId,costUSD:.012,callUsage:[
+    {seat:"Builder",model:"gpt-5",provider:"openai",inputTokens:1000,outputTokens:1000,costUSD:.01,usageSource:"provider",rateVerifiedAt:"2026-10-05"},
+    {seat:"Auditor",model:"gpt-4o-mini",provider:"openai",inputTokens:1000,outputTokens:1000,costUSD:.002,usageSource:"estimated"},
+    {model:"old-model",provider:"old",inputTokens:1000,outputTokens:1000},
+  ]},turns:[]}}));
+  await page.goto("/admin?tab=sessions&e2e=1");
+  await page.getByText("A session question that should remain readable on a narrow phone",{exact:true}).click();
+  const costs=page.getByRole("region",{name:"Agent costs"});
+  await expect(costs).toContainText("$0.01000");
+  await expect(costs).toContainText("Provider token counts");
+  await expect(costs).toContainText("Estimated tokens");
+  await expect(costs).toContainText("Unassigned (legacy)");
+  await expect(costs).toContainText("Unavailable");
+  await expect(costs).toContainText("Not reconciled to provider invoices.");
 });

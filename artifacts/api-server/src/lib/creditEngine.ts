@@ -4,27 +4,36 @@
 /** Fixed exchange rate: 1 credit costs the user $0.01 USD. Never changes. */
 export const CREDIT_VALUE_USD = 0.01;
 
-import { PROVIDER_MODELS } from "./providers/types.js";
+import { PROVIDER_MODELS, DEFAULT_MODELS, resolveModelPrice } from "./providers/types.js";
 
-export interface ModelRate { input: number; output: number; }
+export interface ModelRate {
+  input: number; output: number; cachedInput?: number;
+  longContext?: { threshold: number; input: number; output: number; cachedInput: number };
+}
 export interface ModelPrice extends ModelRate { multiplier: number; }
 // Derived compatibility views; model definitions live only in providers/types.ts.
 export const MODEL_RATES: Record<string, ModelRate> = Object.fromEntries(
-  Object.values(PROVIDER_MODELS).flat().map(m => [m.id, {input:m.inputRatePer1k, output:m.outputRatePer1k}])
+  Object.values(PROVIDER_MODELS).flat().map(m => [m.id, resolveModelPrice(m)])
 );
 export const MODEL_MULTIPLIERS: Record<string, number> = Object.fromEntries(
   Object.values(PROVIDER_MODELS).flat().map(m => [m.id, m.multiplier])
 );
 
+/** Shared USD calculation for quotes, credit settlement and agent telemetry. */
+export function tokenCostUSD(rate: ModelRate, input: number, output: number, cachedInput = 0): number {
+  const tier = rate.longContext && input > rate.longContext.threshold ? rate.longContext : rate;
+  const cached = Math.max(0, Math.min(input, cachedInput));
+  return ((input - cached) * tier.input + cached * (tier.cachedInput ?? tier.input) + output * tier.output) / 1000;
+}
 export function creditsForTokens(price: ModelPrice, input: number, output: number): number {
-  return Math.max(1, Math.ceil((input * price.input + output * price.output) / 1000 * price.multiplier / CREDIT_VALUE_USD));
+  return Math.max(1, Math.ceil(tokenCostUSD(price, input, output) * price.multiplier / CREDIT_VALUE_USD));
 }
 
 /** Fallback rate for models not in MODEL_RATES (conservative assumption) */
-const DEFAULT_RATE: ModelRate = { input: 0.003, output: 0.015 };
+const DEFAULT_RATE = MODEL_RATES[DEFAULT_MODELS.openai]!;
 
 /** Fallback multiplier for models not in MODEL_MULTIPLIERS */
-const DEFAULT_MULTIPLIER = 5;
+const DEFAULT_MULTIPLIER = MODEL_MULTIPLIERS[DEFAULT_MODELS.openai]!;
 
 /** Returns the token rate for a model, falling back to DEFAULT_RATE. */
 export function getModelRate(model: string): ModelRate {
@@ -63,7 +72,7 @@ export function calculateActualCredits(
   outputTokens: number
 ): number {
   const rate = getModelRate(model);
-  const costUSD = (inputTokens / 1000) * rate.input + (outputTokens / 1000) * rate.output;
+  const costUSD = tokenCostUSD(rate, inputTokens, outputTokens);
   return usdToCredits(costUSD, model);
 }
 
