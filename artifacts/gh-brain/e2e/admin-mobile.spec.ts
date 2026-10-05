@@ -6,7 +6,7 @@ const email = {id:"welcome",label:"Welcome email",trigger:longId,tokens:[],canDi
 const responses: Record<string,unknown> = {
   "/admin/stats":{userCount:9,sessionCount:12,txCount:9,recentSessions:0},
   "/admin/checklist":{items:[{id:"owner-item",section:"owner",text:"Review the provider configuration on your phone",checked:false,steps:["Open API Keys"]}]},
-  "/admin/system-health":{status:"ok",collections:{credit_transactions:9},last24h:{newSessions:0},last7d:{errorSessions:1,feedbackEntries:2,errorRate:1}},
+  "/admin/system-health":{status:"ok",collections:{credit_transactions:9},last24h:{newSessions:0},last7d:{errorSessions:1,feedbackEntries:2,activeSessions:100,errorRate:"1.0"}},
   "/admin/ai-studio/models":{models:[model],disabledProviders:[],customProviders:[]},
   "/admin/seat-briefs":{seatIds:["orchestrator"],active:{orchestrator:"Coordinate the discussion."},overrides:{}},
   "/admin/pricing":{creditValueUsd:0.01,models:[model]},
@@ -56,9 +56,9 @@ for (const width of [360, 412]) {
         return rect.width>0 && (rect.left< -1 || rect.right>window.innerWidth+1);
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
-      if (tab.id === "overview") {
+      if (tab.id === "overview" || tab.id === "health") {
         const rows=page.locator(".admin-page .row.layout__split-2");
-        await expect(rows).toHaveCount(2);
+        await expect(rows).toHaveCount(tab.id === "health" ? 4 : 2);
         for (const row of await rows.all()) {
           const cards=await row.locator(".lgt-card").all();
           expect(cards).toHaveLength(2);
@@ -148,4 +148,34 @@ test("checklist restores a task when saving fails and hides empty completed sect
   await expect(page.getByText("Nothing left to do.")).toBeVisible();
   await expect(page.getByText("Your action items",{exact:true})).toHaveCount(0);
   await expect(page.getByText("Agent work items",{exact:true})).toHaveCount(0);
+});
+
+
+test("health distinguishes unavailable metrics, no activity, and real zeros", async ({page}) => {
+  let mode="unavailable";
+  await page.setViewportSize({width:360,height:800});
+  await page.route("**/api-server/api/admin/system-health",async route=>{
+    if(mode==="failure") return route.fulfill({status:500,json:{error:"Unavailable"}});
+    await route.fulfill({json:{status:mode==="unavailable"?"degraded":"ok",collections:{users:2,sessions:59,credit_transactions:9},last24h:{newSessions:0},last7d:{
+      errorSessions:mode==="unavailable"?null:0,activeSessions:mode==="unavailable"?null:mode==="empty"?0:5,
+      feedbackEntries:0,errorRate:mode==="zero"?"0.0":null,
+    }}});
+  });
+  await page.goto("/admin?tab=health&e2e=1");
+  const card=(label:string)=>page.locator(".lgt-card").filter({has:page.getByText(label,{exact:true})});
+  await expect(page.getByRole("alert")).toHaveText("Error metrics unavailable.");
+  await expect(card("Error rate")).toContainText("Unavailable");
+  mode="empty";
+  await page.getByRole("button",{name:"Refresh",exact:true}).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(card("Error rate")).toContainText("—");
+  mode="zero";
+  await page.getByRole("button",{name:"Refresh",exact:true}).click();
+  await expect(card("Error rate")).toContainText("0.0%");
+  mode="failure";
+  await page.getByRole("button",{name:"Refresh",exact:true}).click();
+  await expect(page.getByRole("alert")).toHaveText("System health unavailable.");
+  mode="zero";
+  await page.getByRole("button",{name:"Retry",exact:true}).click();
+  await expect(card("Error rate")).toContainText("0.0%");
 });

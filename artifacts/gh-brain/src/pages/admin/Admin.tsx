@@ -2133,83 +2133,57 @@ function TemplateEditModal({
 
 // ─── System Health Tab ────────────────────────────────────────────────────────
 function SystemHealthTab() {
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["admin-system-health"],
     queryFn: getSystemHealth,
     retry: false,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: "always",
   });
 
   if (isLoading) return <TabSkeleton />;
 
   if (isError || !data || data.status === "unavailable") {
     return (
-      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>Failed to load system health data — the server returned an error. Check the Cloud Run logs.</span>
+      <div className="lgt-card lgt-card--compact space-y-3">
+        <p role="alert" className="text-sm text-amber-400">System health unavailable.</p>
+        <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}>Retry</Button>
       </div>
     );
   }
 
   const { collections, last24h, last7d, serverTime } = data;
+  const count = (value: number | null | undefined) => value ?? "Unavailable";
+  const errorRate = last7d?.errorRate != null ? `${last7d.errorRate}%`
+    : last7d?.activeSessions === 0 ? "—" : "Unavailable";
 
   return (
-    <div className="space-y-6">
-      <div className="admin-row flex items-center justify-between">
-        <p className="text-xs text-muted-foreground font-mono">
-          Server time: {serverTime ? new Date(serverTime).toLocaleString() : "—"}
+    <div>
+      <div className="admin-row flex items-center justify-between gap-3 mb-4">
+        <p className="text-xs text-muted-foreground">
+          Updated {serverTime ? new Date(serverTime).toLocaleString() : "—"}
         </p>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}>
+          <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", isFetching && "animate-spin")} />Refresh
         </Button>
       </div>
-
-      {/* Collection counts */}
-      <div>
-        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Database className="w-3.5 h-3.5" />Collection sizes
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {Object.entries(collections ?? {}).map(([col, count]) => (
-            <div key={col} className="rounded-xl border border-border bg-card p-4 text-center">
-              <p className="text-2xl font-bold font-mono">{count as number}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 font-mono">{col}</p>
-            </div>
-          ))}
-        </div>
+      {data.status === "degraded" && <p role="alert" className="text-sm text-amber-400 mb-4">Error metrics unavailable.</p>}
+      <div className="row layout__split-2 layout--keep-columns">
+        <StatCard label="Users" value={count(collections?.users)} icon={Users} />
+        <StatCard label="Sessions" value={count(collections?.sessions)} icon={Brain} />
       </div>
-
-      {/* Last 24h */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />Last 24 hours
-        </p>
-        <div className="flex items-center gap-6 text-sm">
-          <div>
-            <p className="text-2xl font-bold font-mono text-primary">{(last24h as any)?.newSessions ?? 0}</p>
-            <p className="text-xs text-muted-foreground">new sessions</p>
-          </div>
-        </div>
+      <div className="row layout__split-2 layout--keep-columns">
+        <StatCard label="Transactions" value={count(collections?.credit_transactions)} icon={CreditCard} />
+        <StatCard label="New · 24 hours" value={count(last24h?.newSessions)} icon={Clock} />
       </div>
-
-      {/* Last 7d */}
-      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <TrendingUp className="w-3.5 h-3.5" />Last 7 days
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-2xl font-bold font-mono text-destructive">{(last7d as any)?.errorSessions ?? 0}</p>
-            <p className="text-xs text-muted-foreground">error sessions</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold font-mono">{(last7d as any)?.feedbackEntries ?? 0}</p>
-            <p className="text-xs text-muted-foreground">feedback entries</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold font-mono text-amber-400">{(last7d as any)?.errorRate ?? "0.0"}%</p>
-            <p className="text-xs text-muted-foreground">session error rate</p>
-          </div>
-        </div>
+      <h3 className="text-sm font-semibold mb-3">Last 7 days</h3>
+      <div className="row layout__split-2 layout--keep-columns">
+        <StatCard label="Sessions with errors" value={count(last7d?.errorSessions)} icon={AlertCircle} />
+        <StatCard label="Error rate" value={errorRate} icon={TrendingUp} />
+      </div>
+      <div className="row layout__split-2 layout--keep-columns">
+        <StatCard label="Active sessions" value={count(last7d?.activeSessions)} icon={Activity} />
+        <StatCard label="Feedback" value={count(last7d?.feedbackEntries)} icon={ThumbsDown} />
       </div>
     </div>
   );

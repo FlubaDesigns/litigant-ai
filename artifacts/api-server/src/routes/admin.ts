@@ -218,37 +218,32 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
 
     const [
       userCount, sessionCount, txCount,
-      recentSessions, feedbackCount, sessions7d,
+      recentSessions, feedbackCount,
     ] = await Promise.all([
       db.collection("users").count().get(),
       db.collection("sessions").count().get(),
       db.collection("credit_transactions").count().get(),
       db.collection("sessions").where("createdAt", ">=", last24h).count().get(),
       db.collection("feedback").where("createdAt", ">=", last7d).count().get(),
-      // Scoped to the same 7-day window as errorSessions so the error rate
-      // reflects recent behaviour rather than dividing by the all-time total.
-      db.collection("sessions").where("createdAt", ">=", last7d).count().get(),
     ]);
 
-    // This query needs a composite index (status + createdAt).
-    // Run it separately so a missing index doesn't crash the whole endpoint.
-    let errorCount7d = 0;
+    // Include resumed sessions in the same activity window as their failures.
+    // Count each session once, even when it has several failed attempts.
+    let errorCount7d: number | null = null;
+    let sessionCount7d: number | null = null;
     try {
-      const errorSessions = await db
-        .collection("sessions")
-        .where("status", "==", "error")
-        .where("createdAt", ">=", last7d)
-        .count()
-        .get();
-      errorCount7d = errorSessions.data().count;
+      const [errors, active] = await Promise.all([
+        db.collection("sessions").where("lastRunErrorAt", ">=", last7d).count().get(),
+        db.collection("sessions").where("updatedAt", ">=", last7d).count().get(),
+      ]);
+      errorCount7d = errors.data().count;
+      sessionCount7d = active.data().count;
     } catch {
-      // Composite index not yet created — error count unavailable but rest of page works.
+      // Unknown is never represented as zero or a healthy result.
     }
 
-    const sessionCount7d = sessions7d.data().count;
-
     return res.json({
-      status: "ok",
+      status: errorCount7d === null ? "degraded" : "ok",
       serverTime: new Date().toISOString(),
       collections: {
         users: userCount.data().count,
@@ -261,10 +256,10 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
       last7d: {
         errorSessions: errorCount7d,
         feedbackEntries: feedbackCount.data().count,
-        // Denominator is 7-day session total, not lifetime total.
-        errorRate: sessionCount7d > 0
+        activeSessions: sessionCount7d,
+        errorRate: errorCount7d !== null && sessionCount7d !== null && sessionCount7d > 0
           ? ((errorCount7d / sessionCount7d) * 100).toFixed(1)
-          : "0.0",
+          : null,
       },
     });
   } catch (err: any) {
@@ -878,21 +873,19 @@ router.get("/admin/error-logs", requireAdmin, async (req, res) => {
       /* api_logs may not exist */
     }
 
-    // Single-field index only (createdAt) — filter status in-memory to avoid composite index requirement.
+    // The same failure marker used by System Health, including failed resumes.
     const failedSnap = await db
       .collection("sessions")
-      .orderBy("createdAt", "desc")
-      .limit(200)
+      .orderBy("lastRunErrorAt", "desc")
+      .limit(limit)
       .get();
-
-    const errorSessions = failedSnap.docs
-      .filter((d) => d.data()["status"] === "error")
-      .slice(0, 20);
 
     return res.json({
       logs,
-      failedSessions: errorSessions.map((d) => ({
+      failedSessions: failedSnap.docs.map((d) => ({
         ...serializeDoc(d),
+        message: d.data().lastRunErrorMessage,
+        createdAt: d.data().lastRunErrorAt?.toDate?.()?.toISOString() ?? null,
         _type: "session_error",
       })),
     });

@@ -313,3 +313,99 @@ describe("accepting a saved partial answer", () => {
     });
   });
 });
+
+describe("session failure telemetry", () => {
+  const config = {model:"gpt-4",litigantCount:3,confidenceTarget:80,responseMode:"balanced",outputFormat:"report",maxCredits:500};
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:"owner",emailVerified:true,admin:true});
+  });
+  const run = (extra:object={}) => request(app).post("/api/run-brain").set("Authorization","Bearer test-token").send({question:"Keep my question",config,...extra});
+  it("saves new failures without storing upstream secrets", async () => {
+    const db=createMockDb();
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockRejectedValue(new Error("upstream sensitive diagnostic"));
+    expect((await run()).text).toContain('"type":"error"');
+    const id=vi.mocked(runBrainSession).mock.calls[0][0].sessionId!;
+    const saved=(await db.collection("sessions").doc(id).get()).data();
+    expect(saved).toMatchObject({userId:"owner",status:"error",question:"Keep my question",creditsUsed:0,shared:false});
+    expect(saved.lastRunErrorAt).toBeDefined();
+    expect(saved.updatedAt).toBeDefined();
+    expect(JSON.stringify(saved)).not.toContain("upstream sensitive diagnostic");
+  });
+  it("preserves the paused answer and releases its lease after a failed resume", async () => {
+    const original={userId:"owner",status:"paused_credit_cap",finalAnswer:"Saved answer",transcript:"Saved transcript",creditsUsed:40,createdAt:"original-date"};
+    const db=createMockDb({saved:original});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockRejectedValue(new Error("Provider failed"));
+    await run({sessionId:"saved",continueFromTranscript:["prior turn"]});
+    const saved=(await db.collection("sessions").doc("saved").get()).data();
+    expect(saved).toMatchObject({...original,activeRun:null});
+    expect(saved.lastRunErrorAt).toBeDefined();
+  });
+  it("does not let a stale failed worker overwrite its successor", async () => {
+    const db=createMockDb({saved:{userId:"owner",status:"incomplete",finalAnswer:"Old answer"}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockImplementation(async () => {
+      await db.collection("sessions").doc("saved").update({finalAnswer:"Newer answer",activeRun:{id:"successor",expiresAt:Date.now()+60000}});
+      throw new Error("Old worker failed");
+    });
+    await run({sessionId:"saved",continueFromTranscript:["prior turn"]});
+    const saved=(await db.collection("sessions").doc("saved").get()).data();
+    expect(saved.finalAnswer).toBe("Newer answer");
+    expect(saved.activeRun.id).toBe("successor");
+    expect(saved.lastRunErrorAt).toBeUndefined();
+  });
+  it("still refunds the reserved credits", async () => {
+    const db=createMockDb();
+    await db.collection("users").doc("owner").set({creditBalance:500});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:"owner",emailVerified:true});
+    vi.mocked(runBrainSession).mockRejectedValue(new Error("Provider failed"));
+    await run();
+    expect(runBrainSession).toHaveBeenCalled();
+    expect((await db.collection("users").doc("owner").get()).data().creditBalance).toBe(500);
+  });
+});
+
+describe("system health metrics", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:"owner",admin:true});
+  });
+  function healthDb(failField?:string,empty=false) {
+    const now=new Date(),old=new Date(Date.now()-30*86400000);
+    const records:Record<string,any[]>={users:[{id:"owner"}],credit_transactions:[{id:"tx"}],feedback:[],sessions:empty?[]:[
+      {id:"resumed",createdAt:old,updatedAt:now,lastRunErrorAt:now,lastRunErrorMessage:"Session failed before completion.",status:"paused_credit_cap"},
+      {id:"success",createdAt:now,updatedAt:now,status:"complete"},
+      {id:"old-error",createdAt:old,updatedAt:old,lastRunErrorAt:old,status:"error"},
+    ]};
+    function query(rows:any[],error=false):any {
+      return {
+        where:(field:string,_op:string,value:Date)=>query(rows.filter(row=>row[field]>=value),field===failField),
+        count:()=>({get:async()=>{if(error)throw new Error("Query unavailable");return {data:()=>({count:rows.length})};}}),
+        orderBy:(field:string)=>query(rows.filter(row=>row[field]).sort((a,b)=>b[field]-a[field])),
+        limit:(n:number)=>query(rows.slice(0,n)),
+        get:async()=>({docs:rows.map(row=>({id:row.id,data:()=>row}))}),
+      };
+    }
+    return {collection:(name:string)=>query(records[name]??[])};
+  }
+  const health=()=>request(app).get("/api/admin/system-health").set("Authorization","Bearer test-token");
+  it("counts old resumed sessions in the recent activity window and error logs", async () => {
+    vi.mocked(getFirestoreDb).mockReturnValue(healthDb() as any);
+    const response=await health();
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({status:"ok",collections:{sessions:3},last24h:{newSessions:1},last7d:{errorSessions:1,activeSessions:2,errorRate:"50.0",feedbackEntries:0}});
+    const logs=await request(app).get("/api/admin/error-logs").set("Authorization","Bearer test-token");
+    expect(logs.body.failedSessions.map((row:any)=>row.id)).toContain("resumed");
+  });
+  it.each(["lastRunErrorAt","updatedAt"])("returns unavailable when %s cannot be read",async field=>{
+    vi.mocked(getFirestoreDb).mockReturnValue(healthDb(field) as any);
+    expect((await health()).body).toMatchObject({status:"degraded",collections:{sessions:3},last7d:{errorSessions:null,activeSessions:null,errorRate:null}});
+  });
+  it("does not invent a rate when no sessions exist",async()=>{
+    vi.mocked(getFirestoreDb).mockReturnValue(healthDb(undefined,true) as any);
+    expect((await health()).body.last7d).toMatchObject({errorSessions:0,activeSessions:0,errorRate:null});
+  });
+});

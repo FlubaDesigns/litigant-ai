@@ -552,7 +552,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
   // Hard 10-minute timeout — aborts if client stays connected but session hangs
   const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+  let timedOut = false;
   const sessionTimer = setTimeout(() => {
+    timedOut = true;
     console.warn("[brain] Session hard-timeout after 10 minutes — aborting.");
     abortCtrl.abort();
   }, SESSION_TIMEOUT_MS);
@@ -824,6 +826,30 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     })}\n\n`);
   } catch (err: any) {
     console.error("[brain] Unhandled session error:", err);
+    // Keep health and error logs on the same session record. A failed resume
+    // must retain its saved answer/status and respect the existing run lease.
+    // User cancellation is not a service failure; hard timeouts are.
+    if (db && uid && !resultSaved && (!abortCtrl.signal.aborted || timedOut)) {
+      try {
+        const failure = {
+          lastRunErrorAt: FieldValue.serverTimestamp(),
+          lastRunErrorMessage: timedOut ? "Session timed out." : "Session failed before completion.",
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+        if (runLease) {
+          await writeSessionRun(db, runLease, failure);
+        } else {
+          await db.collection("sessions").doc(sessionId).create({
+            ...failure, userId: uid, title: question.slice(0, 80), question,
+            config: prepared.config, templateId: templateId ?? null,
+            status: "error", creditsUsed: 0, shared: false,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
+      } catch {
+        console.error("[brain] Could not persist session failure", { sessionId });
+      }
+    }
     if (!res.writableEnded) {
       res.write(
         `data: ${JSON.stringify({ type: "error", message: safeError(err) })}\n\n`

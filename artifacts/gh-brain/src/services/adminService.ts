@@ -363,8 +363,13 @@ export interface SystemHealth {
   status: string;
   serverTime?: string;
   collections?: Record<string, number>;
-  last24h?: Record<string, number>;
-  last7d?: Record<string, number | string>;
+  last24h?: { newSessions: number };
+  last7d?: {
+    errorSessions: number | null;
+    feedbackEntries: number;
+    activeSessions: number | null;
+    errorRate: string | null;
+  };
 }
 
 export interface ApiUsageDay {
