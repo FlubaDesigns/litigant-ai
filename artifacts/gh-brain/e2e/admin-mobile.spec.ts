@@ -10,7 +10,7 @@ const responses: Record<string,unknown> = {
   "/admin/system-health":{status:"ok",collections:{credit_transactions:9},last24h:{newSessions:0},last7d:{errorSessions:1,feedbackEntries:2,activeSessions:100,errorRate:"1.0"}},
   "/admin/ai-studio/models":{providers:[studioProvider],models:[model],disabledProviders:[],customProviders:[]},
   "/admin/seat-briefs":{seatIds:["orchestrator"],active:{orchestrator:"Coordinate the discussion."},overrides:{}},
-  "/admin/pricing":{creditValueUsd:0.01,models:[model]},
+  "/admin/pricing":{creditValueUsd:0.01,models:[{...model,defaultMultiplier:2,effectiveMultiplier:2,isOverridden:false,pricing:{verifiedAt:"2026-10-05",sourceUrl:"https://example.test/pricing",cachedInputPer1k:.0001}}]},
   "/admin/api-keys":{providers:[{id:"openai",label:"OpenAI",maskedKey:"••••hidden",source:"env",baseUrl:"https://api.example.test/very/long/provider/address"}]},
   "/admin/users":{users:[{id:longId,email:"long-address-for-mobile-layout@example.test",displayName:"Layout fixture",creditBalance:5500}],hasMore:false},
   "/admin/sessions":{sessions:[{id:longId,title:"A session question that should remain readable on a narrow phone",userId:longId,status:"complete",confidence:0,creditsUsed:0,createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
@@ -62,6 +62,29 @@ for (const width of [360, 412]) {
         return rect.width>0 && (rect.left< -1 || rect.right>window.innerWidth+1);
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
+      if (tab.id === "pricing") {
+        const card=page.getByRole("article",{name:`Pricing for ${model.label}`,exact:true});
+        const rows=card.locator("dl .layout--keep-columns");
+        await expect(rows).toHaveCount(2);
+        for (const row of await rows.all()) {
+          const [left,right]=await row.locator(":scope > div").evaluateAll(cells=>cells.map(cell=>{
+            const {x,y,width}=cell.getBoundingClientRect();return {x,y,width};
+          }));
+          expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+          expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+        }
+        expect((await card.boundingBox())!.height).toBeLessThan(330);
+        await expect(card.getByText("2×",{exact:true})).toBeVisible();
+        await expect(card.getByText("$0.12",{exact:true})).toBeVisible();
+        await expect(card.getByRole("link",{name:"Source",exact:true})).toBeHidden();
+        await card.locator("summary").click();
+        await expect(card.getByRole("link",{name:"Source",exact:true})).toBeVisible();
+        await expect(card.getByText("Cached input: $0.10/1M",{exact:true})).toBeVisible();
+        await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+        await card.locator("summary").click();
+        const edit=card.getByRole("button",{name:"Edit multiplier for gpt-5"});
+        expect(Math.round((await edit.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+      }
       if (tab.id === "users") {
         const card=page.getByRole("article",{name:"User Layout fixture"});
         const rows=card.locator("dl .layout--keep-columns");
@@ -399,7 +422,9 @@ test("pricing saves, reloads, resets, and keeps a failed draft on a phone",async
   });
   await page.goto("/admin?tab=pricing&e2e=1");
   await expect(page.getByText("API Input /1M",{exact:true}).last()).toBeVisible();
+  await page.getByText("Rate details",{exact:true}).click();
   await expect(page.getByRole("link",{name:"Source",exact:true})).toHaveAttribute("href","https://example.test/pricing");
+  await page.getByText("Rate details",{exact:true}).click();
   await page.getByRole("button",{name:"Edit multiplier for gpt-5"}).click();
   const field=page.getByRole("spinbutton",{name:"GPT-5 multiplier"}),save=page.getByRole("button",{name:"Save",exact:true});
   await field.fill("");await expect(save).toBeDisabled();

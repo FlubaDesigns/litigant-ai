@@ -3563,48 +3563,48 @@ function PricingTab() {
       {byProvider.map(({ provider, models }) => (
         <div key={provider} className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">{models[0]?.providerLabel ?? provider}</h3>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table mobileCards>
-              <TableHeader>
-                <TableRow className="bg-secondary/30">
-                  <TableHead className="text-xs">Model</TableHead>
-                  <TableHead className="text-xs text-right">API Input /1M</TableHead>
-                  <TableHead className="text-xs text-right">API Output /1M</TableHead>
-                  <TableHead className="text-xs">Your Multiplier</TableHead>
-                  <TableHead className="text-xs text-right">Example Credits</TableHead>
-                  <TableHead className="text-xs text-right">Example Cost to User</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {models.map((m) => (
-                  <TableRow key={m.model} className="group">
-                    <TableCell className="font-medium text-sm">
-                      {m.label}
-                      {m.available === false && <span className="block text-xs text-muted-foreground">Disabled for new sessions</span>}
-                      <ModelRateDetails pricing={m.pricing} />
-                      {m.isOverridden && (
-                        <Badge className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20">custom</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {fmtRate(m.inputRatePer1k)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {fmtRate(m.outputRatePer1k)}
-                    </TableCell>
-                    <TableCell>
-                      <MultiplierCell row={m} />
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-bold text-primary">
-                      {m.exampleCredits}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm">
-                      ${(m.exampleCredits * data.creditValueUsd).toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="row layout__split-2">
+            {models.map((m) => (
+              <article key={m.model} aria-label={`Pricing for ${m.label}`} className="lgt-card lgt-card--compact space-y-3">
+                <div>
+                  <h4 className="text-sm font-semibold break-words">
+                    {m.label}
+                    {m.isOverridden && <Badge className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20">custom</Badge>}
+                  </h4>
+                  {m.available === false && <p className="text-xs text-muted-foreground">Disabled for new sessions</p>}
+                </div>
+                <dl className="space-y-3">
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">API Input /1M</dt>
+                      <dd className="text-sm font-mono break-words">{fmtRate(m.inputRatePer1k)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">API Output /1M</dt>
+                      <dd className="text-sm font-mono break-words">{fmtRate(m.outputRatePer1k)}</dd>
+                    </div>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Your Multiplier</dt>
+                    <dd><MultiplierCell row={m} /></dd>
+                  </div>
+                  <div className="row layout__split-2 layout--keep-columns">
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Example Credits</dt>
+                      <dd className="text-sm font-mono font-bold text-primary break-words">{m.exampleCredits}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground mb-1">Example Cost to User</dt>
+                      <dd className="text-sm font-mono break-words">${(m.exampleCredits * data.creditValueUsd).toFixed(2)}</dd>
+                    </div>
+                  </div>
+                </dl>
+                <details className="text-xs text-muted-foreground break-words">
+                  <summary className="min-h-11 py-3 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Rate details</summary>
+                  <ModelRateDetails pricing={m.pricing} />
+                </details>
+              </article>
+            ))}
           </div>
         </div>
       ))}
