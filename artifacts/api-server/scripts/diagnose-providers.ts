@@ -12,10 +12,17 @@ globalThis.fetch = async (input, init) => {
   const provider = Object.entries(PROVIDER_BASE_URLS).find(([,base]) => new URL(base).origin === url.origin)?.[0];
   const response = await request(input, init);
   if (provider && /\/models(?:\/|$)/.test(url.pathname)) {
-    const body = await response.clone().json().catch(() => ({})) as {data?: {id?:unknown}[]; error?: {type?:unknown}};
+    const body = await response.clone().json().catch(() => ({})) as {data?: {id?:unknown}[]; error?: {type?:unknown; message?:unknown}};
     const allowedErrors = ["invalid_request_error", "authentication_error", "permission_error", "not_found_error", "rate_limit_error", "api_error", "overloaded_error"];
+    const message = typeof body.error?.message === "string" ? body.error.message : "";
+    const reason = /credit balance|insufficient.*credit|billing|purchase credits/i.test(message) ? "billing_or_credits"
+      : /limit/i.test(message) ? "list_limit"
+      : /version/i.test(message) ? "api_version"
+      : /key|authentication/i.test(message) ? "credential_format"
+      : /organization|workspace|account/i.test(message) ? "account_configuration"
+      : response.ok ? undefined : "other_request_error";
     console.log(JSON.stringify({
-      check: "provider-model-response", provider, status: response.status,
+      check: "provider-model-response", provider, status: response.status, reason,
       phase: /\/models\//.test(url.pathname) ? "alias" : "list",
       errorType: allowedErrors.includes(String(body.error?.type)) ? body.error?.type : undefined,
       modelIds: Array.isArray(body.data) ? body.data.map(m => m.id).filter(id => typeof id === "string" && /^[a-zA-Z0-9._/-]{1,160}$/.test(id)) : undefined,
