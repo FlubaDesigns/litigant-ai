@@ -63,8 +63,9 @@ for (const width of [360, 412]) {
         const rows=card.locator("dl .layout--keep-columns");
         await expect(rows).toHaveCount(2);
         for (const row of await rows.all()) {
-          const cells=await row.locator(":scope > div").all();
-          const left=await cells[0].boundingBox(),right=await cells[1].boundingBox();
+          const [left,right]=await row.locator(":scope > div").evaluateAll(cells=>cells.map(cell=>{
+            const {x,y,width}=cell.getBoundingClientRect();return {x,y,width};
+          }));
           expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
           expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
         }
@@ -79,8 +80,9 @@ for (const width of [360, 412]) {
         const rows=card.locator("dl .layout--keep-columns");
         await expect(rows).toHaveCount(2);
         for (const row of await rows.all()) {
-          const cells=await row.locator(":scope > div").all();
-          const left=await cells[0].boundingBox(),right=await cells[1].boundingBox();
+          const [left,right]=await row.locator(":scope > div").evaluateAll(cells=>cells.map(cell=>{
+            const {x,y,width}=cell.getBoundingClientRect();return {x,y,width};
+          }));
           expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
           expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
         }
@@ -101,7 +103,9 @@ for (const width of [360, 412]) {
         for (const row of await rows.all()) {
           const cards=await row.locator(".lgt-card").all();
           expect(cards).toHaveLength(2);
-          const left=await cards[0].boundingBox(), right=await cards[1].boundingBox();
+          const [left,right]=await row.locator(".lgt-card").evaluateAll(cells=>cells.map(cell=>{
+            const {x,y,width}=cell.getBoundingClientRect();return {x,y,width};
+          }));
           expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
           expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
           expect(right!.x).toBeGreaterThan(left!.x);
