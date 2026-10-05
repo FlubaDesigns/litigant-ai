@@ -44,3 +44,25 @@ it("rejects empty keys and keeps the active credential if saving fails",async()=
   expect((await api("put","/admin/api-keys/openai").send({key:"fictional-unsaved-value",label:"OpenAI"})).status).toBe(500);
   expect((await getApiKey("openai"))?.key).toBe("fictional-deployment-value");
 });
+
+it("saves and replaces each built-in provider without crossing credentials after reload",async()=>{
+  const entries=[["openai","OpenAI"],["anthropic","Anthropic (Claude)"],["grok","xAI Grok"],["gemini","Google Gemini"]];
+  for(const [id,label] of entries) {
+    const saved=await api("put",`/admin/api-keys/${id}`).send({key:`  fictional-${id}-initial  `,label});
+    expect(saved.status).toBe(200);
+    expect(saved.body.providerId).toBe(id);
+  }
+  for(const [id,label] of entries) {
+    invalidateApiKeyCache();
+    expect((await getApiKey(id))?.key).toBe(`fictional-${id}-initial`);
+    expect((await api("put",`/admin/api-keys/${id}`).send({key:`fictional-${id}-replacement`,label})).status).toBe(200);
+  }
+  invalidateApiKeyCache();
+  for(const [id] of entries) expect((await getApiKey(id))?.key).toBe(`fictional-${id}-replacement`);
+  const listed=await api("get","/admin/api-keys");
+  expect(listed.body.providers).toHaveLength(4);
+  for(const [id] of entries) {
+    expect(listed.body.providers.find((p:any)=>p.id===id)?.source).toBe("firestore");
+    expect(JSON.stringify(listed.body)).not.toContain(`fictional-${id}-replacement`);
+  }
+});

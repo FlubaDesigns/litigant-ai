@@ -469,17 +469,42 @@ test.describe("touch API key management", () => {
     await expect(card).toContainText("stored••••2222");
     expect(writes.at(-1)).toMatchObject({id:"openai",key:"fictional-replacement-for-test",label:"OpenAI"});
     await page.reload();await expect(card).toContainText("stored••••2222");
-    await page.getByRole("button",{name:"Add Google Gemini API key"}).tap();
-    panel=page.getByRole("dialog");field=panel.getByLabel("New API key");
-    await field.fill("fictional-gemini-for-test");
-    await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
-    await expect(panel).toHaveCount(0);
-    await expect(page.getByRole("button",{name:"Replace Google Gemini API key"})).toBeVisible();
-    expect(writes.at(-1)).toMatchObject({id:"gemini",key:"fictional-gemini-for-test"});
-    await page.getByRole("button",{name:"Replace Google Gemini API key"}).tap();
-    await expect(page.getByRole("dialog").getByLabel("New API key")).toHaveValue("");
-    await page.getByRole("button",{name:"Cancel",exact:true}).tap();
+    for(const [id,label] of [["anthropic","Anthropic (Claude)"],["grok","xAI Grok"],["gemini","Google Gemini"]]) {
+      await page.getByRole("button",{name:`Add ${label} API key`}).tap();
+      panel=page.getByRole("dialog");field=panel.getByLabel("New API key");
+      await expect(field).toHaveValue("");
+      await field.fill(`fictional-${id}-for-test`);
+      await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
+      await expect(panel).toHaveCount(0);
+      expect(writes.at(-1)).toMatchObject({id,key:`fictional-${id}-for-test`,label});
+      await page.reload();
+      await page.getByRole("button",{name:`Replace ${label} API key`}).tap();
+      await expect(page.getByRole("dialog").getByLabel("New API key")).toHaveValue("");
+      await page.getByRole("button",{name:"Cancel",exact:true}).tap();
+    }
     await page.clock.install();const before=reads;await page.clock.fastForward(90000);expect(reads).toBe(before);
     expect(await page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   });
+});
+
+test("AI Studio shows discovered models awaiting pricing only after an on-demand refresh",async({page})=>{
+  let discovered=false, reads=0;
+  await page.clock.install();
+  await page.route("**/api-server/api/admin/ai-studio/models",async route=>{
+    reads++;
+    await route.fulfill({json:{providers:[{...studioProvider,pricingUrl:"https://developers.openai.com/api/docs/pricing",discoveredModels:discovered?[{id:"gpt-future",label:"New provider model",releasedAt:"2026-10-05T00:00:00Z"}]:[]}],models:[model],disabledProviders:[],customProviders:[]}});
+  });
+  await page.goto("/admin?tab=ai-studio&e2e=1");
+  await expect(page.getByText("Connected",{exact:true})).toBeVisible();
+  discovered=true;
+  const before=reads;
+  await page.clock.fastForward(120000);
+  expect(reads).toBe(before);
+  await expect(page.getByText("New provider model",{exact:true})).toHaveCount(0);
+  await page.getByRole("button",{name:"Check connection",exact:true}).click();
+  await page.getByText("New models · 1 need pricing",{exact:true}).click();
+  await expect(page.getByText("New provider model",{exact:true})).toBeVisible();
+  await expect(page.getByText("Pricing review needed",{exact:true})).toBeVisible();
+  await expect(page.getByRole("switch",{name:"Enable New provider model",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("link",{name:"Provider models & pricing"})).toHaveAttribute("href","https://developers.openai.com/api/docs/pricing");
 });

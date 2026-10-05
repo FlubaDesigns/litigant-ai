@@ -42,7 +42,7 @@ export const PROVIDER_BASE_URLS: Record<string, string> = {
 export const DEFAULT_MODELS: Record<ProviderName, string> = {
   openai: "gpt-5",
   anthropic: "claude-haiku-4-5",
-  grok: "grok-3",
+  grok: "grok-4.7",
   gemini: "gemini-2.5-pro",
 };
 
@@ -53,12 +53,28 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderName, string> = {
   gemini: "Google Gemini",
 };
 
+/** Discovery is restricted to text models compatible with our session adapters. */
+export function isSessionModel(provider: string, id: string): boolean {
+  if (/audio|realtime|transcri|tts|image|imagine|embedding|moderation|search|deep-research|multi-agent|live/i.test(id)) return false;
+  if (provider === "openai") return /^(gpt-|chatgpt-|o[0-9])/.test(id);
+  if (provider === "anthropic") return /^claude-/.test(id);
+  if (provider === "grok") return /^grok-/.test(id) && !/^grok-build/.test(id);
+  if (provider === "gemini") return /^gemini-/.test(id);
+  return false;
+}
+export const PROVIDER_PRICING_URLS: Record<string, string> = {
+  openai:"https://developers.openai.com/api/docs/pricing",
+  anthropic:"https://platform.claude.com/docs/en/about-claude/pricing",
+  grok:"https://docs.x.ai/developers/pricing",
+  gemini:"https://ai.google.dev/gemini-api/docs/pricing",
+};
+
 export interface ModelPricing {
   sourceUrl?: string;
   verifiedAt?: string;
   note?: string;
   cachedInputPer1k?: number;
-  longContext?: { threshold: number; input: number; output: number; cachedInput: number };
+  longContext?: { threshold: number; inclusive?: boolean; input: number; output: number; cachedInput: number };
 }
 export interface ModelDefinition {
   id: string; label: string; qualityScore: number; inputRatePer1k: number;
@@ -76,6 +92,10 @@ const verifiedAt = "2026-10-05";
 const openaiPricing = (id: string, cachedInputPer1k: number): ModelPricing => ({sourceUrl:`https://developers.openai.com/api/docs/models/${id}`, verifiedAt, cachedInputPer1k});
 const claudePricing = (cachedInputPer1k: number): ModelPricing => ({sourceUrl:"https://platform.claude.com/docs/en/about-claude/pricing", verifiedAt, cachedInputPer1k});
 const googlePricing = (cachedInputPer1k: number): ModelPricing => ({sourceUrl:"https://ai.google.dev/gemini-api/docs/pricing", verifiedAt, cachedInputPer1k});
+const grokPricing = (input:number, output:number, cachedInput:number): ModelPricing => ({
+  sourceUrl:PROVIDER_PRICING_URLS.grok, verifiedAt, cachedInputPer1k:cachedInput,
+  longContext:{threshold:200000,inclusive:true,input:input*2,output:output*2,cachedInput:cachedInput*2},
+});
 const legacyGrok: ModelPricing = {sourceUrl:"https://docs.x.ai/developers/models", note:"Legacy rate; current provider catalog does not list this model."};
 
 export const PROVIDER_MODELS: Record<ProviderName, ModelDefinition[]> = {
@@ -92,10 +112,17 @@ export const PROVIDER_MODELS: Record<ProviderName, ModelDefinition[]> = {
     { id: "claude-haiku-4-5",  label: "Claude Haiku 4.5",  qualityScore: 42, inputRatePer1k: 0.0010, outputRatePer1k: 0.0050, multiplier: 8, pricing: claudePricing(0.0001) },
   ],
   grok: [
+    // New scores start neutral; the administrator can rate them in AI Studio.
+    { id:"grok-4.7", label:"Grok 4.7", qualityScore:50, inputRatePer1k:.002, outputRatePer1k:.006, multiplier:5, pricing:grokPricing(.002,.006,.0005) },
+    { id:"grok-4.6", label:"Grok 4.6", qualityScore:50, inputRatePer1k:.002, outputRatePer1k:.006, multiplier:5, pricing:grokPricing(.002,.006,.0005) },
+    { id:"grok-4.5", label:"Grok 4.5", qualityScore:50, inputRatePer1k:.002, outputRatePer1k:.006, multiplier:5, pricing:grokPricing(.002,.006,.0003) },
+    { id:"grok-4.3", label:"Grok 4.3", qualityScore:50, inputRatePer1k:.00125, outputRatePer1k:.0025, multiplier:5, pricing:grokPricing(.00125,.0025,.0002) },
+    { id:"grok-4.20-0309-reasoning", label:"Grok 4.20 (reasoning)", qualityScore:50, inputRatePer1k:.00125, outputRatePer1k:.0025, multiplier:5, pricing:grokPricing(.00125,.0025,.0002) },
+    { id:"grok-4.20-0309-non-reasoning", label:"Grok 4.20 (non-reasoning)", qualityScore:50, inputRatePer1k:.00125, outputRatePer1k:.0025, multiplier:5, pricing:grokPricing(.00125,.0025,.0002) },
     // Retired slug redirects to a different model: https://docs.x.ai/developers/migration/may-15-retirement
     { id: "grok-3", retired: true, label: "Grok 3",      qualityScore: 74, inputRatePer1k: 0.0030, outputRatePer1k: 0.0150, multiplier: 5, pricing: legacyGrok },
-    { id: "grok-3-mini", label: "Grok 3 Mini", qualityScore: 32, inputRatePer1k: 0.0003, outputRatePer1k: 0.0005, multiplier: 8, pricing: legacyGrok },
-    { id: "grok-2",      label: "Grok 2",      qualityScore: 58, inputRatePer1k: 0.0020, outputRatePer1k: 0.0100, multiplier: 5, pricing: legacyGrok },
+    { id: "grok-3-mini", retired:true, label: "Grok 3 Mini", qualityScore: 32, inputRatePer1k: 0.0003, outputRatePer1k: 0.0005, multiplier: 8, pricing: legacyGrok },
+    { id: "grok-2", retired:true, label: "Grok 2",      qualityScore: 58, inputRatePer1k: 0.0020, outputRatePer1k: 0.0100, multiplier: 5, pricing: legacyGrok },
   ],
   gemini: [
     { id: "gemini-2.5-pro",   label: "Gemini 2.5 Pro",   qualityScore: 84, inputRatePer1k: 0.00125, outputRatePer1k: 0.0100, multiplier: 5, pricing: {...googlePricing(0.000125), longContext:{threshold:200000,input:0.0025,output:0.015,cachedInput:0.00025}} },

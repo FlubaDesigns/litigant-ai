@@ -2,13 +2,16 @@ import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { getApiKey } from "./apiKeyStore.js";
+import { providerFailureKind } from "./providerErrors.js";
 import { PROVIDER_BASE_URLS } from "./providers/types.js";
 
 export type ConnectionState = "connected" | "key_rejected" | "rate_limited" | "unavailable" | "not_configured";
+export interface DiscoveredModel { id: string; label: string; releasedAt?: string; }
 export interface ProviderAvailability {
   state: ConnectionState;
   checkedAt: string;
   modelIds: string[];
+  discoveredModels?: DiscoveredModel[];
 }
 const cache = new Map<string, { fingerprint: string; expiresAt: number; value: ProviderAvailability }>();
 const pending = new Map<string, Promise<ProviderAvailability>>();
@@ -17,7 +20,7 @@ const TTL_MS = 30_000;
 /** Safe status only: never expose upstream response bodies or credential values. */
 function failureState(error: unknown): ConnectionState {
   const status = (error as {status?:number})?.status;
-  return status === 401 || status === 403 ? "key_rejected" : status === 429 ? "rate_limited" : "unavailable";
+  return providerFailureKind(error) === "authentication" ? "key_rejected" : status === 429 ? "rate_limited" : "unavailable";
 }
 
 /** Authenticated, read-only provider check. No paid generation requests. */
@@ -37,23 +40,34 @@ export async function getProviderAvailability(provider: string, candidates: stri
     try {
       const signal = AbortSignal.timeout(6000);
       const ids = new Set<string>();
+      const listed: DiscoveredModel[] = [];
+      const covered = new Set(candidates);
+      const remember = (model: {id:string; display_name?:string; created_at?:string; created?:number}) => {
+        const id = model.id.replace(/^models\//, "");
+        ids.add(id);
+        const timestamp = model.created_at ? Date.parse(model.created_at) : model.created ? model.created * 1000 : NaN;
+        const date = Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : undefined;
+        listed.push({id, label:model.display_name ?? id, ...(date && Number.isFinite(Date.parse(date)) ? {releasedAt:date} : {})});
+      };
       if (provider === "anthropic") {
         const client = new Anthropic({apiKey:creds.key,baseURL,maxRetries:0,timeout:6000});
-        for await (const model of client.models.list({limit:100},{signal})) ids.add(model.id);
+        for await (const model of client.models.list({limit:100},{signal})) remember(model);
         // Anthropic's list uses canonical IDs; resolve our supported aliases via its API.
         await Promise.all(candidates.filter(id => !ids.has(id)).map(async id => {
           try {
             const model = await client.models.retrieve(id,{}, {signal});
-            if (ids.has(model.id)) ids.add(id);
+            if (ids.has(model.id)) { ids.add(id); covered.add(model.id); }
           } catch (error) {
             if (![403,404].includes((error as {status?:number})?.status ?? 0)) throw error;
           }
         }));
       } else {
         const client = new OpenAI({apiKey:creds.key,baseURL,maxRetries:0,timeout:6000});
-        for await (const model of client.models.list({signal})) ids.add(model.id.replace(/^models\//,""));
+        for await (const model of client.models.list({signal})) remember(model);
       }
-      value = {state:"connected",checkedAt,modelIds:candidates.filter(id => ids.has(id))};
+      value = {state:"connected",checkedAt,modelIds:candidates.filter(id => ids.has(id)),
+        discoveredModels: listed.filter(model => !covered.has(model.id))
+          .sort((a,b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? "") || a.id.localeCompare(b.id))};
     } catch (error) {
       value = {state:failureState(error),checkedAt,modelIds:[]};
     }

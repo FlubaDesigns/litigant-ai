@@ -564,7 +564,7 @@ export interface BillingDefaults {
 }
 
 export interface AiStudioModel {
-  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; cachedInputPer1k?: number; longContext?: {threshold: number; input: number; output: number} };
+  pricing?: { sourceUrl?: string; verifiedAt?: string; note?: string; cachedInputPer1k?: number; longContext?: {threshold: number; inclusive?: boolean; input: number; output: number} };
   id: string;
   label: string;
   provider: string;
@@ -598,6 +598,8 @@ export interface AiStudioCustomProvider {
 
 export interface AiStudioProvider {
   id: string; label: string; custom: boolean; enabled: boolean;
+  discoveredModels?: {id:string; label:string; releasedAt?:string}[];
+  pricingUrl?: string;
   connection: {state: "connected" | "key_rejected" | "rate_limited" | "unavailable" | "not_configured"; checkedAt: string};
 }
 export interface AiStudioData {

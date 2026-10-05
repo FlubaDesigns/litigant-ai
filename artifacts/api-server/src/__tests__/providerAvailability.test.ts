@@ -39,7 +39,20 @@ describe("authenticated model availability",()=>{
       : json({data:[{id:"claude-sonnet-4-5-20250929",type:"model"}],has_more:false}));
     const result=await getProviderAvailability("anthropic",["claude-sonnet-4-5"],true);
     expect(result.modelIds).toEqual(["claude-sonnet-4-5"]);
+    expect(result.discoveredModels).toEqual([]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+  it("retains new provider models for discovery without making them runnable",async()=>{
+    fetchMock.mockResolvedValue(json({data:[{id:"gpt-4o",created:1},{id:"gpt-future",created:2}],object:"list"}));
+    const result=await getProviderAvailability("openai",["gpt-4o"],true);
+    expect(result.modelIds).toEqual(["gpt-4o"]);
+    expect(result.discoveredModels).toEqual([{id:"gpt-future",label:"gpt-future",releasedAt:"1970-01-01T00:00:02.000Z"}]);
+  });
+  it("classifies authentication errors returned as HTTP 400 without exposing the message",async()=>{
+    fetchMock.mockResolvedValue(json({error:{type:"invalid_request_error",message:"Invalid API key sensitive-value"}},400));
+    const result=await getProviderAvailability("anthropic",[],true);
+    expect(result.state).toBe("key_rejected");
+    expect(JSON.stringify(result)).not.toContain("sensitive-value");
   });
   it("caches checks, refreshes on demand, and immediately rechecks changed credentials",async()=>{
     fetchMock.mockImplementation(async()=>json({data:[{id:"gpt-4o"}]}));

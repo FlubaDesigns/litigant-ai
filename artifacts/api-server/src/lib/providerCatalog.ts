@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getProviderAvailability } from "./providerAvailability.js";
-import { resolveModelPrice, type ModelDefinition } from "./providers/types.js";
+import { resolveModelPrice, isSessionModel, PROVIDER_PRICING_URLS, type ModelDefinition } from "./providers/types.js";
 import { getMultiplierOverrides, MultiplierSchema } from "./pricingConfig.js";
 import { PROVIDER_DISPLAY_NAMES, PROVIDER_MODELS, DEFAULT_MODELS } from "./providers/index.js";
 import { CREDIT_VALUE_USD, getCalibratedFixedStageTokens, getModelCreditInfo } from "./creditEngine.js";
@@ -63,6 +63,8 @@ export async function getModelRegistry(refreshAvailability = false) {
     const connection = await getProviderAvailability(p.id, candidates.map(m => m.id), refreshAvailability);
     return {
       name:p.id, displayName:p.label, defaultModel:p.defaultModel, custom:p.custom,
+      discoveredModels:(connection.discoveredModels ?? []).filter(m => isSessionModel(p.id, m.id) && !p.models.some(known => known.id === m.id)),
+      pricingUrl:PROVIDER_PRICING_URLS[p.id],
       configured:connection.state !== "not_configured", connection, enabled:!disabledProviders.includes(p.id),
       models:candidates.filter(m => connection.modelIds.includes(m.id)).map((m: ModelDefinition) => {
         const multiplier = MultiplierSchema.parse(overrides[m.id] ?? m.multiplier);
@@ -83,7 +85,8 @@ export async function getProviderCatalog() {
   const registry = await getModelRegistry();
   const providers = registry.providers.filter(p => p.configured && p.enabled).map(p => {
     const models = p.models.filter(m => m.enabled);
-    return {...p, models, defaultModel:models.some(m => m.id === p.defaultModel) ? p.defaultModel : models[0]?.id ?? ""};
+    const {discoveredModels:_discovered, pricingUrl:_pricingUrl, connection:{discoveredModels:_listed, ...connection}, ...publicProvider} = p;
+    return {...publicProvider, connection, models, defaultModel:models.some(m => m.id === p.defaultModel) ? p.defaultModel : models[0]?.id ?? ""};
   }).filter(p => p.models.length > 0);
   return {configured:providers.map(p => p.name), creditValueUsd:registry.creditValueUsd, providers};
 }
@@ -112,6 +115,7 @@ export async function getAiStudioModels() {
   return {
     disabledProviders:registry.disabledProviders, customProviders:registry.customProviders,
     providers:registry.providers.filter(p => p.configured).map(p => ({id:p.name,label:p.displayName,custom:p.custom,enabled:p.enabled,
+      discoveredModels:p.discoveredModels, pricingUrl:p.pricingUrl,
       connection:{state:p.connection.state,checkedAt:p.connection.checkedAt},
     })),
     models:registry.providers.flatMap(p => p.models.map(m => ({

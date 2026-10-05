@@ -110,3 +110,13 @@ describe("measured agent pricing", () => {
     expect(annotateCalls([{provider:"old",model:"a",inputTokens:0,outputTokens:0}],rates)[0].seat).toBeUndefined();
   });
 });
+
+it("uses verified Grok rates including the inclusive 200k long-context boundary",async()=>{
+  const {PROVIDER_MODELS,resolveModelPrice}=await import("../lib/providers/types.js");
+  const {tokenCostUSD}=await import("../lib/creditEngine.js");
+  const rate=resolveModelPrice(PROVIDER_MODELS.grok.find(m=>m.id==="grok-4.7")!);
+  expect(rate).toMatchObject({input:.002,output:.006,cachedInput:.0005,verifiedAt:"2026-10-05"});
+  expect(tokenCostUSD(rate,1000,1000,200)).toBeCloseTo(.0077);
+  expect(tokenCostUSD(rate,200000,1000)).toBeCloseTo(.812);
+  expect(tokenCostUSD(rate,199999,1000)).toBeCloseTo(.405998);
+});

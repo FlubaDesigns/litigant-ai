@@ -8,7 +8,7 @@ import { PROVIDER_MODELS, DEFAULT_MODELS, resolveModelPrice } from "./providers/
 
 export interface ModelRate {
   input: number; output: number; cachedInput?: number;
-  longContext?: { threshold: number; input: number; output: number; cachedInput: number };
+  longContext?: { threshold: number; inclusive?: boolean; input: number; output: number; cachedInput: number };
 }
 export interface ModelPrice extends ModelRate { multiplier: number; }
 // Derived compatibility views; model definitions live only in providers/types.ts.
@@ -21,7 +21,7 @@ export const MODEL_MULTIPLIERS: Record<string, number> = Object.fromEntries(
 
 /** Shared USD calculation for quotes, credit settlement and agent telemetry. */
 export function tokenCostUSD(rate: ModelRate, input: number, output: number, cachedInput = 0): number {
-  const tier = rate.longContext && input > rate.longContext.threshold ? rate.longContext : rate;
+  const tier = rate.longContext && (rate.longContext.inclusive ? input >= rate.longContext.threshold : input > rate.longContext.threshold) ? rate.longContext : rate;
   const cached = Math.max(0, Math.min(input, cachedInput));
   return ((input - cached) * tier.input + cached * (tier.cachedInput ?? tier.input) + output * tier.output) / 1000;
 }

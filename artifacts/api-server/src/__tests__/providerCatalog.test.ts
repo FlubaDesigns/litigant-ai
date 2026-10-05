@@ -81,6 +81,16 @@ describe("one provider and pricing catalog", () => {
     expect((await getProviderCatalog()).providers.flatMap(p=>p.models.map(m=>m.id))).toEqual(["gpt-4o"]);
     await expect(prepareSession({provider:"openai",model:"gpt-5"})).rejects.toThrow(/disabled or unavailable/);
   });
+  it("shows live new text models for review but excludes them from quotes and non-text models from Studio",async()=>{
+    vi.mocked(getProviderAvailability).mockImplementation(async(provider)=>({state:"connected",checkedAt:"2026-10-05T02:00:00Z",modelIds:provider==="grok"?["grok-4.7"]:[],
+      discoveredModels:provider==="grok"?[{id:"grok-future",label:"Grok Future"},{id:"grok-imagine-image",label:"Image"},{id:"grok-3",label:"Retired"}]:[]}));
+    const studio=await getAiStudioModels();
+    expect(studio.providers.find(p=>p.id==="grok")?.discoveredModels).toEqual([{id:"grok-future",label:"Grok Future"}]);
+    expect(studio.models.map(m=>m.id)).toEqual(["grok-4.7"]);
+    expect((await getProviderCatalog()).providers[0].defaultModel).toBe("grok-4.7");
+    expect((await getAdminPricingTable()).models.map(m=>m.model)).toEqual(["grok-4.7"]);
+    await expect(prepareSession({provider:"grok",model:"grok-future"})).rejects.toThrow(/disabled or unavailable/);
+  });
   it("hides retired redirects even if a provider still lists the old slug", async () => {
     vi.mocked(getProviderAvailability).mockResolvedValue({state:"connected",checkedAt:"2026-10-05T02:00:00Z",modelIds:["grok-3"]});
     expect((await getAiStudioModels()).models).toEqual([]);
