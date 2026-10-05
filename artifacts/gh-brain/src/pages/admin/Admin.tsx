@@ -1,5 +1,5 @@
 import "./admin.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -104,7 +104,7 @@ function StatCard({
   label, value, icon: Icon, sub,
 }: { label: string; value: string | number; icon: React.ElementType; sub?: string }) {
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-5 space-y-2">
+    <div className="lgt-card lgt-card--compact space-y-2">
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 text-xs font-mono text-muted-foreground uppercase tracking-wider">{label}</p>
         <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
@@ -115,38 +115,8 @@ function StatCard({
   );
 }
 
-// ─── System Notes Card ────────────────────────────────────────────────────────
-function SystemNotesCard() {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-      <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-        <Database className="w-4 h-4" />
-        System Notes
-      </p>
-      <ul className="space-y-2 text-sm text-muted-foreground">
-        <li className="flex items-start gap-2">
-          <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <span>Only administrators can access these pages.</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <span>Every credit change is recorded in the transaction history.</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <span>Banning a user disables their account and sign-in.</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-          <span>Low-balance top-ups use a Square checkout link and require payment confirmation.</span>
-        </li>
-      </ul>
-    </div>
-  );
-}
-
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
-function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
+function OverviewTab() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: getAdminStats,
@@ -154,76 +124,20 @@ function OverviewTab({ onOpenChecklist }: { onOpenChecklist: () => void }) {
   });
 
   if (isLoading) return <TabSkeleton />;
-
-  if (isError && !data) {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>
-            Firebase is not configured — connect it to see real admin data.
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {["Total Users", "Sessions", "Transactions", "Last 7 Days"].map((l) => (
-            <div key={l} className="rounded-xl border border-border bg-card p-5 opacity-40">
-              <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{l}</p>
-              <p className="text-2xl font-bold font-mono mt-2">—</p>
-            </div>
-          ))}
-        </div>
-        <SystemNotesCard />
-      </div>
-    );
-  }
+  const value = (count: number | undefined) => isError && !data ? "—" : count ?? 0;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total Users"   value={data?.userCount ?? 0}        icon={Users}    />
-        <StatCard label="Sessions"      value={data?.sessionCount ?? 0}      icon={Brain}    />
-        <StatCard label="Transactions"  value={data?.txCount ?? 0}           icon={CreditCard} />
-        <StatCard label="Last 7 Days"   value={data?.recentSessions ?? 0}    icon={TrendingUp} sub="new sessions" />
+    <div>
+      {isError && !data && <p role="alert" className="text-sm text-amber-400 mb-4">Unable to load statistics.</p>}
+      <div className="row layout__split-2 layout--keep-columns">
+        <StatCard label="Total Users" value={value(data?.userCount)} icon={Users} />
+        <StatCard label="Sessions" value={value(data?.sessionCount)} icon={Brain} />
       </div>
-
-      <SystemNotesCard />
+      <div className="row layout__split-2 layout--keep-columns">
+        <StatCard label="Transactions" value={value(data?.txCount)} icon={CreditCard} />
+        <StatCard label="Last 7 Days" value={value(data?.recentSessions)} icon={TrendingUp} sub="new sessions" />
+      </div>
     </div>
-  );
-}
-
-// ─── Checklist Link Card (Overview access point) ──────────────────────────────
-function ChecklistLinkCard({ onOpenChecklist }: { onOpenChecklist: () => void }) {
-  const { data } = useQuery({
-    queryKey: ["admin-checklist"],
-    queryFn: getChecklist,
-    retry: false,
-  });
-
-  const total = data?.length ?? 0;
-  const done = data?.filter((i) => i.checked).length ?? 0;
-  const ownerTotal = data?.filter((i) => i.section === "owner").length ?? 0;
-  const ownerDone = data?.filter((i) => i.section === "owner" && i.checked).length ?? 0;
-
-  return (
-    <button
-      onClick={onOpenChecklist}
-      className="w-full text-left rounded-xl border border-primary/20 bg-primary/5 p-5 flex items-center justify-between gap-4 hover:bg-primary/10 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-          <ListChecks className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">Setup Checklist</p>
-          <p className="text-xs text-muted-foreground">
-            {total > 0
-              ? `${done}/${total} items done — ${ownerDone}/${ownerTotal} of your action items complete`
-              : "Audit-derived to-do list for launch readiness"}
-          </p>
-        </div>
-      </div>
-      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-    </button>
   );
 }
 
@@ -4006,6 +3920,13 @@ export default function AdminPage() {
   const tabFromUrl = new URLSearchParams(search).get("tab") as AdminTab | null;
   const validTab = tabFromUrl && TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : "overview";
   const [activeTab, setActiveTabState] = useState<AdminTab>(validTab);
+  const mobileNav = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const nav = mobileNav.current;
+    const button = nav?.querySelector<HTMLElement>(`[data-admin-tab="${activeTab}"]`);
+    if (nav && button) nav.scrollTo({left: button.offsetLeft - (nav.clientWidth - button.clientWidth) / 2});
+  }, [activeTab]);
 
   useEffect(() => {
     setActiveTabState(validTab);
@@ -4043,12 +3964,16 @@ export default function AdminPage() {
         ))}
       </aside>
 
-      {/* One native selector keeps every page reachable without sideways swiping. */}
-      <nav aria-label="Admin navigation" className="admin-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card px-4 pt-2">
-        <label htmlFor="admin-page-select" className="block text-xs text-muted-foreground mb-1">Admin page</label>
-        <select id="admin-page-select" value={activeTab} onChange={event => setActiveTab(event.target.value as AdminTab)} className="w-full min-h-12 rounded-lg border border-border bg-background px-3 text-base text-foreground">
-          {TABS.map(({id, label}) => <option key={id} value={id}>{label}</option>)}
-        </select>
+      {/* The same page list powers the desktop sidebar and scrolling phone buttons. */}
+      <nav ref={mobileNav} aria-label="Admin navigation" className="admin-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card flex overflow-x-auto">
+        {TABS.map(({id, label, icon: Icon}) => (
+          <button key={id} data-admin-tab={id} aria-current={activeTab === id ? "page" : undefined}
+            onClick={() => setActiveTab(id)}
+            className={cn("flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs min-w-[84px] shrink-0 transition-colors", activeTab === id ? "text-primary" : "text-muted-foreground")}>
+            <Icon className="w-4 h-4" />
+            <span>{label}</span>
+          </button>
+        ))}
       </nav>
 
       {/* Content */}
@@ -4065,7 +3990,7 @@ export default function AdminPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {activeTab === "overview"     && <OverviewTab onOpenChecklist={() => setActiveTab("checklist")} />}
+          {activeTab === "overview"     && <OverviewTab />}
           {activeTab === "checklist"    && <ChecklistTab />}
           {activeTab === "health"       && <SystemHealthTab />}
           {activeTab === "ai-studio"    && <AiStudioTab />}

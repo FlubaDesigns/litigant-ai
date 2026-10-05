@@ -200,7 +200,7 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 
 
 /* ── LAYOUT GRID FAMILY ──────────────────────────────────────────────
-   Named semantic grids — all collapse to 1-col on mobile.
+   Named semantic grids — collapse to 1-col on mobile unless explicitly kept.
    Grid children are clamped inside their tracks (min-width: 0).
 
    layout__split-2    1fr 1fr
@@ -221,6 +221,11 @@ main > .row:last-child  { padding-bottom: var(--sv); }
 
 [class*="layout__"] > * {
   min-width: 0;                     /* grid children never bust tracks */
+}
+
+/* Compact paired content can explicitly retain its 50/50 split on phones. */
+.layout__split-2.layout--keep-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (min-width: 768px) {
@@ -412,6 +417,11 @@ main > .row:last-child  { padding-bottom: var(--sv); }
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   padding: 1.5rem;
+}
+
+.lgt-card--compact {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
 }
 
 .lgt-card--accent {

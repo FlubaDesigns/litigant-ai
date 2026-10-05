@@ -41,20 +41,34 @@ for (const width of [360, 412]) {
     const errors:string[]=[];
     page.on("pageerror", error => errors.push(error.message));
     await page.goto("/admin?e2e=1");
-    const selector=page.getByLabel("Admin page",{exact:true});
-    await expect(selector).toBeVisible();
-    const tabs=await selector.locator("option").evaluateAll(options=>options.map(option=>({id:(option as HTMLOptionElement).value,label:option.textContent!})));
+    const navigation=page.getByRole("navigation",{name:"Admin navigation"});
+    await expect(navigation).toBeVisible();
+    const tabs=await navigation.locator("button").evaluateAll(buttons=>buttons.map(button=>({id:button.getAttribute("data-admin-tab")!,label:button.textContent!})));
     expect(tabs).toHaveLength(18);
     for (const tab of tabs) {
-      await selector.selectOption(tab.id);
+      await navigation.getByRole("button",{name:tab.label,exact:true}).click();
       await expect(page.locator(".admin-page h1")).toHaveText(tab.label);
       await expect(page.locator(".admin-page .animate-pulse")).toHaveCount(0);
       await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1),{message:tab.label}).toBe(true);
       const overflow=await page.locator(".admin-page").evaluate(root=>Array.from(root.querySelectorAll("p, input, select, tbody td, button")).filter(el=>{
+        if (el.closest(".admin-mobile-nav")) return false;
         const rect=el.getBoundingClientRect();
         return rect.width>0 && (rect.left< -1 || rect.right>window.innerWidth+1);
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
+      if (tab.id === "overview") {
+        const rows=page.locator(".admin-page .row.layout__split-2");
+        await expect(rows).toHaveCount(2);
+        for (const row of await rows.all()) {
+          const cards=await row.locator(".lgt-card").all();
+          expect(cards).toHaveLength(2);
+          const left=await cards[0].boundingBox(), right=await cards[1].boundingBox();
+          expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);
+          expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
+          expect(right!.x).toBeGreaterThan(left!.x);
+        }
+        await expect(page.getByText("System Notes",{exact:true})).toHaveCount(0);
+      }
       for (const table of await page.locator("table[data-mobile-cards]").all()) {
         await expect(table).toHaveCSS("display","block");
         for (const label of await table.locator(".mobile-table-label").all()) {
