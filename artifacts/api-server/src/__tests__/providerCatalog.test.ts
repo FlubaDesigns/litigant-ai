@@ -90,6 +90,10 @@ describe("one provider and pricing catalog", () => {
     const studio=await getAiStudioModels();
     expect(studio.models).toEqual([]);
     expect(studio.providers[0].connection.state).toBe("key_rejected");
+    const pricing = await getAdminPricingTable(true);
+    expect(pricing.models).toEqual([]);
+    expect(pricing.providers[0]).toMatchObject({id:"openai", modelCount:0, connection:{state:"key_rejected"}});
+    expect(getProviderAvailability).toHaveBeenCalledWith("openai", expect.any(Array), true);
     expect((await getProviderCatalog()).providers).toEqual([]);
     await expect(prepareSession({})).rejects.toThrow(/No enabled/);
   });

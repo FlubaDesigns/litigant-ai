@@ -481,6 +481,7 @@ export interface PricingModel {
 }
 
 export interface PricingConfig {
+  providers?: Array<Pick<AiStudioProvider, "id" | "label" | "enabled" | "connection"> & {modelCount: number}>;
   creditValueUsd: number;
   models: PricingModel[];
 }

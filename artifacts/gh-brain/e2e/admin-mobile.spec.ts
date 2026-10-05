@@ -353,3 +353,34 @@ test("pricing saves, reloads, resets, and keeps a failed draft on a phone",async
   await page.clock.fastForward(90000);
   expect(reads).toBe(before);
 });
+
+
+for (const width of [360, 412]) test(`pricing explains unavailable models with compact mobile controls at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:800});
+  let reads=0, connected=false;
+  await page.route("**/api-server/api/admin/pricing", async route => {
+    reads++;
+    await route.fulfill({json:{creditValueUsd:.01,
+      providers:[{...studioProvider,modelCount:connected ? 1 : 0,connection:{...studioProvider.connection,state:connected ? "connected" : "key_rejected"}}],
+      models:connected ? [{...model,defaultMultiplier:5,effectiveMultiplier:5,isOverridden:false}] : [],
+    }});
+  });
+  await page.goto("/admin?tab=pricing&e2e=1");
+  await expect(page.getByText("Pricing is blocked by provider connections.")).toBeVisible();
+  await expect(page.getByText("Key rejected",{exact:true})).toBeVisible();
+  const details=page.locator("details").filter({has:page.locator("summary",{hasText:"How pricing works"})});
+  await expect(details).not.toHaveAttribute("open", "");
+  expect((await page.getByText("Pricing is blocked by provider connections.").boundingBox())!.y).toBeLessThan(500);
+  await expect(page.locator(".admin-page")).toBeVisible();
+  expect(await page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  await page.clock.install();const before=reads;
+  await page.clock.fastForward(90000);expect(reads).toBe(before);
+  connected=true;
+  await page.getByRole("button",{name:"Check connections",exact:true}).click();
+  await expect(page.getByRole("button",{name:"Edit multiplier for gpt-5"})).toBeVisible();
+  await expect(page.getByText("Pricing is blocked by provider connections.")).toHaveCount(0);
+  connected=false;
+  await page.getByRole("button",{name:"Check connections",exact:true}).click();
+  await page.getByRole("button",{name:"API Keys",exact:true}).first().click();
+  await expect(page.locator(".admin-page h1")).toHaveText("API Keys");
+});

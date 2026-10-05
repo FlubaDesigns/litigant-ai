@@ -1334,7 +1334,7 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
 
 router.get("/admin/pricing", requireAdmin, async (_req, res) => {
   try {
-    const table = await getAdminPricingTable();
+    const table = await getAdminPricingTable(true);
     return res.json(table);
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });

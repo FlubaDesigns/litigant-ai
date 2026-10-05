@@ -3036,6 +3036,11 @@ function AddProviderModal({
   );
 }
 
+const CONNECTION_LABELS: Record<AiStudioProvider["connection"]["state"], string> = {
+  connected:"Connected", key_rejected:"Key rejected", rate_limited:"Rate limited",
+  unavailable:"Unavailable", not_configured:"Not configured",
+};
+
 function AiStudioProviderSection({
   id: pid, label, provModels, providerEnabled, custom, open, onOpen, connection, checking,
   onToggleProvider, onToggleModel, onSetScore, onSetMultiplier, onDelete, busy,
@@ -3052,7 +3057,7 @@ function AiStudioProviderSection({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expandedModel, setExpandedModel] = useState<string | null>(null);
   const connected = connection.state === "connected";
-  const status = checking ? "Checking…" : ({connected:"Connected",key_rejected:"Key rejected",rate_limited:"Rate limited",unavailable:"Unavailable",not_configured:"Not configured"})[connection.state];
+  const status = checking ? "Checking…" : CONNECTION_LABELS[connection.state];
   return (
     <section className="lgt-card lgt-card--compact studio-provider" aria-label={label}>
       <div className="studio-heading">
@@ -3608,6 +3613,7 @@ function EmailsTab() {
 }
 
 function PricingTab() {
+  const [, navigate] = useLocation();
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["admin-pricing"],
     queryFn: getPricingConfig,
@@ -3639,38 +3645,37 @@ function PricingTab() {
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Credit Value</p>
-          <p className="text-2xl font-bold font-mono text-primary">${data.creditValueUsd.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">per credit (fixed)</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Models</p>
-          <p className="text-2xl font-bold font-mono">{totalModels}</p>
-          <p className="text-xs text-muted-foreground">across {byProvider.length} providers</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 space-y-1">
-          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Overrides Active</p>
-          <p className={cn("text-2xl font-bold font-mono", overriddenCount > 0 ? "text-primary" : "text-foreground")}>
-            {overriddenCount}
-          </p>
-          <p className="text-xs text-muted-foreground">custom multipliers</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{totalModels} models · {overriddenCount} custom multipliers · ${data.creditValueUsd.toFixed(2)}/credit</p>
+        <Button variant="outline" size="sm" disabled={isFetching} onClick={() => refetch()}>
+          <RefreshCw className={cn("w-4 h-4 mr-1", isFetching && "animate-spin")} />
+          {isFetching ? "Checking…" : "Check connections"}
+        </Button>
       </div>
 
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
-        <DollarSign className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div>
-          <span className="font-medium text-foreground">How pricing works: </span>
-          Credits = API cost × <strong>your multiplier</strong> ÷ ${data.creditValueUsd.toFixed(2)}, rounded up after combining all calls. Rates below are USD per million tokens; cached input and long-context rates apply where listed.
-          Edit any multiplier inline — changes apply to new sessions. Active sessions keep their agreed pricing.
-          The <em>Example</em> column shows credits for a default session (3 litigants, 2 rounds, balanced).
+      {!totalModels && <div role="status" className="lgt-card lgt-card--compact space-y-3">
+        <p className="font-medium text-amber-400">Pricing is blocked by provider connections.</p>
+        <p className="text-sm text-muted-foreground">No verified models are available. Review the status below, then update the affected key or check again.</p>
+        <div className="row layout__split-2">
+          <Button variant="outline" onClick={() => navigate("/admin?tab=api-keys")}>API Keys</Button>
+          <Button variant="outline" onClick={() => navigate("/admin?tab=ai-studio")}>AI Studio</Button>
         </div>
-      </div>
+      </div>}
 
-      {!totalModels && <p className="text-sm text-muted-foreground">No provider-confirmed models available. Check connections in AI Studio.</p>}
+      {!!data.providers?.length && <div className="lgt-card lgt-card--compact divide-y divide-border" aria-label="Provider connections">
+        {data.providers.map(p => <div key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+          <span>{p.label}{!p.enabled && <span className="text-muted-foreground"> · Disabled</span>}</span>
+          <span role="status" className={cn("text-xs", p.connection.state === "connected" ? "text-green-400" : "text-destructive")} title={`Checked ${formatDateTime(p.connection.checkedAt)}`}>
+            {isFetching ? "Checking…" : p.connection.state === "connected" && !p.modelCount ? "Connected · No supported models" : CONNECTION_LABELS[p.connection.state]}
+          </span>
+        </div>)}
+      </div>}
+
+      <details className="lgt-card lgt-card--compact text-sm text-muted-foreground">
+        <summary className="cursor-pointer py-2 font-medium text-foreground">How pricing works</summary>
+        <p className="pt-2">Credits = API cost × your multiplier ÷ ${data.creditValueUsd.toFixed(2)}, rounded up after combining all calls. Rates are USD per million tokens; cached input and long-context rates apply where listed. Changes apply to new sessions. Active sessions keep their agreed pricing. Examples use 3 litigants, 2 rounds and balanced responses.</p>
+      </details>
+
       {byProvider.map(({ provider, models }) => (
         <div key={provider} className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">{models[0]?.providerLabel ?? provider}</h3>

@@ -88,10 +88,14 @@ export async function getProviderCatalog() {
   return {configured:providers.map(p => p.name), creditValueUsd:registry.creditValueUsd, providers};
 }
 
-export async function getAdminPricingTable() {
-  const registry = await getModelRegistry();
+export async function getAdminPricingTable(refreshAvailability = false) {
+  const registry = await getModelRegistry(refreshAvailability);
   return {
     creditValueUsd:registry.creditValueUsd,
+    providers:registry.providers.map(p => ({
+      id:p.name, label:p.displayName, enabled:p.enabled, modelCount:p.models.length,
+      connection:{state:p.connection.state, checkedAt:p.connection.checkedAt},
+    })),
     models:registry.providers.flatMap(p => p.models.map(m => ({
       model:m.id, provider:p.name, providerLabel:p.displayName, label:m.label, pricing:m.pricing,
       available:p.configured && p.enabled && m.enabled,
