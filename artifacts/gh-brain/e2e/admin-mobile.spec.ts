@@ -90,19 +90,19 @@ for (const width of [360, 412]) {
   });
 }
 
-test("desktop retains table columns and mobile key editing uses the same form", async ({page}) => {
-  await page.setViewportSize({width:1280,height:900});
-  await page.goto("/admin?tab=api-keys&e2e=1");
-  const table=page.locator("table[data-mobile-cards]");
-  await expect(table).toHaveCSS("display","table");
-  await expect(table.locator("thead")).toBeVisible();
-  await page.setViewportSize({width:360,height:800});
-  await expect(table).toHaveCSS("display","block");
-  const edit=page.getByRole("button",{name:"Edit OpenAI API key"});
-  // Buttons animate their dimensions when crossing the desktop/mobile breakpoint.
-  await expect.poll(async () => (await edit.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-  await edit.click();
-  await expect(page.getByRole("button",{name:"Update Key",exact:true})).toBeVisible();
+test("API key cards open the editor immediately on desktop and mobile", async ({page}) => {
+  for (const width of [1280,360]) {
+    await page.setViewportSize({width,height:800});
+    await page.goto("/admin?tab=api-keys&e2e=1");
+    const edit=page.getByRole("button",{name:"Replace OpenAI API key"});
+    await edit.click();
+    const panel=page.getByRole("dialog");
+    await expect(panel).toBeVisible();
+    await expect(panel.getByLabel("New API key")).toBeVisible();
+    await expect(panel.getByRole("button",{name:"Save Key",exact:true})).toBeDisabled();
+    await expect.poll(async () => (await panel.getByRole("button",{name:"Save Key",exact:true}).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(width===360 ? 44 : 36);
+    await panel.getByRole("button",{name:"Cancel",exact:true}).click();
+  }
 });
 
 test("checklist shows outstanding and recurring tasks and keeps completion after reload", async ({page}) => {
@@ -383,4 +383,65 @@ for (const width of [360, 412]) test(`pricing explains unavailable models with c
   await page.getByRole("button",{name:"Check connections",exact:true}).click();
   await page.getByRole("button",{name:"API Keys",exact:true}).first().click();
   await expect(page.locator(".admin-page h1")).toHaveText("API Keys");
+});
+
+
+test.describe("touch API key management", () => {
+  test.use({hasTouch:true, viewport:{width:360,height:800}});
+  test("add, replace, retry and reload use one key form and safe provider links", async ({page}) => {
+    const links = [
+      ["OpenAI","https://platform.openai.com/api-keys"],
+      ["Anthropic (Claude)","https://platform.claude.com/settings/keys"],
+      ["xAI Grok","https://console.x.ai/team/default/api-keys"],
+      ["Google Gemini","https://aistudio.google.com/apikey"],
+    ];
+    let keys:any[]=[{id:"openai",label:"OpenAI",maskedKey:"stored••••1111",source:"env"}], reads=0, fail=false;
+    const writes:any[]=[];
+    await page.route("**/api-server/api/admin/api-keys**",async route=>{
+      if(route.request().method()==="GET") {reads++; return route.fulfill({json:{providers:keys}});}
+      const body=route.request().postDataJSON();
+      writes.push({id:new URL(route.request().url()).pathname.split("/").pop(),...body});
+      if(fail)return route.fulfill({status:500,json:{error:"Unable to save key. Try again."}});
+      const id=writes.at(-1).id;
+      keys=[...keys.filter(k=>k.id!==id),{id,label:body.label,maskedKey:"stored••••2222",source:"firestore"}];
+      return route.fulfill({json:{success:true}});
+    });
+    await page.goto("/admin?tab=api-keys&e2e=1");
+    for(const [label,href] of links) {
+      const link=page.getByRole("link",{name:`Get ${label} API key`,exact:true});
+      await expect(link).toHaveAttribute("href",href);
+      await expect(link).toHaveAttribute("target","_blank");
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    const card=page.getByRole("region",{name:"OpenAI API key",exact:true});
+    expect((await card.boundingBox())!.height).toBeLessThan(230);
+    await page.getByRole("button",{name:"Replace OpenAI API key"}).tap();
+    let panel=page.getByRole("dialog"),field=panel.getByLabel("New API key");
+    await expect(field).toBeVisible();
+    await expect(field).toHaveAttribute("type","password");
+    await expect(field).toHaveValue("");
+    await field.fill("fictional-replacement-for-test");
+    fail=true;
+    await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
+    await expect(panel.getByRole("alert")).toHaveText("Unable to save key. Try again.");
+    await expect(field).toHaveValue("fictional-replacement-for-test");
+    fail=false;
+    await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
+    await expect(panel).toHaveCount(0);
+    await expect(card).toContainText("stored••••2222");
+    expect(writes.at(-1)).toMatchObject({id:"openai",key:"fictional-replacement-for-test",label:"OpenAI"});
+    await page.reload();await expect(card).toContainText("stored••••2222");
+    await page.getByRole("button",{name:"Add Google Gemini API key"}).tap();
+    panel=page.getByRole("dialog");field=panel.getByLabel("New API key");
+    await field.fill("fictional-gemini-for-test");
+    await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
+    await expect(panel).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Replace Google Gemini API key"})).toBeVisible();
+    expect(writes.at(-1)).toMatchObject({id:"gemini",key:"fictional-gemini-for-test"});
+    await page.getByRole("button",{name:"Replace Google Gemini API key"}).tap();
+    await expect(page.getByRole("dialog").getByLabel("New API key")).toHaveValue("");
+    await page.getByRole("button",{name:"Cancel",exact:true}).tap();
+    await page.clock.install();const before=reads;await page.clock.fastForward(90000);expect(reads).toBe(before);
+    expect(await page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  });
 });

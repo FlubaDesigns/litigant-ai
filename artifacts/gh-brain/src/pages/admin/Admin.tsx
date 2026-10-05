@@ -2482,55 +2482,12 @@ function AbuseFlagsTab() {
 }
 
 // ─── API Keys Tab ────────────────────────────────────────────────────────────
-const KNOWN_PROVIDERS: { id: string; label: string; envVar: string; baseUrl?: string; placeholder: string }[] = [
-  { id: "openai",    label: "OpenAI",           envVar: "OPENAI_API_KEY",    placeholder: "sk-..." },
-  { id: "anthropic", label: "Anthropic (Claude)",envVar: "ANTHROPIC_API_KEY", placeholder: "sk-ant-..." },
-  { id: "grok",      label: "xAI Grok",         envVar: "XAI_API_KEY",       placeholder: "xai-...", baseUrl: "https://api.x.ai/v1" },
-  { id: "gemini",    label: "Google Gemini",    envVar: "GEMINI_API_KEY",    placeholder: "AIza...", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai" },
+const KNOWN_PROVIDERS = [
+  { id: "openai", label: "OpenAI", keyUrl: "https://platform.openai.com/api-keys" },
+  { id: "anthropic", label: "Anthropic (Claude)", keyUrl: "https://platform.claude.com/settings/keys" },
+  { id: "grok", label: "xAI Grok", keyUrl: "https://console.x.ai/team/default/api-keys" },
+  { id: "gemini", label: "Google Gemini", keyUrl: "https://aistudio.google.com/apikey" },
 ];
-
-function ProviderRow({
-  info,
-  onEdit,
-  onDelete,
-}: {
-  info: ProviderKeyInfo;
-  onEdit: (info: ProviderKeyInfo) => void;
-  onDelete: (info: ProviderKeyInfo) => void;
-}) {
-  return (
-    <TableRow className="group">
-      <TableCell className="font-medium text-sm">
-        {info.label}
-        {info.source === "env" && (
-          <Badge className="ml-2 text-[10px] bg-secondary text-muted-foreground border-border">env var</Badge>
-        )}
-        {info.source === "firestore" && (
-          <Badge className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20">Firestore</Badge>
-        )}
-      </TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground">{info.maskedKey}</TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[180px]">
-        {info.baseUrl ?? "—"}
-      </TableCell>
-      <TableCell className="text-xs text-muted-foreground">
-        {info.updatedAt ? new Date(info.updatedAt).toLocaleDateString() : "—"}
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="ghost" className="h-11 min-w-[44px] px-3 opacity-70 hover:opacity-100 focus-visible:opacity-100" onClick={() => onEdit(info)} aria-label={`Edit ${info.label} API key`}>
-            <Edit3 className="w-4 h-4" />
-          </Button>
-          {info.source === "firestore" && (
-            <Button size="sm" variant="ghost" className="h-11 min-w-[44px] px-3 text-destructive hover:text-destructive opacity-70 hover:opacity-100 focus-visible:opacity-100" onClick={() => onDelete(info)} aria-label={`Reset ${info.label} API key to environment configuration`}>
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-}
 
 interface KeyFormState {
   providerId: string;
@@ -2539,229 +2496,133 @@ interface KeyFormState {
   baseUrl: string;
   isCustom: boolean;
 }
+const EMPTY_KEY_FORM: KeyFormState = {providerId:"", label:"", key:"", baseUrl:"", isCustom:false};
 
 function ApiKeysTab() {
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState<ProviderKeyInfo | null>(null);
-  const [form, setForm] = useState<KeyFormState>({
-    providerId: "", label: "", key: "", baseUrl: "", isCustom: false,
+  const [form, setForm] = useState<KeyFormState>(EMPTY_KEY_FORM);
+  const { data: keys = [], isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["admin-api-keys"], queryFn: getApiKeys,
+    staleTime:0, refetchOnMount:"always", refetchOnWindowFocus:false,
+    refetchOnReconnect:false, retry:false,
   });
 
-  const { data: keys = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-api-keys"],
-    queryFn: getApiKeys,
-    retry: false,
-  });
-
+  function refreshKeyConsumers() {
+    for (const queryKey of [["admin-api-keys"], ["admin-ai-studio"], ["admin-pricing"], ["configuration", "providers"]]) {
+      qc.invalidateQueries({queryKey});
+    }
+  }
+  function clearForm() {
+    setShowForm(false);
+    setEditTarget(null);
+    setForm(EMPTY_KEY_FORM);
+  }
   const saveMut = useMutation({
-    mutationFn: () => saveApiKey(form.providerId, form.key, form.label, form.baseUrl || undefined),
+    mutationFn: () => saveApiKey(form.providerId, form.key.trim(), form.label.trim(), form.baseUrl.trim() || undefined),
     onSuccess: () => {
-      toast.success(`${form.label} API key saved`);
-      setShowForm(false);
-      setEditTarget(null);
-      setForm({ providerId: "", label: "", key: "", baseUrl: "", isCustom: false });
-      qc.invalidateQueries({ queryKey: ["admin-api-keys"] });
+      toast.success(`${form.label} key saved`, {action:{label:"Check connection", onClick:() => navigate("/admin?tab=ai-studio")}});
+      clearForm();
+      refreshKeyConsumers();
     },
-    onError: (e: Error) => toast.error(e.message),
   });
-
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteApiKey(id),
-    onSuccess: (_d, id) => {
-      toast.success(`${id} key removed from Firestore (env var fallback still active if set)`);
-      qc.invalidateQueries({ queryKey: ["admin-api-keys"] });
+    onSuccess: () => {
+      toast.success("Saved key removed. The deployment key will be used if available.");
+      clearForm();
+      refreshKeyConsumers();
     },
-    onError: (e: Error) => toast.error(e.message),
   });
+  const busy = saveMut.isPending || deleteMut.isPending;
 
-  function openAdd(presetId?: string) {
-    const known = KNOWN_PROVIDERS.find((p) => p.id === presetId);
-    setEditTarget(null);
-    setForm({
-      providerId: presetId ?? "",
-      label: known?.label ?? "",
-      key: "",
-      baseUrl: known?.baseUrl ?? "",
-      isCustom: !presetId,
-    });
+  function openEditor(providerId?: string) {
+    const known = KNOWN_PROVIDERS.find(p => p.id === providerId);
+    const stored = keys.find(p => p.id === providerId);
+    saveMut.reset(); deleteMut.reset();
+    setEditTarget(stored ?? null);
+    setForm({providerId:providerId ?? "", label:known?.label ?? stored?.label ?? "", key:"",
+      baseUrl:stored?.baseUrl ?? "", isCustom:!known});
     setShowForm(true);
   }
-
-  function openEdit(info: ProviderKeyInfo) {
-    setEditTarget(info);
-    setForm({
-      providerId: info.id,
-      label: info.label,
-      key: "",
-      baseUrl: info.baseUrl ?? "",
-      isCustom: !KNOWN_PROVIDERS.find((p) => p.id === info.id),
-    });
-    setShowForm(true);
-  }
-
-  const configuredIds = new Set(keys.map((k) => k.id));
-  const unconfiguredKnown = KNOWN_PROVIDERS.filter((p) => !configuredIds.has(p.id));
 
   if (isLoading) return <TabSkeleton />;
+  if (isError) return <div role="alert" className="lgt-card lgt-card--compact space-y-3">
+    <p>Unable to load saved keys.</p>
+    <Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Retry</Button>
+  </div>;
 
-  return (
-    <div className="space-y-6">
-      {isError && (
-        <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-400 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          Failed to load API keys — the server returned an error.
+  const providers = [
+    ...KNOWN_PROVIDERS,
+    ...keys.filter(k => !KNOWN_PROVIDERS.some(p => p.id === k.id)).map(k => ({id:k.id,label:k.label,keyUrl:""})),
+  ];
+  const known = KNOWN_PROVIDERS.find(p => p.id === form.providerId);
+  const valid = !!form.providerId && !!form.label.trim() && form.key.trim().length >= 8 && (!form.isCustom || !!form.baseUrl.trim());
+
+  return <div className="space-y-3">
+    {providers.map(p => {
+      const stored = keys.find(k => k.id === p.id);
+      return <section key={p.id} aria-label={`${p.label} API key`} className="lgt-card lgt-card--compact space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold">{p.label}</h3>
+          <span className="text-xs text-muted-foreground">{stored ? "Key stored" : "No key added"}</span>
         </div>
-      )}
-
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground flex items-start gap-2">
-        <Shield className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-        <div>
-          <span className="font-medium text-foreground">Keys are stored server-side only.</span>{" "}
-          The full key is never sent to the browser — you only see a masked version here.
-          Firestore keys override env vars. Deleting a Firestore key re-activates its env var fallback.
-          Custom providers use the OpenAI-compatible API format.
+        {stored && <p className="text-xs font-mono text-muted-foreground">{stored.maskedKey}</p>}
+        <div className="row layout__split-2 layout--keep-columns">
+          <Button size="sm" variant="outline" onClick={() => openEditor(p.id)} aria-label={`${stored ? "Replace" : "Add"} ${p.label} API key`}>
+            {stored ? "Replace Key" : "Add Key"}
+          </Button>
+          {p.keyUrl && <Button asChild size="sm" variant="outline" className="min-h-11">
+            <a href={p.keyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Get ${p.label} API key`}>Get API Key ↗</a>
+          </Button>}
         </div>
-      </div>
+      </section>;
+    })}
+    <Button variant="outline" size="sm" onClick={() => openEditor()}>Add Custom Provider</Button>
 
-      {/* Configured providers */}
-      {keys.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">Configured Providers</h3>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <Table mobileCards>
-              <TableHeader>
-                <TableRow className="bg-secondary/30">
-                  <TableHead className="text-xs">Provider</TableHead>
-                  <TableHead className="text-xs">Masked Key</TableHead>
-                  <TableHead className="text-xs">Base URL</TableHead>
-                  <TableHead className="text-xs">Updated</TableHead>
-                  <TableHead className="text-xs w-20" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {keys.map((k) => (
-                  <ProviderRow key={k.id} info={k} onEdit={openEdit} onDelete={(i) => deleteMut.mutate(i.id)} />
-                ))}
-              </TableBody>
-            </Table>
+    <Dialog open={showForm} onOpenChange={open => { if (!open && !busy) clearForm(); }}>
+      <DialogContent data-admin-panel="" className="max-h-[85dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{form.label ? `${editTarget ? "Replace" : "Add"} ${form.label} Key` : "Add Custom Provider"}</DialogTitle>
+          <DialogDescription>Paste your new API key below, then save.</DialogDescription>
+        </DialogHeader>
+        {known && <Button asChild variant="outline" className="min-h-11">
+          <a href={known.keyUrl} target="_blank" rel="noopener noreferrer">Get {known.label} API Key ↗</a>
+        </Button>}
+        <form className="space-y-4" onSubmit={event => {event.preventDefault(); if (valid && !busy) saveMut.mutate();}}>
+          {form.isCustom && <>
+            <label className="block text-sm" htmlFor="key-provider-id">Provider ID</label>
+            <Input id="key-provider-id" value={form.providerId} disabled={!!editTarget || busy} onChange={e => setForm(f => ({...f,providerId:e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g,"-")}))} placeholder="my-provider" />
+            <label className="block text-sm" htmlFor="key-provider-label">Provider name</label>
+            <Input id="key-provider-label" value={form.label} disabled={busy} onChange={e => setForm(f => ({...f,label:e.target.value}))} />
+          </>}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="provider-new-key">New API key</label>
+            <Input id="provider-new-key" type="password" autoFocus={!form.isCustom} autoComplete="new-password" autoCapitalize="none" spellCheck={false}
+              value={form.key} disabled={busy} onChange={e => setForm(f => ({...f,key:e.target.value}))} placeholder="Paste new key here" />
           </div>
-        </div>
-      )}
-
-      {/* Quick-add known providers not yet configured */}
-      {unconfiguredKnown.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">Add Known Provider</h3>
-          <div className="flex flex-wrap gap-2">
-            {unconfiguredKnown.map((p) => (
-              <Button key={p.id} variant="outline" size="sm" className="gap-2" onClick={() => openAdd(p.id)}>
-                <Zap className="w-3.5 h-3.5 text-primary" />
-                {p.label}
-              </Button>
-            ))}
+          <details open={form.isCustom || undefined} className="text-sm text-muted-foreground">
+            <summary className="cursor-pointer py-2">Advanced settings</summary>
+            <div className="space-y-2 pt-2">
+              <label className="block" htmlFor="key-base-url">API endpoint {form.isCustom ? "(required)" : "(optional)"}</label>
+              <Input id="key-base-url" type="url" value={form.baseUrl} disabled={busy} onChange={e => setForm(f => ({...f,baseUrl:e.target.value}))} placeholder={form.isCustom ? "https://api.example.com/v1" : "Default provider endpoint"} />
+              {editTarget?.source === "firestore" && <>
+                <p className="text-xs">Remove the saved key to use the deployment key, if one exists.</p>
+                <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => deleteMut.mutate(editTarget.id)}>Use deployment key</Button>
+              </>}
+            </div>
+          </details>
+          {(saveMut.error || deleteMut.error) && <p role="alert" className="text-sm text-destructive">{(saveMut.error || deleteMut.error)?.message}</p>}
+          <div className="row layout__split-2 layout--keep-columns">
+            <Button type="submit" disabled={!valid || busy}>{saveMut.isPending ? "Saving…" : "Save Key"}</Button>
+            <Button type="button" variant="outline" disabled={busy} onClick={clearForm}>Cancel</Button>
           </div>
-        </div>
-      )}
-
-      {/* Add custom / new provider */}
-      <div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => openAdd()}>
-          <DollarSign className="w-3.5 h-3.5 text-primary" />
-          Add Custom Provider
-        </Button>
-        <p className="text-xs text-muted-foreground mt-1.5">
-          Any OpenAI-compatible API — add future providers here without redeploying.
-        </p>
-      </div>
-
-      {/* Add / Edit form */}
-      {showForm && (
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <h3 className="text-sm font-semibold">
-            {editTarget ? `Update key for ${editTarget.label}` : "Add Provider"}
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Provider ID — locked if known */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Provider ID</label>
-              <Input
-                value={form.providerId}
-                onChange={(e) => setForm((f) => ({ ...f, providerId: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-") }))}
-                placeholder="e.g. my-gpt, mistral, together-ai"
-                disabled={!!editTarget}
-                className="font-mono text-sm"
-              />
-              <p className="text-[10px] text-muted-foreground">Lowercase letters, numbers, hyphens. Cannot change after creation.</p>
-            </div>
-
-            {/* Display label */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Display Label</label>
-              <Input
-                value={form.label}
-                onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-                placeholder="e.g. Mistral Large"
-              />
-            </div>
-
-            {/* API Key */}
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                API Key {editTarget && <span className="text-[10px]">(leave blank to keep existing)</span>}
-              </label>
-              <Input
-                type="password"
-                value={form.key}
-                onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
-                placeholder={
-                  editTarget
-                    ? `Current: ${editTarget.maskedKey} — paste new key to replace`
-                    : KNOWN_PROVIDERS.find((p) => p.id === form.providerId)?.placeholder ?? "Paste your API key"
-                }
-                className="font-mono text-sm"
-                autoComplete="off"
-              />
-            </div>
-
-            {/* Base URL — always shown for custom, optional for known */}
-            <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                Base URL <span className="text-[10px] font-normal">(OpenAI-compatible endpoint — required for custom providers)</span>
-              </label>
-              <Input
-                value={form.baseUrl}
-                onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
-                placeholder="https://api.example.com/v1"
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => {
-                if (editTarget && !form.key.trim()) {
-                  toast.error("Paste a new key to update, or cancel");
-                  return;
-                }
-                saveMut.mutate();
-              }}
-              disabled={saveMut.isPending || !form.providerId || !form.label}
-            >
-              {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-              {editTarget ? "Update Key" : "Save Key"}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setShowForm(false); setEditTarget(null); }}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+        </form>
+      </DialogContent>
+    </Dialog>
+  </div>;
 }
 
 // ─── Pricing Tab ─────────────────────────────────────────────────────────────
