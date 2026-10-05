@@ -105,3 +105,12 @@ export function resolveModelByIntelligence(
 
   return { provider: best.providerName, model: best.id, label: best.label };
 }
+
+/** Shared plan entitlement for document creation, export and public sharing. */
+export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
+  return isAdmin || plan === "pro";
+}
+
+export function applyArtifactAccess<T extends Partial<CourtConfig>>(config: T, allowed: boolean): T {
+  return allowed ? config : {...config, outputPreferenceMode: "answer-only", artifactType: "none", outputStrategy: config.outputStrategy === "artifact" ? "moderator-consensus" : config.outputStrategy};
+}

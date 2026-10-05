@@ -1,3 +1,4 @@
+import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput, isLitigantRole } from "@/lib/sessionOutput";
 import { confidenceLabel } from "@workspace/api-zod/session";
 import { useState } from "react";
@@ -233,6 +234,7 @@ export function SessionCourt({
   onNavigate,
 }: SessionCourtProps) {
   const [relayAnswer, setRelayAnswer] = useState("");
+  const artifactsAllowed = useArtifactAccess();
   const output = sessionOutput(state);
   return (
     <>
@@ -522,7 +524,7 @@ export function SessionCourt({
                 ))}
                 <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
                   <button onClick={onCopyMarkdown} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Copy</button>
-                  <button onClick={() => void onDownload()} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>
+                  <button disabled={!artifactsAllowed} title={artifactsAllowed ? "Download" : "Downloads require Pro"} onClick={() => void onDownload()} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>
                     {state.config.format === "docx" ? "DOCX" : state.config.format === "pdf" ? "PDF" : state.config.format === "json" ? "JSON" : state.config.format === "text" ? "TXT" : "MD"}
                   </button>
                   <button onClick={onExportPDF} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Print</button>

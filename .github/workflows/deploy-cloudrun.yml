@@ -138,6 +138,23 @@ jobs:
           }
           NODE
 
+      - name: Enable invitation guest authentication
+        run: |
+          python3 - <<'PYCODE'
+          import json, subprocess, urllib.request
+          token = subprocess.check_output(['gcloud', 'auth', 'print-access-token'], text=True).strip()
+          url = 'https://identitytoolkit.googleapis.com/admin/v2/projects/litigant-ai/config'
+          headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
+          with urllib.request.urlopen(urllib.request.Request(url, headers=headers)) as response:
+              config = json.load(response)
+          if not config.get('signIn', {}).get('anonymous', {}).get('enabled', False):
+              body = json.dumps({'signIn': {'anonymous': {'enabled': True}}}).encode()
+              request = urllib.request.Request(url + '?updateMask=signIn.anonymous.enabled', data=body, headers=headers, method='PATCH')
+              with urllib.request.urlopen(request) as response:
+                  assert json.load(response)['signIn']['anonymous']['enabled']
+          print('Invitation guest authentication enabled.')
+          PYCODE
+
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
 
@@ -275,7 +292,11 @@ jobs:
 
       - name: Verify live admin monitoring queries
         working-directory: artifacts/api-server
-        run: node scripts/verify-admin-monitoring.mjs
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        run: |
+          node scripts/verify-admin-monitoring.mjs
+          node scripts/verify-guest-invitations.mjs
 
       - name: Verify hosted frontend and API rewrite
         env:

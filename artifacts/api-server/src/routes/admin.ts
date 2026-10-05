@@ -62,6 +62,8 @@ import {
   type SeatId,
 } from "../lib/seatBriefs.js";
 
+import { InvitationInput, createInvitation, invitationView } from "../lib/guestInvitations.js";
+
 const router = Router();
 
 // ── Bootstrap rate limiter ────────────────────────────────────────────────────
@@ -108,6 +110,39 @@ function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot): Record<string, u
   }
   return out;
 }
+
+// Individual invitation links are controlled only by the administrator.
+router.get("/admin/guest-invitations", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({error: "Invitation service unavailable."});
+  try {
+    const docs = await db.collection("guest_invitations").orderBy("createdAt", "desc").limit(100).get();
+    const invitations = await Promise.all(docs.docs.map(async doc => {
+      const data = doc.data();
+      const profile = data.claimedBy ? (await db.collection("users").doc(data.claimedBy).get()).data() : null;
+      return invitationView(doc.id, data, profile?.creditBalance);
+    }));
+    return res.json({invitations});
+  } catch { return res.status(503).json({error: "Could not load invitations."}); }
+});
+router.post("/admin/guest-invitations", requireAdmin, async (req, res) => {
+  const parsed = InvitationInput.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({error: "Enter a name, 1–100,000 credits, Free or Pro, and a future expiration."});
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({error: "Invitation service unavailable."});
+  try {
+    const id = await createInvitation(db, parsed.data, (req as any).adminUid);
+    return res.status(201).json({id});
+  } catch { return res.status(503).json({error: "Could not create invitation."}); }
+});
+router.delete("/admin/guest-invitations/:id", requireAdmin, async (req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({error: "Invitation service unavailable."});
+  try {
+    await db.collection("guest_invitations").doc(req.params.id!).update({revoked: true});
+    return res.json({revoked: true});
+  } catch { return res.status(503).json({error: "Could not revoke invitation."}); }
+});
 
 // ── Bootstrap: set admin claim (master-secret gated, no token required) ───────
 
@@ -888,9 +923,7 @@ router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
 
 // ── Feature Flags (public read, admin write) ──────────────────────────────────
 
-const DEFAULT_FLAGS: Record<string, boolean> = {
-  guestMode: true,
-};
+const DEFAULT_FLAGS: Record<string, boolean> = {};
 
 router.get("/feature-flags", async (_req, res) => {
   const db = getFirestoreDb();

@@ -3,12 +3,14 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: vi.fn(), signInWithEmailAndPassword: vi.fn(),
   signInWithPopup: vi.fn(), GoogleAuthProvider: class {},
+  signInAnonymously: vi.fn(), linkWithCredential: vi.fn(), linkWithPopup: vi.fn(), EmailAuthProvider: {credential: vi.fn()},
   signOut: vi.fn(), updateProfile: vi.fn(), deleteUser: vi.fn(), sendEmailVerification: vi.fn(),
 }));
 vi.mock("@/lib/firebase", () => ({ auth: {} }));
 vi.mock("@/lib/apiUrl", () => ({ API_BASE: "/api" }));
 
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, linkWithCredential, linkWithPopup, deleteUser, signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { ensureAccountSetup, signInWithEmail, signInWithGoogle, signUpWithEmail, signOut } from "./authService";
 
 const user = { uid: "existing-user", getIdToken: vi.fn(async () => "test-token") } as any;
@@ -17,6 +19,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
   await signOut();
+  (auth as any).currentUser = null;
   vi.clearAllMocks();
   fetchMock = vi.fn(async () => response({ provisioned: true }));
   vi.stubGlobal("fetch", fetchMock);
@@ -77,5 +80,34 @@ describe("confirmed account provisioning", () => {
     await ensureAccountSetup(user);
     expect(user.getIdToken).toHaveBeenCalledWith(true);
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/provision", expect.objectContaining({ method: "POST" }));
+  });
+});
+
+describe("guest signup preserves the existing identity", () => {
+  it("links email credentials instead of making a second account", async () => {
+    (auth as any).currentUser = {...user,isAnonymous:true};
+    vi.mocked(linkWithCredential).mockResolvedValue({user} as any);
+    fetchMock.mockImplementation(async (url: string) => response(url.endsWith("/guest/current") ? {invitation:{status:"claimed",expiresAt:"2099-01-01T00:00:00Z",remainingCredits:0}} : {provisioned:true}));
+    await signUpWithEmail("person@example.test","test-password","Person");
+    expect(linkWithCredential).toHaveBeenCalledTimes(1);
+    expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+  it("links Google credentials to the trial identity", async () => {
+    (auth as any).currentUser = {...user,isAnonymous:true};
+    vi.mocked(linkWithPopup).mockResolvedValue({user} as any);
+    fetchMock.mockImplementation(async (url: string) => response(url.endsWith("/guest/current") ? {invitation:{status:"claimed",expiresAt:"2099-01-01T00:00:00Z"}} : {provisioned:true}));
+    await signInWithGoogle();
+    expect(linkWithPopup).toHaveBeenCalledTimes(1);
+    expect(signInWithPopup).not.toHaveBeenCalled();
+  });
+  it("starts a new account after expiration instead of carrying expired trial data", async () => {
+    (auth as any).currentUser = {...user,isAnonymous:true};
+    fetchMock.mockImplementation(async (url: string) => response(url.endsWith("/guest/current") ? {invitation:{status:"expired",expiresAt:"2000-01-01T00:00:00Z"}} : {provisioned:true}));
+    await signUpWithEmail("person@example.test","test-password","Person");
+    expect(firebaseSignOut).toHaveBeenCalledTimes(1);
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(createUserWithEmailAndPassword).toHaveBeenCalledTimes(1);
+    expect(linkWithCredential).not.toHaveBeenCalled();
   });
 });

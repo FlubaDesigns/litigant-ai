@@ -1346,3 +1346,25 @@ describe("courtesy eligibility uses recorded successful payments",()=>{
     if(plan==="pro") expect(query.where).toHaveBeenCalledWith("source","==","square_checkout");
   });
 });
+
+
+describe("invited session wiring",()=>{
+  beforeEach(()=>{
+    vi.clearAllMocks();
+    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(50);
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false,guest:true,emailVerified:false} as any);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed:50}));
+  });
+  it.each(["free","pro"])("uses the %s invitation plan and reserves its hard budget",async plan=>{
+    const db=createRouteMockDb(FAKE_UID,100);
+    db._store[`users/${FAKE_UID}`]={creditBalance:100,plan,guestInvitationId:"invitation"};
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    const response=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send({...BRAIN_BODY,config:{...BRAIN_BODY.config,maxCredits:100,outputPreferenceMode:"document",artifactType:"report"}});
+    expect(response.status).toBe(200);
+    expect(runBrainSession).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(runBrainSession).mock.calls[0][0].config.outputPreferenceMode).toBe(plan==="free"?"answer-only":"document");
+    const entry=Object.values(db._store).find((value:any)=>value.source==="brain_reservation") as any;
+    expect(entry.amount).toBe(-100);
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(50);
+  });
+});

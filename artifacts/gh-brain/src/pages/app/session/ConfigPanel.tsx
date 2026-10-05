@@ -1,5 +1,6 @@
+import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { useLimits } from "@/hooks/useLimits";
-import { CourtConfigSchema, RESPONSE_VIEWS, DOCUMENT_TYPES, DOWNLOAD_FORMATS, ANSWER_STYLES, OUTPUT_MODES } from "@workspace/api-zod/session";
+import { CourtConfigSchema, applyArtifactAccess, RESPONSE_VIEWS, DOCUMENT_TYPES, DOWNLOAD_FORMATS, ANSWER_STYLES, OUTPUT_MODES } from "@workspace/api-zod/session";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { useState, useRef, useEffect } from "react";
 import { HelpCircle, DollarSign, GraduationCap } from "lucide-react";
@@ -61,6 +62,7 @@ interface ConfigPanelProps {
 
 export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChange, uid, onboardingComplete }: ConfigPanelProps) {
   const limits = useLimits();
+  const artifactsAllowed = useArtifactAccess();
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [atBottom, setAtBottom] = useState(false);
@@ -121,7 +123,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
     saveTimer.current = setTimeout(() => doSave(false), 1500);
   }
 
-  const quote = useSessionQuote(config, open && quoteEnabled);
+  const quote = useSessionQuote(applyArtifactAccess(config, artifactsAllowed), open && quoteEnabled);
   const credLow = quote.data?.estimatedCredits ?? 0;
   const credHigh = credLow;
 
@@ -148,16 +150,16 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
             <V29Field label="Response view" desc="The selected response is used on screen and in downloads. The full court record remains available.">
               <Select value={config.outputStrategy} onValueChange={(v) => handleChange({outputStrategy: v as CourtConfig["outputStrategy"], ...(v === "artifact" ? {outputPreferenceMode: "document" as const} : {})})}>
                 <SelectTrigger aria-label="Response view" className={V29_SELECT}><SelectValue /></SelectTrigger>
-                <SelectContent>{Object.entries(RESPONSE_VIEWS).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+                <SelectContent>{Object.entries(RESPONSE_VIEWS).filter(([v]) => artifactsAllowed || v !== "artifact").map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
               </Select>
             </V29Field>
             <V29Field label="Document creation" desc="Answer only skips document building. Auto builds one when needed. Always build requests a document every time.">
-              <Select value={config.outputPreferenceMode ?? "auto"} onValueChange={(v) => handleChange({outputPreferenceMode: v as CourtConfig["outputPreferenceMode"], ...(v === "answer-only" && config.outputStrategy === "artifact" ? {outputStrategy: "moderator-consensus" as const} : {})})}>
+              <Select disabled={!artifactsAllowed} value={artifactsAllowed ? config.outputPreferenceMode ?? "auto" : "answer-only"} onValueChange={(v) => handleChange({outputPreferenceMode: v as CourtConfig["outputPreferenceMode"], ...(v === "answer-only" && config.outputStrategy === "artifact" ? {outputStrategy: "moderator-consensus" as const} : {})})}>
                 <SelectTrigger aria-label="Document creation" className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.entries(OUTPUT_MODES).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
               </Select>
             </V29Field>
-            {config.outputPreferenceMode !== "answer-only" && <V29Field label="Document type">
+            {artifactsAllowed && config.outputPreferenceMode !== "answer-only" && <V29Field label="Document type">
               <Select value={config.artifactType === "none" ? "auto" : config.artifactType} onValueChange={(v) => handleChange({artifactType: v as CourtConfig["artifactType"]})}>
                 <SelectTrigger aria-label="Document type" className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.entries(DOCUMENT_TYPES).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
@@ -175,12 +177,13 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
                 <SelectContent>{["concise", "balanced", "thorough"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </V29Field>
-            <V29Field label="Download format" desc="Used by the session download button, including answer-only sessions.">
+            {artifactsAllowed && <V29Field label="Download format" desc="Used by the session download button, including answer-only sessions.">
               <Select value={config.format} onValueChange={(v) => handleChange({format: v as CourtConfig["format"]})}>
                 <SelectTrigger aria-label="Download format" className={V29_SELECT}><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.entries(DOWNLOAD_FORMATS).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
               </Select>
-            </V29Field>
+            </V29Field>}
+            {!artifactsAllowed && <p className="text-xs text-muted-foreground">Document creation and downloads require Pro.</p>}
 
             <V29Field label="Litigants">
               <Select value={String(config.litigantCount)} onValueChange={v => handleChange({litigantCount: Number(v)})}>

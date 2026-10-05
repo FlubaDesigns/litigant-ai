@@ -1,3 +1,5 @@
+import { applyArtifactAccess } from "@workspace/api-zod/session";
+import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput } from "@/lib/sessionOutput";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { useProviders, useTemplates } from "@/hooks/useConfiguration";
@@ -73,10 +75,11 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
 export default function SessionPage() {
   const { user, userProfile, isAdmin } = useAuth();
   const { credits, plan } = useUserProfile();
+  const artifactsAllowed = useArtifactAccess();
 
   const savedConfig = useMemo(() => {
     if (!userProfile) return undefined;
-    const config: Partial<CourtConfig> = { ...userProfile.defaultSettings };
+    const config: Partial<CourtConfig> = { ...userProfile.defaultSettings, ...(!artifactsAllowed ? {outputPreferenceMode: "answer-only" as const, artifactType: "none" as const, outputStrategy: "moderator-consensus" as const} : {}) };
     // Keep the existing account test-model override, including profiles without defaults.
     if (userProfile.testModel && userProfile.testProvider) {
       const seat: SeatAssignment = { provider: userProfile.testProvider, model: userProfile.testModel, useMasterSettings: false };
@@ -86,7 +89,7 @@ export default function SessionPage() {
       };
     }
     return config;
-  }, [userProfile]);
+  }, [userProfile, artifactsAllowed]);
 
   const brainSession = useBrainSession(savedConfig);
   const {
@@ -99,7 +102,11 @@ export default function SessionPage() {
   const [, navigate] = useLocation();
   const { sessionId } = useParams<{sessionId?: string}>();
   const quoteEnabled = ["idle", "configuring", "error"].includes(state.phase);
-  const quote = useSessionQuote(state.config, quoteEnabled);
+  const quoteConfig = useMemo(() => applyArtifactAccess(state.config, artifactsAllowed), [state.config, artifactsAllowed]);
+  useEffect(() => {
+    if (!artifactsAllowed && state.phase !== "running" && (state.config.outputPreferenceMode !== "answer-only" || state.config.artifactType !== "none" || state.config.outputStrategy === "artifact")) setConfig(quoteConfig);
+  }, [artifactsAllowed, state.phase, state.config, quoteConfig, setConfig]);
+  const quote = useSessionQuote(quoteConfig, quoteEnabled);
   const {data:templates = []} = useTemplates();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -187,7 +194,7 @@ export default function SessionPage() {
   // ── Computed values ──────────────────────────────────────────────────────────
 
   const { maxLitigants } = useLimits();
-  const {data:courtesy} = useQuery({queryKey:["configuration", "courtesy-credit", user?.uid, credits, plan], queryFn:getCourtesyCredit, enabled:!!user && !isAdmin, retry:false});
+  const {data:courtesy} = useQuery({queryKey:["configuration", "courtesy-credit", user?.uid, credits, plan], queryFn:getCourtesyCredit, enabled:!!user && !isAdmin && !userProfile?.guestInvitationId, retry:false});
 
   const isRunning     = state.phase === "running";
   const isPaused      = state.phase === "paused";
@@ -242,7 +249,7 @@ export default function SessionPage() {
         return;
       }
       toast.error(`You need at least ${estimatedCreditsHigh} credits to run this session.`, {
-        action: { label: "Buy Credits", onClick: () => navigate("/billing") },
+        action: { label: userProfile?.guestInvitationId ? "Create account" : "Buy Credits", onClick: () => navigate(userProfile?.guestInvitationId ? "/register" : "/billing") },
       });
       return;
     }
@@ -268,6 +275,7 @@ export default function SessionPage() {
   }
 
   const handleDownload = useCallback(async () => {
+    if (!artifactsAllowed) {toast.info("Downloads require Pro."); return;}
     const fmt = state.config.format ?? "markdown";
     if (fmt === "docx") {
       try { await exportDocx(state); toast.success("Word document downloaded."); }
@@ -314,9 +322,10 @@ export default function SessionPage() {
     a.href = url; a.download = `brain-session-${Date.now()}.md`; a.click();
     URL.revokeObjectURL(url);
     toast.success("Report downloaded.");
-  }, [state]);
+  }, [state, artifactsAllowed]);
 
   function handleExportPDF() {
+    if (!artifactsAllowed) {toast.info("PDF export requires Pro."); return;}
     const w = window.open("", "_blank");
     if (!w) { toast.error("Popup blocked — allow popups for this site to print/save as PDF."); return; }
     exportPDF(state, w);
@@ -362,9 +371,9 @@ export default function SessionPage() {
   return (
     <>
       {!isAdmin && !isRunning && (isComplete || isRelayNeeded || isPaused) && credits <= 0 && <div role="alert" className="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 space-y-2">
-        <p className="font-semibold">Top up to continue</p>
+        <p className="font-semibold">{userProfile?.guestInvitationId ? "Create an account to continue" : "Top up to continue"}</p>
         <p className="text-sm">{hasDebt ? `You used ${Math.abs(credits)} courtesy credits. Your next top-up clears this balance.` : "You have used your available credits."} Your conversation is saved.</p>
-        <button className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground" onClick={()=>navigate("/billing")}>Top up</button>
+        <button className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground" onClick={()=>navigate(userProfile?.guestInvitationId ? "/register" : "/billing")}>{userProfile?.guestInvitationId ? "Create account" : "Top up"}</button>
       </div>}
       {/* ── Overdraft confirmation dialog ── */}
       {overdraftDialogOpen && (

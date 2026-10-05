@@ -10,6 +10,7 @@ import { AccountSetupNotice } from "@/components/AccountSetupNotice";
 import { AppLayout } from "@/components/AppLayout";
 
 // Public pages
+const GuestPage = lazy(() => import("@/pages/Guest"));
 const LandingPage = lazy(() => import("@/pages/Landing"));
 const SignInPage = lazy(() => import("@/pages/auth/SignIn"));
 const RegisterPage = lazy(() => import("@/pages/auth/Register"));
@@ -40,6 +41,7 @@ const NotFoundPage = lazy(() => import("@/pages/not-found"));
 function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, loading, setupError } = useAuth();
   if (loading) return null;
+  if (user?.isAnonymous) return <>{children}</>;
   if (setupError) return <AccountSetupNotice />;
   if (user) {
     const next = safeNext(new URLSearchParams(window.location.search).get("next"));
@@ -62,6 +64,7 @@ function AppRoutes() {
       <Route path="/app/session/:sessionId">{params => <Redirect to={`/session/${encodeURIComponent(params.sessionId)}`} />}</Route>
       {/* Public */}
       <Route path="/" component={LandingPage} />
+      <Route path="/guest" component={GuestPage} />
       <Route path="/sign-in">
         <RedirectIfAuthed>
           <SignInPage />

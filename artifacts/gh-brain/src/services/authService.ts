@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  signInAnonymously, linkWithCredential, linkWithPopup, EmailAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
@@ -11,6 +12,8 @@ import {
 import { auth } from "@/lib/firebase";
 
 const googleProvider = new GoogleAuthProvider();
+
+import { guestFetch, getCurrentInvitation } from "./guestService";
 
 import { API_BASE } from "@/lib/apiUrl";
 
@@ -33,7 +36,7 @@ async function provisionUser(user: User, extra?: ProfileDetails): Promise<void> 
     });
     const data = await response.json().catch(() => null);
     if (!response.ok || data?.provisioned !== true) {
-      throw new Error("Account setup was not confirmed.");
+      throw new Error(data?.error ?? "Account setup was not confirmed.");
     }
     if (pendingProfile?.uid === user.uid) pendingProfile = null;
   } catch {
@@ -58,6 +61,26 @@ export async function ensureAccountSetup(user: User): Promise<void> {
   } else {
     await provisionUser(user);
   }
+}
+
+export async function startGuestTrial(invitation: string): Promise<User> {
+  return performSignIn(async () => {
+    if (auth.currentUser && !auth.currentUser.isAnonymous) throw new Error("Sign out before using a guest invitation.");
+    const user = auth.currentUser ?? (await signInAnonymously(auth)).user;
+    await guestFetch("/guest/redeem", {method: "POST", body: JSON.stringify({invitation})});
+    await user.getIdToken(true);
+    await provisionUser(user);
+    return user;
+  });
+}
+async function guestForSignup(): Promise<User | null> {
+  const user = auth.currentUser;
+  if (!user?.isAnonymous) return null;
+  const {invitation} = await getCurrentInvitation();
+  if (invitation && ["ready", "claimed"].includes(invitation.status) && Date.parse(invitation.expiresAt) > Date.now()) return user;
+  // A new signup after expiry uses a fresh identity; trial history is not reassigned.
+  await firebaseSignOut(auth);
+  return null;
 }
 
 /**
@@ -91,7 +114,10 @@ export async function signUpWithEmail(
   organization?: string
 ): Promise<User> {
   return performSignIn(async () => {
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const guest = await guestForSignup();
+    const credential = guest
+      ? await linkWithCredential(guest, EmailAuthProvider.credential(email, password))
+      : await createUserWithEmailAndPassword(auth, email, password);
     pendingProfile = { uid: credential.user.uid, extra: { role, organization } };
     await updateProfile(credential.user, { displayName });
     await provisionUser(credential.user, { role, organization });
@@ -110,7 +136,8 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
 export async function signInWithGoogle(): Promise<User> {
   return performSignIn(async () => {
-    const credential = await signInWithPopup(auth, googleProvider);
+    const guest = await guestForSignup();
+    const credential = guest ? await linkWithPopup(guest, googleProvider) : await signInWithPopup(auth, googleProvider);
     await provisionUser(credential.user);
     return credential.user;
   });

@@ -1,3 +1,5 @@
+import { useGuestInvitation } from "@/hooks/useGuestInvitation";
+import { GuestTrialNotice } from "./GuestTrialNotice";
 import { Redirect } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { AccountSetupNotice } from "./AccountSetupNotice";
@@ -14,6 +16,8 @@ export function ProtectedRoute({
   requireAdmin = false,
 }: ProtectedRouteProps) {
   const { user, loading, setupError, isAdmin, firebaseReady } = useAuth();
+
+  const trial = useGuestInvitation();
 
   // When Firebase is not configured, allow all access in guest mode
   if (!firebaseReady) {
@@ -42,7 +46,9 @@ export function ProtectedRoute({
     return <Redirect to={`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`} />;
   }
 
-  if (requireVerified && !user.emailVerified && !import.meta.env.DEV) {
+  if (trial.isGuest && trial.ended) return <GuestTrialNotice />;
+  if (trial.isGuest && ["/billing", "/settings"].includes(window.location.pathname)) return <Redirect to="/register" />;
+  if (requireVerified && !trial.isGuest && !user.emailVerified && !import.meta.env.DEV) {
     return <Redirect to="/verify-email" />;
   }
 

@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { invitationActive } from "./guestInvitations.js";
 import { getFirestore } from "firebase-admin/firestore";
 
 let app: App | null = null;
@@ -39,16 +40,29 @@ export function isFirebaseConfigured(): boolean {
 }
 
 export async function verifyIdToken(
-  idToken: string
-): Promise<{ uid: string; email?: string; name?: string; admin?: boolean; emailVerified?: boolean } | null> {
+  idToken: string,
+  options: { allowUnclaimedGuest?: boolean; allowExpiredGuest?: boolean } = {}
+): Promise<{ uid: string; email?: string; name?: string; admin?: boolean; emailVerified?: boolean; anonymous?: boolean; guest?: boolean } | null> {
   if (!isFirebaseConfigured()) return null;
   try {
     // checkRevoked: true makes Firebase reject tokens whose refresh tokens have
     // been revoked (e.g. after a ban) and tokens belonging to disabled accounts,
     // rather than accepting them until natural expiry (~1 hour).
     const decoded = await getAuth().verifyIdToken(idToken, true);
+    const anonymous = decoded.firebase.sign_in_provider === "anonymous";
+    let guest = false;
+    if (anonymous || decoded.guestTrial === true) {
+      const db = getFirestore();
+      const profile = (await db.collection("users").doc(decoded.uid).get()).data();
+      if (profile?.guestInvitationId) {
+        const invitation = (await db.collection("guest_invitations").doc(profile.guestInvitationId).get()).data();
+        if (invitation?.claimedBy !== decoded.uid) return null;
+        if (!options.allowExpiredGuest && !invitationActive(invitation)) return null;
+        guest = true;
+      } else if (anonymous && !options.allowUnclaimedGuest) return null;
+    }
     return {
-      uid: decoded.uid,
+      uid: decoded.uid, anonymous, guest,
       email: decoded.email,
       name: decoded.name,
       admin: decoded["admin"] === true,

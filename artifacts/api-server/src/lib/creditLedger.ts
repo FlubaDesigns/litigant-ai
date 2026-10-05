@@ -351,7 +351,7 @@ export async function getCourtesyCreditEligibility(uid: string): Promise<boolean
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore not configured");
   const user = (await db.collection("users").doc(uid).get()).data();
-  if (user?.plan !== "pro") return false;
+  if (user?.plan !== "pro" || user.guestInvitationId) return false;
   const purchases = await db.collection("credit_transactions").where("userId", "==", uid)
     .where("type", "==", "purchase").where("source", "==", "square_checkout").get();
   return purchases.docs.some(d => {

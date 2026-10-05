@@ -21,7 +21,8 @@ const responses: Record<string,unknown> = {
   "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:"The response was inaccurate.",userId:longId,sessionId:longId,createdAt:"2026-10-04T12:00:00Z"}],totalCount:1,hasMore:false},
   "/admin/credit-packs":{packs:[{id:"fixture",name:"Example pack",description:"A test fixture only",active:true,metadata:{creditAmount:"500"},prices:[{id:"price",unit_amount:500,currency:"usd"}]},{id:"inactive",name:"Inactive pack",active:false,metadata:{creditAmount:"500"},prices:[]}],bounds:{MIN_UNIT_AMOUNT_CENTS:100,MAX_UNIT_AMOUNT_CENTS:100000,MIN_CREDIT_AMOUNT:1,MAX_CREDIT_AMOUNT:1000000}},
   "/limits":{limits:{maxLitigants:10,overdraftLimit:500}},
-  "/feature-flags":{flags:{creditOverdraft:true}},
+  "/feature-flags":{flags:{}},
+  "/admin/guest-invitations":{invitations:[]},
   "/admin/templates":{templates:[]},
   "/admin/email-templates":{templates:[email]},
   "/admin/email-templates/welcome/versions":{versions:[]},
@@ -63,11 +64,11 @@ for (const width of [360, 412]) {
       }).map(el=>el.textContent?.slice(0,60)));
       expect(overflow,tab.label).toEqual([]);
       if (tab.id === "overview" || tab.id === "limits") await expect(page.getByRole("region",{name:"Average conversation credits"}).getByText("50 credits",{exact:true})).toBeVisible();
-      if (tab.id === "flags") {
+      if (tab.id === "marketing") {
         await expect(page.getByRole("region",{name:"Guest invitations"})).toBeVisible();
-        await expect(page.getByText("Not yet implemented",{exact:true})).toBeVisible();
+        await expect(page.getByRole("button",{name:"Create link",exact:true})).toBeVisible();
         await expect(page.locator(".admin-page").getByRole("switch")).toHaveCount(0);
-        await expect(page.locator(".admin-page").getByRole("combobox")).toHaveCount(0);
+        await expect(page.getByLabel("Access",{exact:true})).toBeVisible();
       }
       if (tab.id === "limits") {
         for (const name of ["Courtesy ceiling", "Maximum litigants"]) {
@@ -688,3 +689,32 @@ test("changing only signup bonus saves, survives reload and updates the public t
   await page.goto("/register");
   await expect(page.getByText("100 free credits on signup",{exact:true})).toBeVisible();
 });
+
+for (const width of [360, 412]) {
+  test(`Marketing creates independent links at ${width}px`, async ({page}) => {
+    await page.setViewportSize({width,height:800});
+    const created: any[] = [];
+    const ids = ["a".repeat(32), "b".repeat(32)];
+    await page.route("**/api-server/api/admin/guest-invitations", async route => {
+      if (route.request().method() === "POST") {
+        created.push(route.request().postDataJSON());
+        await route.fulfill({status:201,json:{id:ids[created.length-1]}});
+      } else await route.fulfill({json:{invitations:[]}});
+    });
+    await page.goto("/admin?e2e=1&tab=flags");
+    await expect(page.locator(".admin-page h1")).toHaveText("Marketing");
+    await page.getByLabel("For",{exact:true}).fill("Person A");
+    await page.getByLabel("Credits",{exact:true}).fill("100");
+    await page.getByLabel("Expires",{exact:true}).fill("2099-10-10T12:30");
+    await page.getByRole("button",{name:"Create link",exact:true}).click();
+    await expect(page.getByLabel("Invitation link",{exact:true})).toHaveValue(new RegExp("/guest#"+ids[0]));
+    await page.getByLabel("For",{exact:true}).fill("Person B");
+    await page.getByLabel("Credits",{exact:true}).fill("500");
+    await page.getByLabel("Access",{exact:true}).click();
+    await page.getByRole("option",{name:"Pro",exact:true}).click();
+    await page.getByRole("button",{name:"Create link",exact:true}).click();
+    await expect(page.getByLabel("Invitation link",{exact:true})).toHaveValue(new RegExp("/guest#"+ids[1]));
+    expect(created.map(({label,credits,plan})=>({label,credits,plan}))).toEqual([{label:"Person A",credits:100,plan:"free"},{label:"Person B",credits:500,plan:"pro"}]);
+    await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  });
+}

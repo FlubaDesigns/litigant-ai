@@ -3,6 +3,8 @@ import { Router } from "express";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { safeError } from "../lib/safeError.js";
 
+import { invitationActive } from "../lib/guestInvitations.js";
+
 const router = Router();
 
 /**
@@ -33,6 +35,13 @@ router.get("/report/:shareId", async (req, res) => {
     const doc = snap.docs[0]!;
     const data = doc.data();
 
+    if (data.userId) {
+      const profile = (await db.collection("users").doc(data.userId).get()).data();
+      if (profile?.guestInvitationId) {
+        const invitation = (await db.collection("guest_invitations").doc(profile.guestInvitationId).get()).data();
+        if (!invitationActive(invitation)) return res.status(404).json({error: "not_found"});
+      }
+    }
     // Only expose fields suitable for public consumption
     const publicFields = [
       "sessionId", "title", "question", "templateId",

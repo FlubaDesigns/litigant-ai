@@ -14,7 +14,7 @@ service cloud.firestore {
     function touchesProtectedUserFields() {
       let protectedFields = [
         // Financial & plan state
-        'creditBalance', 'plan', 'subscriptionStatus',
+        'creditBalance', 'plan', 'subscriptionStatus', 'guestInvitationId',
         // Ban state
         'banned', 'bannedReason', 'bannedAt', 'bannedBy',
         // Auto-refill config
@@ -57,7 +57,7 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId
                     && !request.resource.data.keys().hasAny([
-                         'creditBalance', 'plan', 'subscriptionStatus',
+                         'creditBalance', 'plan', 'subscriptionStatus', 'guestInvitationId',
                          'banned', 'bannedReason', 'bannedAt', 'bannedBy',
                          'autoRefill', 'autoRefillCheckoutUrl', 'autoRefillTriggeredAt',
                          'welcomeEmailSent', 'firstSessionEmailSent',
@@ -69,6 +69,15 @@ service cloud.firestore {
                     && !setsAutoRefillCheckoutFields();
     }
 
+    function trialAllowsData() {
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return !('guestInvitationId' in profile) || profile.guestInvitationId == null || activeInvitation(profile.guestInvitationId);
+    }
+    function activeInvitation(id) {
+      let invitation = get(/databases/$(database)/documents/guest_invitations/$(id)).data;
+      return invitation.claimedBy == request.auth.uid && invitation.revoked == false && invitation.expiresAt > request.time;
+    }
+
     // Sessions: owner-only reads; writes through the server. Shared-session access is handled
     // server-side via the Admin SDK (report.ts / sessions.ts), which bypasses
     // these rules entirely — no broad client-SDK read needed here.
@@ -76,7 +85,7 @@ service cloud.firestore {
     // CREATE (the document doesn't exist yet) — this correctly denies client-side
     // creates, since all sessions are written by the Admin SDK via brain.ts.
     match /sessions/{sessionId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId && trialAllowsData();
       // Persisted transcript, configuration and billing fields are server-owned.
       allow write: if false;
     }

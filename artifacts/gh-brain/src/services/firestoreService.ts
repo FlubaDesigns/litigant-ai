@@ -30,6 +30,7 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 
 export interface UserProfile {
   userId?: string;
+  guestInvitationId?: string | null;
   email: string;
   displayName: string;
   /** Self-reported role — collected at signup, editable in Settings */

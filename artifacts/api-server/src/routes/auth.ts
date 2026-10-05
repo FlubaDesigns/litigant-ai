@@ -6,6 +6,8 @@ import { grantSignupBonus } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail, isResendConfigured } from "../lib/emailService.js";
 
+import { convertInvitation, InvitationError } from "../lib/guestInvitations.js";
+
 const router = Router();
 
 /**
@@ -68,7 +70,7 @@ router.post("/auth/provision", async (req, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const decoded = await verifyIdToken(authHeader.slice(7));
+  const decoded = await verifyIdToken(authHeader.slice(7), {allowExpiredGuest: true});
   if (!decoded) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -82,6 +84,10 @@ router.post("/auth/provision", async (req, res) => {
     return res.json({ provisioned: false, reason: "firestore_unavailable" });
   }
 
+  if (decoded.anonymous) {
+    if (!decoded.guest) return res.status(403).json({error: "A guest invitation is required."});
+    return res.json({provisioned: true, newUser: false, bonusGranted: false});
+  }
   const uid = decoded.uid;
   const userRef = db.collection("users").doc(uid);
 
@@ -103,6 +109,7 @@ router.post("/auth/provision", async (req, res) => {
     // Create the user profile inside a transaction so two concurrent provision
     // calls for a brand-new UID can't both write creditBalance: 0 and then
     // have the second .set() clobber the balance after grantSignupBonus ran.
+    if (decoded.guest && decoded.email) await convertInvitation(db, uid, decoded.email, decoded.name);
     let newUser = false;
     await db.runTransaction(async (txn) => {
       const snap = await txn.get(userRef);
@@ -149,6 +156,7 @@ router.post("/auth/provision", async (req, res) => {
       ...(!decoded.emailVerified ? { reason: "email_not_verified" } : {}),
     });
   } catch (err: any) {
+    if (err instanceof InvitationError) return res.status(err.status).json({error: err.message});
     console.error("[Auth] provision error:", err.message);
     return res.status(500).json({ error: "Provisioning failed" });
   }

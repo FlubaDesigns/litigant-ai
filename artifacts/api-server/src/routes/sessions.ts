@@ -1,3 +1,4 @@
+import { canCreateArtifacts } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
@@ -185,6 +186,9 @@ router.patch("/sessions/:id", async (req, res) => {
   const decoded = await verifyIdToken(authHeader.slice(7));
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
 
+  if (req.body?.shared === true && !canCreateArtifacts((await db.collection("users").doc(decoded.uid).get()).data()?.plan, decoded.admin)) {
+    res.status(403).json({message: "Sharing reports requires Pro."}); return;
+  }
   // shareId is intentionally excluded from the accepted body — it is always
   // generated server-side via POST /sessions/:id/share to prevent spoofing.
   const { title, shared, starred, archived, status } = req.body as {
@@ -281,6 +285,10 @@ router.post("/sessions/:id/share", async (req, res) => {
 
   const decoded = await verifyIdToken(authHeader.slice(7));
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
+
+  if (!canCreateArtifacts((await db.collection("users").doc(decoded.uid).get()).data()?.plan, decoded.admin)) {
+    res.status(403).json({message: "Sharing reports requires Pro."}); return;
+  }
 
   try {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();

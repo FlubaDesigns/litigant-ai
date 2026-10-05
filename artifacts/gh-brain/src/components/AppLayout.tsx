@@ -1,3 +1,4 @@
+import { GuestTrialNotice } from "./GuestTrialNotice";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
@@ -19,6 +20,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       {/* Shared site header — edit SiteHeader.tsx to update everywhere */}
       <SiteHeader variant="app" />
+
+      <GuestTrialNotice />
 
       {/* Onboarding wizard — shown once after first login */}
       {showWizard && <OnboardingWizard onComplete={() => setWizardDismissed(true)} />}

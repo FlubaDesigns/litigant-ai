@@ -1,3 +1,4 @@
+import { MarketingTab } from "./MarketingTab";
 import "./admin.css";
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearch, useLocation } from "wouter";
@@ -61,7 +62,7 @@ import {
 
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
-  | "api-usage" | "errors" | "abuse" | "flags" | "templates" | "pricing" | "credit-packs" | "api-keys"
+  | "api-usage" | "errors" | "abuse" | "marketing" | "templates" | "pricing" | "credit-packs" | "api-keys"
   | "checklist" | "ai-studio" | "seat-orders" | "emails";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
@@ -80,7 +81,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "abuse",        label: "Feedback Flags",     icon: HeartCrack },
   { id: "credit-packs", label: "Credit Packs",    icon: Package },
   { id: "limits",       label: "Limits & Defaults",          icon: SlidersHorizontal },
-  { id: "flags",        label: "Feature Flags",   icon: Flag },
+  { id: "marketing",    label: "Marketing",   icon: Flag },
   { id: "templates",    label: "Templates",       icon: LayoutTemplate },
   { id: "emails",       label: "Emails",          icon: Mail },
 ];
@@ -1810,16 +1811,6 @@ function BillingDefaultsSection() {
   </form>;
 }
 
-function FeatureFlagsTab() {
-  return <section className="lgt-card lgt-card--compact space-y-2" aria-label="Guest invitations">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="text-sm font-semibold">Guest invitations</h3>
-      <Badge variant="outline">Not yet implemented</Badge>
-    </div>
-    <p className="text-sm text-muted-foreground">Individual links with their own credit allowance, Free or Pro access, and expiration date.</p>
-  </section>;
-}
-
 // ─── Templates Tab ────────────────────────────────────────────────────────────
 function TemplatesTab() {
   const qc = useQueryClient();
@@ -3307,7 +3298,8 @@ function TabSkeleton() {
 export default function AdminPage() {
   const search = useSearch();
   const [, setLocation] = useLocation();
-  const tabFromUrl = new URLSearchParams(search).get("tab") as AdminTab | null;
+  const requestedTab = new URLSearchParams(search).get("tab");
+  const tabFromUrl = (requestedTab === "flags" ? "marketing" : requestedTab) as AdminTab | null;
   const validTab = tabFromUrl && TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : "overview";
   const [activeTab, setActiveTabState] = useState<AdminTab>(validTab);
   const mobileNav = useRef<HTMLElement>(null);
@@ -3395,7 +3387,7 @@ export default function AdminPage() {
           {activeTab === "abuse"        && <FeedbackFlagsTab />}
           {activeTab === "credit-packs" && <CreditPacksTab />}
           {activeTab === "limits"       && <LimitsTab />}
-          {activeTab === "flags"        && <FeatureFlagsTab />}
+          {activeTab === "marketing"    && <MarketingTab />}
           {activeTab === "templates"    && <TemplatesTab />}
           {activeTab === "emails"       && <EmailsTab />}
         </motion.div>

@@ -1,7 +1,7 @@
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
-import { CourtConfigSchema } from "@workspace/api-zod/session";
+import { CourtConfigSchema, canCreateArtifacts, applyArtifactAccess } from "@workspace/api-zod/session";
 import { claimSessionRun, writeSessionRun, releaseSessionRun, SessionRunError, type SessionRunLease } from "../lib/sessionRunLock.js";
 /**
  * Brain route — POST /run-brain
@@ -24,8 +24,7 @@ import { claimSessionRun, writeSessionRun, releaseSessionRun, SessionRunError, t
  *      - run failed         → full refund of the reservation (source="brain_failure_refund")
  *
  * ## Guest mode
- *   Requests without a Bearer token get one free session per server IP.
- *   Tracked in-memory (guestSessionIPs); resets on restart by design.
+ *   Admin invitations use authenticated temporary accounts and the same ledger.
  *
  * Session balance changes share creditLedger.ts with payments and signup grants.
  * See docs/credits.md §5 for the full lifecycle diagram.
@@ -135,138 +134,6 @@ async function createAutoRefillUrl(dollarAmount: number, uid: string): Promise<s
   }
 }
 
-/**
- * Guest session tracking — checks/writes Firestore `guest_sessions/{ip}` when
- * Firebase is configured (production). Falls back to an in-memory Set when
- * Firebase is not available (development / unit tests).
- *
- * Firestore document shape: { ip: string, usedAt: Timestamp }
- */
-const _guestMemoryFallback = new Set<string>();
-
-function getClientIp(req: import("express").Request): string {
-  // req.ip is trust-proxy-aware (app-firebase.ts sets "trust proxy", 1).
-  // Using req.ip is consistent with how auth.ts rate-limiters key on client IP
-  // and is NOT spoofable via a crafted X-Forwarded-For header.
-  return req.ip ?? req.socket.remoteAddress ?? "unknown";
-}
-
-/**
- * Atomically claim the guest free trial for an IP address.
- *
- * Uses Firestore document creation (.create()) as the atomic primitive —
- * only the FIRST concurrent request that successfully creates the document
- * may proceed. All subsequent .create() calls for the same key throw
- * ALREADY_EXISTS (gRPC code 6), so the race window is closed entirely.
- *
- * The claim starts as status:"reserved" with a 2-hour expiry so that
- * failed runs (provider error, client disconnect) don't permanently burn
- * the trial. Once the session succeeds, confirmGuestSession() marks it
- * status:"used" with no expiry.
- *
- * Returns true when the caller may proceed with the free trial.
- * Returns false when the trial has already been used (or is actively
- * reserved by a concurrent request that has not yet failed).
- *
- * On Firestore errors the function fails CLOSED — guest access is denied
- * rather than granted, preventing a Firestore outage from handing out
- * unlimited free runs.
- */
-async function claimGuestSession(ip: string): Promise<boolean> {
-  const safeKey = ip.replace(/[./]/g, "_");
-  const db = getFirestoreDb();
-  if (!db) {
-    // Dev/test fallback — no Firestore configured
-    if (_guestMemoryFallback.has(ip)) return false;
-    _guestMemoryFallback.add(ip);
-    return true;
-  }
-  const ref = db.collection("guest_sessions").doc(safeKey);
-  try {
-    // .create() is atomic and fails immediately if the document already exists.
-    await ref.create({
-      ip,
-      status: "reserved",
-      reservedAt: new Date(),
-      // Expiry: if the run fails and confirmGuestSession is never called,
-      // the reservation lapses after 2 hours and the guest can retry.
-      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-    });
-    return true;
-  } catch (err: any) {
-    const isAlreadyExists = err?.code === 6 || err?.message?.includes("ALREADY_EXISTS");
-    if (!isAlreadyExists) {
-      // Firestore failure — fail closed so outages don't hand out free runs
-      console.error("[brain] claimGuestSession Firestore error — denying guest access:", err?.message);
-      return false;
-    }
-    // Document exists — check whether the existing reservation has expired
-    // (means a previous run failed and the 2-hour grace period has passed).
-    try {
-      const snap = await ref.get();
-      if (!snap.exists) return true; // shouldn't happen but safe to allow
-      const data = snap.data()!;
-      const status = data["status"] as string | undefined;
-      const expiresAt = data["expiresAt"] as { toDate?: () => Date } | Date | undefined;
-      const expiresMs = expiresAt instanceof Date
-        ? expiresAt.getTime()
-        : (expiresAt?.toDate?.()?.getTime() ?? Infinity);
-      if (status === "reserved" && expiresMs < Date.now()) {
-        // Stale reservation — overwrite it so this run can proceed.
-        await ref.set({
-          ip,
-          status: "reserved",
-          reservedAt: new Date(),
-          expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-        });
-        return true;
-      }
-    } catch {
-      // Non-fatal — the primary ALREADY_EXISTS check already tells us to deny
-    }
-    return false;
-  }
-}
-
-/**
- * Mark a guest session as permanently used after a successful run.
- * Removes the expiry so the reservation cannot be reclaimed by lapse.
- * Non-fatal — if this fails the reservation expires after 2 hours, which
- * is acceptable; the guest gets one automatic retry in the worst case.
- */
-async function confirmGuestSession(ip: string): Promise<void> {
-  const safeKey = ip.replace(/[./]/g, "_");
-  const db = getFirestoreDb();
-  if (!db) return; // memory fallback was already set in claimGuestSession
-  try {
-    await db.collection("guest_sessions").doc(safeKey).update({
-      status: "used",
-      usedAt: new Date(),
-      expiresAt: null, // permanent — lapse reclaim is no longer possible
-    });
-  } catch (err: any) {
-    console.error("[brain] confirmGuestSession failed (non-fatal):", err?.message);
-  }
-}
-
-/**
- * Atomically reserves credits for an upcoming session.
- *
- * In a single Firestore transaction:
- *   - Reads the current balance.
- *   - Returns false (without writing anything) if balance < amount.
- *   - Otherwise deducts `amount` from the balance AND writes an immutable
- *     credit_transactions entry (type="usage", source="brain_reservation").
- *
- * Throwing vs returning false:
- *   - Returns false  → insufficient balance (caller sends HTTP 402).
- *   - Throws         → Firestore failure (caller sends HTTP 503).
- *
- * @param uid       - Firebase UID of the user.
- * @param amount    - Credits to reserve (from estimateSessionCredits).
- * @param sessionId - Used to link the ledger entry to the session document.
- */
-
 router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // ── Auth fast-path ────────────────────────────────────────────────────────
   // Validate auth token (or confirm guest intent) BEFORE touching the body,
@@ -287,7 +154,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     }
     // Token is valid — fall through to full processing below.
   }
-  // No Authorization header → guest path, allowed to continue.
+  if (!earlyAuthHeader?.startsWith("Bearer ")) {
+    res.status(401).json({message: "Sign in or use a guest invitation to start a session."});
+    return;
+  }
 
   // Runtime schema validation — rejects malformed bodies before any credit
   // estimation or AI calls. Bounded integers prevent unbounded debate loops.
@@ -346,10 +216,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // ── Auth + credit reservation ─────────────────────────────────────────────
   let uid: string | null = null;
   let isAdminRun = false;
-  // Tracks whether a guest session was atomically claimed for this request.
-  // Set to the client IP when claimGuestSession() succeeds so that the finally
-  // block can permanently confirm the run (or let the reservation lapse on failure).
-  let guestIp: string | null = null;
   const authHeader = req.headers["authorization"];
   const db = getFirestoreDb();
 
@@ -376,7 +242,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     // must click their verification link first.
     // decoded.emailVerified is undefined (not false) in dev mode where Firebase
     // is not fully configured — treat undefined as "not blocked" so local dev works.
-    if (decoded.emailVerified === false) {
+    if (decoded.emailVerified === false && !decoded.guest) {
       res.status(403).json({ message: "Please verify your email address before running a session." });
       return;
     }
@@ -441,6 +307,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       && continueFromTranscript.some(line => line.startsWith("**Moderator (Summary):**"));
   }
 
+  if (uid && !isAdminRun) {
+    const account = (await db!.collection("users").doc(uid).get()).data();
+    effectiveConfig = applyArtifactAccess(effectiveConfig, canCreateArtifacts(account?.plan));
+  }
   try {
     prepared = await prepareSession(effectiveConfig, resumeWithFixedPipeline === true);
     effectiveConfig = prepared.config;
@@ -460,25 +330,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     res.status(error instanceof LimitsUnavailableError ? 503 : 400).json({message: error instanceof Error ? error.message : "Invalid session configuration"});
     return;
   }
-  if (!uid) {
-    // Guest mode: one free session per IP, then require signup.
-    // claimGuestSession uses Firestore .create() as an atomic lock so two
-    // concurrent requests from the same IP cannot both slip through.
-    const ip = getClientIp(req);
-    const claimed = await claimGuestSession(ip);
-    if (!claimed) {
-      const { signupBonusCredits } = await getBillingDefaults();
-      res.status(402).json({
-        message:
-          `Guest sessions are limited to one free trial. Create a free account to continue — you'll receive ${signupBonusCredits} credits.`,
-        guestLimitReached: true,
-      });
-      return;
-    }
-    // Store the IP so the finally block can permanently confirm the run on success
-    // or allow the 2-hour reservation to lapse naturally on failure.
-    guestIp = ip;
-  }
   if (uid) {
     if (runLease && db) {
       try { await writeSessionRun(db, runLease, {}); }
@@ -497,6 +348,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
       if (await getCourtesyCreditEligibility(uid)) courtesyLimit = prepared.limits?.overdraftLimit ?? 0;
       effectiveConfig.maxCredits = Math.min(effectiveConfig.maxCredits!, balance + courtesyLimit);
+      // Guest invitations have a hard allowance: reserve the whole execution
+      // budget so simultaneous sessions cannot spend the same trial credits.
+      if (account?.guestInvitationId) estimatedCost = effectiveConfig.maxCredits;
       // Keep the saved config and execution budget aligned.
       prepared.config.maxCredits = Number(previousSession?.creditsUsed ?? 0) + effectiveConfig.maxCredits;
       if (estimatedCost <= 0) {
@@ -840,14 +694,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       await reconcileCredits(uid, runSucceeded ? actualCost : estimatedCost, sessionId, "brain_failure_refund").catch(error => console.error("[brain] Refund requires reconciliation", {uid, sessionId, estimatedCost, error}));
     }
 
-    // Confirm the guest session on success so it's permanently locked.
-    // On failure, the 2-hour reservation lapses naturally — the guest gets a retry
-    // if the failure was on our side (provider error, timeout), but cannot replay
-    // a completed session by claiming the run "failed".
-    if (runSucceeded && guestIp) {
-      await confirmGuestSession(guestIp);
-    }
-
     clearTimeout(sessionTimer);
     if (!res.writableEnded) res.end();
   }
@@ -860,7 +706,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   }
 });
 
-router.post("/session-estimate", makeRateLimiter({ keyFn: req => `quote:${getClientIp(req)}`, windowMs: 60_000, limit: 120, message: "Too many estimate requests" }), async (req, res) => {
+router.post("/session-estimate", makeRateLimiter({ keyFn: req => `quote:${(req.ip ?? "unknown")}`, windowMs: 60_000, limit: 120, message: "Too many estimate requests" }), async (req, res) => {
   const parsed = CourtConfigSchema.safeParse(req.body?.config);
   if (!parsed.success) return res.status(400).json({message:"Invalid session configuration"});
   try {

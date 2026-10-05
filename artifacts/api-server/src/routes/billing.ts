@@ -38,6 +38,7 @@ async function requireAuth(
     res.status(401).json({ error: "Unauthorized" });
     return null;
   }
+  if (decoded.guest) { res.status(403).json({error: "Create an account before buying credits."}); return null; }
   return decoded;
 }
 
