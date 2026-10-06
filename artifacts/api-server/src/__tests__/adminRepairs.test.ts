@@ -5,6 +5,7 @@ vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: vi.fn(), isFirebaseCo
 import {getFirestoreDb} from "../lib/firebaseAdmin.js";
 import {sendTrackedEmail, eligibleForReengagement} from "../lib/emailService.js";
 import adminRouter from "../routes/admin.js";
+import {grantSignupBonus} from "../lib/creditLedger.js";
 import {getTemplate} from "../lib/templateStore.js";
 const app = express().use(express.json()).use(adminRouter);
 let store: Record<string, any>;
@@ -154,4 +155,11 @@ it("excludes new, guest and banned users from re-engagement, including accounts 
   expect(eligibleForReengagement({...base, banned: true}, cutoff)).toBe(false);
   expect(eligibleForReengagement({...base, guestInvitationId: "trial"}, cutoff)).toBe(false);
   expect(eligibleForReengagement({...base, reengagementEmailSentAt: now}, cutoff)).toBe(false);
+});
+
+it("honors a zero signup bonus without blocking account provisioning", async () => {
+  store["config/billingDefaults"] = {signupBonusCredits: 0};
+  expect(await grantSignupBonus("u")).toEqual({skipped: false, amount: 0});
+  expect(await grantSignupBonus("u")).toEqual({skipped: true, amount: 0});
+  expect(store["users/u"].creditBalance).toBe(100);
 });

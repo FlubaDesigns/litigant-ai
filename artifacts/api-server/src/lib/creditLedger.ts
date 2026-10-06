@@ -107,8 +107,8 @@ export async function addCredits(
     refundTransactionId?: string;
   } = {}
 ): Promise<{ newBalance: number; skipped?: boolean } | null> {
-  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount === 0) {
-    throw new Error("Credits must be a nonzero whole number");
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount)) {
+    throw new Error("Credits must be a whole number");
   }
   if (!isFirebaseConfigured()) {
     console.warn("[CreditLedger] Firebase not configured — skipping credit grant for", uid);
