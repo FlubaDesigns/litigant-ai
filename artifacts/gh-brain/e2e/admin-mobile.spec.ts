@@ -53,7 +53,7 @@ for (const width of [360, 412]) {
     const navigation=page.getByRole("navigation",{name:"Admin navigation"});
     await expect(navigation).toBeVisible();
     const tabs=await navigation.locator("button").evaluateAll(buttons=>buttons.map(button=>({id:button.getAttribute("data-admin-tab")!,label:button.textContent!})));
-    expect(tabs).toHaveLength(18);
+    expect(tabs).toHaveLength(19);
     for (const tab of tabs) {
       await navigation.getByRole("button",{name:tab.label,exact:true}).click();
       await expect(page.locator(".admin-page h1")).toHaveText(tab.label);
