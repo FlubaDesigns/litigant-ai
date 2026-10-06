@@ -1,4 +1,4 @@
-import { applyArtifactAccess } from "@workspace/api-zod/session";
+import { PRO_ACCESS_NOTE, applyArtifactAccess } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput } from "@/lib/sessionOutput";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
@@ -156,7 +156,7 @@ export default function SessionPage() {
   const templateLinkApplied = useRef(false);
   useEffect(() => {
     if (userProfile && !artifactsAllowed && new URLSearchParams(window.location.search).has("templateId")) {
-      toast.error("Any paid credit purchase unlocks Pro templates. Free starter credits do not.");
+      toast.error(PRO_ACCESS_NOTE);
       navigate("/billing");
     }
   }, [userProfile, artifactsAllowed, navigate]);
@@ -679,7 +679,7 @@ export default function SessionPage() {
                   key={template.id}
                   template={template}
                   onClick={() => {
-                    if (!artifactsAllowed) { toast.error("Any paid credit purchase unlocks Pro templates. Free starter credits do not."); navigate("/billing"); return; }
+                    if (!artifactsAllowed) { toast.error(PRO_ACCESS_NOTE); navigate("/billing"); return; }
                     setTemplate(template);
                     setConfig(template.defaultConfig);
                     setTemplateSheetOpen(false);

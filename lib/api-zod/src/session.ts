@@ -106,7 +106,7 @@ export function resolveModelByIntelligence(
   return { provider: best.providerName, model: best.id, label: best.label };
 }
 
-export const PRO_ACCESS_NOTE = "Any paid credit purchase automatically unlocks Pro. Free starter credits do not. Sessions still use credits.";
+export const PRO_ACCESS_NOTE = "Any paid credit purchase automatically unlocks Pro. Member credits are purchased; promotional credits are free and do not unlock Pro. Sessions still use credits.";
 
 /** Shared Pro entitlement for templates, document creation, export and public sharing. */
 export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
@@ -117,7 +117,7 @@ export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
 export function accountAccess(plan: unknown, isAdmin = false) {
   return canCreateArtifacts(plan, isAdmin)
     ? {label:"Pro", features:["AI dialogue", "Templates and document creation", "Document downloads", "Public report sharing", "Saved conversation history"]}
-    : {label:"Free", features:["AI dialogue", "Free starter credits", "Paid credits unlock Pro features"]};
+    : {label:"Free", features:["AI dialogue", "Promotional credits (free)", "Member credits (purchased) unlock Pro features"]};
 }
 
 export function applyArtifactAccess<T extends Partial<CourtConfig>>(config: T, allowed: boolean): T {
