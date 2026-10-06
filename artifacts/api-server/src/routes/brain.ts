@@ -587,12 +587,12 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
             }
           }
 
-          if (userData.notifySessionComplete === true && result.sessionId) {
+          if (status === "complete" && userData.notifySessionComplete === true && result.sessionId) {
             sendSessionCompleteEmail(uid, result.sessionId, sessionTitle, actualCost)
               .catch((e) => console.error("[brain] Session-complete email failed (non-fatal):", e));
           }
 
-          if (!userData.firstSessionEmailSent && result.sessionId) {
+          if (status === "complete" && !userData.firstSessionEmailSent && result.sessionId) {
             sendFirstSessionEmail(uid, result.sessionId, sessionTitle)
               .then(() => db.collection("users").doc(sessionUid).update({ firstSessionEmailSent: true }))
               .catch((e) => console.error("[brain] First-session email failed (non-fatal):", e));

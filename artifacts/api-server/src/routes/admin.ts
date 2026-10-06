@@ -27,6 +27,7 @@ import {
   activateTemplateVersion,
   deleteTemplateVersion,
   type EmailTemplateId,
+  validateTemplateContent,
 } from "../lib/emailTemplateStore.js";
 import {
   MultiplierSchema,
@@ -597,6 +598,9 @@ router.patch("/admin/email-templates/:id", requireAdmin, async (req: any, res) =
     }
   }
 
+  try { validateTemplateContent(id, { subject: subject as string | undefined, headline: headline as string | undefined, introText: introText as string | undefined }); }
+  catch (error: any) { return res.status(400).json({ error: error.message }); }
+  if (enabled === false && !EMAIL_TEMPLATE_META[id].canDisable) return res.status(400).json({ error: "This account email cannot be disabled" });
   try {
     await saveTemplateConfig(
       id,
@@ -624,9 +628,11 @@ router.get("/admin/email-templates/:id/preview", requireAdmin, async (req: any, 
   if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
     return res.status(400).json({ error: "Unknown template ID" });
   }
-  const { headline, introText } = req.query as { headline?: string; introText?: string };
+  const { subject, headline, introText } = req.query as { subject?: string; headline?: string; introText?: string };
+  try { validateTemplateContent(id, { subject, headline, introText }); }
+  catch (error: any) { return res.status(400).json({ error: error.message }); }
   try {
-    const html = await renderTemplatePreview(id, { headline, introText });
+    const html = await renderTemplatePreview(id, { subject, headline, introText });
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     return res.send(html);
@@ -662,12 +668,17 @@ router.post("/admin/email-templates/:id/versions", requireAdmin, async (req: any
   if (!(EMAIL_TEMPLATE_IDS as readonly string[]).includes(id)) {
     return res.status(400).json({ error: "Unknown template ID" });
   }
-  const { versionName } = req.body as { versionName?: string };
-  if (!versionName?.trim()) {
+  const { versionName, draft } = req.body;
+  if (typeof versionName !== "string" || !versionName.trim() || versionName.length > 100) {
     return res.status(400).json({ error: "versionName is required" });
   }
+  if (draft !== undefined) {
+    if (!draft || typeof draft !== "object" || Array.isArray(draft)) return res.status(400).json({ error: "Invalid email draft" });
+    try { validateTemplateContent(id, draft); }
+    catch (error: any) { return res.status(400).json({ error: error.message }); }
+  }
   try {
-    const versionId = await saveTemplateVersion(id, versionName.trim(), req.adminUid as string);
+    const versionId = await saveTemplateVersion(id, versionName.trim(), req.adminUid as string, draft);
     return res.json({ success: true, versionId });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });

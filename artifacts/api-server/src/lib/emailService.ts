@@ -7,6 +7,8 @@ import {
   EMAIL_TEMPLATE_META,
   EMAIL_TEMPLATE_IDS,
   interpolate,
+  validateTemplateContent,
+  type EmailTemplateContent,
   type EmailTemplateId,
 } from "./emailTemplateStore.js";
 
@@ -415,11 +417,8 @@ export async function renderTemplatePreview(id: EmailTemplateId, overrides?: {
   const saved = await getTemplateConfig(id);
   const billing = await getBillingDefaults();
   const sampleVars = { ...SAMPLE_VARS[id], bonusCredits: billing.signupBonusCredits, threshold: billing.emailCreditWarningThreshold };
-  const rawHeadline = overrides?.headline ?? saved.headline ?? meta.defaultHeadline;
-  const rawIntro    = overrides?.introText ?? saved.introText ?? meta.defaultIntroText;
-  const headline    = escapeHtml(interpolate(rawHeadline, sampleVars));
-  const intro       = interpolate(rawIntro, sampleVars);
-
+  const { subject, headline, intro } = resolveTemplateContent(id, { ...saved, ...Object.fromEntries(Object.entries(overrides ?? {}).filter(([, value]) => value !== undefined)) }, sampleVars);
+  const renderBody = () => {
   switch (id) {
     case "verification":
       return verificationTemplate(`${APP_URL}/verify?token=PREVIEW`, intro, headline);
@@ -444,6 +443,21 @@ export async function renderTemplatePreview(id: EmailTemplateId, overrides?: {
     case "zeroCredits":
       return zeroCreditsTemplate(intro, headline);
   }
+  };
+  return renderBody().replace("<title>Litigant AI</title>", `<title>${escapeHtml(subject)}</title>`)
+    .replace(/(<body[^>]*>)/, opening => `${opening}<div style="padding:16px;color:#fff;font:14px Arial">Subject: ${escapeHtml(subject)}</div>`);
+}
+
+/** Subject, headline and intro share one substitution path for previews and sends. */
+export function resolveTemplateContent(id: EmailTemplateId, config: EmailTemplateContent, vars: Record<string, string | number>) {
+  const meta = EMAIL_TEMPLATE_META[id];
+  const raw = { subject: config.subject ?? meta.defaultSubject, headline: config.headline ?? meta.defaultHeadline, introText: config.introText ?? meta.defaultIntroText };
+  validateTemplateContent(id, raw);
+  return {
+    subject: interpolate(raw.subject, vars).replace(/[\r\n]/g, " "),
+    headline: interpolate(raw.headline, vars),
+    intro: interpolate(raw.introText, vars),
+  };
 }
 
 // ── Resolve + guard helper ────────────────────────────────────────────────────
@@ -454,15 +468,8 @@ async function resolveTemplate(id: EmailTemplateId, vars: Record<string, string 
   headline: string;
   intro: string;
 }> {
-  const meta   = EMAIL_TEMPLATE_META[id];
   const config = await getTemplateConfig(id);
-  // Strip CR/LF from subject to prevent email header injection
-  const subject  = interpolate(config.subject  ?? meta.defaultSubject,  vars).replace(/[\r\n]/g, " ");
-  // Escape headline HTML — it goes directly into an <h1> tag and may contain user-supplied
-  // display names. The preview path already escapes this correctly; the send path now matches.
-  const headline = escapeHtml(interpolate(config.headline ?? meta.defaultHeadline, vars));
-  const intro    = interpolate(config.introText ?? meta.defaultIntroText, vars);
-  return { enabled: config.enabled, subject, headline, intro };
+  return { enabled: !EMAIL_TEMPLATE_META[id].canDisable || config.enabled, ...resolveTemplateContent(id, config, vars) };
 }
 
 // ── Public send functions ─────────────────────────────────────────────────────

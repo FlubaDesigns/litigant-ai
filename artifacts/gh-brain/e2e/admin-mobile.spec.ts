@@ -718,3 +718,33 @@ for (const width of [360, 412]) {
     await expect.poll(()=>page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   });
 }
+
+test("email preview and saved version use the edited draft and its variables", async ({page}) => {
+  await page.setViewportSize({width:360,height:915});
+  let previewQuery: URLSearchParams | undefined;
+  let versionBody: any;
+  await page.route("**/admin/email-templates/welcome/preview?**", async route => {
+    previewQuery = new URL(route.request().url()).searchParams;
+    await route.fulfill({contentType:"text/html",body:"<html><body>Subject: Hello Alex<br>Draft for Alex</body></html>"});
+  });
+  await page.route("**/admin/email-templates/welcome/versions", async route => {
+    if (route.request().method() === "POST") {
+      versionBody = route.request().postDataJSON();
+      await route.fulfill({json:{success:true,versionId:"draft"}});
+    } else await route.fulfill({json:{versions:[]}});
+  });
+  await page.goto("/admin?e2e=1");
+  await page.locator('[data-admin-tab="emails"]').click();
+  await page.getByRole("button",{name:"Edit",exact:true}).click();
+  await page.getByLabel("Email subject").fill("Hello {name}");
+  await page.getByLabel("Email headline").fill("Draft for {name}");
+  await page.getByLabel("Email body").fill("Your next steps, {name}.");
+  await page.getByRole("button",{name:"Preview draft",exact:true}).click();
+  await expect(page.getByTitle("Email draft preview")).toBeVisible();
+  expect(previewQuery?.get("subject")).toBe("Hello {name}");
+  expect(previewQuery?.get("headline")).toBe("Draft for {name}");
+  expect(previewQuery?.get("introText")).toBe("Your next steps, {name}.");
+  await page.getByPlaceholder("e.g. Launch copy, A/B test v2…").fill("New draft");
+  await page.getByRole("button",{name:"Save",exact:true}).click();
+  await expect.poll(()=>versionBody).toEqual({versionName:"New draft",draft:{subject:"Hello {name}",headline:"Draft for {name}",introText:"Your next steps, {name}."}});
+});

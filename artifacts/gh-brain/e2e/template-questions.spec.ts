@@ -5,6 +5,7 @@ for (const width of [360, 412]) {
   test(`template intake and question answers work at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 915 });
     await page.route("**/api-server/api/templates", route => route.fulfill({ json: TEMPLATES }));
+    await page.route("**/api-server/api/session-estimate", route => route.fulfill({ json: { estimatedCredits: 0, maxCredits: 500, config: route.request().postDataJSON().config } }));
     const requests: any[] = [];
     await page.route("**/api-server/api/run-brain", async route => {
       requests.push(route.request().postDataJSON());

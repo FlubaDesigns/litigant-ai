@@ -6,8 +6,8 @@
  *   email_templates/{templateId}/versions  ← saved version snapshots
  *
  * Every send function reads from this store first.  Defaults fall back to the
- * code-level values defined in EMAIL_TEMPLATE_META.  A 5-minute in-memory
- * cache avoids Firestore reads on every single email send.
+ * code-level values defined in EMAIL_TEMPLATE_META. Each read observes the
+ * saved config, including changes made through another server instance.
  */
 
 import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
@@ -204,16 +204,23 @@ export interface EmailTemplateVersion {
   createdBy: string;
 }
 
-// ── 5-minute in-memory cache ──────────────────────────────────────────────────
+export type EmailTemplateContent = { subject?: string; headline?: string; introText?: string };
 
-const configCache = new Map<EmailTemplateId, { data: EmailTemplateConfig; expiresAt: number }>();
+/** Validate the same variable contract on edits, versions, previews and sends. */
+export function validateTemplateContent(id: EmailTemplateId, content: EmailTemplateContent): void {
+  for (const [field, max] of [["subject", 200], ["headline", 200], ["introText", 3000]] as const) {
+    const value = content[field];
+    if (value === undefined) continue;
+    if (typeof value !== "string" || value.length > max) throw new Error(`${field} must be text of at most ${max} characters`);
+    for (const match of value.matchAll(/\{(\w+)\}/g)) {
+      if (!EMAIL_TEMPLATE_META[id].tokens.includes(match[1])) throw new Error(`Unsupported variable {${match[1]}} for this email`);
+    }
+  }
+}
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 
 export async function getTemplateConfig(id: EmailTemplateId): Promise<EmailTemplateConfig> {
-  const cached = configCache.get(id);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-
   const fallback: EmailTemplateConfig = { id, enabled: true };
 
   if (!isFirebaseConfigured()) return fallback;
@@ -223,20 +230,18 @@ export async function getTemplateConfig(id: EmailTemplateId): Promise<EmailTempl
   try {
     const snap = await db.collection("email_templates").doc(id).get();
     if (!snap.exists) {
-      configCache.set(id, { data: fallback, expiresAt: Date.now() + 5 * 60 * 1000 });
       return fallback;
     }
     const d = snap.data()!;
     const config: EmailTemplateConfig = {
       id,
-      enabled: typeof d["enabled"] === "boolean" ? d["enabled"] : true,
+      enabled: !EMAIL_TEMPLATE_META[id].canDisable || d["enabled"] !== false,
       subject: d["subject"] as string | undefined,
       headline: d["headline"] as string | undefined,
       introText: d["introText"] as string | undefined,
       updatedAt: d["updatedAt"] as number | undefined,
       updatedBy: d["updatedBy"] as string | undefined,
     };
-    configCache.set(id, { data: config, expiresAt: Date.now() + 5 * 60 * 1000 });
     return config;
   } catch {
     return fallback;
@@ -251,11 +256,12 @@ export async function saveTemplateConfig(
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore unavailable");
+  validateTemplateContent(id, updates);
+  if (updates.enabled === false && !EMAIL_TEMPLATE_META[id].canDisable) throw new Error("This account email cannot be disabled");
   await db.collection("email_templates").doc(id).set(
     { ...updates, updatedAt: Date.now(), updatedBy },
     { merge: true }
   );
-  configCache.delete(id);
 }
 
 export async function listTemplateVersions(id: EmailTemplateId): Promise<EmailTemplateVersion[]> {
@@ -284,13 +290,15 @@ export async function listTemplateVersions(id: EmailTemplateId): Promise<EmailTe
 export async function saveTemplateVersion(
   id: EmailTemplateId,
   versionName: string,
-  createdBy: string
+  createdBy: string,
+  draft?: EmailTemplateContent
 ): Promise<string> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore unavailable");
   const meta = EMAIL_TEMPLATE_META[id];
-  const config = await getTemplateConfig(id);
+  const config = draft ?? await getTemplateConfig(id);
+  validateTemplateContent(id, config);
   const ref = await db
     .collection("email_templates")
     .doc(id)
@@ -339,6 +347,6 @@ export async function deleteTemplateVersion(id: EmailTemplateId, versionId: stri
 /** Replace {token} placeholders with actual values. */
 export function interpolate(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, key) =>
-    key in vars ? String(vars[key]) : `{${key}}`
+    Object.hasOwn(vars, key) ? String(vars[key]) : (() => { throw new Error(`Missing email variable {${key}}`); })()
   );
 }

@@ -790,8 +790,9 @@ export async function updateEmailTemplate(
   }
 }
 
-export async function fetchEmailTemplatePreview(id: string): Promise<string> {
-  const res = await adminFetch(`/admin/email-templates/${id}/preview`);
+export async function fetchEmailTemplatePreview(id: string, draft?: { subject: string; headline: string; introText: string }): Promise<string> {
+  const query = draft ? `?${new URLSearchParams(draft)}` : "";
+  const res = await adminFetch(`/admin/email-templates/${id}/preview${query}`);
   if (!res.ok) throw new Error("Failed to load preview");
   return res.text();
 }
@@ -802,10 +803,10 @@ export async function getEmailTemplateVersions(id: string): Promise<EmailTemplat
   return (await res.json()).versions;
 }
 
-export async function saveEmailTemplateVersion(id: string, versionName: string): Promise<string> {
+export async function saveEmailTemplateVersion(id: string, versionName: string, draft?: { subject: string; headline: string; introText: string }): Promise<string> {
   const res = await adminFetch(`/admin/email-templates/${id}/versions`, {
     method: "POST",
-    body: JSON.stringify({ versionName }),
+    body: JSON.stringify({ versionName, draft }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

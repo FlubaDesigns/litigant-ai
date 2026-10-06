@@ -1089,7 +1089,10 @@ describe("saved session continuity", () => {
     [{ convergenceFailure: true }, "incomplete"],
     [{ courtroomOutcome: { reason: "not_enough" } }, "relay_needed"],
   ])("emits exactly the status stored in the session (%s)", async (overrides, expectedStatus) => {
+    const email = await import("../lib/emailService.js");
+    vi.mocked(email.isResendConfigured).mockReturnValue(true);
     const db = createRouteMockDb(FAKE_UID, 1000);
+    db._store[`users/${FAKE_UID}`].notifySessionComplete = true;
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
     vi.mocked(runBrainSession).mockImplementation(async opts => ({ ...await makeBrainMock({ creditsUsed: 100 })(opts), ...overrides }));
     const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);
@@ -1097,6 +1100,9 @@ describe("saved session continuity", () => {
     const event = events.at(-1);
     expect(event.status).toBe(expectedStatus);
     expect(db._store[`sessions/${event.sessionId}`].status).toBe(event.status);
+    expect(email.sendSessionCompleteEmail).toHaveBeenCalledTimes(expectedStatus === "complete" ? 1 : 0);
+    expect(email.sendFirstSessionEmail).toHaveBeenCalledTimes(expectedStatus === "complete" ? 1 : 0);
+    vi.mocked(email.isResendConfigured).mockReturnValue(false);
   });
   it("refunds the remaining net charge and emits error if saving the result fails", async()=>{
     const db=createRouteMockDb(FAKE_UID,500);

@@ -2917,6 +2917,7 @@ function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSave
   });
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [versionName, setVersionName] = useState("");
   const [savingVersion, setSavingVersion] = useState(false);
 
@@ -2935,9 +2936,7 @@ function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSave
   const handlePreview = async () => {
     setPreviewing(true);
     try {
-      const html = await fetchEmailTemplatePreview(template.id);
-      const win = window.open("", "_blank");
-      if (win) { win.document.write(html); win.document.close(); }
+      setPreviewHtml(await fetchEmailTemplatePreview(template.id, form));
     } catch (e: any) { toast.error(e.message); } finally { setPreviewing(false); }
   };
 
@@ -2945,7 +2944,7 @@ function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSave
     if (!versionName.trim()) return;
     setSavingVersion(true);
     try {
-      await saveEmailTemplateVersion(template.id, versionName.trim());
+      await saveEmailTemplateVersion(template.id, versionName.trim(), form);
       toast.success(`Version "${versionName.trim()}" saved.`);
       setVersionName(""); refetchVersions();
     } catch (e: any) { toast.error(e.message); } finally { setSavingVersion(false); }
@@ -2961,15 +2960,15 @@ function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSave
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Subject line</label>
-          <Input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} className="h-9 text-sm" />
+          <Input aria-label="Email subject" maxLength={200} value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Headline</label>
-          <Input value={form.headline} onChange={e => setForm(p => ({ ...p, headline: e.target.value }))} className="h-9 text-sm" />
+          <Input aria-label="Email headline" maxLength={200} value={form.headline} onChange={e => setForm(p => ({ ...p, headline: e.target.value }))} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Body text</label>
-          <Textarea value={form.introText} onChange={e => setForm(p => ({ ...p, introText: e.target.value }))} rows={6} className="text-sm resize-none leading-relaxed" />
+          <Textarea aria-label="Email body" maxLength={3000} value={form.introText} onChange={e => setForm(p => ({ ...p, introText: e.target.value }))} rows={6} className="text-sm resize-none leading-relaxed" />
           <p className="text-[11px] text-muted-foreground/50">Separate paragraphs with a blank line. Variables below are auto-substituted.</p>
         </div>
         {template.tokens.length > 0 && (
@@ -2983,8 +2982,12 @@ function EmailEditPanel({ template, onSaved }: { template: EmailTemplate; onSave
           </div>
         )}
         <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1.5" disabled={previewing} onClick={handlePreview}>
-          {previewing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />} Preview in new tab
+          {previewing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />} Preview draft
         </Button>
+        {previewHtml && <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Draft preview with sample user data and current credit settings.</p>
+          <iframe title="Email draft preview" srcDoc={previewHtml} sandbox="" className="w-full h-[500px] rounded-lg border border-border" />
+        </div>}
         <Separator />
         <div className="space-y-2">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -3113,7 +3116,7 @@ function EmailsTab() {
               );
               updateEmailTemplate(template.id, { enabled })
                 .then(() => qc.invalidateQueries({ queryKey: ["admin-email-templates"] }))
-                .catch((e: Error) => toast.error(e.message));
+                .catch((e: Error) => { toast.error(e.message); qc.invalidateQueries({ queryKey: ["admin-email-templates"] }); });
             }}
           />
         ))}
