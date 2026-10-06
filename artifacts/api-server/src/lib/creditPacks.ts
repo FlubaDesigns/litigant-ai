@@ -87,17 +87,3 @@ export const CREDIT_PACKS: CreditPack[] = [
     ],
   },
 ];
-
-/**
- * Look up a pack and price by priceId.
- * Returns null if the priceId isn't recognised.
- */
-export function findPackByPriceId(
-  priceId: string
-): { pack: CreditPack; price: CreditPackPrice } | null {
-  for (const pack of CREDIT_PACKS) {
-    const price = pack.prices.find((p) => p.id === priceId);
-    if (price) return { pack, price };
-  }
-  return null;
-}

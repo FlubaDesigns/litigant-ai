@@ -139,13 +139,10 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
             );
             return;
           }
-        } catch (lookupErr: any) {
-          // If the pack catalogue is temporarily unavailable, log and continue
-          // rather than silently failing a legitimate payment. The ceiling above
-          // still provides defense-in-depth.
-          logger.warn(
-            `[SquareEvent] Pack catalogue lookup failed (non-fatal): ${lookupErr?.message} — proceeding without amount validation`
-          );
+        } catch {
+          // Let the webhook return a retryable error; never grant credits or Pro
+          // using a different price when saved catalogue validation is unavailable.
+          throw new Error("Credit-pack validation is unavailable; retry payment processing");
         }
       }
 

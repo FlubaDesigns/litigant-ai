@@ -118,8 +118,10 @@ router.get("/billing/defaults", async (_req, res) => {
  * top of the hardcoded fallback, active packs only. See creditPacksConfig.ts.
  */
 router.get("/billing/products", async (_req, res) => {
-  const packs = await getActiveCreditPacks();
-  return res.json({ data: packs });
+  try {
+    const packs = await getActiveCreditPacks();
+    return res.json({ data: packs });
+  } catch { return res.status(503).json({error:"Credit packs are temporarily unavailable"}); }
 });
 
 /**
@@ -187,7 +189,9 @@ router.post("/billing/checkout", async (req, res) => {
     return res.status(400).json({ error: "priceId is required" });
   }
 
-  const found = await findCreditPackByPriceId(priceId);
+  let found: Awaited<ReturnType<typeof findCreditPackByPriceId>>;
+  try { found = await findCreditPackByPriceId(priceId); }
+  catch { return res.status(503).json({error:"Credit packs are temporarily unavailable"}); }
   if (!found || !found.price.unit_amount) {
     return res.status(404).json({ error: "Unknown price ID" });
   }

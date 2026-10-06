@@ -164,6 +164,12 @@ describe("handleSquareEvent", () => {
     );
   });
 
+  it("retries when saved pack validation fails without granting credits or Pro", async () => {
+    vi.mocked(getAllCreditPacks).mockRejectedValueOnce(new Error("Firestore unavailable"));
+    await expect(handleSquareEvent(makePaymentEvent() as any)).rejects.toThrow(/validation is unavailable/);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+
   it("skips a duplicate event (idempotency key already processed)", async () => {
     vi.mocked(addCredits).mockResolvedValue({ newBalance: 1000, skipped: true });
 

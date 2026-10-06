@@ -1,45 +1,8 @@
 /**
- * Credit Packs Config — Firestore-backed, admin-editable product catalogue.
- *
- * Admins can add, edit, deactivate, and reactivate credit packs at runtime
- * via Admin → Credit Packs (or the /admin/credit-packs routes) without
- * redeploying. Changes propagate within 60 seconds (CACHE_TTL_MS) or
- * immediately after a write, since every admin write invalidates the cache.
- *
- * ## Priority
- *   Firestore override  →  STATIC_CREDIT_PACKS hardcoded fallback
- *
- *   The fallback exists so the product still has something sellable if
- *   Firestore is ever unreachable or the config/creditPacks document hasn't
- *   been created yet — mirrors the exact pattern pricingConfig.ts already
- *   uses for multipliers, seatBriefs.ts uses for seat prompts, and
- *   conscienceConfig.ts uses for the conscience clause.
- *
- * ## Firestore location
- *   Collection: config
- *   Document:   creditPacks
- *   Shape:      { packs: { starter_pack: {...CreditPack}, ... }, updatedAt }
- *
- *   Stored as a map keyed by pack id (not an array) so a single-pack edit
- *   can use a merge write that only touches that one key — the same
- *   approach apiKeyStore.ts already uses for its `providers` map.
- *
- * ## Immutability rule
- *   A pack's `id` (and its nested `prices[].id`) is fixed at creation and
- *   never changes after that. Square's payment-link `note` field embeds
- *   the pack id at checkout time and the webhook reads it back later,
- *   potentially days afterward — renaming an id out from under an
- *   in-flight or already-completed checkout would break that lookup for
- *   any transaction still referencing the old id. Packs are deactivated
- *   (`active: false`), never deleted or renamed.
- *
- * ## Why this file exists separately from creditPacks.ts
- *   creditPacks.ts keeps the synchronous, hardcoded CREDIT_PACKS export
- *   that brain.ts and billing.ts already depend on for fast, no-async-needed
- *   lookups (e.g. resolving a known priceId during a request that's already
- *   mid-flight). This file adds the async, Firestore-aware layer on top,
- *   the same relationship pricingConfig.ts has with creditEngine.ts's
- *   hardcoded MODEL_RATES/MODEL_MULTIPLIERS.
+ * Canonical credit-pack catalogue: shared defaults overlaid with saved admin packs.
+ * Public pages, admin, checkout and payment validation all read this catalogue.
+ * Defaults initialize missing records; a failed saved-config read is an error.
+ * Pack IDs remain stable because completed payment notes refer to them.
  */
 import { getFirestoreDb } from "./firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -86,8 +49,8 @@ function staticPacksAsMap(): Record<string, CreditPack> {
  * coherent product, so a partial merge could leave it in an inconsistent
  * state, e.g. a new creditAmount paired with a stale price).
  *
- * Reads Firestore at most once per TTL window; falls back to the
- * hardcoded fallback if Firebase is not configured or on any error.
+ * Reads Firestore at most once per TTL window. Local development without
+ * Firebase uses shared defaults. Failed configured reads must never change prices.
  */
 export async function getAllCreditPacks(): Promise<Record<string, CreditPack>> {
   const now = Date.now();
@@ -105,8 +68,7 @@ export async function getAllCreditPacks(): Promise<Record<string, CreditPack>> {
     _cacheExpiry = now + CACHE_TTL_MS;
     return merged;
   } catch {
-    // Non-fatal: fall back to the hardcoded defaults if Firestore is unreachable
-    return staticPacksAsMap();
+    throw new Error("Saved credit packs could not be loaded");
   }
 }
 
@@ -124,14 +86,7 @@ export async function getActiveCreditPacks(): Promise<CreditPack[]> {
     .filter((pack): pack is CreditPack => !!pack && pack.active);
 }
 
-/**
- * Looks up a single pack + price by priceId across the live (Firestore +
- * fallback) catalogue. This is the live-aware counterpart to
- * creditPacks.ts's findPackByPriceId, which only ever sees the hardcoded
- * fallback. brain.ts's auto-refill checkout and billing.ts's fixed-pack
- * checkout should both move to this version so an admin-added pack is
- * actually purchasable, not just visible.
- */
+/** Resolve checkout prices from the same live catalogue used for display. */
 export async function findCreditPackByPriceId(
   priceId: string
 ): Promise<{ pack: CreditPack; price: CreditPackPrice } | null> {
