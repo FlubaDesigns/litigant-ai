@@ -1,3 +1,4 @@
+import type { BillingDefaults } from "@workspace/api-zod/billing";
 import { auth } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 
@@ -62,26 +63,11 @@ export interface PaymentHistoryItem {
   description: string | null;
 }
 
-export const PLAN_LIMITS = {
-  free: {
-    label: "Free",
-    features: ["AI dialogue", "Free starter credits", "Paid credits unlock Pro features"],
-  },
-  pro: {
-    label: "Pro",
-    features: ["AI dialogue", "Templates and document creation", "Document downloads", "Public report sharing", "Saved conversation history"],
-  },
-} as const;
-
 export async function getProducts(): Promise<BillingProduct[]> {
-  try {
-    const res = await fetch(`${API_BASE}/billing/products`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.data ?? [];
-  } catch {
-    return [];
-  }
+  const res = await fetch(`${API_BASE}/billing/products`, {cache:"no-store"});
+  if (!res.ok) throw new Error("Unable to load credit packs");
+  const data = await res.json();
+  return data.data ?? [];
 }
 
 export async function getTransactions(
@@ -153,21 +139,7 @@ export async function setAutoRefill(opts: {
   }
 }
 
-export interface BillingDefaults {
-  autoRefillAmounts: number[];
-  defaultAutoRefillAmount: number;
-  defaultThresholdCredits: number;
-  defaultWarningThresholdCredits: number;
-  signupBonusCredits: number;
-}
-
-export const STATIC_BILLING_DEFAULTS: BillingDefaults = {
-  autoRefillAmounts: [10, 20, 50, 100, 200],
-  defaultAutoRefillAmount: 20,
-  defaultThresholdCredits: 100,
-  defaultWarningThresholdCredits: 200,
-  signupBonusCredits: 500,
-};
+export type { BillingDefaults } from "@workspace/api-zod/billing";
 
 /**
  * Fetches admin-configured billing defaults (auto-refill amounts, thresholds).

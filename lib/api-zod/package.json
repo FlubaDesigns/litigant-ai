@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./session": "./src/session.ts",
-    "./templates": "./src/templates.ts"
+    "./templates": "./src/templates.ts",
+    "./billing": "./src/billing.ts"
   },
   "dependencies": {
     "zod": "catalog:"

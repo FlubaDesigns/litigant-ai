@@ -1,3 +1,4 @@
+import { DEFAULT_CONFIG } from "@workspace/api-zod/templates";
 import { sendTrackedEmail } from "../lib/emailService.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
@@ -127,10 +128,10 @@ router.post("/auth/provision", async (req, res) => {
           createdAt:          FieldValue.serverTimestamp(),
           updatedAt:          FieldValue.serverTimestamp(),
           defaultSettings: {
-            litigantCount:     3,
-            confidenceTarget:  80,
-            responseMode:      "balanced",
-            outputFormat:      "report",
+            litigantCount:     DEFAULT_CONFIG.litigantCount,
+            confidenceTarget:  DEFAULT_CONFIG.confidenceTarget,
+            responseMode:      DEFAULT_CONFIG.responseMode,
+            outputFormat:      DEFAULT_CONFIG.outputFormat,
           },
         });
       }

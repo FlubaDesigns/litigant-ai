@@ -1,5 +1,6 @@
-import { PRO_ACCESS_NOTE, canCreateArtifacts } from "@workspace/api-zod/session";
-import { useBillingDefaults } from "@/hooks/useConfiguration";
+import { CREDITS_PER_DOLLAR } from "@workspace/api-zod/billing";
+import { PRO_ACCESS_NOTE, accountAccess } from "@workspace/api-zod/session";
+import { useBillingDefaults, useCreditPacks } from "@/hooks/useConfiguration";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,26 +18,15 @@ import { useLocation } from "wouter";
 import { doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
 import { db, isConfigured as isFirebaseConfigured } from "@/lib/firebase";
 import {
-  getProducts,
   getTransactions,
   getPaymentHistory,
   setAutoRefill,
-  STATIC_BILLING_DEFAULTS,
   createCheckoutSession,
   createCustomCheckoutSession,
-  PLAN_LIMITS,
   type BillingProduct,
   type CreditTransaction,
   type PaymentHistoryItem,
 } from "@/services/billingService";
-
-const CREDITS_PER_DOLLAR = 100;
-
-const CREDIT_PACKS_LABELS: Record<string, { credits: number; badge?: string }> = {
-  "Starter Pack": { credits: 500 },
-  "Pro Pack": { credits: 2200, badge: "Popular" },
-  "Mega Pack": { credits: 4200, badge: "Best Value" },
-};
 
 const TX_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   purchase: CreditCard,
@@ -90,10 +80,10 @@ function formatCurrency(cents: number | null): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-function CreditBalanceCard({ balance, plan }: { balance: number; plan: string }) {
-  const isLow = balance < 50;
-  const isCritical = balance < 10;
-  const limits = canCreateArtifacts(plan) ? PLAN_LIMITS.pro : PLAN_LIMITS.free;
+function CreditBalanceCard({ balance, plan, warningThreshold }: { balance: number; plan: string; warningThreshold: number }) {
+  const isLow = warningThreshold > 0 && balance < warningThreshold;
+  const isCritical = balance <= 0;
+  const limits = accountAccess(plan);
 
   return (
     <div
@@ -170,7 +160,7 @@ function CreditBalanceCard({ balance, plan }: { balance: number; plan: string })
 }
 
 function PlanLimitsCard({ plan }: { plan: string }) {
-  const limits = canCreateArtifacts(plan) ? PLAN_LIMITS.pro : PLAN_LIMITS.free;
+  const limits = accountAccess(plan);
   return (
     <div className="rounded-xl border border-border/60 bg-card/50 p-5">
       <div className="flex items-center gap-2 mb-3">
@@ -200,9 +190,8 @@ function ProductCard({
   loading: boolean;
 }) {
   const price = product.prices[0];
-  const credits = parseInt(product.metadata?.creditAmount ?? "0", 10);
-  const label = CREDIT_PACKS_LABELS[product.name];
-  const badge = label?.badge;
+  const credits = parseInt(price?.metadata?.creditAmount ?? product.metadata?.creditAmount ?? "0", 10);
+  const badge = product.metadata?.badge;
 
   return (
     <motion.div
@@ -342,7 +331,7 @@ export default function BillingPage() {
   const { user, userProfile, firebaseReady } = useAuth();
   const [, navigate] = useLocation();
 
-  const [products, setProducts] = useState<BillingProduct[]>([]);
+  const {data:products = [], isPending:loadingProducts, isError:productsError, refetch:refreshProducts} = useCreditPacks();
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txNextCursor, setTxNextCursor] = useState<string | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
@@ -351,16 +340,13 @@ export default function BillingPage() {
   // Credit controls state (auto top-up + warning threshold)
   const [autoRefillEnabled, setAutoRefillEnabled] = useState(false);
   const [autoRefillSaving, setAutoRefillSaving] = useState(false);
-  const [autoRefillAmount, setAutoRefillAmount] = useState(20);
-  const [autoRefillThreshold, setAutoRefillThreshold] = useState(100);
-  const [warningThreshold, setWarningThreshold] = useState(200);
-  const {data:liveDefaults} = useBillingDefaults();
-  const billingDefaults = liveDefaults ?? STATIC_BILLING_DEFAULTS;
-  const defaultsApplied = useRef(false);
+  const [autoRefillAmount, setAutoRefillAmount] = useState(0);
+  const [autoRefillThreshold, setAutoRefillThreshold] = useState(0);
+  const [warningThreshold, setWarningThreshold] = useState(0);
+  const {data:liveDefaults, isError:defaultsError, refetch:refreshDefaults} = useBillingDefaults();
   const controlsEdited = useRef(false);
   const [creditControlsSaving, setCreditControlsSaving] = useState(false);
 
-  const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingTx, setLoadingTx] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [loadingMoreTx, setLoadingMoreTx] = useState(false);
@@ -396,16 +382,6 @@ export default function BillingPage() {
     return () => unsub();
   }, [user]);
 
-  const [paymentsAvailable, setPaymentsAvailable] = useState<boolean | null>(null);
-
-  const fetchProducts = useCallback(async () => {
-    setLoadingProducts(true);
-    const data = await getProducts();
-    setProducts(data);
-    setPaymentsAvailable(data.length > 0);
-    setLoadingProducts(false);
-  }, []);
-
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
     setLoadingTx(true);
@@ -424,17 +400,13 @@ export default function BillingPage() {
   }, [user]);
 
   useEffect(() => {
-    if (!liveDefaults || defaultsApplied.current) return;
-    defaultsApplied.current = true;
-    if (controlsEdited.current || userProfile?.autoRefill) return;
-    setAutoRefillAmount(liveDefaults.defaultAutoRefillAmount);
-    setAutoRefillThreshold(liveDefaults.defaultThresholdCredits);
-    setWarningThreshold(liveDefaults.defaultWarningThresholdCredits);
+    if (!liveDefaults) return;
+    if (controlsEdited.current) return;
+    setAutoRefillAmount(userProfile?.autoRefill?.dollarAmount ?? liveDefaults.defaultAutoRefillAmount);
+    setAutoRefillThreshold(userProfile?.autoRefill?.thresholdCredits ?? liveDefaults.defaultThresholdCredits);
+    setWarningThreshold(userProfile?.autoRefill?.warningThresholdCredits ?? liveDefaults.defaultWarningThresholdCredits);
   }, [liveDefaults, userProfile]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
 
   useEffect(() => {
     if (user) {
@@ -596,6 +568,10 @@ export default function BillingPage() {
     );
   }
 
+  if (!liveDefaults) return <div className="page-center"><div role={defaultsError ? "alert" : "status"}>
+    {defaultsError ? <>Billing settings could not be loaded. <Button onClick={() => refreshDefaults()}>Retry</Button></> : "Loading billing settings…"}
+  </div></div>;
+
   return (
     <>
         <div className="row row-sb" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
@@ -631,7 +607,7 @@ export default function BillingPage() {
           <div className="layout__split-1-2">
           {/* ── Left column ─────────────────────────────────── */}
           <div className="space-y-6">
-            <CreditBalanceCard balance={balance} plan={plan} />
+            <CreditBalanceCard balance={balance} plan={plan} warningThreshold={warningThreshold} />
 
             <PlanLimitsCard plan={plan} />
             <p className="text-sm text-muted-foreground">{PRO_ACCESS_NOTE}</p>
@@ -671,7 +647,7 @@ export default function BillingPage() {
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Charge amount</p>
                 <div className="flex flex-wrap gap-2">
-                  {billingDefaults.autoRefillAmounts.map((amt) => (
+                  {liveDefaults.autoRefillAmounts.map((amt) => (
                     <button
                       key={amt}
                       onClick={() => {controlsEdited.current = true; setAutoRefillAmount(amt);}}
@@ -687,7 +663,7 @@ export default function BillingPage() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  = {(autoRefillAmount * 100).toLocaleString()} credits per top-up
+                  = {(autoRefillAmount * CREDITS_PER_DOLLAR).toLocaleString()} credits per top-up
                 </p>
               </div>
 
@@ -746,10 +722,10 @@ export default function BillingPage() {
                 <h2 className="text-sm font-semibold">Custom Top-Up</h2>
               </div>
               <p className="text-xs text-muted-foreground mb-4">
-                Add any amount — you get <span className="text-primary font-semibold">100 credits per dollar</span>.
+                Add any amount — you get <span className="text-primary font-semibold">{CREDITS_PER_DOLLAR} credits per dollar</span>.
               </p>
               <div className="flex gap-2 mb-3">
-                {[5, 10, 25, 50].map((amt) => (
+                {liveDefaults.autoRefillAmounts.map((amt) => (
                   <button
                     key={amt}
                     onClick={() => setCustomDollars(String(amt))}
@@ -800,10 +776,10 @@ export default function BillingPage() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Credit Packs
               </h2>
-              {!loadingProducts && paymentsAvailable === false && (
+              {!loadingProducts && (productsError || creditPacks.length === 0) && (
                 <div className="mb-3 flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm text-yellow-400">
                   <span className="mt-0.5 shrink-0">⚠</span>
-                  <span>Payments are not configured yet. Prices shown are indicative — contact the team to purchase credits.</span>
+                  <span>Credit packs are unavailable. <Button variant="outline" onClick={() => refreshProducts()}>Retry</Button></span>
                 </div>
               )}
               {loadingProducts ? (
@@ -814,7 +790,7 @@ export default function BillingPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {(creditPacks.length > 0 ? creditPacks : FALLBACK_PACKS).map((product) => (
+                  {creditPacks.map((product) => (
                     <ProductCard
                       key={product.id}
                       product={product}
@@ -971,37 +947,4 @@ export default function BillingPage() {
     </>
   );
 }
-
-const FALLBACK_PACKS: BillingProduct[] = [
-  {
-    id: "starter_pack",
-    name: "Starter Pack",
-    description: "500 credits — perfect for getting started",
-    active: true,
-    metadata: { type: "credit_pack", creditAmount: "500" },
-    prices: [
-      { id: "price_starter", product: "starter_pack", unit_amount: 499, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "500" } },
-    ],
-  },
-  {
-    id: "pro_pack",
-    name: "Pro Pack",
-    description: "2,200 credits — 10% bonus credits",
-    active: true,
-    metadata: { type: "credit_pack", creditAmount: "2200" },
-    prices: [
-      { id: "price_pro_pack", product: "pro_pack", unit_amount: 1999, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "2200" } },
-    ],
-  },
-  {
-    id: "mega_pack",
-    name: "Mega Pack",
-    description: "4,200 credits — 20% bonus credits",
-    active: true,
-    metadata: { type: "credit_pack", creditAmount: "4200" },
-    prices: [
-      { id: "price_mega_pack", product: "mega_pack", unit_amount: 3499, currency: "usd", recurring: null, active: true, metadata: { creditAmount: "4200" } },
-    ],
-  },
-];
 

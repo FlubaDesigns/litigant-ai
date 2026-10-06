@@ -29,7 +29,7 @@ export interface CreditPack {
  * Base rate: 100 credits per dollar ($0.01/credit).
  * Fixed packs offer a small bonus for buying in bulk.
  */
-export const CREDITS_PER_DOLLAR = 100;
+export { CREDITS_PER_DOLLAR } from "@workspace/api-zod/billing";
 
 export const CREDIT_PACKS: CreditPack[] = [
   {

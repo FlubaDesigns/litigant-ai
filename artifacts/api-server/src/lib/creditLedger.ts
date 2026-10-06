@@ -1,3 +1,4 @@
+import { canCreateArtifacts } from "@workspace/api-zod/session";
 /**
  * Credit Ledger — the ONLY layer allowed to mutate a user's creditBalance.
  *
@@ -395,7 +396,7 @@ export async function getCourtesyCreditEligibility(uid: string): Promise<boolean
   const db = getFirestoreDb();
   if (!db) throw new Error("Firestore not configured");
   const user = (await db.collection("users").doc(uid).get()).data();
-  if (user?.plan !== "pro" || user.guestInvitationId) return false;
+  if (!canCreateArtifacts(user?.plan) || user?.guestInvitationId) return false;
   return hasPaidCreditPurchase(uid);
 }
 
@@ -416,7 +417,7 @@ export async function syncPaidProAccess(uid: string): Promise<void> {
   if (!db) throw new Error("Firestore not configured");
   const ref = db.collection("users").doc(uid);
   const account = (await ref.get()).data();
-  if (!account || account.plan === "pro" || account.guestInvitationId) return;
+  if (!account || canCreateArtifacts(account.plan) || account.guestInvitationId) return;
   if (await hasPaidCreditPurchase(uid)) {
     await ref.set({ plan: "pro", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   }
@@ -438,7 +439,7 @@ export async function reserveCredits(
     const balance = (userDoc.data()?.creditBalance as number) ?? 0;
     // Recheck under the balance transaction so simultaneous new runs cannot extend debt.
     if (source === "brain_reservation" && balance < 0) return false;
-    const permittedDebt = userDoc.data()?.plan === "pro" ? overdraftLimit : 0;
+    const permittedDebt = canCreateArtifacts(userDoc.data()?.plan) ? overdraftLimit : 0;
     if (balance - amount < -permittedDebt) return false;
 
     const newBalance = balance - amount;

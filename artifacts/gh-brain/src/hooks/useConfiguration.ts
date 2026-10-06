@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CONFIGURATION_REFRESH } from "@/lib/queryClient";
 import { getProviders } from "@/services/providerService";
-import { getBillingDefaults } from "@/services/billingService";
+import { getBillingDefaults, getProducts } from "@/services/billingService";
 import { fetchTemplates } from "@/services/templateService";
 
 export function useProviders(enabled = true) {
@@ -14,4 +14,8 @@ export function useBillingDefaults() {
 
 export function useTemplates() {
   return useQuery({queryKey:["configuration", "templates"], queryFn:fetchTemplates, ...CONFIGURATION_REFRESH});
+}
+
+export function useCreditPacks() {
+  return useQuery({queryKey:["configuration", "credit-packs"], queryFn:getProducts, ...CONFIGURATION_REFRESH});
 }

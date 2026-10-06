@@ -200,7 +200,9 @@ export default function SessionPage() {
 
   // ── Computed values ──────────────────────────────────────────────────────────
 
-  const { maxLitigants } = useLimits();
+  const limits = useLimits();
+  // Preserve the current draft while the saved limit loads; do not allow additions.
+  const maxLitigants = limits?.maxLitigants ?? state.config.litigantCount;
   const {data:courtesy} = useQuery({queryKey:["configuration", "courtesy-credit", user?.uid, credits, plan], queryFn:getCourtesyCredit, enabled:!!user && !isAdmin && !userProfile?.guestInvitationId, retry:false});
 
   const isRunning     = state.phase === "running";

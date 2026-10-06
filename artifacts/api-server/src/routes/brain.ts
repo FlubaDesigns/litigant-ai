@@ -1,3 +1,4 @@
+import { CREDITS_PER_DOLLAR } from "@workspace/api-zod/billing";
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
@@ -116,7 +117,7 @@ async function createAutoRefillUrl(dollarAmount: number, uid: string): Promise<s
   if (!isSquareConfigured()) return null;
   const dollars = Math.max(1, Math.round(dollarAmount));
   const amountCents = dollars * 100;
-  const creditAmount = dollars * 100; // 100 credits per dollar
+  const creditAmount = dollars * CREDITS_PER_DOLLAR;
   const domain =
     process.env["APP_DOMAIN"] ??
     (process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0];

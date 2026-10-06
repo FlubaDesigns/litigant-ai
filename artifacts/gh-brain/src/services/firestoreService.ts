@@ -58,7 +58,9 @@ export interface UserProfile {
   autoRefill?: {
     enabled: boolean;
     thresholdCredits: number;
-    packPriceId: string;
+    packPriceId?: string;
+    dollarAmount?: number;
+    warningThresholdCredits?: number;
   };
   /** Server-written Square checkout URL; cleared by the client via deleteField() once consumed. */
   autoRefillCheckoutUrl?: string;

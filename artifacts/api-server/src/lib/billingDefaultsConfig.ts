@@ -1,20 +1,8 @@
 import { getFirestoreDb } from "./firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 
-export interface BillingDefaults {
-  /** Dollar amounts shown as quick-pick options for auto top-up */
-  autoRefillAmounts: number[];
-  /** Pre-selected dollar amount for new users */
-  defaultAutoRefillAmount: number;
-  /** Credits threshold that triggers an automatic top-up charge */
-  defaultThresholdCredits: number;
-  /** Credits threshold that shows a low-balance warning to the user */
-  defaultWarningThresholdCredits: number;
-  /** Credits granted to every new user on first verified sign-in */
-  signupBonusCredits: number;
-  /** Balance below which a low-credits warning email is sent (admin-configurable) */
-  emailCreditWarningThreshold: number;
-}
+import type { BillingDefaults } from "@workspace/api-zod/billing";
+export type { BillingDefaults } from "@workspace/api-zod/billing";
 
 const STATIC_DEFAULTS: BillingDefaults = {
   autoRefillAmounts: [10, 20, 50, 100, 200],

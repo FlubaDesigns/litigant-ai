@@ -113,6 +113,13 @@ export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
   return isAdmin || plan === "pro";
 }
 
+/** Displayed account features follow the same entitlement used by the server. */
+export function accountAccess(plan: unknown, isAdmin = false) {
+  return canCreateArtifacts(plan, isAdmin)
+    ? {label:"Pro", features:["AI dialogue", "Templates and document creation", "Document downloads", "Public report sharing", "Saved conversation history"]}
+    : {label:"Free", features:["AI dialogue", "Free starter credits", "Paid credits unlock Pro features"]};
+}
+
 export function applyArtifactAccess<T extends Partial<CourtConfig>>(config: T, allowed: boolean): T {
   return allowed ? config : {...config, outputPreferenceMode: "answer-only", artifactType: "none", outputStrategy: config.outputStrategy === "artifact" ? "moderator-consensus" : config.outputStrategy};
 }

@@ -1,3 +1,4 @@
+import { DEFAULT_CONFIG } from "@/data/templates";
 import { useState } from "react";
 import { useLimits } from "@/hooks/useLimits";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,8 +33,6 @@ interface Prefs {
   responseMode: string;
   outputFormat: string;
 }
-
-const ALL_LITIGANT_COUNTS = [2, 3, 4, 5, 6, 8, 10];
 
 const RESPONSE_MODES = [
   {
@@ -140,11 +139,11 @@ function OptionCard({
 export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const {maxLitigants} = useLimits();
+  const limits = useLimits();
   const [prefs, setPrefs] = useState<Prefs>({
-    litigantCount: 3,
-    responseMode: "balanced",
-    outputFormat: "report",
+    litigantCount: DEFAULT_CONFIG.litigantCount,
+    responseMode: DEFAULT_CONFIG.responseMode,
+    outputFormat: DEFAULT_CONFIG.outputFormat,
   });
 
 
@@ -160,7 +159,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
           litigantCount: prefs.litigantCount,
           responseMode: prefs.responseMode,
           outputFormat: prefs.outputFormat,
-          confidenceTarget: 80,
+          confidenceTarget: DEFAULT_CONFIG.confidenceTarget,
         },
         onboardingComplete: true,
       });
@@ -257,7 +256,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                   </p>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                  {ALL_LITIGANT_COUNTS.filter((n) => n <= maxLitigants).map((n) => (
+                  {Array.from({length:limits?.maxLitigants ?? 0}, (_,i) => i+1).map((n) => (
                     <button
                       key={n}
                       onClick={() => set("litigantCount", n)}
@@ -270,7 +269,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                       )}
                     >
                       {n}
-                      {n === 3 && (
+                      {n === DEFAULT_CONFIG.litigantCount && (
                         <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-semibold bg-primary text-black px-1.5 py-0.5 rounded-full whitespace-nowrap">
                           default
                         </span>
@@ -280,7 +279,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
                   <Zap className="w-3.5 h-3.5 shrink-0 text-primary" />
-                  <span>Selected: <strong className="text-foreground">{prefs.litigantCount} litigants</strong> — up to 10 minds on your panel. More seats means more angles and a deeper debate.</span>
+                  <span>Selected: <strong className="text-foreground">{prefs.litigantCount} litigants</strong> — {limits ? `up to ${limits.maxLitigants} minds on your panel.` : "Saved panel limit is unavailable."} More seats means more angles and a deeper debate.</span>
                 </div>
               </div>
             )}

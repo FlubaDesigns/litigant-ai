@@ -1,19 +1,14 @@
 import { PRO_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
-import { useProviders } from "@/hooks/useConfiguration";
+import { useProviders, useCreditPacks } from "@/hooks/useConfiguration";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
-import { getProducts } from "@/services/billingService";
-import { CONFIGURATION_REFRESH } from "@/lib/queryClient";
 
 /** Public pack estimates use the same catalog and quote endpoint as checkout and the court. */
 export function LandingPricing({isSignedIn, signupBonus}: {isSignedIn:boolean; signupBonus:number | null}) {
   const {data:catalog} = useProviders();
-  const {data:products = [], isPending:loadingPacks} = useQuery({
-    queryKey:["configuration", "credit-packs"], queryFn:getProducts, ...CONFIGURATION_REFRESH,
-  });
+  const {data:products = [], isPending:loadingPacks} = useCreditPacks();
   const [selection, setSelection] = useState("");
   const models = catalog?.providers.flatMap(provider => provider.models.map(model => ({
     ...model, provider:provider.name, providerLabel:provider.displayName,

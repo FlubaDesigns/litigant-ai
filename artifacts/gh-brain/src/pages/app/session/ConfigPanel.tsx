@@ -185,10 +185,11 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
             </V29Field>}
             {!artifactsAllowed && <p className="text-xs text-muted-foreground">Document creation and downloads require Pro.</p>}
 
+            {!limits && <p className="text-xs text-muted-foreground">Saved court limits are unavailable. Keep your current settings or retry when connected.</p>}
             <V29Field label="Litigants">
-              <Select value={String(config.litigantCount)} onValueChange={v => handleChange({litigantCount: Number(v)})}>
+              <Select disabled={!limits} value={String(config.litigantCount)} onValueChange={v => handleChange({litigantCount: Number(v)})}>
                 <SelectTrigger aria-label="Litigants" className={V29_SELECT}><SelectValue /></SelectTrigger>
-                <SelectContent>{Array.from({length: limits.maxLitigants}, (_,i) => i+1).map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+                <SelectContent>{Array.from({length: limits?.maxLitigants ?? 0}, (_,i) => i+1).map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
               </Select>
             </V29Field>
             {/* CONSCIENCE */}
