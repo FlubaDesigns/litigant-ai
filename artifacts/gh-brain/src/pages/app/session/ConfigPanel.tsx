@@ -1,3 +1,4 @@
+import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { useLimits } from "@/hooks/useLimits";
 import { CourtConfigSchema, applyArtifactAccess, RESPONSE_VIEWS, DOCUMENT_TYPES, DOWNLOAD_FORMATS, ANSWER_STYLES, OUTPUT_MODES } from "@workspace/api-zod/session";
@@ -183,7 +184,7 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
                 <SelectContent>{Object.entries(DOWNLOAD_FORMATS).map(([v,label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
               </Select>
             </V29Field>}
-            {!artifactsAllowed && <p className="text-xs text-muted-foreground">Document creation and downloads require Pro.</p>}
+            {!artifactsAllowed && <p className="text-xs text-muted-foreground">{PAID_ACCESS_NOTE}</p>}
 
             {!limits && <p className="text-xs text-muted-foreground">Saved court limits are unavailable. Keep your current settings or retry when connected.</p>}
             <V29Field label="Litigants">

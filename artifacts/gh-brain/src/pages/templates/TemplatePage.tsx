@@ -1,4 +1,4 @@
-import { PRO_ACCESS_NOTE, canCreateArtifacts, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
+import { PAID_ACCESS_NOTE, PAID_ACCESS_BADGE, PAID_ACCESS_CTA, canCreateArtifacts, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -150,7 +150,7 @@ function useTemplateHrefs(templateId: string, user: ReturnType<typeof useAuth>["
 export default function TemplatePage() {
   const { user, userProfile, isAdmin } = useAuth();
   const templatesAllowed = canCreateArtifacts(userProfile?.plan, isAdmin);
-  const launchLabel = templatesAllowed ? "Use Template" : "Unlock Pro with credits";
+  const launchLabel = templatesAllowed ? "Use Template" : PAID_ACCESS_CTA;
   const { slug } = useParams<{ slug: string }>();
   const { data: templates = [], isPending, isError, refetch } = useTemplates();
   const page = resolveTemplatePages(templates).find(page => page.slug === slug || page.template.id === slug);
@@ -160,7 +160,7 @@ export default function TemplatePage() {
     ...page,
     templateId: page.template.id,
     metaTitle: `${page.title} — Litigant AI`,
-    metaDescription: `Pro only. ${page.description}`,
+    metaDescription: `${page.description} ${PAID_ACCESS_NOTE}`,
     subheadline: page.description,
     howItWorks: page.content?.howItWorks ?? [],
     benefits: page.content?.benefits ?? [],
@@ -225,7 +225,7 @@ export default function TemplatePage() {
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
-                  {detail.badge} · Pro only
+                  {detail.badge} · {PAID_ACCESS_BADGE}
                 </span>
                 <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-5 leading-tight">
                   {detail.title}
@@ -234,7 +234,7 @@ export default function TemplatePage() {
                 <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto">
                   {detail.subheadline}
                 </p>
-                <p className="text-sm text-muted-foreground mb-5">{PRO_ACCESS_NOTE}</p>
+                <p className="text-sm text-muted-foreground mb-5">{PAID_ACCESS_NOTE}</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Link href={hrefs.useTemplate}>
                     <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto">
@@ -392,7 +392,7 @@ export default function TemplatePage() {
                 Ready to use this template?
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                {PRO_ACCESS_NOTE}
+                {PAID_ACCESS_NOTE}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href={hrefs.useTemplate}>

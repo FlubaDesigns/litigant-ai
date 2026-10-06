@@ -224,7 +224,7 @@ describe("addCredits()", () => {
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
   });
 
-  it("unlocks Pro atomically with a paid purchase and deduplicates payment retries", async () => {
+  it("unlocks all features atomically with a paid purchase and deduplicates payment retries", async () => {
     mockDb._store["users/buyer"] = {plan:"free",creditBalance:500};
     const opts = {source:"square_checkout",paymentId:"paid-1",idempotencyKey:"payment_paid-1"};
     await Promise.all([addCredits("buyer",100,"purchase",opts),addCredits("buyer",100,"purchase",opts)]);
@@ -232,7 +232,7 @@ describe("addCredits()", () => {
     expect(Object.keys(mockDb._store).filter(key=>key.startsWith("credit_transactions/"))).toHaveLength(1);
   });
 
-  it.each(["signup_bonus", "admin_adjustment", "refund"] as const)("does not unlock Pro for %s credits", async type => {
+  it.each(["signup_bonus", "admin_adjustment", "refund"] as const)("does not unlock full features for %s credits", async type => {
     mockDb._store["users/free"] = {plan:"free",creditBalance:0};
     await addCredits("free",500,type);
     expect(mockDb._store["users/free"]).toMatchObject({plan:"free",creditBalance:500});
@@ -1313,7 +1313,7 @@ describe("saved context for restored sessions and child runs", () => {
     const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`)
       .send({...BRAIN_BODY, ...context});
     expect(response.status).toBe(403);
-    expect(response.body.code).toBe("PRO_REQUIRED");
+    expect(response.body.code).toBe("PAID_ACCESS_REQUIRED");
     expect(runBrainSession).not.toHaveBeenCalled();
     expect(estimateSessionCreditsCalibrated).not.toHaveBeenCalled();
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);

@@ -21,9 +21,9 @@ for (const width of [360, 768, 1440]) {
     await expect(page.getByText(template.description, {exact:true})).toBeVisible();
     await expect(page.getByRole("heading", {name: /Owner's saved question/})).toBeVisible();
     await expect(page.getByText(/2 litigants ·/)).toBeVisible();
-    await expect(page.getByText("Business · Pro only", {exact:true})).toBeVisible();
-    await expect(page.getByText(/Any paid credit purchase automatically unlocks Pro/).first()).toBeVisible();
-    await expect(page.getByRole("link", {name: "Unlock Pro with credits", exact:true}).first()).toHaveAttribute("href", "/register?next=%2Fbilling");
+    await expect(page.getByText("Business · Paid credits required", {exact:true})).toBeVisible();
+    await expect(page.getByText(/Any paid credit purchase unlocks all features/).first()).toBeVisible();
+    await expect(page.getByRole("link", {name: "Unlock all features", exact:true}).first()).toHaveAttribute("href", "/register?next=%2Fbilling");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.goto("/tools/business-plan-analyzer");
     await expect(page).toHaveURL(/\/templates\/business-plan-analyzer$/);
@@ -40,5 +40,5 @@ test("inactive pages stay unavailable and custom templates get a page", async ({
   await expect(page.getByRole("heading", {name:"Page not found"})).toBeVisible();
   await page.goto("/templates/custom-case");
   await expect(page.getByRole("heading", {level:1})).toHaveText("Custom case");
-  await expect(page.getByRole("link", {name:"Unlock Pro with credits", exact:true}).first()).toHaveAttribute("href", "/register?next=%2Fbilling");
+  await expect(page.getByRole("link", {name:"Unlock all features", exact:true}).first()).toHaveAttribute("href", "/register?next=%2Fbilling");
 });

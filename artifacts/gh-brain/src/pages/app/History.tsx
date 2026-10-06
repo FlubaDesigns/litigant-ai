@@ -1,3 +1,4 @@
+import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput } from "@/lib/sessionOutput";
 import { confidenceLabel } from "@workspace/api-zod/session";
@@ -465,7 +466,7 @@ export default function HistoryPage() {
   }
 
   async function handleExport(session: SavedSession) {
-    if (!artifactsAllowed) {toast.info("Downloads require Pro."); return;}
+    if (!artifactsAllowed) {toast.info(PAID_ACCESS_NOTE); return;}
     let full = session;
     if (!session.finalAnswer && user) {
       try {
@@ -487,7 +488,7 @@ export default function HistoryPage() {
   }
 
   async function handleShare(session: SavedSession) {
-    if (!artifactsAllowed) {toast.info("Sharing reports requires Pro."); return;}
+    if (!artifactsAllowed) {toast.info(PAID_ACCESS_NOTE); return;}
     if (!user) { toast.error("Sign in to share sessions."); return; }
     if (session.shareId) {
       const url = `${window.location.origin}/report/${session.shareId}`;

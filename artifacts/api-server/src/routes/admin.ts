@@ -136,7 +136,7 @@ router.get("/admin/guest-invitations", requireAdmin, async (req, res) => {
 });
 router.post("/admin/guest-invitations", requireAdmin, async (req, res) => {
   const parsed = InvitationInput.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({error: "Enter a name, 1–100,000 credits, Free or Pro, and a future expiration."});
+  if (!parsed.success) return res.status(400).json({error: "Enter a name, 1–100,000 credits, Free or Member, and a future expiration."});
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({error: "Invitation service unavailable."});
   try {

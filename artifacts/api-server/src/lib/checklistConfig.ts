@@ -44,7 +44,7 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
     section: "agent",
     text: "Implement true automatic credit refill alongside manual top-ups",
     steps: [
-      "Let each Free or Pro user opt in or out in Billing, choose a refill amount, and set their low-credit threshold.",
+      "Let each Free or Member user opt in or out in Billing, choose a refill amount, and set their low-credit threshold.",
       "Obtain the user's authorization to charge a saved Square payment method when their balance falls below that threshold.",
       "Use the existing payment and credit ledger flow, prevent duplicate charges, and add credits only after confirmed payment.",
       "Keep manual credit-pack and custom-amount purchases available. Show failed payments clearly without repeatedly charging.",

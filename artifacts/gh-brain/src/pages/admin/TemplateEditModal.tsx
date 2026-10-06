@@ -1,3 +1,4 @@
+import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -60,7 +61,7 @@ export function TemplateEditModal({template, onClose, onSuccess}: {
           <Button variant="outline" disabled={inputFields.length >= 30} onClick={() => setInputFields(fields => [...fields, {id: crypto.randomUUID(), label: "", placeholder: "", type: "textarea", required: false}])}>Add question</Button>
         </details>
         <details className="space-y-3"><summary className="min-h-11 cursor-pointer py-3 font-semibold">Deliverable defaults</summary>
-          <p className="text-xs text-muted-foreground">Document creation applies to Pro access. Free access remains answer-only.</p>
+          <p className="text-xs text-muted-foreground">{PAID_ACCESS_NOTE}</p>
           {outputs.filter(item => item.key !== "artifactType" || defaultConfig.outputPreferenceMode !== "answer-only").map(item => <label key={item.key} className="block space-y-1"><span className="text-sm">{item.label}</span><select aria-label={item.label} className="w-full min-h-11 rounded border border-input bg-background px-3" value={String(defaultConfig[item.key] ?? "auto")} onChange={e => changeConfig({[item.key]: e.target.value})}>{Object.entries(item.choices).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>)}
         </details>
         <label className="block space-y-1"><span>AI instructions</span><Textarea rows={8} value={systemPrompt} onChange={e => setSystemPrompt(e.target.value)} placeholder="Leave blank to restore the built-in instructions" /></label>

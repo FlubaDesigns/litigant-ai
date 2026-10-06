@@ -1,4 +1,4 @@
-import { PRO_ACCESS_NOTE, applyArtifactAccess } from "@workspace/api-zod/session";
+import { PAID_ACCESS_NOTE, PAID_ACCESS_BADGE, applyArtifactAccess } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput } from "@/lib/sessionOutput";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
@@ -60,7 +60,7 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold truncate">{template.title}</span>
             <span className="ml-auto text-xs font-mono text-muted-foreground shrink-0">
-              Pro only
+              {PAID_ACCESS_BADGE}
             </span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -156,7 +156,7 @@ export default function SessionPage() {
   const templateLinkApplied = useRef(false);
   useEffect(() => {
     if (userProfile && !artifactsAllowed && new URLSearchParams(window.location.search).has("templateId")) {
-      toast.error(PRO_ACCESS_NOTE);
+      toast.error(PAID_ACCESS_NOTE);
       navigate("/billing");
     }
   }, [userProfile, artifactsAllowed, navigate]);
@@ -235,7 +235,7 @@ export default function SessionPage() {
   }
 
   async function handleRun() {
-    if (state.template && !artifactsAllowed) { toast.error("Templates require Pro access."); return; }
+    if (state.template && !artifactsAllowed) { toast.error(PAID_ACCESS_NOTE); return; }
     if (!quote.ready) { toast.error(quote.error?.message ?? "Please wait for the current credit estimate."); return; }
     const hasFields = state.template && state.template.inputFields.length > 0;
     const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
@@ -285,7 +285,7 @@ export default function SessionPage() {
   }
 
   const handleDownload = useCallback(async () => {
-    if (!artifactsAllowed) {toast.info("Downloads require Pro."); return;}
+    if (!artifactsAllowed) {toast.info(PAID_ACCESS_NOTE); return;}
     const fmt = state.config.format ?? "markdown";
     if (fmt === "docx") {
       try { await exportDocx(state); toast.success("Word document downloaded."); }
@@ -335,7 +335,7 @@ export default function SessionPage() {
   }, [state, artifactsAllowed]);
 
   function handleExportPDF() {
-    if (!artifactsAllowed) {toast.info("PDF export requires Pro."); return;}
+    if (!artifactsAllowed) {toast.info(PAID_ACCESS_NOTE); return;}
     const w = window.open("", "_blank");
     if (!w) { toast.error("Popup blocked — allow popups for this site to print/save as PDF."); return; }
     exportPDF(state, w);
@@ -642,7 +642,7 @@ export default function SessionPage() {
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
           <SheetHeader className="shrink-0 pb-3 border-b border-white/5">
             <SheetTitle className="text-sm flex items-center gap-2">
-              Templates · Pro only
+              Templates · {PAID_ACCESS_BADGE}
             </SheetTitle>
           </SheetHeader>
           <div className="flex items-center gap-2 py-2 overflow-x-auto shrink-0 scrollbar-none">
@@ -679,7 +679,7 @@ export default function SessionPage() {
                   key={template.id}
                   template={template}
                   onClick={() => {
-                    if (!artifactsAllowed) { toast.error(PRO_ACCESS_NOTE); navigate("/billing"); return; }
+                    if (!artifactsAllowed) { toast.error(PAID_ACCESS_NOTE); navigate("/billing"); return; }
                     setTemplate(template);
                     setConfig(template.defaultConfig);
                     setTemplateSheetOpen(false);

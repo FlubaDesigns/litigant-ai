@@ -1,3 +1,4 @@
+import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { CREDITS_PER_DOLLAR } from "@workspace/api-zod/billing";
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
@@ -313,7 +314,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     const account = (await db!.collection("users").doc(uid).get()).data();
     const proAllowed = canCreateArtifacts(account?.plan);
     if (templateId && !proAllowed) {
-      res.status(403).json({ message: "Templates require Pro access.", code: "PRO_REQUIRED" });
+      res.status(403).json({ message: PAID_ACCESS_NOTE, code: "PAID_ACCESS_REQUIRED" });
       return;
     }
     effectiveConfig = applyArtifactAccess(effectiveConfig, proAllowed);

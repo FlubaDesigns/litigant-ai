@@ -1,4 +1,4 @@
-import { PRO_ACCESS_NOTE, canCreateArtifacts } from "@workspace/api-zod/session";
+import { PAID_ACCESS_NOTE, PAID_ACCESS_BADGE, PAID_ACCESS_CTA, canCreateArtifacts } from "@workspace/api-zod/session";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ChevronRight, Briefcase, Globe, TrendingUp, Code2, FileText, Scale, BookOpen, FlaskConical, Search } from "lucide-react";
@@ -34,14 +34,14 @@ export default function TemplatesPage() {
   const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
   usePageMeta({
     title: "Templates — Litigant AI | Multi-Model Adversarial Reasoning",
-    description: "Pro-only templates for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
+    description: `Templates for business plans, websites, contracts, decisions, code reviews, and more. ${PAID_ACCESS_NOTE}`,
     canonicalPath: "/templates",
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       "name": "Templates — Litigant AI",
       "url": "https://litigant-ai.com/templates",
-      "description": "Pro-only templates. Multiple AI models debate your question and produce an AI review with stated limitations.",
+      "description": `Multiple AI models debate your question and produce an AI review with stated limitations. ${PAID_ACCESS_NOTE}`,
       "hasPart": pages.map((t) => ({
         "@type": "WebPage",
         "name": t.title,
@@ -67,13 +67,13 @@ export default function TemplatesPage() {
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
-                  Pro only
+                  {PAID_ACCESS_BADGE}
                 </span>
                 <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
                   Templates
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                  Browse the templates and examples freely. Running a template requires Pro access and uses session credits.
+                  Browse the templates and examples freely. Any paid credit purchase unlocks every template. Sessions use credits.
                 </p>
               </motion.div>
             </div>
@@ -138,7 +138,7 @@ export default function TemplatesPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
                             <div className="absolute top-2 left-2">
                               <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded border", CATEGORY_COLORS[page.category])}>
-                                {page.badge} · Pro only
+                                {page.badge} · {PAID_ACCESS_BADGE}
                               </span>
                             </div>
                             <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-background/70 backdrop-blur-sm border border-border/40 flex items-center justify-center">
@@ -170,11 +170,11 @@ export default function TemplatesPage() {
             <div className="row">
               <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {PRO_ACCESS_NOTE}
+                {PAID_ACCESS_NOTE}
               </p>
               <Link href={templatesAllowed ? "/session" : user ? "/billing" : "/register?next=%2Fbilling"}>
                 <Button size="lg" className="font-semibold gap-2">
-                  {templatesAllowed ? "Open courtroom" : "Unlock Pro with credits"} <ChevronRight className="w-4 h-4" />
+                  {templatesAllowed ? "Open courtroom" : PAID_ACCESS_CTA} <ChevronRight className="w-4 h-4" />
                 </Button>
               </Link>
             </div>

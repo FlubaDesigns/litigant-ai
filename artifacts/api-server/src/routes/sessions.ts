@@ -1,3 +1,4 @@
+import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
@@ -187,7 +188,7 @@ router.patch("/sessions/:id", async (req, res) => {
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
 
   if (req.body?.shared === true && !canCreateArtifacts((await db.collection("users").doc(decoded.uid).get()).data()?.plan, decoded.admin)) {
-    res.status(403).json({message: "Sharing reports requires Pro."}); return;
+    res.status(403).json({message: PAID_ACCESS_NOTE}); return;
   }
   // shareId is intentionally excluded from the accepted body — it is always
   // generated server-side via POST /sessions/:id/share to prevent spoofing.
@@ -287,7 +288,7 @@ router.post("/sessions/:id/share", async (req, res) => {
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
 
   if (!canCreateArtifacts((await db.collection("users").doc(decoded.uid).get()).data()?.plan, decoded.admin)) {
-    res.status(403).json({message: "Sharing reports requires Pro."}); return;
+    res.status(403).json({message: PAID_ACCESS_NOTE}); return;
   }
 
   try {

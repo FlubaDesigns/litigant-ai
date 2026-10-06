@@ -1,3 +1,4 @@
+import { accountAccess } from "@workspace/api-zod/session";
 import { useState } from "react";
 import { useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { guestFetch, type GuestInvitation } from "@/services/guestService";
@@ -38,7 +39,7 @@ export function MarketingTab() {
       <div className="space-y-1"><Label htmlFor="invite-label">For</Label><Input id="invite-label" placeholder="Name or label" value={label} onChange={e => setLabel(e.target.value)} maxLength={100} required /></div>
       <div className="row layout__split-2 layout--keep-columns">
         <div className="min-w-0 space-y-1"><Label htmlFor="invite-credits">Credits</Label><Input id="invite-credits" type="number" inputMode="numeric" min={1} max={100000} step={1} value={credits} onChange={e => setCredits(e.target.value)} required /></div>
-        <div className="min-w-0 space-y-1"><Label htmlFor="invite-plan">Access</Label><Select value={plan} onValueChange={v => setPlan(v as "free" | "pro")}><SelectTrigger id="invite-plan"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="free">Free</SelectItem><SelectItem value="pro">Pro</SelectItem></SelectContent></Select></div>
+        <div className="min-w-0 space-y-1"><Label htmlFor="invite-plan">Access</Label><Select value={plan} onValueChange={v => setPlan(v as "free" | "pro")}><SelectTrigger id="invite-plan"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="free">{accountAccess("free").label}</SelectItem><SelectItem value="pro">{accountAccess("pro").label}</SelectItem></SelectContent></Select></div>
       </div>
       <div className="space-y-1 min-w-0"><Label htmlFor="invite-expiration">Expires</Label><Input className="w-full min-w-0" id="invite-expiration" type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} required /><p className="text-xs text-muted-foreground">Your local time · {Intl.DateTimeFormat().resolvedOptions().timeZone}</p></div>
       <Button className="min-h-11 w-full sm:w-auto" type="submit" disabled={create.isPending}>{create.isPending ? "Creating…" : "Create link"}</Button>
@@ -50,7 +51,7 @@ export function MarketingTab() {
     {!query.isPending && !query.isError && invitations.length === 0 && <p className="text-sm text-muted-foreground">No invitations yet.</p>}
     <div className="row layout__split-2">{invitations.map(invite => <article key={invite.id} aria-label={`Invitation for ${invite.label}`} className="lgt-card lgt-card--compact space-y-2 min-w-0">
       <h4 className="font-semibold break-words">{invite.label}</h4>
-      <p className="text-sm">{invite.plan === "pro" ? "Pro" : "Free"} · {invite.status === "signed_up" ? `${invite.credits} trial credits` : `${invite.remainingCredits} / ${invite.credits} credits left`}</p>
+      <p className="text-sm">{accountAccess(invite.plan).label} · {invite.status === "signed_up" ? `${invite.credits} trial credits` : `${invite.remainingCredits} / ${invite.credits} credits left`}</p>
       <p className="text-xs text-muted-foreground">Expires {new Date(invite.expiresAt).toLocaleString()}</p>
       <p className="text-xs capitalize">{invite.status.replace("_", " ")}</p>
       {["ready", "claimed"].includes(invite.status) && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => copy(invitationLink(invite.id))}>Copy link</Button><Button variant="ghost" disabled={revoke.isPending} onClick={() => revoke.mutate(invite.id)}>Revoke</Button></div>}

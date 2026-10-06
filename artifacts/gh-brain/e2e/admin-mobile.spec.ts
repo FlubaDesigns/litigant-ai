@@ -713,7 +713,7 @@ for (const width of [360, 412]) {
     await page.getByLabel("For",{exact:true}).fill("Person B");
     await page.getByLabel("Credits",{exact:true}).fill("500");
     await page.getByLabel("Access",{exact:true}).click();
-    await page.getByRole("option",{name:"Pro",exact:true}).click();
+    await page.getByRole("option",{name:"Member",exact:true}).click();
     await page.getByRole("button",{name:"Create link",exact:true}).click();
     await expect(page.getByLabel("Invitation link",{exact:true})).toHaveValue(new RegExp("/guest#"+ids[1]));
     expect(created.map(({label,credits,plan})=>({label,credits,plan}))).toEqual([{label:"Person A",credits:100,plan:"free"},{label:"Person B",credits:500,plan:"pro"}]);

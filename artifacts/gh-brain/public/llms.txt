@@ -23,7 +23,7 @@ See the [live pricing section](https://litigant-ai.com/#pricing) for current cre
 
 ## Templates
 
-Each template provides questions and court settings for a specific use case. Browsing is public; running a template requires Pro access. Any paid credit purchase automatically unlocks Pro; free starter credits do not. Sessions still use credits. Templates review supplied material and do not perform live research, automated website testing or code execution. Examples are authored illustrations, not recorded AI sessions.
+Each template provides questions and court settings for a specific use case. Browsing is public; any paid credit purchase unlocks every template and all features. Free promotional credits provide dialogue only. Sessions still use credits. Templates review supplied material and do not perform live research, automated website testing or code execution. Examples are authored illustrations, not recorded AI sessions.
 
 - [Templates](https://litigant-ai.com/templates): Browse the current template catalog, with individual pages showing descriptions, intake questions, examples and launch options.
 
@@ -33,7 +33,7 @@ Each template provides questions and court settings for a specific use case. Bro
 2. Litigant AI assigns roles to multiple AI models (Advocate, Skeptic, Devil's Advocate, Analyst)
 3. Models debate in rounds, challenging each other's reasoning
 4. The court produces an answer with debate notes and limitations; source support depends on the evidence provided
-5. Pro provides document creation, downloads and optional public report links
+5. Any paid credit purchase enables document creation, downloads and optional public report links
 
 ## Key pages
 

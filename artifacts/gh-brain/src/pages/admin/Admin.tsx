@@ -1,3 +1,4 @@
+import { accountAccess } from "@workspace/api-zod/session";
 import { TemplateEditModal } from "./TemplateEditModal";
 import { AiBillingTab, KNOWN_PROVIDERS } from "./AiBillingTab";
 import { MarketingTab } from "./MarketingTab";
@@ -403,7 +404,7 @@ function UsersTab() {
                   <div className="row layout__split-2 layout--keep-columns">
                     <div>
                       <dt className="text-xs text-muted-foreground mb-1">Plan</dt>
-                      <dd><Badge variant="outline" className="text-xs font-mono uppercase">{user.plan ?? "free"}</Badge></dd>
+                      <dd><Badge variant="outline" className="text-xs font-mono uppercase">{accountAccess(user.plan).label}</Badge></dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground mb-1">Credits</dt>
@@ -641,7 +642,7 @@ function UserProfileSheet({
               </div>
               <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs text-muted-foreground">Plan</p>
-                <p className="font-mono font-bold uppercase">{data.user.plan ?? "free"}</p>
+                <p className="font-mono font-bold uppercase">{accountAccess(data.user.plan).label}</p>
               </div>
               <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs text-muted-foreground">Joined</p>
@@ -1711,7 +1712,7 @@ function CreditPackDialog({
 const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
   overdraftLimit: {
     label: "Courtesy ceiling",
-    description: "Paid Pro only. Repay before next run.",
+    description: "Paying members only. Repay before next run.",
     min: 0, max: 5000,
   },
   maxLitigants: {

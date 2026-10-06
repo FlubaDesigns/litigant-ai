@@ -1,3 +1,4 @@
+import { accountAccess } from "@workspace/api-zod/session";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -125,7 +126,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
                   {credits} credits
                 </div>
                 <span className="hidden sm:inline text-xs font-mono uppercase tracking-wider text-muted-foreground border border-border px-2 py-0.5 rounded">
-                  {plan}
+                  {accountAccess(plan).label}
                 </span>
                 <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                   {user?.displayName?.split(" ")[0] || user?.email?.split("@")[0]}
@@ -232,7 +233,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
           <div className="pt-2 mt-2 border-t border-border flex items-center justify-between">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs font-mono text-primary">
               <Zap className="w-3 h-3" />
-              {credits} credits · {plan}
+              {credits} credits · {accountAccess(plan).label}
             </div>
             <Button
               variant="ghost"

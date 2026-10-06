@@ -106,9 +106,11 @@ export function resolveModelByIntelligence(
   return { provider: best.providerName, model: best.id, label: best.label };
 }
 
-export const PRO_ACCESS_NOTE = "Any paid credit purchase automatically unlocks Pro. Member credits are purchased; promotional credits are free and do not unlock Pro. Sessions still use credits.";
+export const PAID_ACCESS_BADGE = "Paid credits required";
+export const PAID_ACCESS_CTA = "Unlock all features";
+export const PAID_ACCESS_NOTE = "Any paid credit purchase unlocks all features. Free promotional credits provide dialogue only. Sessions still use credits.";
 
-/** Shared Pro entitlement for templates, document creation, export and public sharing. */
+/** Shared full-feature entitlement. The stored "pro" value is legacy account access, not the Pro credit package. */
 export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
   return isAdmin || plan === "pro";
 }
@@ -116,8 +118,8 @@ export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
 /** Displayed account features follow the same entitlement used by the server. */
 export function accountAccess(plan: unknown, isAdmin = false) {
   return canCreateArtifacts(plan, isAdmin)
-    ? {label:"Pro", features:["AI dialogue", "Templates and document creation", "Document downloads", "Public report sharing", "Saved conversation history"]}
-    : {label:"Free", features:["AI dialogue", "Promotional credits (free)", "Member credits (purchased) unlock Pro features"]};
+    ? {label:"Member", features:["AI dialogue", "Templates and document creation", "Document downloads", "Public report sharing", "Saved conversation history"]}
+    : {label:"Free", features:["AI dialogue", "Promotional credits (free)", "Purchased credits unlock all features"]};
 }
 
 export function applyArtifactAccess<T extends Partial<CourtConfig>>(config: T, allowed: boolean): T {
