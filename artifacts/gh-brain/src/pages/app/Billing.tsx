@@ -1,4 +1,4 @@
-import { PRO_ACCESS_NOTE } from "@workspace/api-zod/session";
+import { PRO_ACCESS_NOTE, canCreateArtifacts } from "@workspace/api-zod/session";
 import { useBillingDefaults } from "@/hooks/useConfiguration";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -93,7 +93,7 @@ function formatCurrency(cents: number | null): string {
 function CreditBalanceCard({ balance, plan }: { balance: number; plan: string }) {
   const isLow = balance < 50;
   const isCritical = balance < 10;
-  const limits = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.free;
+  const limits = canCreateArtifacts(plan) ? PLAN_LIMITS.pro : PLAN_LIMITS.free;
 
   return (
     <div
@@ -170,12 +170,12 @@ function CreditBalanceCard({ balance, plan }: { balance: number; plan: string })
 }
 
 function PlanLimitsCard({ plan }: { plan: string }) {
-  const limits = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.free;
+  const limits = canCreateArtifacts(plan) ? PLAN_LIMITS.pro : PLAN_LIMITS.free;
   return (
     <div className="rounded-xl border border-border/60 bg-card/50 p-5">
       <div className="flex items-center gap-2 mb-3">
         <Info className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm font-semibold">Plan Limits</span>
+        <span className="text-sm font-semibold">Account access</span>
       </div>
       <ul className="space-y-2">
         {limits.features.map((f) => (
@@ -185,16 +185,7 @@ function PlanLimitsCard({ plan }: { plan: string }) {
           </li>
         ))}
       </ul>
-      {limits.trialCredits && (
-        <div className="mt-3 pt-3 border-t border-border/40">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Trial credits</span>
-            <span className="font-mono text-primary font-semibold">
-              {limits.trialCredits} included
-            </span>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

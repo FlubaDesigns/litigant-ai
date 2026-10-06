@@ -64,15 +64,12 @@ export interface PaymentHistoryItem {
 
 export const PLAN_LIMITS = {
   free: {
-    label: "Pay as you go",
-    trialCredits: 50,
-    creditsPerMonth: null,
-    features: [
-      "Welcome bonus credits on signup",
-      "All AI models available",
-      "Export to Markdown & PDF",
-      "Session history",
-    ],
+    label: "Free",
+    features: ["AI dialogue", "Free starter credits", "Paid credits unlock Pro features"],
+  },
+  pro: {
+    label: "Pro",
+    features: ["AI dialogue", "Templates and document creation", "Document downloads", "Public report sharing", "Saved conversation history"],
   },
 } as const;
 
@@ -121,7 +118,7 @@ export async function getSubscription(): Promise<null> {
 
 /**
  * Called by authService after new user creation.
- * The server grants 100 trial credits idempotently.
+ * The server grants the admin-configured signup credits idempotently.
  */
 export async function grantSignupBonus(user: User): Promise<void> {
   try {
