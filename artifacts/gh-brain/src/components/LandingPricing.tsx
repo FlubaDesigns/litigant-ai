@@ -1,4 +1,4 @@
-import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
+import { PAID_ACCESS_NOTE, accountAccess } from "@workspace/api-zod/session";
 import { useState } from "react";
 import { Link } from "wouter";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
@@ -72,8 +72,7 @@ export function LandingPricing({isSignedIn, signupBonus}: {isSignedIn:boolean; s
                 </p>
                 <ul className="space-y-2 flex-1 mb-5 text-xs text-zinc-400">
                   <li>{plan.free ? "No card required" : "Credits never expire"}</li>
-                  <li>Full access to the courtroom</li>
-                  <li>Session history and exports</li>
+                  {accountAccess(plan.free ? "free" : "pro").features.map(feature => <li key={feature}>{feature}</li>)}
                 </ul>
                 <Link href={isSignedIn ? "/billing" : "/register"}>
                   <button className="w-full min-h-11 text-xs font-medium border border-white/20 text-white hover:border-white/40">
