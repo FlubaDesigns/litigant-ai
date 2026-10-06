@@ -1290,7 +1290,10 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   if (title !== undefined) updates["title"] = title;
   if (description !== undefined) updates["description"] = description;
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
-  if (systemPrompt !== undefined) updates["systemPrompt"] = systemPrompt;
+  if (systemPrompt !== undefined) {
+    if (typeof systemPrompt !== "string") return res.status(400).json({ error: "Invalid template instructions" });
+    updates["systemPrompt"] = systemPrompt.trim() ? systemPrompt : FieldValue.delete();
+  }
   if (defaultSettings || req.body.defaultConfig) {
     const config = CourtConfigFieldsSchema.partial().safeParse(req.body.defaultConfig ?? defaultSettings);
     if (!config.success) return res.status(400).json({error:"Invalid template settings"});

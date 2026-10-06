@@ -1898,7 +1898,7 @@ function TemplateEditModal({
   const [isActive, setIsActive] = useState(template.isActive !== false);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => updateAdminTemplate(template.id, { title, description, systemPrompt: systemPrompt || undefined, isActive }),
+    mutationFn: () => updateAdminTemplate(template.id, { title, description, systemPrompt, isActive }),
     onSuccess: () => { toast.success("Template updated"); onSuccess(); },
     onError: (err: Error) => toast.error(err.message),
   });

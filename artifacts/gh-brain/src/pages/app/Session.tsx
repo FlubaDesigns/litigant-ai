@@ -30,6 +30,7 @@ import { useLocation, useParams } from "wouter";
 import { useLimits } from "@/hooks/useLimits";
 import { toast } from "sonner";
 import { ConfigPanel } from "./session/ConfigPanel";
+import { TemplateQuestions } from "./session/TemplateQuestions";
 import { SessionConfigure } from "./session/SessionConfigure";
 import { SessionCourt } from "./session/SessionCourt";
 import { SessionDiagram } from "./session/SessionDiagram";
@@ -573,20 +574,12 @@ export default function SessionPage() {
                       Clear template
                     </button>
                   </div>
-                  {state.template.inputFields.map((field) => (
-                    <div key={field.id} className="flex items-center gap-2">
-                      <span className="text-[11px] text-primary/60 whitespace-nowrap w-20 shrink-0 font-medium">{field.label}</span>
-                      <Input
-                        type={field.type === "url" ? "url" : "text"}
-                        placeholder={field.placeholder}
-                        value={fieldValues[field.id] ?? ""}
-                        onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleRun(); }}
-                        className="h-9 text-sm flex-1 focus-visible:ring-1 focus-visible:ring-primary/60"
-                        style={{ background: "#0d1a0d", border: "1px solid #1d331d", color: "#eef7ee" }}
-                      />
-                    </div>
-                  ))}
+                  <TemplateQuestions
+                    fields={state.template.inputFields}
+                    values={fieldValues}
+                    onChange={(id, value) => setFieldValues(prev => ({ ...prev, [id]: value }))}
+                    onRun={handleRun}
+                  />
                   <button
                     onClick={handleRun}
                     disabled={insufficientCredits}

@@ -1,7 +1,7 @@
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput, isLitigantRole } from "@/lib/sessionOutput";
 import { confidenceLabel } from "@workspace/api-zod/session";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Settings2, Gavel, Play, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -234,6 +234,13 @@ export function SessionCourt({
   onNavigate,
 }: SessionCourtProps) {
   const [relayAnswer, setRelayAnswer] = useState("");
+  const answeredQuestion = useRef<string | null>(null);
+  useEffect(() => {
+    if (isRelayNeeded && state.relayQuestion && answeredQuestion.current !== state.sessionId) {
+      setRelayAnswer("");
+      answeredQuestion.current = state.sessionId;
+    }
+  }, [isRelayNeeded, state.relayQuestion, state.sessionId]);
   const artifactsAllowed = useArtifactAccess();
   const output = sessionOutput(state);
   return (
@@ -357,7 +364,8 @@ export function SessionCourt({
               <textarea
                 value={relayAnswer}
                 onChange={(e) => setRelayAnswer(e.target.value)}
-                placeholder="Provide the missing information here…"
+                aria-label="Your answers to the court"
+                placeholder="Answer here, or say I don’t know. You can also ask the court to clarify its question."
                 rows={3}
                 style={{
                   width: "100%", background: "#070f1a", border: "1px solid rgba(100,120,255,.3)",
@@ -373,7 +381,6 @@ export function SessionCourt({
                   onClick={() => {
                     const info = relayAnswer.trim();
                     if (!info) return;
-                    setRelayAnswer("");
                     void onSubmitRelay(info);
                   }}
                   disabled={!relayAnswer.trim()}

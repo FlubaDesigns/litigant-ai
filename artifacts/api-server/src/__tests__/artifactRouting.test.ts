@@ -741,3 +741,66 @@ describe("per-agent usage attribution", () => {
     expect(onCallUsage.mock.calls.map(([call])=>call)).toEqual(result.tokenUsage.calls);
   });
 });
+
+describe("Template questions and answers", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("asks before debate and charges only the opening call", async () => {
+    const provider = makeProvider(["ASK_USER\nWho will read the plan? That determines the financial detail."]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const res = makeMockRes();
+    const result = await runBrainSession({ question: "A bakery", templateSystemPrompt: "Build a business plan", config: BASE_CONFIG, res,
+      priceCalls: calls => calls.length * 2 });
+    expect(provider.streamChat).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ creditsUsed: 2, artifacts: "", relayCount: 0,
+      courtroomOutcome: { reason: "not_enough", round: 0 }, relayQuestion: "Who will read the plan? That determines the financial detail." });
+    expect(result.transcript.join("\n")).toContain(result.relayQuestion);
+    expect(result.transcript.join("\n")).not.toContain("ASK_USER");
+    expect(res._events.find(e => e.type === "done")).toMatchObject({ needsRelay: true, relayQuestion: result.relayQuestion });
+  });
+
+  it("retains successive answers and gives every seat the facts before building a Pro document", async () => {
+    const provider = makeProvider(["We have enough to proceed.", "Consider the owner's budget.", "ARTIFACT_NEEDED: yes",
+      "Blueprint", "Business plan for the owner", "PASS", "APPROVED\nBusiness plan", "Here is your plan."]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const result = await runBrainSession({ question: "A bakery", templateSystemPrompt: "Build a business plan",
+      config: { ...BASE_CONFIG, outputPreferenceMode: "document", artifactType: "business-plan" }, res: makeMockRes(),
+      relayContext: { relayRound: 2, originalTranscript: ["**Orchestrator:** Who is the plan for?", "**User (follow-up 1):** For my own roadmap.", "**Orchestrator:** What is the budget?"], missingInfo: "Budget is $10,000. I don't know the rent yet." } });
+    expect(result.artifactPath).toBe("artifact");
+    expect(result.courtroomOutcome.reason).toBe("approved");
+    expect(result.artifacts).toContain("Business plan");
+    expect(result.transcript.join("\n")).toContain("**User (follow-up 1):** For my own roadmap.");
+    expect(result.transcript.join("\n")).toContain("**User (follow-up 2):** Budget is $10,000.");
+    for (const [messages] of provider.streamChat.mock.calls) {
+      expect(messages[0].content).toContain("For my own roadmap.");
+      expect(messages[0].content).toContain("Budget is $10,000.");
+      expect(messages[0].content).toContain("Do not ask again");
+    }
+  });
+
+  it("keeps Free answers conversational even when a relay moderator asks for a document", async () => {
+    const provider = makeProvider(["Proceed with unknown rent labeled.", "Analysis", "ARTIFACT_NEEDED: yes", "APPROVED\nUseful answer", "Next steps"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const result = await runBrainSession({ question: "A bakery", templateSystemPrompt: "Build a plan", config: { ...BASE_CONFIG, outputPreferenceMode: "answer-only", artifactType: "none" }, res: makeMockRes(),
+      relayContext: { relayRound: 1, originalTranscript: ["What is your budget?"], missingInfo: "I don't know yet; help me work it out." } });
+    expect(result.artifactPath).toBe("no-artifact");
+    expect(result.courtroomOutcome.reason).toBe("approved");
+    expect(provider.streamChat).toHaveBeenCalledTimes(5);
+  });
+
+  it("keeps answers available when a credit-paused follow-up resumes", async () => {
+    const provider = makeProvider(["Analysis with saved answer", "ARTIFACT_NEEDED: no", "APPROVED\nAnswer", "Verdict"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    await runBrainSession({ question: "A bakery", templateSystemPrompt: "Build a plan", config: BASE_CONFIG, res: makeMockRes(),
+      continueFromTranscript: ["**User (follow-up 1):** The budget is $10,000.", "**Orchestrator:** We can now proceed."] });
+    for (const [messages] of provider.streamChat.mock.calls) expect(messages[0].content).toContain("The budget is $10,000.");
+  });
+
+  it("leaves final delivery to the route after question persistence and settlement", async () => {
+    const provider = makeProvider(["ASK_USER\nWhich audience?"]);
+    vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
+    const res = makeMockRes();
+    await runBrainSession({ question: "Plan", templateSystemPrompt: "Business plan", config: BASE_CONFIG, res, deferCompletion: true });
+    expect(res._events.some(e => e.type === "done")).toBe(false);
+  });
+});
