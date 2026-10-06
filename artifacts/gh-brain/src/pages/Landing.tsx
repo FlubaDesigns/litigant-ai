@@ -426,7 +426,7 @@ export default function LandingPage() {
                   <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 2 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
                     Start From a Template
                   </span>
-                  <span className="text-xs text-zinc-600 mt-0.5 block">Choose a template and make it your own.</span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">Pro only · Choose a template and make it your own.</span>
                 </div>
                 {openPanel === 2
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />

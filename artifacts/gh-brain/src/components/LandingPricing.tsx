@@ -1,3 +1,4 @@
+import { PRO_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -45,6 +46,7 @@ export function LandingPricing({isSignedIn, signupBonus}: {isSignedIn:boolean; s
         <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">Pricing</p>
         <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">Open a Case</h2>
         <p className="text-zinc-400 mt-3 text-sm">Credits never expire. No subscriptions or seat fees — pay for what you use.</p>
+        <p className="text-zinc-400 mt-3 text-sm">{PRO_ACCESS_NOTE}</p>
         <div className="mt-5 space-y-2">
           <label htmlFor="pricing-model" className="block text-sm text-zinc-300">Model for session estimate</label>
           <select id="pricing-model" value={selected?.id ?? ""} onChange={event => setSelection(event.target.value)}

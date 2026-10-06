@@ -32,3 +32,13 @@ it("upgrades saved stock instructions while preserving customized owner instruct
   expect(result.find(t=>t.id==="business-plan")).toMatchObject({title:"My business plan",systemPrompt:TEMPLATES[0].systemPrompt,defaultConfig:{artifactType:"business-plan",outputPreferenceMode:"document",litigantCount:2}});
   expect(result.find(t=>t.id==="website-audit")).toMatchObject({systemPrompt:"Owner's custom audit instructions",defaultConfig:{outputPreferenceMode:"answer-only",artifactType:"none"}});
 });
+
+it("corrects saved stock offers while preserving the owner's custom description", async () => {
+  vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({get:async()=>({docs:[
+    {id:"website-audit",data:()=>({description:"UX, content, conversion, and technical review of any website."})},
+    {id:"product-stress-test",data:()=>({description:"Owner's custom offer"})},
+  ]})})} as any);
+  const result=await getTemplates();
+  expect(result.find(t=>t.id==="website-audit")?.description).toBe(TEMPLATES.find(t=>t.id==="website-audit")!.description);
+  expect(result.find(t=>t.id==="product-stress-test")?.description).toBe("Owner's custom offer");
+});

@@ -1,3 +1,4 @@
+import { PRO_ACCESS_NOTE, canCreateArtifacts, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -11,7 +12,6 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { funnelTo } from "@/lib/funnel";
 import NotFoundPage from "@/pages/not-found";
 import { useState } from "react";
-import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -33,10 +33,6 @@ function FAQ({ q, a }: { q: string; a: string }) {
 }
 
 function DocumentPreview({ sample }: { sample: TemplateSampleOutput }) {
-  const confColor =
-    sample.confidence >= 80 ? "#00a83a" :
-    sample.confidence >= 60 ? "#b45309" : "#b91c1c";
-
   return (
     /* Outer container — dark page background so the white doc "floats" */
     <div className="rounded-xl overflow-hidden bg-zinc-900 p-6 sm:p-10 shadow-2xl shadow-black/60">
@@ -72,11 +68,9 @@ function DocumentPreview({ sample }: { sample: TemplateSampleOutput }) {
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "10px", color: "#aaa", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Session Report
+              Illustrative report
             </div>
-            <div style={{ fontSize: "10px", color: "#ccc", marginTop: 2 }}>
-              {new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
-            </div>
+
           </div>
         </div>
 
@@ -92,21 +86,6 @@ function DocumentPreview({ sample }: { sample: TemplateSampleOutput }) {
               {sample.question}
             </div>
           </div>
-
-          {/* Meta strip */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", marginBottom: 22, fontSize: "11px", color: "#666" }}>
-            <span>
-              Confidence:&nbsp;
-              <span style={{ fontWeight: 700, color: confColor }}>
-                {sample.confidence}%
-              </span>
-            </span>
-            <span>Credits used: <strong style={{ color: "#333" }}>{sample.creditsUsed}</strong></span>
-            <span>Rounds: <strong style={{ color: "#333" }}>{sample.rounds}</strong></span>
-            <span>Litigants: <strong style={{ color: "#333" }}>{sample.litigants}</strong></span>
-          </div>
-
-          <div style={{ borderTop: "1px solid #e5e5e5", marginBottom: 22 }} />
 
           {/* Verdict */}
           <div style={{ marginBottom: 20 }}>
@@ -145,7 +124,7 @@ function DocumentPreview({ sample }: { sample: TemplateSampleOutput }) {
 
           {/* Footer */}
           <div style={{ marginTop: 28, paddingTop: 16, borderTop: "1px solid #ebebeb", fontSize: "10px", color: "#bbb", textAlign: "center" }}>
-            Example from Litigant AI — litigant-ai.com
+            Authored illustration — not a recorded AI session
           </div>
 
         </div>
@@ -154,23 +133,24 @@ function DocumentPreview({ sample }: { sample: TemplateSampleOutput }) {
   );
 }
 
-function useTemplateHrefs(templateId: string, user: ReturnType<typeof useAuth>["user"]) {
+function useTemplateHrefs(templateId: string, user: ReturnType<typeof useAuth>["user"], allowed: boolean) {
   const templateDest = `/session?templateId=${encodeURIComponent(templateId)}`;
   const sessionDest  = `/session`;
   const creditsDest  = `/billing`;
   if (user) {
-    return { useTemplate: templateDest, askQuestion: sessionDest, getCredits: creditsDest };
+    return { useTemplate: allowed ? templateDest : creditsDest, askQuestion: sessionDest, getCredits: creditsDest };
   }
   return {
-    useTemplate: funnelTo(templateDest).register,
+    useTemplate: funnelTo(creditsDest).register,
     askQuestion: funnelTo(sessionDest).register,
     getCredits:  funnelTo(creditsDest).register,
   };
 }
 
 export default function TemplatePage() {
-  const { signupBonusCredits: signupBonus } = usePublicConfig();
-  const { user } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
+  const templatesAllowed = canCreateArtifacts(userProfile?.plan, isAdmin);
+  const launchLabel = templatesAllowed ? "Use Template" : "Unlock Pro with credits";
   const { slug } = useParams<{ slug: string }>();
   const { data: templates = [], isPending, isError, refetch } = useTemplates();
   const page = resolveTemplatePages(templates).find(page => page.slug === slug || page.template.id === slug);
@@ -180,13 +160,13 @@ export default function TemplatePage() {
     ...page,
     templateId: page.template.id,
     metaTitle: `${page.title} — Litigant AI`,
-    metaDescription: page.description,
+    metaDescription: `Pro only. ${page.description}`,
     subheadline: page.description,
     howItWorks: page.content?.howItWorks ?? [],
     benefits: page.content?.benefits ?? [],
     faqs: page.content?.faqs ?? [],
   } : undefined;
-  const hrefs = useTemplateHrefs(detail?.templateId ?? "", user);
+  const hrefs = useTemplateHrefs(detail?.templateId ?? "", user, templatesAllowed);
 
   usePageMeta({
     title: detail?.metaTitle ?? "Template Not Found | Litigant AI",
@@ -245,7 +225,7 @@ export default function TemplatePage() {
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
-                  {detail.badge}
+                  {detail.badge} · Pro only
                 </span>
                 <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-5 leading-tight">
                   {detail.title}
@@ -254,10 +234,11 @@ export default function TemplatePage() {
                 <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl mx-auto">
                   {detail.subheadline}
                 </p>
+                <p className="text-sm text-muted-foreground mb-5">{PRO_ACCESS_NOTE}</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Link href={hrefs.useTemplate}>
                     <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto">
-                      Use Template <ChevronRight className="w-4 h-4" />
+                      {launchLabel} <ChevronRight className="w-4 h-4" />
                     </Button>
                   </Link>
                   <Link href={hrefs.askQuestion}>
@@ -289,9 +270,9 @@ export default function TemplatePage() {
             <div className="row">
               <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
                 {[
-                  { icon: Zap,       label: "Multi-model adversarial panel" },
+                  { icon: Zap,       label: "Configurable AI court" },
                   { icon: Shield,    label: "Competing AI perspectives" },
-                  { icon: BarChart3, label: "Confidence-scored verdict" },
+                  { icon: BarChart3, label: "AI review with stated limitations" },
                 ].map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-1.5">
                     <Icon className="w-3.5 h-3.5 text-primary" />
@@ -383,9 +364,10 @@ export default function TemplatePage() {
             <div className="row">
               <h2 className="text-2xl font-bold text-center mb-3">Example report</h2>
               <p className="text-sm text-muted-foreground text-center mb-8 max-w-xl mx-auto">
-                {detail.outputSummary} This is an illustration; your result and credit use depend on your question and court settings.
+                {detail.outputSummary} Authored illustration, not a recorded AI session. Your result, completeness and credit use depend on your inputs and settings.
               </p>
               <DocumentPreview sample={detail.sampleOutput} />
+              <p className="text-xs text-muted-foreground mt-4">{CONFIDENCE_NOTE}</p>
             </div>
         </section>}
 
@@ -410,14 +392,12 @@ export default function TemplatePage() {
                 Ready to use this template?
               </h2>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                {user
-                  ? "Your credits are ready. Pick how you want to start."
-                  : signupBonus === null ? "No credit card required." : `${signupBonus} free credits on signup. No credit card required.`}
+                {PRO_ACCESS_NOTE}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href={hrefs.useTemplate}>
                   <Button size="lg" className="font-semibold gap-2 w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-black border-0">
-                    Use Template <ChevronRight className="w-4 h-4" />
+                    {launchLabel} <ChevronRight className="w-4 h-4" />
                   </Button>
                 </Link>
                 <Link href={hrefs.askQuestion}>

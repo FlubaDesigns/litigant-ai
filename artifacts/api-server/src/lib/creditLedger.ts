@@ -181,7 +181,12 @@ export async function addCredits(
 
     tx.set(
       userRef,
-      { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() },
+      { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp(),
+        // Only the verified payment handler supplies this purchase source.
+        // Credit delivery and Pro activation must commit or retry together.
+        ...(type === "purchase" && opts.source === "square_checkout" && amount > 0 && opts.paymentId
+          ? { plan: "pro" } : {}),
+      },
       { merge: true }
     );
 
@@ -391,12 +396,30 @@ export async function getCourtesyCreditEligibility(uid: string): Promise<boolean
   if (!db) throw new Error("Firestore not configured");
   const user = (await db.collection("users").doc(uid).get()).data();
   if (user?.plan !== "pro" || user.guestInvitationId) return false;
+  return hasPaidCreditPurchase(uid);
+}
+
+async function hasPaidCreditPurchase(uid: string): Promise<boolean> {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firestore not configured");
   const purchases = await db.collection("credit_transactions").where("userId", "==", uid)
     .where("type", "==", "purchase").where("source", "==", "square_checkout").get();
   return purchases.docs.some(d => {
     const payment = d.data();
     return typeof payment.paymentId === "string" && payment.paymentId.length > 0 && payment.amount > 0;
   });
+}
+
+/** Give previous paying customers the same access on their next account setup. */
+export async function syncPaidProAccess(uid: string): Promise<void> {
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Firestore not configured");
+  const ref = db.collection("users").doc(uid);
+  const account = (await ref.get()).data();
+  if (!account || account.plan === "pro" || account.guestInvitationId) return;
+  if (await hasPaidCreditPurchase(uid)) {
+    await ref.set({ plan: "pro", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  }
 }
 
 export async function reserveCredits(

@@ -171,7 +171,7 @@ Financial discipline: Show supplied inputs, units, time periods and formulas. Se
     id: "website-audit",
     category: "technical",
     title: "Website Audit",
-    description: "UX, content, conversion, and technical review of any website.",
+    description: "Review supplied website text, messaging and conversion assumptions, with suggested improvements.",
     icon: "Globe",
     estimatedCredits: 15,
     defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3, outputPreferenceMode: "document", artifactType: "report" },
@@ -222,7 +222,7 @@ Evidence discipline: Distinguish observed defects from hypotheses and checks sti
     id: "marketing-strategy",
     category: "business",
     title: "Marketing Strategy",
-    description: "Evaluate a marketing approach across channels, messaging, audience, and ROI potential.",
+    description: "Review a marketing approach, challenge budget assumptions and propose channel experiments.",
     icon: "TrendingUp",
     estimatedCredits: 20,
     defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3, confidenceTarget: 80, outputPreferenceMode: "document", artifactType: "report" },
@@ -419,7 +419,7 @@ Scope discipline: Quote or reference actual passages, never invented ones. Do no
     id: "medical-prep",
     category: "personal",
     title: "Medical Appointment Prep",
-    description: "Prepare informed questions and understand your situation before a medical appointment.",
+    description: "Organize your notes and prepare questions to discuss at a medical appointment.",
     icon: "Stethoscope",
     estimatedCredits: 15,
     defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 2, confidenceTarget: 75, outputPreferenceMode: "document", artifactType: "memo" },
@@ -521,7 +521,7 @@ Decision discipline: Do not invent numerical weights or probabilities and presen
     id: "research-summary",
     category: "research",
     title: "Research Summary",
-    description: "Synthesize and stress-test findings from a research area, paper, or topic.",
+    description: "Synthesize supplied research and examine its evidence, disagreements and limitations.",
     icon: "Search",
     estimatedCredits: 20,
     defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 3, confidenceTarget: 80, outputPreferenceMode: "document", artifactType: "report" },
@@ -572,7 +572,7 @@ Citation discipline: Cite only consulted, identifiable sources and connect claim
     id: "product-stress-test",
     category: "business",
     title: "Product Idea Stress Test",
-    description: "Validate or invalidate a product idea with adversarial examination of assumptions.",
+    description: "Challenge a product idea and plan tests of its assumptions using the evidence you supply.",
     icon: "FlaskConical",
     estimatedCredits: 20,
     defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 4, confidenceTarget: 80, outputPreferenceMode: "document", artifactType: "report" },
@@ -826,6 +826,14 @@ export const TEMPLATE_CATEGORIES = [
 ] as const;
 
 // Normalize persisted overrides against the same complete catalog used by the UI.
+const LEGACY_TEMPLATE_DESCRIPTIONS: Record<string, string> = {
+  "website-audit": "UX, content, conversion, and technical review of any website.",
+  "product-stress-test": "Validate or invalidate a product idea with adversarial examination of assumptions.",
+  "research-summary": "Synthesize and stress-test findings from a research area, paper, or topic.",
+  "medical-prep": "Prepare informed questions and understand your situation before a medical appointment.",
+  "marketing-strategy": "Evaluate a marketing approach across channels, messaging, audience, and ROI potential."
+};
+
 export function normalizeTemplate(value: unknown, id?: string): Template | null {
   if (!value || typeof value !== "object") return null;
   const v = value as Partial<Template> & { defaultSettings?: Partial<CourtConfig> };
@@ -844,7 +852,7 @@ export function normalizeTemplate(value: unknown, id?: string): Template | null 
   if (!config.success) return null;
   return {
     ...base, ...v, id: key, title: v.title ?? base?.title ?? key,
-    description: v.description ?? base?.description ?? "",
+    description: base && v.description === LEGACY_TEMPLATE_DESCRIPTIONS[key!] ? base.description : v.description ?? base?.description ?? "",
     category: v.category ?? base?.category ?? "personal", icon: v.icon ?? base?.icon ?? "FileText",
     inputFields: Array.isArray(v.inputFields) && JSON.stringify(v.inputFields) !== JSON.stringify(LEGACY_TEMPLATE_FIELDS[key]) ? v.inputFields : base?.inputFields ?? [],
     defaultConfig: config.data, estimatedCredits: v.estimatedCredits ?? base?.estimatedCredits ?? 0,

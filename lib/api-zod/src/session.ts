@@ -106,7 +106,9 @@ export function resolveModelByIntelligence(
   return { provider: best.providerName, model: best.id, label: best.label };
 }
 
-/** Shared plan entitlement for document creation, export and public sharing. */
+export const PRO_ACCESS_NOTE = "Any paid credit purchase automatically unlocks Pro. Free starter credits do not. Sessions still use credits.";
+
+/** Shared Pro entitlement for templates, document creation, export and public sharing. */
 export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
   return isAdmin || plan === "pro";
 }

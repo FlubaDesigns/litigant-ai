@@ -1,3 +1,4 @@
+import { PRO_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useBillingDefaults } from "@/hooks/useConfiguration";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -642,6 +643,7 @@ export default function BillingPage() {
             <CreditBalanceCard balance={balance} plan={plan} />
 
             <PlanLimitsCard plan={plan} />
+            <p className="text-sm text-muted-foreground">{PRO_ACCESS_NOTE}</p>
 
             {/* Credit Controls */}
             <div className="rounded-xl border border-border/60 bg-card/50 p-5 space-y-5">

@@ -2,11 +2,11 @@
 
 > Don't just ask AI. Put the question on trial.
 
-Litigant AI is a multi-model adversarial reasoning engine. Instead of asking a single AI and getting a single answer, Litigant AI deploys a panel of AI models (GPT-4, Claude, Gemini, Grok) that argue, critique, and cross-examine each other's reasoning from competing perspectives — then deliver a confidence-scored verdict.
+Litigant AI is a multi-model adversarial reasoning engine. Instead of asking a single AI and getting a single answer, Litigant AI deploys a panel of AI models (GPT-4, Claude, Gemini, Grok) that argue, critique, and cross-examine each other's reasoning from competing perspectives — then deliver a review with stated limitations.
 
 ## What makes it different
 
-Most AI tools give you one answer from one model. Litigant AI gives you structured debate. Each session assigns roles — Advocate, Skeptic, Devil's Advocate, Analyst — to different AI models. They challenge each other's reasoning in real time. A Synthesizer model delivers a final ruling with confidence scores and caveats.
+Most AI tools give you one answer from one model. Litigant AI gives you structured debate. The configured court assigns roles such as Advocate, Skeptic and Devil's Advocate to AI seats. They challenge each other's reasoning in real time. The court produces an AI assessment with caveats. AI review scores are not measured probabilities.
 
 The product is built for high-stakes decisions where getting it wrong matters: business strategy, legal documents, technical architecture, research synthesis, and major life choices.
 
@@ -23,7 +23,7 @@ See the [live pricing section](https://litigant-ai.com/#pricing) for current cre
 
 ## Templates
 
-Each template provides questions and court settings for a specific use case. Template descriptions are public; starting a session requires an account or a guest invitation.
+Each template provides questions and court settings for a specific use case. Browsing is public; running a template requires Pro access. Any paid credit purchase automatically unlocks Pro; free starter credits do not. Sessions still use credits. Templates review supplied material and do not perform live research, automated website testing or code execution. Examples are authored illustrations, not recorded AI sessions.
 
 - [Templates](https://litigant-ai.com/templates): Browse the current template catalog, with individual pages showing descriptions, intake questions, examples and launch options.
 
@@ -32,8 +32,8 @@ Each template provides questions and court settings for a specific use case. Tem
 1. User submits a question or fills in a structured form
 2. Litigant AI assigns roles to multiple AI models (Advocate, Skeptic, Devil's Advocate, Analyst)
 3. Models debate in rounds, challenging each other's reasoning
-4. A Synthesizer model produces a final answer with confidence score, debate notes, sources, and caveats
-5. Output is exportable as PDF, Markdown, or shareable report link
+4. The court produces an answer with debate notes and limitations; source support depends on the evidence provided
+5. Pro provides document creation, downloads and optional public report links
 
 ## Key pages
 
@@ -46,6 +46,6 @@ Each template provides questions and court settings for a specific use case. Tem
 
 - This site is a React SPA served from a CDN. Template pages at /templates/* are public and do not require authentication.
 - The API is at /api-server/api and requires authentication for all session endpoints.
-- Session content is private to the user and not indexed.
-- All AI model outputs include confidence scores and explicit caveats.
+- Session content is saved to the account and processed by the AI providers used. Public report sharing is optional.
+- AI review scores are uncalibrated assessments, not measured probabilities of correctness.
 - Litigant AI outputs are not legal, financial, or medical advice.

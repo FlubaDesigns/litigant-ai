@@ -11,12 +11,7 @@ export interface TemplateBenefit {
 }
 
 export interface TemplateSampleOutput {
-  scenario: string;
   question: string;
-  confidence: number;
-  creditsUsed: number;
-  rounds: number;
-  litigants: number;
   verdict: string;
   caveats: string;
   debateSnippet: string;
@@ -37,495 +32,831 @@ export interface TemplatePageContent {
 
 export const TEMPLATE_PAGE_CONTENT: TemplatePageContent[] = [
   {
-    slug: "business-plan-analyzer",
-    templateId: "business-plan",
-    headline: "Stress-Test Your Business Plan Before Investors Do",
-    image: "/tools/business-plan-analyzer.jpg",
-    howItWorks: [
-      { step: "01", title: "Describe your concept", desc: "Enter your business idea, target market, revenue model, and any known competition. The more specific, the sharper the analysis." },
-      { step: "02", title: "AI models debate it", desc: "A panel of AI litigants each take different positions — advocate, skeptic, devil's advocate — and cross-examine each other's reasoning in real time." },
-      { step: "03", title: "Get a structured verdict", desc: "Receive a confidence-scored analysis covering viability, market fit, financial sustainability, and the three biggest risks to address before launch." },
+    "slug": "business-plan-analyzer",
+    "templateId": "business-plan",
+    "image": "/tools/business-plan-analyzer.jpg",
+    "headline": "Draft and Challenge Your Business Plan",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Describe your concept, customers, revenue model, costs and known competitors."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A business-plan draft with assumptions, financial scenarios, risks and next steps. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Catch fatal flaws early", description: "Discover the assumptions your business depends on before you invest time, money, and reputation." },
-      { title: "Pressure-test your market", description: "AI skeptics challenge your target market size, customer acquisition costs, and competitive moat with brutal honesty." },
-      { title: "Financial stress-testing", description: "Revenue model, burn rate assumptions, and unit economics examined from multiple angles." },
-      { title: "Investor-ready insights", description: "Know exactly what objections investors will raise — and have answers prepared." },
+    "benefits": [
+      {
+        "title": "Plan structure",
+        "description": "Organize your idea into an executive summary, market approach and operating plan."
+      },
+      {
+        "title": "Financial assumptions",
+        "description": "Explore scenarios using supplied figures and explicitly stated assumptions."
+      },
+      {
+        "title": "Next steps",
+        "description": "Identify risks and proposed 30/60/90-day actions."
+      }
     ],
-    outputSummary: "You receive a confidence-scored verdict covering market viability, financial sustainability, competitive positioning, and the top 3 risks — plus a full debate transcript showing how each AI model reasoned through your plan.",
-    sampleOutput: {
-      scenario: "NestPilot — AI property management SaaS",
-      question: "NestPilot is an AI-powered property management SaaS for independent landlords with 1–20 units. Monthly pricing is $40/unit. We project 500 paying landlords by month 12 with 2% monthly churn. Is this business viable and fundable?",
-      confidence: 62,
-      creditsUsed: 52,
-      rounds: 3,
-      litigants: 4,
-      verdict: "NestPilot addresses a genuine gap — independent landlords are dramatically underserved by existing software built for large portfolios. The product thesis is sound. However, three structural issues will concern investors: (1) $40/unit pricing creates ~$480 average ARR per customer, too low for a B2B sales motion; (2) 2% monthly churn assumes a 50-month average customer lifetime, optimistic for a category where landlords resist new software; (3) reaching 500 landlords by month 12 requires ~6 new customers per day with no described acquisition engine. The opportunity is real. The model as currently structured is not investor-ready without significant revision to pricing and go-to-market.",
-      caveats: "This analysis is based solely on the information provided and does not constitute financial or investment advice. Market conditions, competitor execution, and team quality will materially affect outcomes. No proprietary market data was used — figures are modelled from public benchmarks.",
-      debateSnippet: "The comparison to Buildium and AppFolio is misleading. Both spent 7+ years building integrations with listing platforms before achieving traction. NestPilot's go-to-market assumes word of mouth plus SEO — that is not a plan, it is an aspiration.",
-      debateRole: "Skeptic",
+    "outputSummary": "A business-plan draft with assumptions, financial scenarios, risks and next steps.",
+    "sampleOutput": {
+      "question": "I want to start a subscription service but have no customer interviews or cost estimates yet.",
+      "verdict": "Start with a draft plan and an assumptions list. Demand, acquisition cost and delivery cost are unknown; interview potential customers and estimate unit costs before projecting profitability.",
+      "caveats": "This does not validate market demand or verify financial projections. Missing figures must remain assumptions or questions.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Is this a replacement for a business advisor?", a: "No — it's a thinking tool, not professional advice. Use it to identify questions to bring to your advisors and investors, not to replace them." },
-      { q: "How detailed does my business plan need to be?", a: "Even a rough concept works. The more detail you provide, the sharper the analysis. You can always run it again as your plan evolves." },
-      { q: "Can I use it for an existing business I want to pivot?", a: "Absolutely. Many users analyze pivot decisions, new product lines, and expansion strategies — not just early-stage ideas." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A business-plan draft with assumptions, financial scenarios, risks and next steps."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not validate market demand or verify financial projections. Missing figures must remain assumptions or questions."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "website-audit",
-    templateId: "website-audit",
-    headline: "Get an Honest AI Audit of Any Website",
-    image: "/tools/website-audit.jpg",
-    howItWorks: [
-      { step: "01", title: "Share your URL and goals", desc: "Provide the website URL, its primary business goal, and any specific concerns you want examined." },
-      { step: "02", title: "AI reviewers critique it", desc: "A panel of AI specialists — UX critic, conversion analyst, content editor, technical auditor — each examine the site from their perspective." },
-      { step: "03", title: "Get prioritized recommendations", desc: "Receive a confidence-scored report ranking issues by impact, with specific actionable fixes for each finding." },
+    "slug": "website-audit",
+    "templateId": "website-audit",
+    "image": "/tools/website-audit.jpg",
+    "headline": "Review Your Website Content and Conversion Approach",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Provide your URL, goals and page text. Use the Case File URL import to attach extracted text; entering a URL alone does not fetch it."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A review of supplied website text, messaging and conversion assumptions, with proposed improvements. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "UX friction analysis", description: "Identify where users get confused, frustrated, or lost — before you lose real traffic to it." },
-      { title: "Conversion gap detection", description: "AI reviewers identify missing trust signals, weak CTAs, and conversion killers on every page." },
-      { title: "Content effectiveness", description: "Is your messaging clear, credible, and compelling to your target audience? Find out fast." },
-      { title: "Competitive comparison", description: "Benchmark your site's approach against what high-performing competitors typically do right." },
+    "benefits": [
+      {
+        "title": "Message clarity",
+        "description": "Examine whether the supplied copy explains the audience, offer and next action."
+      },
+      {
+        "title": "Conversion questions",
+        "description": "Identify possible friction in the journey you describe."
+      },
+      {
+        "title": "Proposed changes",
+        "description": "Get copy suggestions and a checklist for checks that still need a browser or testing tools."
+      }
     ],
-    outputSummary: "A prioritized finding report organized by impact — covering UX, content, conversion, and technical issues — with specific recommended fixes and a confidence score for each major conclusion.",
-    sampleOutput: {
-      scenario: "HarborCo Marine — B2B boat parts e-commerce",
-      question: "HarborCo Marine sells commercial boat engine parts to fleet operators and mechanics. We have a 4,000 SKU catalogue, accept B2B purchase orders, and ship across North America. Audit our site for UX and conversion issues.",
-      confidence: 71,
-      creditsUsed: 38,
-      rounds: 2,
-      litigants: 4,
-      verdict: "HarborCo has three critical conversion problems costing an estimated 20–30% of potential revenue. First, no visible trust signals for first-time B2B buyers — no fleet client logos, no industry certifications, and no minimum order indication until checkout. Second, the search cannot handle partial part numbers or OEM-equivalent aliases, which is the core mechanic use case. Third, the mobile checkout breaks at the shipping carrier selection step on devices below 390px. The product catalogue quality is strong and pricing is competitive. Fix these three issues before investing further in traffic acquisition.",
-      caveats: "Analysis is based on the site description and URLs provided. A full technical audit requires direct access to analytics, session recordings, and funnel data. Conversion rate estimates are modelled from industry benchmarks, not observed data from this site.",
-      debateSnippet: "A marine mechanic who can't find a part number in 90 seconds will go to a supplier they already know. The search is doing keyword matching, not fuzzy part-number matching — it's functionally broken for the highest-value use case on the site.",
-      debateRole: "UX Critic",
+    "outputSummary": "A review of supplied website text, messaging and conversion assumptions, with proposed improvements.",
+    "sampleOutput": {
+      "question": "My homepage says “Better solutions for everyone” and links to a contact form. The goal is demo bookings.",
+      "verdict": "The supplied headline does not name a customer or outcome. Try a more specific offer and a clear demo action. The form, mobile layout and loading performance have not been inspected.",
+      "caveats": "The URL import reads one page of HTML text. It does not render JavaScript, crawl a site, inspect screenshots, measure speed, test interactions or certify accessibility.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Does Litigant AI actually browse my website?", a: "The AI analyzes the information you provide about the website, including the URL and your description of its goals and audience. For best results, describe key pages and paste critical copy." },
-      { q: "Is this useful for landing pages, not just full websites?", a: "Yes — single landing pages are often the most valuable thing to audit since they have a single measurable goal. Many users specifically audit high-traffic landing pages." },
-      { q: "How is this different from a Google Lighthouse audit?", a: "Lighthouse measures technical performance. Litigant AI critiques strategy, UX logic, messaging, and conversion — the human judgment layer that automated tools miss." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A review of supplied website text, messaging and conversion assumptions, with proposed improvements."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "The URL import reads one page of HTML text. It does not render JavaScript, crawl a site, inspect screenshots, measure speed, test interactions or certify accessibility."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "marketing-strategy",
-    templateId: "marketing-strategy",
-    headline: "Know If Your Marketing Strategy Will Actually Work",
-    image: "/tools/marketing-strategy.jpg",
-    howItWorks: [
-      { step: "01", title: "Describe your strategy", desc: "Share your product, target audience, marketing channels, budget range, and primary goal — awareness, leads, or sales." },
-      { step: "02", title: "AI models stress-test it", desc: "Each AI litigant attacks a different dimension: channel fit, message clarity, audience alignment, competitive differentiation, and ROI realism." },
-      { step: "03", title: "Get a channel-by-channel verdict", desc: "Receive specific findings per channel with confidence scores, plus a prioritized action plan for improving your overall strategy." },
+    "slug": "marketing-strategy",
+    "templateId": "marketing-strategy",
+    "image": "/tools/marketing-strategy.jpg",
+    "headline": "Challenge Your Marketing Plan Before You Spend",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Describe your product, audience, planned channels, budget and goals. Include results you already have."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A strategy critique covering positioning, channel choices, budget assumptions and proposed experiments. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Channel fit analysis", description: "Are you marketing on the channels your audience actually uses? AI skeptics challenge your assumptions." },
-      { title: "Message clarity critique", description: "Is your value proposition sharp enough to cut through noise? Get an honest, ego-free assessment." },
-      { title: "Budget reality check", description: "Does your budget match your goals? AI reviewers flag common mismatch patterns before you burn cash." },
-      { title: "Competitive positioning", description: "Stress-test your differentiation claims against what competitors are already saying and doing." },
+    "benefits": [
+      {
+        "title": "Positioning",
+        "description": "Review how your message relates to the audience you describe."
+      },
+      {
+        "title": "Channel trade-offs",
+        "description": "Compare proposed channels using your goals and supplied evidence."
+      },
+      {
+        "title": "Experiment plan",
+        "description": "Define practical tests and measures before committing more budget."
+      }
     ],
-    outputSummary: "A structured marketing verdict covering channel fit, messaging effectiveness, audience alignment, and ROI realism — with specific recommendations ranked by expected impact.",
-    sampleOutput: {
-      scenario: "Bloomfield Bakery — artisan subscription boxes",
-      question: "Bloomfield Bakery makes small-batch artisan subscription boxes, $65/month. We have 312 active subscribers and a 34% monthly churn rate. We're active on Instagram, TikTok, Pinterest, Facebook, email, and a food blogger affiliate programme. Is our strategy working?",
-      confidence: 58,
-      creditsUsed: 41,
-      rounds: 2,
-      litigants: 4,
-      verdict: "A 34% monthly churn rate is the single most important number here — it means Bloomfield is replacing its entire subscriber base roughly every 3 months, making sustainable growth arithmetically impossible regardless of acquisition spend. At this churn level, the payback period for any customer acquisition cost exceeds the average customer lifetime. The six-channel strategy is not the core problem. Churn is. Consolidate to two channels (Instagram and email), invest zero in acquisition until month-over-month churn drops below 10%, and run a customer exit survey to identify the real retention driver.",
-      caveats: "Churn diagnosis requires exit survey data and shipping quality records not provided here. These recommendations assume the product quality is adequate — if churn is driven by product dissatisfaction, no marketing change will address it. Revenue projections are modelled estimates only.",
-      debateSnippet: "The email list of 312 subscribers is the most underutilised asset in this entire strategy. A month-2 check-in sequence and a month-4 loyalty offer could reduce churn by 30–40% at near-zero incremental cost — yet there is no email automation in the current plan at all.",
-      debateRole: "Devil's Advocate",
+    "outputSummary": "A strategy critique covering positioning, channel choices, budget assumptions and proposed experiments.",
+    "sampleOutput": {
+      "question": "We plan to spend our entire launch budget on paid search but have no conversion data.",
+      "verdict": "Treat paid-search performance as unproven. Propose a limited test, define what a qualified lead means and measure conversion before committing the full budget.",
+      "caveats": "This does not predict ROI, run campaigns or verify channel benchmarks. Outcomes depend on execution and real customer response.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Can I use this for a campaign, not just an overall strategy?", a: "Yes — many users analyze specific campaign concepts, ad creative directions, or email sequences. Just describe the campaign and its goal." },
-      { q: "Does it work for B2B and B2C?", a: "Absolutely. Specify your model in the input and the AI panel will tailor its critique accordingly." },
-      { q: "What if I don't have a full strategy yet?", a: "Use it to evaluate a marketing hypothesis or early-stage direction. The AI will surface what's missing and what to figure out first." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A strategy critique covering positioning, channel choices, budget assumptions and proposed experiments."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not predict ROI, run campaigns or verify channel benchmarks. Outcomes depend on execution and real customer response."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "code-review",
-    templateId: "code-audit",
-    headline: "Code Review That Actually Finds the Hard Problems",
-    image: "/tools/code-review.jpg",
-    howItWorks: [
-      { step: "01", title: "Share your code or architecture", desc: "Paste a code snippet, describe your system architecture, or outline a technical decision you're evaluating." },
-      { step: "02", title: "Specialist AI models examine it", desc: "A security auditor, performance analyst, architecture critic, and maintainability reviewer each attack the problem from their domain." },
-      { step: "03", title: "Get prioritized findings", desc: "Receive a severity-ranked list of issues with specific fixes, plus a confidence score on the overall quality assessment." },
+    "slug": "code-review",
+    "templateId": "code-audit",
+    "image": "/tools/code-review.jpg",
+    "headline": "Review the Code and Architecture You Supply",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Paste relevant code or a system description, name the language and explain your concerns."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "An AI review of supplied code or design, with potential issues, suggested fixes and proposed tests. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Security vulnerability detection", description: "Common attack vectors, injection risks, authentication flaws, and insecure defaults caught before production." },
-      { title: "Architecture critique", description: "Coupling, cohesion, scalability assumptions, and single points of failure challenged by an AI skeptic." },
-      { title: "Performance analysis", description: "Algorithmic complexity, N+1 query patterns, and unnecessary blocking operations identified and explained." },
-      { title: "Maintainability scoring", description: "Readability, naming conventions, separation of concerns, and testability assessed against real-world standards." },
+    "benefits": [
+      {
+        "title": "Potential issues",
+        "description": "Examine supplied code for security, correctness and performance concerns."
+      },
+      {
+        "title": "Suggested changes",
+        "description": "Get explanations and possible fixes tied to the available code."
+      },
+      {
+        "title": "Verification steps",
+        "description": "Identify tests and manual checks needed to confirm a finding."
+      }
     ],
-    outputSummary: "A severity-ranked technical findings report organized by domain (security, performance, architecture, maintainability) with specific line-level recommendations and an overall code health confidence score.",
-    sampleOutput: {
-      scenario: "Vaultly — open-source password manager API",
-      question: "Vaultly is an open-source password manager. Please review the authentication middleware and key derivation implementation for security vulnerabilities before the 1.0 public release.",
-      confidence: 44,
-      creditsUsed: 47,
-      rounds: 3,
-      litigants: 4,
-      verdict: "One critical and three medium-severity vulnerabilities were identified. Critical: PBKDF2 iteration count is set to 10,000 — the 2024 OWASP recommended minimum is 600,000. This makes offline brute-force attacks against any leaked password database trivially fast. Medium: JWT expiry is not validated server-side; the authentication middleware trusts client-provided session state for tokens older than 24 hours; and the password reset endpoint lacks rate limiting. Do not ship the 1.0 release without addressing the critical finding. Overall code health: 44%.",
-      caveats: "This review covers the code and architecture description provided. It is not a full penetration test or security audit. A professional security engagement is recommended before public release of a security-critical application. Findings are based on the implementation described, not a live running system.",
-      debateSnippet: "The authentication middleware does not validate JWT expiry server-side, relying solely on client-side checks. This is exploitable. Any session token older than 24 hours remains valid indefinitely until the user explicitly signs out — a session fixation risk in any shared-device context.",
-      debateRole: "Security Auditor",
+    "outputSummary": "An AI review of supplied code or design, with potential issues, suggested fixes and proposed tests.",
+    "sampleOutput": {
+      "question": "The handler builds a SQL query by concatenating an untrusted name field. Review this design.",
+      "verdict": "Untrusted input concatenated into SQL may permit injection. Use parameter binding and test the actual handler with the relevant database driver. This design review has not executed the code.",
+      "caveats": "It does not clone repositories, execute code, run tests or perform a security scan. Findings may be incomplete or incorrect; line-specific findings require the relevant code.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "What languages and frameworks does it support?", a: "Any language you can describe or paste. TypeScript, Python, Go, Java, Rust, SQL, and more — just specify the language and framework in your input." },
-      { q: "Can I use it for architecture decisions, not just code?", a: "Yes — architecture reviews (microservices vs monolith, database choice, API design) are one of the most popular use cases. Describe the decision and the AI panel will pressure-test it." },
-      { q: "Is my code kept private?", a: "Your input is used only for your session. We do not store or train on your code." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "An AI review of supplied code or design, with potential issues, suggested fixes and proposed tests."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "It does not clone repositories, execute code, run tests or perform a security scan. Findings may be incomplete or incorrect; line-specific findings require the relevant code."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "contract-review",
-    templateId: "contract-review",
-    headline: "Know What You're Signing Before You Sign It",
-    image: "/tools/contract-review.jpg",
-    howItWorks: [
-      { step: "01", title: "Share the key clauses", desc: "Paste the contract text, summary, or the specific sections that concern you. Tell the AI your role — buyer, employee, vendor, etc." },
-      { step: "02", title: "AI models debate the risks", desc: "Each litigant takes a different angle: risk identifier, negotiation strategist, protection gap analyst, and plain-language translator." },
-      { step: "03", title: "Get a risk-ranked breakdown", desc: "Receive a clause-by-clause risk assessment in plain English, with specific negotiation points and red flags ranked by severity." },
+    "slug": "contract-review",
+    "templateId": "contract-review",
+    "image": "/tools/contract-review.jpg",
+    "headline": "Prepare Questions About the Contract You Share",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Provide relevant clauses or a summary, your role, jurisdiction if known and your concerns."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A plain-language review of supplied terms, possible risks, negotiation points and questions for a legal adviser. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Unfavorable clause detection", description: "Non-compete overreach, auto-renewal traps, liability caps, and one-sided termination rights identified and explained." },
-      { title: "Missing protection analysis", description: "What standard protections are absent from this contract? AI reviewers flag what should be there but isn't." },
-      { title: "Negotiation leverage points", description: "Which clauses are typically negotiable? Where do you have real leverage and where should you push back?" },
-      { title: "Plain-language translation", description: "Legal jargon decoded into plain English so you understand exactly what you're agreeing to." },
+    "benefits": [
+      {
+        "title": "Obligations",
+        "description": "Organize the responsibilities and deadlines described in the supplied terms."
+      },
+      {
+        "title": "Potential concerns",
+        "description": "Highlight ambiguities and terms you may want to discuss."
+      },
+      {
+        "title": "Adviser questions",
+        "description": "Prepare focused questions and possible negotiation points."
+      }
     ],
-    outputSummary: "A clause-by-clause risk report in plain English, with a severity ranking for each finding, specific negotiation scripts, and a summary of the top 3 things to address before signing.",
-    sampleOutput: {
-      scenario: "Apex Staffing Solutions — contractor services agreement",
-      question: "I'm reviewing a contractor services agreement with Apex Staffing Solutions before signing. Key concerns are the non-compete clause, my liability exposure, the auto-renewal terms in Section 8.3, and whether the non-solicitation period is enforceable.",
-      confidence: 38,
-      creditsUsed: 44,
-      rounds: 3,
-      litigants: 4,
-      verdict: "This contract heavily favours the agency across three critical dimensions. First, a 90-day exclusivity lock-in prevents you working with any other agency during the initial term — highly unusual and negotiable. Second, liability exposure for the contractor is uncapped, while the agency's liability is capped at one month's fees. Third, the non-solicitation clause extends 24 months post-engagement, which exceeds typical enforceability thresholds in most jurisdictions. The auto-renewal clause in Section 8.3 is the most immediately dangerous — it activates unless written notice is given 45 days before term end, a window most contractors miss. Risk rating: High. Do not sign without negotiating at minimum the liability cap and the non-solicitation duration.",
-      caveats: "This is not legal advice. Consult a qualified attorney before signing any significant contract. Enforceability of specific clauses varies by jurisdiction and is beyond the scope of this analysis. This review is based solely on the clause summaries provided, not the full contract text.",
-      debateSnippet: "Section 8.3's auto-renewal clause is the most commonly missed provision in agency contracts. The 45-day written notice requirement is deliberately short — missing this window is how contractors end up locked in for an additional full term they didn't intend to sign.",
-      debateRole: "Risk Analyst",
+    "outputSummary": "A plain-language review of supplied terms, possible risks, negotiation points and questions for a legal adviser.",
+    "sampleOutput": {
+      "question": "The agreement renews automatically unless I give notice, but my summary does not include the notice period.",
+      "verdict": "Obtain the renewal and termination clauses before deciding when to act. Ask how notice must be delivered, what deadline applies and what costs follow renewal.",
+      "caveats": "This is AI reading assistance, not legal advice or a determination of enforceability. A summary cannot support a review of unseen clauses.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Is this legal advice?", a: "No. This is a thinking tool to help you ask better questions of your actual lawyer — not a replacement for legal counsel. Always consult a qualified attorney before signing significant contracts." },
-      { q: "What types of contracts does it work for?", a: "Employment agreements, vendor contracts, NDAs, SaaS terms, real estate leases, partnership agreements, and more. The AI adapts its review to the contract type." },
-      { q: "What if the contract is very long?", a: "Focus on the sections that concern you most, or summarize the key terms. You can run multiple sessions for different sections." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A plain-language review of supplied terms, possible risks, negotiation points and questions for a legal adviser."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This is AI reading assistance, not legal advice or a determination of enforceability. A summary cannot support a review of unseen clauses."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "decision-analysis",
-    templateId: "major-decision",
-    image: "/tools/decision-analysis.jpg",
-    headline: "Make Big Decisions With More Confidence",
-    howItWorks: [
-      { step: "01", title: "Describe the decision", desc: "Lay out your options, constraints, and what matters most to you — financially, personally, professionally." },
-      { step: "02", title: "AI models debate each option", desc: "Advocate and skeptic AIs argue for and against each option, while an analyst surfaces second-order effects and a synthesizer looks for hidden assumptions." },
-      { step: "03", title: "Get a confidence-scored recommendation", desc: "Receive a structured decision analysis with a recommended option, confidence score, key trade-offs, and the factors most likely to change the outcome." },
+    "slug": "decision-analysis",
+    "templateId": "major-decision",
+    "image": "/tools/decision-analysis.jpg",
+    "headline": "Compare Your Options Against What Matters to You",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Describe the decision, realistic options, constraints and personal priorities."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A comparison of trade-offs, risks and scenarios, with a conditional recommendation. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Second-order thinking", description: "What happens after the thing you're worried about? AI models trace consequences two and three steps out." },
-      { title: "Hidden assumption detection", description: "What are you assuming to be true that might not be? The skeptic AI is specifically tasked with finding these." },
-      { title: "Reversibility analysis", description: "How hard is this decision to reverse if it goes wrong? Knowing the exit cost changes how aggressively to act." },
-      { title: "Cognitive bias check", description: "Sunk cost, loss aversion, availability bias — AI reviewers flag where your framing might be distorting the picture." },
+    "benefits": [
+      {
+        "title": "Priority comparison",
+        "description": "Compare options using the criteria you provide."
+      },
+      {
+        "title": "Risk scenarios",
+        "description": "Explore plausible consequences and what could change the decision."
+      },
+      {
+        "title": "Conditional next step",
+        "description": "Identify missing information and a recommendation tied to stated assumptions."
+      }
     ],
-    outputSummary: "A structured decision analysis with a confidence-scored recommendation, pros and cons per option, key risks ranked by severity, second-order effects, and the top 3 factors that should most influence your choice.",
-    sampleOutput: {
-      scenario: "VP of Product offer vs. staying at early-stage startup",
-      question: "I've been offered a VP of Product role at a Series B company — $180K base, standard equity package. My alternative is staying at my current early-stage startup where I hold 0.8% equity, but the Series A has slipped twice and runway is 9 months. Which do I choose?",
-      confidence: 73,
-      creditsUsed: 49,
-      rounds: 3,
-      litigants: 4,
-      verdict: "Taking the VP role is the stronger decision given current market conditions and your career stage. The startup's equity upside is real but the expected value is significantly discounted: two Series A slips plus a 9-month runway creates substantial dilution and closure risk before any liquidity event. The VP role offers immediate compensation recovery, a senior title that compounds over the next decade, and a platform to build the network needed for a future founding role. One critical caveat: negotiate the VP offer's vesting cliff to 6 months rather than the standard 12, given you are leaving unvested startup equity behind. Confidence in this recommendation: 73%.",
-      caveats: "This analysis cannot account for factors you have not disclosed, including team quality, your personal financial situation, or your risk tolerance. The expected-value calculations use public benchmark data for Series A outcomes. Individual outcomes vary significantly.",
-      debateSnippet: "The startup's Series A is eight months out by the founder's own estimate — and 60% of Series A timelines slip by at least that margin. If it slips again, you join at peak internal stress with no vested equity buffer and reduced negotiating leverage. The expected value of 0.8% equity at that risk profile is significantly lower than headline figures suggest.",
-      debateRole: "Devil's Advocate",
+    "outputSummary": "A comparison of trade-offs, risks and scenarios, with a conditional recommendation.",
+    "sampleOutput": {
+      "question": "One job pays more; the other offers flexible hours. Flexibility is my highest priority.",
+      "verdict": "The flexible role appears better aligned with your stated priority if its pay meets your needs. Confirm the actual working arrangements and your minimum budget before choosing.",
+      "caveats": "This does not predict outcomes or decide your priorities for you. Any recommendation depends on your facts and assumptions.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "What kind of decisions is this best for?", a: "Career moves, business pivots, major purchases, relationship decisions, investment choices — any decision with real stakes and genuine uncertainty." },
-      { q: "What if I have more than two options?", a: "The more options you describe, the richer the analysis. Litigant AI handles multi-option decisions well." },
-      { q: "Will it tell me what to do?", a: "It will give a confidence-scored recommendation, but ultimately it respects that you know your situation better than any AI. The goal is to surface what you might be missing, not to replace your judgment." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A comparison of trade-offs, risks and scenarios, with a conditional recommendation."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not predict outcomes or decide your priorities for you. Any recommendation depends on your facts and assumptions."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "medical-appointment-prep",
-    templateId: "medical-prep",
-    headline: "Walk Into Your Next Medical Appointment Fully Prepared",
-    image: "/tools/medical-appointment-prep.jpg",
-    howItWorks: [
-      { step: "01", title: "Describe your situation", desc: "Share your symptoms, diagnosis, or the type of appointment you're preparing for. Include any questions you already have." },
-      { step: "02", title: "AI models analyze your situation", desc: "Medical educator, patient advocate, and diagnostic questioner AIs each examine your situation and generate questions from different angles." },
-      { step: "03", title: "Get a question list and context", desc: "Receive a prioritized list of questions to ask, explanations of relevant concepts in plain English, and things to watch out for." },
+    "slug": "medical-appointment-prep",
+    "templateId": "medical-prep",
+    "image": "/tools/medical-appointment-prep.jpg",
+    "headline": "Organize Your Notes for a Medical Appointment",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Describe your situation, appointment type, symptoms or existing diagnosis and questions you already have."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "An appointment brief, a timeline based on your notes and questions to discuss with your clinician. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Questions you didn't know to ask", description: "AI surfaces the follow-up questions experienced patients always ask — that first-timers rarely think of." },
-      { title: "Plain-English explanations", description: "Medical terms, test results, and treatment options explained without jargon so you can participate in the conversation." },
-      { title: "Red flag awareness", description: "What symptoms or developments should prompt you to seek urgent care? AI helps you understand the warning signs." },
-      { title: "Second opinion framing", description: "If you're considering a second opinion, AI helps you articulate exactly what you want the second doctor to evaluate." },
+    "benefits": [
+      {
+        "title": "Appointment brief",
+        "description": "Organize your concerns and relevant history in your own terms."
+      },
+      {
+        "title": "Missing details",
+        "description": "Identify dates, medication details or observations you may want to bring."
+      },
+      {
+        "title": "Discussion questions",
+        "description": "Prepare questions about your concerns and the next steps your clinician recommends."
+      }
     ],
-    outputSummary: "A prioritized question list organized by topic, plain-English explanations of relevant medical concepts, and a summary of key things to communicate clearly to your doctor during the appointment.",
-    sampleOutput: {
-      scenario: "First neurology consultation — recurring migraines",
-      question: "I'm seeing a neurologist for the first time about recurring migraines — unilateral onset, 4–6 hour duration, photophobia, nausea, occurring 8–10 days per month for the past 6 months. What should I ask and what should I know before the appointment?",
-      confidence: 81,
-      creditsUsed: 36,
-      rounds: 2,
-      litigants: 3,
-      verdict: "The symptom pattern — unilateral onset, 4–6 hour duration, photophobia, and monthly frequency above 8 days — is consistent with chronic migraine with possible aura. Seven priority questions were identified for the appointment. Most importantly: given the frequency, preventive treatment is clinically indicated — ask specifically about beta-blockers, topiramate, and CGRP inhibitors before accepting an acute-only plan. Three red-flag symptoms were also identified that would warrant urgent care rather than a routine appointment if they appear. Appointment readiness score: 81%.",
-      caveats: "This is not medical advice or a diagnosis. The information provided is intended to help you have a more informed conversation with your qualified healthcare provider only. Always follow the guidance of your treating physician. Symptom patterns can have multiple causes that require professional evaluation.",
-      debateSnippet: "Many patients leave their first neurology appointment without discussing preventive options at all. At 8+ migraine days per month, prophylactic treatment is clinically indicated by standard guidelines — but it won't be offered unless you ask for it by name. Raise this before accepting an acute-medication-only plan.",
-      debateRole: "Patient Advocate",
+    "outputSummary": "An appointment brief, a timeline based on your notes and questions to discuss with your clinician.",
+    "sampleOutput": {
+      "question": "I have a follow-up appointment and want help organizing the symptoms I recorded this month.",
+      "verdict": "Bring your dated symptom notes, medication list and main concerns. Ask your clinician what the pattern may mean, what information is missing and what follow-up they recommend.",
+      "caveats": "This does not diagnose conditions, recommend treatment or establish what care you need. The brief depends on the information you supply.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Is this medical advice?", a: "Absolutely not. This is a preparation tool to help you have a better conversation with your qualified healthcare provider — not a diagnostic or treatment tool." },
-      { q: "What types of appointments is this useful for?", a: "GP visits, specialist consultations, follow-ups after a diagnosis, pre-surgery discussions, mental health appointments, and more." },
-      { q: "Can I use it after I've received test results I don't understand?", a: "Yes — many users share test results and ask the AI to help them understand what questions to bring back to their doctor." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "An appointment brief, a timeline based on your notes and questions to discuss with your clinician."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not diagnose conditions, recommend treatment or establish what care you need. The brief depends on the information you supply."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "product-validator",
-    templateId: "product-stress-test",
-    headline: "Find Out If Your Product Idea Is Worth Building",
-    image: "/tools/product-validator.jpg",
-    howItWorks: [
-      { step: "01", title: "Describe your product concept", desc: "Share the problem you're solving, who has it, your proposed solution, and why someone would choose it over alternatives." },
-      { step: "02", title: "AI models try to kill it", desc: "Each AI litigant attacks a different core assumption — market size, customer willingness to pay, competitive moat, and technical feasibility." },
-      { step: "03", title: "Get a build/no-build verdict", desc: "Receive a confidence-scored verdict on whether the idea is worth pursuing, with the 3 biggest risks and what to validate first." },
+    "slug": "product-validator",
+    "templateId": "product-stress-test",
+    "image": "/tools/product-validator.jpg",
+    "headline": "Challenge Your Product Assumptions",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Describe the product, customer problem, target users, alternatives and evidence you have collected."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A product-risk assessment and a proposed plan to test key assumptions. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Assumption mapping", description: "Every product idea rests on assumptions. AI surfaces and challenges all of them — especially the ones you took for granted." },
-      { title: "Competitive moat stress-test", description: "Why won't an established player copy you the moment you get traction? AI demands a credible answer." },
-      { title: "Willingness to pay analysis", description: "The gap between 'I'd use this' and 'I'd pay for this' kills most startups. AI focuses specifically on this question." },
-      { title: "What to validate first", description: "Not all risks are equal. AI prioritizes which assumptions need real-world testing before you build anything." },
+    "benefits": [
+      {
+        "title": "Customer assumptions",
+        "description": "Question whether the described problem and audience are specific enough."
+      },
+      {
+        "title": "Alternative choices",
+        "description": "Examine the differentiation you claim against supplied alternatives."
+      },
+      {
+        "title": "Validation experiments",
+        "description": "Propose interviews or tests and conditions for proceeding or revising."
+      }
     ],
-    outputSummary: "A confidence-scored build/no-build recommendation with a ranked list of core assumptions, the 3 biggest risks, specific validation experiments to run, and what a credible path to product-market fit looks like.",
-    sampleOutput: {
-      scenario: "SnapAudit — mobile receipt scanning for freelancers",
-      question: "SnapAudit is a mobile app for freelancers to photograph receipts and auto-categorise expenses for tax. $19/month subscription. Target market: self-employed people who hate manual expense tracking. Is this worth building?",
-      confidence: 55,
-      creditsUsed: 43,
-      rounds: 3,
-      litigants: 4,
-      verdict: "SnapAudit solves a genuine pain point but faces a critical go-to-market challenge: the highest-value addressable segment (restaurants, retail) already has receipt management built into their POS systems, narrowing the market significantly. The solo freelancer segment is reachable but the ARPU ceiling is approximately $7–10/month — not $19. Every comparable product that has failed at or above this price point did so for the same reason: freelancers feel the pain but won't pay to eliminate it when free alternatives exist. Verdict: validate willingness to pay at the $9 price point with a landing page test before building anything. Confidence: 55%.",
-      caveats: "Market size estimates are modelled from public data. Willingness to pay conclusions are based on comparable product benchmarks, not primary research with your specific target customer. Validate all assumptions with real users before making significant investment decisions.",
-      debateSnippet: "The assumption that freelancers hate manual expense entry is correct — the follow-on assumption that they'll pay $19/month to fix it is not supported by comparable product data. The willingness-to-pay ceiling in this segment is closer to $7, and every product that has tried to hold $19 has failed to retain past month two.",
-      debateRole: "Skeptic",
+    "outputSummary": "A product-risk assessment and a proposed plan to test key assumptions.",
+    "sampleOutput": {
+      "question": "People say my app idea sounds useful, but nobody has tried it or agreed to pay.",
+      "verdict": "Positive reactions do not yet establish demand. Test a concrete workflow with intended users and ask for a meaningful commitment before interpreting interest as willingness to pay.",
+      "caveats": "This does not validate demand, interview customers or prove willingness to pay. Validation requires evidence from real users.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Is this for technical or non-technical founders?", a: "Both. You don't need to describe the technical architecture — focus on the problem, the customer, and the business model." },
-      { q: "Can I use it for an existing product I want to pivot?", a: "Yes — pivot decisions are one of the highest-value use cases. Describe the current product and the pivot direction." },
-      { q: "What if my idea is in stealth?", a: "Your session content is private and not shared. You can safely describe your idea in full detail." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A product-risk assessment and a proposed plan to test key assumptions."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not validate demand, interview customers or prove willingness to pay. Validation requires evidence from real users."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "manuscript-critique",
-    templateId: "book-critique",
-    headline: "Get the Critique Your Writing Actually Needs",
-    image: "/tools/manuscript-critique.jpg",
-    howItWorks: [
-      { step: "01", title: "Share an excerpt or summary", desc: "Paste a chapter, excerpt, or detailed summary of your work. Tell the AI the genre, intended audience, and what you most want feedback on." },
-      { step: "02", title: "AI editors attack it", desc: "A structural critic, argument analyst, clarity editor, and audience advocate each examine the work from their perspective." },
-      { step: "03", title: "Get prioritized editorial feedback", desc: "Receive specific, actionable feedback ranked by impact — not generic encouragement, but the notes a tough developmental editor would give." },
+    "slug": "manuscript-critique",
+    "templateId": "book-critique",
+    "image": "/tools/manuscript-critique.jpg",
+    "headline": "Get a Structured Critique of Your Writing",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Share an excerpt or chapter summary, the genre and what you want the reader to understand or feel."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A critique of the supplied writing, with revision priorities and possible edits. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Argument integrity", description: "Does your reasoning hold up? AI identifies logical leaps, unsupported claims, and gaps in your line of argument." },
-      { title: "Structure analysis", description: "Is information introduced in the right order? Does the architecture serve the reader's understanding?" },
-      { title: "Clarity and jargon audit", description: "Where are you losing your reader? AI flags passages that are unnecessarily complex or ambiguous." },
-      { title: "Audience resonance", description: "Is the tone, vocabulary, and assumed knowledge calibrated correctly for your intended audience?" },
+    "benefits": [
+      {
+        "title": "Clarity and structure",
+        "description": "Examine how the supplied passage develops its argument or story."
+      },
+      {
+        "title": "Reader impact",
+        "description": "Consider the intended audience and your stated writing goal."
+      },
+      {
+        "title": "Revision priorities",
+        "description": "Get suggestions and limited examples of possible rewrites."
+      }
     ],
-    outputSummary: "A prioritized editorial critique with specific passages called out, structural recommendations, argument integrity findings, and a confidence score on overall impact — organized by what to fix first.",
-    sampleOutput: {
-      scenario: "The Quiet Architect — debut literary thriller, chapters 1–4",
-      question: "Critique the first four chapters of 'The Quiet Architect,' a literary thriller about an architect who discovers the building she designed is being used for money laundering. Intended audience: literary fiction readers aged 30–55. Focus on structure, pacing, and whether the protagonist's motivation is clear enough.",
-      confidence: 69,
-      creditsUsed: 45,
-      rounds: 3,
-      litigants: 4,
-      verdict: "The manuscript has a genuinely original atmospheric voice in chapter one and a compelling premise, but chapters 3 and 4 suffer from pacing issues that will cause agent rejections at the query stage. The protagonist's core motivation — why she feels personally responsible and can't simply report what she found — is unclear until chapter nine. This needs to surface by the end of chapter two. The atmospheric building-as-character device introduced in chapter one disappears entirely after chapter two and is replaced by more generic thriller pacing; this is the author suppressing their strongest instinct. Overall impact confidence: 69%.",
-      caveats: "This critique is based on the excerpt and summary provided. A full developmental edit would require reading the complete manuscript. Genre conventions in literary thriller vary, and agent preferences are individual — these findings reflect structural craft norms, not a guarantee of publishability.",
-      debateSnippet: "The description of the building's geometry as a character device in chapter one is original and effective. This voice completely disappears after chapter two. The author is suppressing their strongest instinct in favour of more conventional thriller mechanics. Restoring this thread throughout would distinguish the manuscript in a crowded genre.",
-      debateRole: "Structural Critic",
+    "outputSummary": "A critique of the supplied writing, with revision priorities and possible edits.",
+    "sampleOutput": {
+      "question": "My introduction makes three claims but provides no examples until the final paragraph.",
+      "verdict": "Consider introducing a concrete example alongside the first claim, then connect later claims to it. Check the effect on your intended voice and pacing before applying the change across the manuscript.",
+      "caveats": "The review covers only what you provide. It does not assess an unseen manuscript, guarantee publication or replace an editor.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Does this work for fiction as well as non-fiction?", a: "Both. For fiction, the analysis focuses on character, pacing, and narrative logic. For non-fiction, it emphasizes argument, evidence, and clarity." },
-      { q: "How much do I need to share for a useful critique?", a: "At minimum, a substantial excerpt (500+ words) or a detailed chapter-by-chapter summary. The more context about your intended audience and goal, the sharper the feedback." },
-      { q: "Can I use it for academic writing?", a: "Yes — academic essays, journal submissions, and dissertations are a strong use case, particularly for argument structure and evidence evaluation." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A critique of the supplied writing, with revision priorities and possible edits."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "The review covers only what you provide. It does not assess an unseen manuscript, guarantee publication or replace an editor."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "competitive-intelligence",
-    templateId: "competitive-intel",
-    headline: "Pressure-Test Your Competitive Position Before the Market Does",
-    image: "/tools/competitive-intelligence.jpg",
-    howItWorks: [
-      { step: "01", title: "Describe your market position", desc: "Share your product, key competitors, your claimed differentiation, and the customers you're targeting." },
-      { step: "02", title: "AI analysts attack your positioning", desc: "A competitive skeptic, market analyst, customer advocate, and threat modeler each examine your position from a different angle." },
-      { step: "03", title: "Get a positioning verdict", desc: "Receive a confidence-scored assessment of your competitive moat, the top three threats, and specific recommendations for strengthening your position." },
+    "slug": "competitive-intelligence",
+    "templateId": "competitive-intel",
+    "image": "/tools/competitive-intelligence.jpg",
+    "headline": "Compare Competitors Using the Evidence You Have",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Provide your offer, known competitors, source material and the decision this comparison should support."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A competitor comparison with evidence gaps, positioning risks and suggested next moves. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Moat stress-test", description: "Why won't a better-funded competitor copy you? AI demands a credible answer — and flags weak defenses." },
-      { title: "Blind spot detection", description: "What competitive threats are you dismissing that deserve more attention? AI surfaces the ones you've rationalized away." },
-      { title: "Positioning gap analysis", description: "Where is your messaging leaving money on the table compared to what competitors are saying?" },
-      { title: "Customer perspective check", description: "From the customer's point of view, how compelling is your differentiation really? AI plays devil's advocate." },
+    "benefits": [
+      {
+        "title": "Comparison",
+        "description": "Organize supplied similarities and differences."
+      },
+      {
+        "title": "Positioning risks",
+        "description": "Challenge advantages that rely on unsupported assumptions."
+      },
+      {
+        "title": "Next moves",
+        "description": "Identify evidence to collect and actions to consider."
+      }
     ],
-    outputSummary: "A confidence-scored competitive analysis covering moat strength, top three threats, positioning gaps versus key competitors, and specific recommendations for where to strengthen your position.",
-    sampleOutput: {
-      scenario: "Meridian Fitness — regional gym chain, 4 locations",
-      question: "Meridian Fitness operates 4 regional gyms. Planet Fitness is entering our market in Q1 next year. Two boutique studios (F45 and a local yoga chain) opened nearby last year and are taking our highest-LTV members. Analyse our competitive position and what we should do.",
-      confidence: 66,
-      creditsUsed: 46,
-      rounds: 3,
-      litigants: 4,
-      verdict: "Meridian is well-positioned against local independents but significantly vulnerable to the Planet Fitness entry. Differentiation on equipment quality alone is insufficient against a brand with $10/month pricing and national marketing spend. The boutique studio threat is actually the more strategically important signal: losing high-LTV members to F45 and yoga indicates Meridian's mid-market positioning is being squeezed from both ends simultaneously. The correct response is to move upmarket before Planet Fitness arrives — not to compete on price — targeting the 35–55 demographic that boutique studios underserve. This requires a repositioning investment of approximately $180K across two flagship locations before Q4. Moat strength: 66%.",
-      caveats: "This analysis is based on the competitive context described and public data on the named competitors. Local market dynamics, specific lease economics, and member demographics that were not provided may materially affect these conclusions. Financial estimates are indicative only.",
-      debateSnippet: "Planet Fitness's regional entry will compress Meridian's price-sensitive membership tier by 30–40% within 18 months. The correct strategic response is to move upmarket — not compete on price — but this window closes the moment Planet Fitness opens. The repositioning must begin before Q4 or it becomes reactive rather than pre-emptive.",
-      debateRole: "Threat Modeler",
+    "outputSummary": "A competitor comparison with evidence gaps, positioning risks and suggested next moves.",
+    "sampleOutput": {
+      "question": "We claim faster setup than a competitor, but have only timed our own onboarding.",
+      "verdict": "The speed advantage is unverified. Compare equivalent setup tasks and define when onboarding starts and ends before using the claim in marketing.",
+      "caveats": "This does not browse competitors or verify current pricing, features or market share. Supply dated evidence and verify important comparisons.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Do I need detailed competitor research to use this?", a: "No — share what you know and the AI will work with it. The more detail you provide, the sharper the analysis, but a rough overview is enough to get started." },
-      { q: "Can this replace a full competitive analysis?", a: "No — it's a thinking tool, not market research. It helps you stress-test assumptions and find gaps in your reasoning, not substitute for primary research." },
-      { q: "How often should I run this?", a: "Any time a competitor makes a significant move, you launch a new feature, or you're preparing a pitch or strategy review." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A competitor comparison with evidence gaps, positioning risks and suggested next moves."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not browse competitors or verify current pricing, features or market share. Supply dated evidence and verify important comparisons."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "debate-prep",
-    templateId: "debate-prep",
-    image: "/tools/debate-prep.jpg",
-    headline: "Find Every Counterargument Before Your Opponent Does",
-    howItWorks: [
-      { step: "01", title: "State your position", desc: "Describe the argument you're making, the context (debate, negotiation, presentation), and who you're arguing against or persuading." },
-      { step: "02", title: "AI models take the other side", desc: "Adversarial AI litigants argue against your position as forcefully as possible — surfacing every weakness, inconsistency, and rebuttal a prepared opponent would use." },
-      { step: "03", title: "Get a preparation report", desc: "Receive the strongest counterarguments ranked by effectiveness, your position's key vulnerabilities, and suggested responses to each." },
+    "slug": "debate-prep",
+    "templateId": "debate-prep",
+    "image": "/tools/debate-prep.jpg",
+    "headline": "Practice Arguments and Possible Counterarguments",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "State your position, audience, context and supporting evidence."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "An argument map with possible objections, rebuttals, cross-examination questions and draft talking points. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "No surprises in the room", description: "Every argument your opponent is likely to make, identified and prepared for in advance." },
-      { title: "Vulnerability mapping", description: "Where is your argument weakest? AI identifies the pressure points a skilled opponent will target." },
-      { title: "Rebuttal preparation", description: "For each strong counterargument, get suggested responses that actually hold up under scrutiny." },
-      { title: "Consistency check", description: "Does your argument contradict itself anywhere? AI finds logical inconsistencies before your opponent does." },
+    "benefits": [
+      {
+        "title": "Argument map",
+        "description": "Separate your main claim, supporting reasons and assumptions."
+      },
+      {
+        "title": "Counterarguments",
+        "description": "Explore plausible objections and weak points."
+      },
+      {
+        "title": "Practice material",
+        "description": "Draft possible responses, questions and opening or closing points."
+      }
     ],
-    outputSummary: "A ranked list of the strongest counterarguments to your position, an assessment of your argument's key vulnerabilities, and suggested responses — organized by how likely each objection is to come up.",
-    sampleOutput: {
-      scenario: "Oxford-style debate — pro-UBI position",
-      question: "I'm arguing in favour of Universal Basic Income at an Oxford-style public debate. My opponent is a fiscal conservative economist. What are the strongest counterarguments I'll face, where is my position most vulnerable, and how should I respond?",
-      confidence: 77,
-      creditsUsed: 48,
-      rounds: 3,
-      litigants: 4,
-      verdict: "Your position has three zones of genuine vulnerability that a prepared economist will exploit: (1) fiscal sustainability at scale — the standard rebuttal to UBI pilots is that they don't model macro effects at scale; (2) labour supply disincentives — the evidence here is genuinely mixed and you cannot claim it is settled; (3) political feasibility — any serious UBI requires replacing existing programmes, which creates losers who will oppose it. Your strongest ground is automation displacement, where the evidence is most robust and opponent rebuttals are weakest. Debate readiness: 77%.",
-      caveats: "Counterargument strength is assessed relative to an informed fiscal conservative opponent. A different opponent with different preparation may emphasise different objections. The Finland and Stockton pilot data referenced reflects findings as of the training data cutoff — verify current figures before the debate.",
-      debateSnippet: "The Finland pilot is frequently cited but often misrepresented by both sides. Know this precisely: it showed improved wellbeing and maintained employment levels, but was not designed to test macro-economic effects at scale. If you cite it imprecisely, a prepared opponent will use your own citation against you.",
-      debateRole: "Preparation Analyst",
+    "outputSummary": "An argument map with possible objections, rebuttals, cross-examination questions and draft talking points.",
+    "sampleOutput": {
+      "question": "I favor a four-day working week and expect objections about customer coverage.",
+      "verdict": "Prepare for the coverage objection by explaining the schedule you propose and the evidence needed to assess it. A shorter week does not by itself show that service levels will be maintained.",
+      "caveats": "This cannot anticipate every argument or guarantee persuasion. Verify factual claims and sources before using the material.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Does this work for negotiation as well as formal debate?", a: "Yes — the same adversarial analysis applies to salary negotiations, business deals, and persuasion scenarios, not just formal debates." },
-      { q: "What if my argument is genuinely weak?", a: "Then you need to know that before you make it publicly. AI will tell you honestly — which is far better than finding out in the room." },
-      { q: "Can I use this to prepare for a difficult conversation?", a: "Absolutely. Preparing for a performance review, a difficult client meeting, or a board presentation works exactly the same way." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "An argument map with possible objections, rebuttals, cross-examination questions and draft talking points."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This cannot anticipate every argument or guarantee persuasion. Verify factual claims and sources before using the material."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "hypothesis-testing",
-    templateId: "hypothesis-test",
-    headline: "Stress-Test Your Hypothesis Before You Invest in It",
-    image: "/tools/hypothesis-testing.jpg",
-    howItWorks: [
-      { step: "01", title: "State your hypothesis", desc: "Describe your hypothesis, the evidence or reasoning behind it, and what you're trying to decide or prove." },
-      { step: "02", title: "AI models challenge it", desc: "A skeptic, an alternative-hypothesis generator, a methodology critic, and a confirmation-bias detector each examine your reasoning from a different angle." },
-      { step: "03", title: "Get a hypothesis strength report", desc: "Receive a confidence-scored assessment of your hypothesis, its key vulnerabilities, alternative explanations, and what evidence would strengthen or falsify it." },
+    "slug": "hypothesis-testing",
+    "templateId": "hypothesis-test",
+    "image": "/tools/hypothesis-testing.jpg",
+    "headline": "Review Your Hypothesis and Design a Test",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "State your hypothesis, observations, assumptions and the decision you are trying to make."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A hypothesis review covering alternative explanations, falsifiability and a proposed test design. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Alternative explanation surfacing", description: "What else could explain the same observations? AI generates competing hypotheses you may not have considered." },
-      { title: "Assumption mapping", description: "What would need to be true for your hypothesis to hold? AI makes your hidden assumptions explicit." },
-      { title: "Falsifiability check", description: "Can your hypothesis actually be tested and disproved? AI flags unfalsifiable claims that will undermine your credibility." },
-      { title: "Confirmation bias detection", description: "Are you interpreting evidence to fit your conclusion? AI specifically looks for this pattern." },
+    "benefits": [
+      {
+        "title": "Alternative explanations",
+        "description": "Consider other causes that could fit your observations."
+      },
+      {
+        "title": "Testability",
+        "description": "Clarify what evidence would count against the hypothesis."
+      },
+      {
+        "title": "Proposed design",
+        "description": "Outline measurements, comparisons and limitations for a future test."
+      }
     ],
-    outputSummary: "A hypothesis strength assessment with confidence scoring, a list of hidden assumptions, the top alternative explanations, specific evidence that would confirm or falsify it, and methodological concerns to address.",
-    sampleOutput: {
-      scenario: "Remote work reduces engineering output — team velocity study",
-      question: "My hypothesis: remote work reduces engineering output for our team of 12. Evidence: team velocity dropped 18% after going fully remote 14 months ago. Sprint completion rates fell from 87% to 71%. Is this hypothesis well-supported or are there alternative explanations I'm missing?",
-      confidence: 41,
-      creditsUsed: 44,
-      rounds: 3,
-      litigants: 4,
-      verdict: "The hypothesis as stated is not well-supported. The 18% velocity drop is real but the attribution to remote work is confounded by three alternative explanations not accounted for in the evidence: team composition changes in the same period, scope creep in story point estimation, and the absence of a control group or pre-post baseline for the same team members. Disaggregating by seniority reveals a more specific and actionable finding: senior engineers show no velocity decline, while engineers with under 2 years' experience show a measurable drop in code review participation and time-to-merge. This is a mentorship and onboarding problem, not a productivity problem, and it has a different solution. Hypothesis confidence: 41%.",
-      caveats: "This analysis is based on the metrics and context described. A rigorous hypothesis test would require controlled conditions, a longer time series, and individual-level data not provided here. Correlation between remote work adoption and the period studied does not establish causation.",
-      debateSnippet: "The confounding variable is seniority. Senior engineers (5+ years) show equal or improved output remotely. Junior engineers (0–2 years) show a 23% drop in code review participation and 31% longer time-to-first-meaningful-commit. This is a mentorship and onboarding problem — not a remote work problem — and it has a completely different solution.",
-      debateRole: "Skeptic",
+    "outputSummary": "A hypothesis review covering alternative explanations, falsifiability and a proposed test design.",
+    "sampleOutput": {
+      "question": "Team velocity fell after we moved to remote work. Does that prove remote work caused it?",
+      "verdict": "The timing alone does not establish causation. Examine workload, team composition and how velocity was measured. A better comparison is needed before attributing the change to remote work.",
+      "caveats": "This does not run experiments, compute results from missing data or establish causation. Proposed thresholds are suggestions, not validated findings.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Does this work for business hypotheses as well as scientific ones?", a: "Yes — product hypotheses, market assumptions, and strategic bets are just as valid as scientific claims." },
-      { q: "What if my hypothesis is early stage and I don't have much evidence yet?", a: "That's the ideal time to use it. Stress-testing before you invest in gathering evidence is far cheaper than discovering a fatal flaw after." },
-      { q: "Can this help me design a better experiment?", a: "Yes — understanding what would falsify your hypothesis is the foundation of good experimental design." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A hypothesis review covering alternative explanations, falsifiability and a proposed test design."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not run experiments, compute results from missing data or establish causation. Proposed thresholds are suggestions, not validated findings."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "report-critique",
-    templateId: "report-critique",
-    headline: "Find the Gaps in Your Report Before Your Audience Does",
-    image: "/tools/report-critique.jpg",
-    howItWorks: [
-      { step: "01", title: "Share your report or summary", desc: "Paste the full text, an executive summary, or key sections. Tell the AI the intended audience and the decision you want the report to support." },
-      { step: "02", title: "AI critics examine it", desc: "A logic auditor, evidence evaluator, assumption excavator, and audience advocate each review the report from their perspective." },
-      { step: "03", title: "Get a prioritized critique", desc: "Receive specific findings ranked by severity — logic gaps, unsupported claims, missing data, and structural problems — with suggested fixes." },
+    "slug": "report-critique",
+    "templateId": "report-critique",
+    "image": "/tools/report-critique.jpg",
+    "headline": "Review Your Report for Gaps and Unsupported Claims",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Provide the report or relevant sections, its audience and the decision it should support."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A critique of supplied reasoning, evidence and structure, with suggested revisions. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Logic gap detection", description: "Where does your argument jump from evidence to conclusion without adequate support? AI finds every leap." },
-      { title: "Assumption excavation", description: "What unstated assumptions is your report depending on? AI makes them explicit so you can decide whether to defend or remove them." },
-      { title: "Evidence quality assessment", description: "Is your supporting data strong enough to carry the claims you're making? AI flags where you're over-reaching." },
-      { title: "Audience calibration", description: "Is the report written at the right level for its intended audience? Are you explaining too much — or not enough?" },
+    "benefits": [
+      {
+        "title": "Reasoning",
+        "description": "Examine whether supplied evidence supports the report’s conclusions."
+      },
+      {
+        "title": "Missing context",
+        "description": "Identify assumptions and comparisons that may need explanation."
+      },
+      {
+        "title": "Revision priorities",
+        "description": "Suggest changes for the intended audience and decision."
+      }
     ],
-    outputSummary: "A prioritized critique with logic gap findings, assumption map, evidence quality assessment, and structural recommendations — organized by what to fix before publication.",
-    sampleOutput: {
-      scenario: "MidWest Logistics Q3 Sales Performance Report",
-      question: "I need to critique the Q3 Sales Performance Report for MidWest Logistics before it goes to the board. It claims 12% revenue growth but I suspect the headline number is misleading. Identify logic gaps, unsupported claims, and anything that will draw hard questions from board members.",
-      confidence: 53,
-      creditsUsed: 40,
-      rounds: 2,
-      litigants: 4,
-      verdict: "The Q3 report presents accurate data but draws misleading conclusions from it. The headline 12% revenue growth obscures a 31% decline in new customer acquisition, compensated entirely by upsells to the existing customer base — a pattern that signals pipeline exhaustion within two quarters. The average deal size figure on page four is presented as increasing, which is technically true, but omits that the increase is driven by three non-recurring enterprise renewals; strip those out and average deal size declined 8% quarter-on-quarter. A board member with financial experience will find both of these in the first read-through. The executive summary as written would generate hard questions. Logical integrity: 53%.",
-      caveats: "This critique is based on the report summary and key figures provided, not the full document. A complete audit requires access to the underlying data and prior quarter comparisons. Conclusions about materiality depend on the board's specific expectations and context not provided here.",
-      debateSnippet: "Page four presents average deal size as increasing — technically accurate, but driven entirely by three non-recurring enterprise renewals. Strip those out and average deal size declined 8% quarter-on-quarter. That is the number leadership needs to see. Presenting the blended figure without this disclosure will draw the exact board question you are trying to avoid.",
-      debateRole: "Logic Auditor",
+    "outputSummary": "A critique of supplied reasoning, evidence and structure, with suggested revisions.",
+    "sampleOutput": {
+      "question": "Our report says revenue rose 12% but gives no breakdown of new and returning customers.",
+      "verdict": "The headline alone cannot explain the source or durability of growth. Add a breakdown and comparable periods before drawing conclusions about acquisition or retention.",
+      "caveats": "This does not verify external facts or audit underlying data that you have not supplied. An excerpt cannot support conclusions about the full report.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Does this work for internal business reports as well as published research?", a: "Yes — board reports, strategy documents, investment memos, and research papers are all strong use cases." },
-      { q: "How much of the report do I need to share?", a: "The more context the better. At minimum, the executive summary and key findings sections. Full text gives the sharpest critique." },
-      { q: "Can I use this for a report I didn't write?", a: "Absolutely — critiquing third-party reports, vendor proposals, or research you're evaluating is one of the most common uses." },
-    ],
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A critique of supplied reasoning, evidence and structure, with suggested revisions."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not verify external facts or audit underlying data that you have not supplied. An excerpt cannot support conclusions about the full report."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
   },
   {
-    slug: "research-summarizer",
-    templateId: "research-summary",
-    headline: "Understand Complex Research Faster and More Critically",
-    image: "/tools/research-summarizer.jpg",
-    howItWorks: [
-      { step: "01", title: "Describe the research topic", desc: "Share a paper abstract, research question, or a summary of the evidence you're trying to understand. Add context about what decision you're trying to make." },
-      { step: "02", title: "AI specialists examine it", desc: "A methodology critic, consensus mapper, practical implications analyst, and devil's advocate each approach the research from their perspective." },
-      { step: "03", title: "Get a structured synthesis", desc: "Receive a synthesis that separates what the evidence strongly supports from what's still contested, plus practical takeaways calibrated to your context." },
+    "slug": "research-summarizer",
+    "templateId": "research-summary",
+    "image": "/tools/research-summarizer.jpg",
+    "headline": "Synthesize and Question the Research You Supply",
+    "howItWorks": [
+      {
+        "step": "01",
+        "title": "Bring the relevant material",
+        "desc": "Provide paper text, abstracts or source excerpts and explain the question you want to answer."
+      },
+      {
+        "step": "02",
+        "title": "Review competing AI perspectives",
+        "desc": "The configured AI court uses the template instructions to examine your question and challenge assumptions. These are AI roles, not human specialists."
+      },
+      {
+        "step": "03",
+        "title": "Review the draft and verify it",
+        "desc": "A synthesis of supplied evidence, disagreements, methodological limits and practical questions. Depth and completeness depend on your evidence, court settings and credit cap."
+      }
     ],
-    benefits: [
-      { title: "Consensus vs. controversy mapping", description: "What does the evidence clearly show? Where do researchers genuinely disagree? AI draws the line clearly." },
-      { title: "Methodological critique", description: "Sample sizes, study design, replication status, and publication bias — AI flags what changes how much you should trust a finding." },
-      { title: "Practical implications", description: "What does this research actually mean for what you should do? AI translates academic findings into actionable insights." },
-      { title: "Counterevidence surfacing", description: "What would falsify this finding? AI specifically looks for evidence that cuts the other way." },
+    "benefits": [
+      {
+        "title": "Source comparison",
+        "description": "Organize the findings and disagreements in the material supplied."
+      },
+      {
+        "title": "Evidence limits",
+        "description": "Examine reported methods and distinguish findings from interpretation."
+      },
+      {
+        "title": "Open questions",
+        "description": "Identify missing sources and matters requiring further verification."
+      }
     ],
-    outputSummary: "A structured research synthesis with a consensus map, methodology quality assessment, practical implications, confidence scores per major finding, and a summary of the most important caveats.",
-    sampleOutput: {
-      scenario: "Sleep deprivation & cognitive performance — shift work policy",
-      question: "Summarise the current research on sleep deprivation and cognitive performance for a non-expert audience. I'm developing a fatigue management policy for shift workers and need to know what the evidence actually supports versus what is still contested.",
-      confidence: 84,
-      creditsUsed: 39,
-      rounds: 2,
-      litigants: 3,
-      verdict: "The research base on sleep deprivation and cognitive performance is unusually robust and consistent across methodologies and research groups — this is one of the better-replicated bodies of work in applied cognitive science. Even mild restriction (6 hours vs 8 hours nightly) produces measurable impairment in working memory, reaction time, and complex decision-making within four days, with impairment accelerating non-linearly with duration. The consensus on this is strong enough to inform policy directly. The most contested area is individual variation: there is genuine disagreement about whether 'short sleepers' who perform normally on 6 hours represent a real phenotype or a population that has adapted without recognising its own impairment. Evidence confidence: 84%.",
-      caveats: "This synthesis reflects published research as of the training data cutoff. The field is active and specific figures may have been updated. Practical policy recommendations should be reviewed by an occupational health specialist before implementation. Individual variation is real and any fatigue management policy should account for it.",
-      debateSnippet: "The most actionable and underappreciated finding: performance deficits after sleep restriction are not reliably self-reported. Subjects consistently rate their own impairment as minimal while objective measures show significant decline. Any policy that relies on workers self-declaring fatigue is not working — they cannot reliably detect their own impairment.",
-      debateRole: "Practical Implications Analyst",
+    "outputSummary": "A synthesis of supplied evidence, disagreements, methodological limits and practical questions.",
+    "sampleOutput": {
+      "question": "Two abstracts report different outcomes, but one study used a different population.",
+      "verdict": "The population difference may help explain the disagreement. Compare the study designs, measures and full results before treating the abstracts as directly contradictory.",
+      "caveats": "This does not search the literature or establish current scientific consensus. A topic alone cannot support a sourced review; an abstract limits what can be assessed.",
+      "debateSnippet": "Which conclusions follow from the supplied material, and which still require evidence?",
+      "debateRole": "Skeptic"
     },
-    faqs: [
-      { q: "Does this work for business research as well as academic research?", a: "Yes — market research reports, industry analyses, and competitive intelligence are just as valid as academic papers." },
-      { q: "Can I use it when I have conflicting sources?", a: "That's actually the ideal use case. Paste or summarize the conflicting evidence and the AI will analyze why they conflict and which is more reliable." },
-      { q: "Is this useful for non-experts trying to understand research?", a: "Yes — translating expert research into plain-language implications for non-experts is one of the most popular uses." },
-    ],
-  },
+    "faqs": [
+      {
+        "q": "What does this template cover?",
+        "a": "A synthesis of supplied evidence, disagreements, methodological limits and practical questions."
+      },
+      {
+        "q": "What are its limits?",
+        "a": "This does not search the literature or establish current scientific consensus. A topic alone cannot support a sourced review; an abstract limits what can be assessed."
+      },
+      {
+        "q": "Is my input stored?",
+        "a": "Session content is saved to your account and processed by the AI providers used for your session. Share only material you are authorized to submit. Public sharing is a separate action you control."
+      }
+    ]
+  }
 ];
 
 // Presentation only: never a second list of available templates.

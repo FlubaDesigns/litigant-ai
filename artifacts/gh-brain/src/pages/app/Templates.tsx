@@ -1,3 +1,4 @@
+import { PRO_ACCESS_NOTE, canCreateArtifacts } from "@workspace/api-zod/session";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ChevronRight, Briefcase, Globe, TrendingUp, Code2, FileText, Scale, BookOpen, FlaskConical, Search } from "lucide-react";
@@ -9,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useState } from "react";
-import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -27,21 +27,21 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function TemplatesPage() {
-  const { signupBonusCredits: signupBonus } = usePublicConfig();
-  const { user } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
+  const templatesAllowed = canCreateArtifacts(userProfile?.plan, isAdmin);
   const { data: templates = [], isPending, isError, refetch } = useTemplates();
   const pages = resolveTemplatePages(templates);
   const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
   usePageMeta({
     title: "Templates — Litigant AI | Multi-Model Adversarial Reasoning",
-    description: "Ready-to-use templates for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
+    description: "Pro-only templates for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
     canonicalPath: "/templates",
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       "name": "Templates — Litigant AI",
       "url": "https://litigant-ai.com/templates",
-      "description": "Ready-to-use templates. Multiple AI models debate your question and deliver a confidence-scored verdict.",
+      "description": "Pro-only templates. Multiple AI models debate your question and produce an AI review with stated limitations.",
       "hasPart": pages.map((t) => ({
         "@type": "WebPage",
         "name": t.title,
@@ -67,13 +67,13 @@ export default function TemplatesPage() {
             <div className="row">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
-                  Choose your starting point
+                  Pro only
                 </span>
                 <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
                   Templates
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                  Choose a template, see what it covers, then bring your question to the court.
+                  Browse the templates and examples freely. Running a template requires Pro access and uses session credits.
                 </p>
               </motion.div>
             </div>
@@ -138,7 +138,7 @@ export default function TemplatesPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
                             <div className="absolute top-2 left-2">
                               <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded border", CATEGORY_COLORS[page.category])}>
-                                {page.badge}
+                                {page.badge} · Pro only
                               </span>
                             </div>
                             <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-background/70 backdrop-blur-sm border border-border/40 flex items-center justify-center">
@@ -170,11 +170,11 @@ export default function TemplatesPage() {
             <div className="row">
               <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {signupBonus === null ? "No credit card required." : `${signupBonus} free credits on signup. No credit card required.`}
+                {PRO_ACCESS_NOTE}
               </p>
-              <Link href={user ? "/session" : "/register"}>
+              <Link href={templatesAllowed ? "/session" : user ? "/billing" : "/register?next=%2Fbilling"}>
                 <Button size="lg" className="font-semibold gap-2">
-                  {user ? "Open courtroom" : "Create free account"} <ChevronRight className="w-4 h-4" />
+                  {templatesAllowed ? "Open courtroom" : "Unlock Pro with credits"} <ChevronRight className="w-4 h-4" />
                 </Button>
               </Link>
             </div>

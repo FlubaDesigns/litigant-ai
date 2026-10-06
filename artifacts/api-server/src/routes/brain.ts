@@ -310,7 +310,12 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
   if (uid && !isAdminRun) {
     const account = (await db!.collection("users").doc(uid).get()).data();
-    effectiveConfig = applyArtifactAccess(effectiveConfig, canCreateArtifacts(account?.plan));
+    const proAllowed = canCreateArtifacts(account?.plan);
+    if (templateId && !proAllowed) {
+      res.status(403).json({ message: "Templates require Pro access.", code: "PRO_REQUIRED" });
+      return;
+    }
+    effectiveConfig = applyArtifactAccess(effectiveConfig, proAllowed);
   }
   try {
     prepared = await prepareSession(effectiveConfig, resumeWithFixedPipeline === true);

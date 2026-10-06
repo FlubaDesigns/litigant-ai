@@ -3,7 +3,7 @@ import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
-import { grantSignupBonus } from "../lib/creditLedger.js";
+import { grantSignupBonus, syncPaidProAccess } from "../lib/creditLedger.js";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail, isResendConfigured } from "../lib/emailService.js";
 
@@ -135,6 +135,8 @@ router.post("/auth/provision", async (req, res) => {
         });
       }
     });
+
+    if (!newUser) await syncPaidProAccess(uid);
 
     // Grant signup bonus — only to verified accounts.
     // Google/Apple OAuth users have emailVerified = true automatically.

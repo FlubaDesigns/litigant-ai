@@ -23,6 +23,7 @@ vi.mock("../lib/firebaseAdmin.js", () => ({
 
 vi.mock("../lib/creditLedger.js", () => ({
   grantSignupBonus: vi.fn(),
+  syncPaidProAccess: vi.fn(),
 }));
 
 vi.mock("../lib/emailService.js", () => ({

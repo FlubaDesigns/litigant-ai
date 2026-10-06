@@ -103,7 +103,7 @@ vi.mock("pino-http", () => ({
 // Imports (after mocks)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, reserveCredits, getCourtesyCreditEligibility } from "../lib/creditLedger.js";
+import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, reserveCredits, getCourtesyCreditEligibility, syncPaidProAccess } from "../lib/creditLedger.js";
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
 import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
@@ -159,7 +159,17 @@ function createMockDb(initialStore: Record<string, any> = {}) {
       store[`${name}/${id}`] = data;
       return { id };
     },
-    where: () => ({ orderBy: () => ({ limit: () => ({ get: async () => ({ docs: [] }) }) }) }),
+    where: (field: string, op: string, value: unknown) => {
+      const filters: Array<[string, unknown]> = [[field, value]];
+      const query = {
+        where: (key: string, _op: string, expected: unknown) => { filters.push([key, expected]); return query; },
+        orderBy: () => query,
+        limit: () => query,
+        get: async () => ({docs: Object.entries(store).filter(([key, data]) => key.startsWith(`${name}/`) &&
+          filters.every(([key, value]) => data[key] === value)).map(([key, data]) => ({id:key.split('/').at(-1),data:()=>data}))}),
+      };
+      return query;
+    },
   });
 
   return {
@@ -212,6 +222,31 @@ describe("addCredits()", () => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
+  });
+
+  it("unlocks Pro atomically with a paid purchase and deduplicates payment retries", async () => {
+    mockDb._store["users/buyer"] = {plan:"free",creditBalance:500};
+    const opts = {source:"square_checkout",paymentId:"paid-1",idempotencyKey:"payment_paid-1"};
+    await Promise.all([addCredits("buyer",100,"purchase",opts),addCredits("buyer",100,"purchase",opts)]);
+    expect(mockDb._store["users/buyer"]).toMatchObject({plan:"pro",creditBalance:600});
+    expect(Object.keys(mockDb._store).filter(key=>key.startsWith("credit_transactions/"))).toHaveLength(1);
+  });
+
+  it.each(["signup_bonus", "admin_adjustment", "refund"] as const)("does not unlock Pro for %s credits", async type => {
+    mockDb._store["users/free"] = {plan:"free",creditBalance:0};
+    await addCredits("free",500,type);
+    expect(mockDb._store["users/free"]).toMatchObject({plan:"free",creditBalance:500});
+  });
+
+  it.each([true, false])("reconciles previous purchases without counting free credits (paid=%s)", async paid => {
+    mockDb._store["users/returning"] = {plan:"free",creditBalance:500};
+    mockDb._store["credit_transactions/past"] = {
+      userId:"returning", type:paid ? "purchase" : "signup_bonus", amount:500,
+      source:paid ? "square_checkout" : "signup_trial", paymentId:paid ? "past-payment" : null,
+    };
+    await syncPaidProAccess("returning");
+    expect(mockDb._store["users/returning"]).toMatchObject({plan:paid ? "pro" : "free",creditBalance:500});
+    expect(Object.keys(mockDb._store).filter(key=>key.startsWith("credit_transactions/"))).toHaveLength(1);
   });
 
   it("grants credits and writes a ledger entry on the first call", async () => {
@@ -1250,6 +1285,7 @@ describe("saved context for restored sessions and child runs", () => {
   const template = TEMPLATES[0];
   function contextDb() {
     const db = createRouteMockDb(FAKE_UID, 1000);
+    db._store[`users/${FAKE_UID}`].plan = "pro";
     db._store["sessions/parent"] = {
       userId: FAKE_UID, status: "relay_needed", question: "Original question", title: "Parent title",
       templateId: template.id, config: { ...BRAIN_BODY.config, litigantCount: 4, maxCredits: 700 },
@@ -1266,6 +1302,35 @@ describe("saved context for restored sessions and child runs", () => {
     vi.clearAllMocks();
     vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
+  });
+
+  it.each(["new", "relay"])("blocks a free account's %s template run before AI calls or charging", async kind => {
+    const db = contextDb();
+    db._store[`users/${FAKE_UID}`].plan = "free";
+    const context = kind === "new" ? {templateId: template.id} : {
+      relayContext: {parentSessionId:"parent",originalTranscript:[],missingInfo:"New fact",relayRound:1},
+    };
+    const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send({...BRAIN_BODY, ...context});
+    expect(response.status).toBe(403);
+    expect(response.body.code).toBe("PRO_REQUIRED");
+    expect(runBrainSession).not.toHaveBeenCalled();
+    expect(estimateSessionCreditsCalibrated).not.toHaveBeenCalled();
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+  });
+
+  it.each(["pro", "admin"])("allows a new template run for %s access", async access => {
+    const db = contextDb();
+    delete db._store[`templates/${template.id}`];
+    if (access === "admin") {
+      db._store[`users/${FAKE_UID}`].plan = "free";
+      vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:true} as any);
+    }
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+    const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`)
+      .send({...BRAIN_BODY,templateId:template.id});
+    expect(response.status).toBe(200);
+    expect(runBrainSession).toHaveBeenCalledWith(expect.objectContaining({templateSystemPrompt:template.systemPrompt}));
   });
 
   it("returns attachments, resolved template and outcome metadata from the saved record", async () => {

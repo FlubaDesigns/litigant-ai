@@ -60,7 +60,7 @@ function TemplateCard({ template, onClick }: { template: Template; onClick: () =
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold truncate">{template.title}</span>
             <span className="ml-auto text-xs font-mono text-muted-foreground shrink-0">
-              Live quote
+              Pro only
             </span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -154,11 +154,17 @@ export default function SessionPage() {
   });
 
   const templateLinkApplied = useRef(false);
+  useEffect(() => {
+    if (userProfile && !artifactsAllowed && new URLSearchParams(window.location.search).has("templateId")) {
+      toast.error("Any paid credit purchase unlocks Pro templates. Free starter credits do not.");
+      navigate("/billing");
+    }
+  }, [userProfile, artifactsAllowed, navigate]);
   // Apply a template link once; catalog refreshes must not reset the working draft.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tid = params.get("templateId");
-    if (tid && !templateLinkApplied.current && state.phase === "idle" && !state.template) {
+    if (artifactsAllowed && tid && !templateLinkApplied.current && state.phase === "idle" && !state.template) {
       const template = templates.find((t) => t.id === tid);
       if (template) {
         templateLinkApplied.current = true;
@@ -167,7 +173,7 @@ export default function SessionPage() {
         setToolBanner(template.title);
       }
     }
-  }, [templates]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [templates, artifactsAllowed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The URL identifies the persisted session; History and email use this same path.
   useEffect(() => {
@@ -227,6 +233,7 @@ export default function SessionPage() {
   }
 
   async function handleRun() {
+    if (state.template && !artifactsAllowed) { toast.error("Templates require Pro access."); return; }
     if (!quote.ready) { toast.error(quote.error?.message ?? "Please wait for the current credit estimate."); return; }
     const hasFields = state.template && state.template.inputFields.length > 0;
     const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
@@ -633,7 +640,7 @@ export default function SessionPage() {
         <SheetContent side="bottom" className="h-[65vh] flex flex-col bg-[#0a160a] border-t border-white/8">
           <SheetHeader className="shrink-0 pb-3 border-b border-white/5">
             <SheetTitle className="text-sm flex items-center gap-2">
-              Templates
+              Templates · Pro only
             </SheetTitle>
           </SheetHeader>
           <div className="flex items-center gap-2 py-2 overflow-x-auto shrink-0 scrollbar-none">
@@ -670,6 +677,7 @@ export default function SessionPage() {
                   key={template.id}
                   template={template}
                   onClick={() => {
+                    if (!artifactsAllowed) { toast.error("Any paid credit purchase unlocks Pro templates. Free starter credits do not."); navigate("/billing"); return; }
                     setTemplate(template);
                     setConfig(template.defaultConfig);
                     setTemplateSheetOpen(false);
