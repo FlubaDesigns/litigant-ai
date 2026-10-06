@@ -40,3 +40,16 @@ it("corrects saved stock offers while preserving the owner's custom description"
   expect(result.find(t=>t.id==="website-audit")?.description).toBe(TEMPLATES.find(t=>t.id==="website-audit")!.description);
   expect(result.find(t=>t.id==="product-stress-test")?.description).toBe("Owner's custom offer");
 });
+
+it("updates the former screenshot intake hint and stock instructions together", async () => {
+  const website=TEMPLATES.find(t=>t.id==="website-audit")!;
+  vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({get:async()=>({docs:[
+    {id:website.id,data:()=>({...website,
+      systemPrompt:website.systemPrompt.replace("page text or exported text findings","page text, screenshots or exported findings"),
+      inputFields:website.inputFields.map(field=>field.id==="url" ? {...field,placeholder:"URL, pasted page text, or identify the pages/screenshots in your Case Files"} : field),
+    })},
+  ]})})} as any);
+  const saved=(await getTemplates()).find(t=>t.id===website.id)!;
+  expect(saved.inputFields).toEqual(website.inputFields);
+  expect(saved.systemPrompt).toBe(website.systemPrompt);
+});

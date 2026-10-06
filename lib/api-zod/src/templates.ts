@@ -179,7 +179,7 @@ Financial discipline: Show supplied inputs, units, time periods and formulas. Se
       {
         "id": "url",
         "label": "Website or page material",
-        "placeholder": "URL, pasted page text, or identify the pages/screenshots in your Case Files",
+        "placeholder": "Paste page text or identify extracted text in your Case Files. A URL alone does not fetch content.",
         "type": "textarea",
         "required": true
       },
@@ -213,7 +213,7 @@ Financial discipline: Show supplied inputs, units, time periods and formulas. Se
       }
     ],
     systemPrompt: `${TEMPLATE_METHOD}\n\nPurpose: Produce an evidence-based website audit focused on the site's audience and intended visitor action.
-Critical questions: Establish the page material available and intended conversion. A URL is a reference, not proof that any page was inspected. If no page content is available through actual tools or Case Files, ask the user to supply page text, screenshots or exported findings before claiming an audit. If they cannot, provide a clearly labeled audit checklist with that limitation.
+Critical questions: Establish the page material available and intended conversion. A URL is a reference, not proof that any page was inspected. If no page content is available through actual tools or Case Files, ask the user to supply page text or exported text findings before claiming an audit. If they cannot, provide a clearly labeled audit checklist with that limitation.
 Examine: Offer and message clarity; information hierarchy and navigation; mobile usability; accessibility indicators visible in the supplied material; trust; calls to action, forms, friction and conversion. Consider SEO and performance only to the extent supported by actual evidence.
 Document structure: Scope and pages inspected; executive findings; prioritized issue table with affected page/element, observed evidence, user/business impact, severity, specific repair and a way to verify the repair; quick wins; larger improvements; remaining checks. Make recommendations concrete enough for a designer or developer to act on.
 Evidence discipline: Distinguish observed defects from hypotheses and checks still needed. Never claim live browsing, speed measurements, accessibility certification, broken-link checks or analytics access unless actually performed. Do not imply a screenshot proves hidden behavior or whole-site compliance.`,
@@ -842,7 +842,8 @@ export function normalizeTemplate(value: unknown, id?: string): Template | null 
   if (!key || !v.title && !base) return null;
   // Old stock prompts were sometimes saved by the admin editor. Upgrade only
   // exact stock copies; actual owner-written instructions remain authoritative.
-  const isLegacyStock = !!base && v.systemPrompt === LEGACY_TEMPLATE_PROMPTS[key!];
+  const isLegacyStock = !!base && (v.systemPrompt === LEGACY_TEMPLATE_PROMPTS[key!] ||
+    (key === "website-audit" && v.systemPrompt === base.systemPrompt.replace("page text or exported text findings", "page text, screenshots or exported findings")));
   const overrides = { ...v.defaultSettings, ...v.defaultConfig };
   if (isLegacyStock && (!overrides.artifactType || overrides.artifactType === "auto") && (!overrides.outputPreferenceMode || overrides.outputPreferenceMode === "auto")) {
     delete overrides.artifactType;
@@ -854,7 +855,11 @@ export function normalizeTemplate(value: unknown, id?: string): Template | null 
     ...base, ...v, id: key, title: v.title ?? base?.title ?? key,
     description: base && v.description === LEGACY_TEMPLATE_DESCRIPTIONS[key!] ? base.description : v.description ?? base?.description ?? "",
     category: v.category ?? base?.category ?? "personal", icon: v.icon ?? base?.icon ?? "FileText",
-    inputFields: Array.isArray(v.inputFields) && JSON.stringify(v.inputFields) !== JSON.stringify(LEGACY_TEMPLATE_FIELDS[key]) ? v.inputFields : base?.inputFields ?? [],
+    inputFields: Array.isArray(v.inputFields) && JSON.stringify(v.inputFields) !== JSON.stringify(LEGACY_TEMPLATE_FIELDS[key])
+      ? v.inputFields.map(field => key === "website-audit" && field.id === "url" &&
+          field.placeholder === "URL, pasted page text, or identify the pages/screenshots in your Case Files"
+          ? {...field, placeholder:base!.inputFields.find(f => f.id === "url")!.placeholder} : field)
+      : base?.inputFields ?? [],
     defaultConfig: config.data, estimatedCredits: v.estimatedCredits ?? base?.estimatedCredits ?? 0,
     systemPrompt: isLegacyStock || !v.systemPrompt?.trim() ? base?.systemPrompt ?? "" : v.systemPrompt,
   };
