@@ -31,7 +31,6 @@ const senders: Record<EmailTemplateId, () => Promise<boolean>> = {
   lowCredits: () => email.sendLowCreditsEmail("fixture", 42, 81),
   sessionComplete: () => email.sendSessionCompleteEmail("fixture", "session", "A supplied title", 120),
   paymentReceipt: () => email.sendPaymentReceiptEmail("fixture", 1250, 2500, 1300),
-  autoRefillTriggered: () => email.sendAutoRefillTriggeredEmail("fixture", 45, "https://example.test/pay", 20),
   accountSuspended: () => email.sendAccountSuspendedEmail("fixture", "A supplied reason"),
   reengagement: () => email.sendReengagementEmail("fixture", 350),
   firstSession: () => email.sendFirstSessionEmail("fixture", "session", "A supplied title"),
@@ -50,7 +49,7 @@ describe("email variable wiring", () => {
     expect(sent.html).not.toContain("&amp;amp;");
     const expected: Partial<Record<EmailTemplateId, string[]>> = {
       verification: ["237"], lowCredits: ["42", "81"], paymentReceipt: ["1,250"],
-      autoRefillTriggered: ["45", "20"], reengagement: ["350"],
+      reengagement: ["350"],
     };
     for (const value of expected[id] ?? []) expect(sent.subject).toContain(value);
   });

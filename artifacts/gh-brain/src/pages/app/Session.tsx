@@ -460,12 +460,12 @@ export default function SessionPage() {
               >
                 ⚙ Configure
               </button>
-              <button
+              {artifactsAllowed && <button
                 onClick={() => navigate("/history")}
                 className="w-full flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-border/40 bg-card/40 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-border transition-colors"
               >
                 📂 Sessions
-              </button>
+              </button>}
             </div>
 
             {isIdle && (

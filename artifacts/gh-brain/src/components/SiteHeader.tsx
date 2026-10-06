@@ -1,4 +1,4 @@
-import { accountAccess } from "@workspace/api-zod/session";
+import { accountAccess, canCreateArtifacts } from "@workspace/api-zod/session";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -79,7 +79,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
           {/* ── Desktop nav ── */}
           {variant === "app" ? (
             <nav className="hidden md:flex items-center gap-1 ml-2 flex-1 min-w-0">
-              {APP_NAV.map(({ href, label, icon: Icon }) => (
+              {APP_NAV.filter(item => item.href !== "/history" || canCreateArtifacts(plan, isAdmin)).map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
@@ -199,7 +199,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
       {/* ── App mobile menu ── */}
       {variant === "app" && mobileOpen && (
         <div className="fixed top-14 left-0 right-0 z-40 md:hidden border-b border-border bg-card px-4 py-3 space-y-1">
-          {APP_NAV.map(({ href, label, icon: Icon }) => (
+          {APP_NAV.filter(item => item.href !== "/history" || canCreateArtifacts(plan, isAdmin)).map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}

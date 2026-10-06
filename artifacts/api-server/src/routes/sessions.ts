@@ -12,6 +12,20 @@ import { getTemplate } from "../lib/templateStore.js";
 
 const router = Router();
 
+// Free users can delete their old records, but cannot read or reuse saved conversations.
+router.use("/sessions", async (req, res, next) => {
+  if (req.method === "DELETE") { next(); return; }
+  const token = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : null;
+  const decoded = token ? await verifyIdToken(token) : null;
+  if (!decoded) { res.status(401).json({message:"Unauthorized"}); return; }
+  const db = getFirestoreDb();
+  if (!db) { res.status(503).json({message:"Service unavailable"}); return; }
+  if (!canCreateArtifacts((await db.collection("users").doc(decoded.uid).get()).data()?.plan, decoded.admin)) {
+    res.status(403).json({message:PAID_ACCESS_NOTE, code:"PAID_ACCESS_REQUIRED"}); return;
+  }
+  next();
+});
+
 router.get("/sessions", async (req, res) => {
   const db = getFirestoreDb();
   const authHeader = req.headers["authorization"];
@@ -56,7 +70,7 @@ router.get("/sessions", async (req, res) => {
     const hasMore = snap.docs.length > limit;
 
     res.json({
-      sessions: docs.map((doc) => ({
+      sessions: docs.filter(doc => doc.data().memorySaved !== false).map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() ?? null,
@@ -102,6 +116,7 @@ router.get("/sessions/:id", async (req, res) => {
     if (!doc.exists) { res.status(404).json({ message: "Session not found" }); return; }
 
     const data = doc.data()!;
+    if (data.memorySaved === false) { res.status(404).json({message:"This Free conversation has no saved memory."}); return; }
 
     // Strict owner check — no shared-flag bypass
     if (data["userId"] !== uid) {

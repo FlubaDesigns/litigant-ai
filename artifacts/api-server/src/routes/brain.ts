@@ -1,5 +1,4 @@
-import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
-import { CREDITS_PER_DOLLAR } from "@workspace/api-zod/billing";
+import { PAID_ACCESS_NOTE, storedSessionRecord } from "@workspace/api-zod/session";
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
@@ -51,7 +50,6 @@ import {
   isResendConfigured,
 } from "../lib/emailService.js";
 import { getCourtesyCreditEligibility } from "../lib/creditLedger.js";
-import { createPaymentLink, isSquareConfigured } from "../lib/squareClient.js";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 
 const router = Router();
@@ -109,33 +107,6 @@ const brainIpLimiter = makeRateLimiter({
   windowMs: 60 * 60 * 1000,
   message: "Too many requests. Please wait before starting another session.",
 });
-
-/**
- * Creates a Square Payment Link for an auto-refill top-up.
- * Used as the createCheckoutUrl callback passed to checkAndTriggerAutoRefill.
- */
-async function createAutoRefillUrl(dollarAmount: number, uid: string): Promise<string | null> {
-  if (!isSquareConfigured()) return null;
-  const dollars = Math.max(1, Math.round(dollarAmount));
-  const amountCents = dollars * 100;
-  const creditAmount = dollars * CREDITS_PER_DOLLAR;
-  const domain =
-    process.env["APP_DOMAIN"] ??
-    (process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0];
-  if (!domain) return null;
-  try {
-    const link = await createPaymentLink({
-      name: `Credit Top-Up — $${dollars}`,
-      amountCents,
-      note: `LITIGANT:userId=${uid},creditAmount=${creditAmount},type=auto_refill`,
-      redirectUrl: `https://${domain}/billing?success=true&refill=true`,
-      idempotencyKey: crypto.randomUUID(),
-    });
-    return link.url;
-  } catch {
-    return null;
-  }
-}
 
 router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // ── Auth fast-path ────────────────────────────────────────────────────────
@@ -198,6 +169,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // via clientSessionId, but ownership is verified against the caller's uid
   // AFTER the auth section below resolves uid (see "Resume ownership check").
   let sessionId: string = crypto.randomUUID();
+  let fullAccess = false;
 
   let effectiveConfig: CourtConfig = {
     ...config,
@@ -239,6 +211,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     }
     uid = decoded.uid;
     isAdminRun = decoded.admin === true;
+    fullAccess = canCreateArtifacts((await db.collection("users").doc(uid).get()).data()?.plan, isAdminRun);
+    if (!fullAccess && (clientSessionId || parentSessionId || rebuttalContext || relayContext || continueFromTranscript?.length || resumeWithFixedPipeline)) {
+      res.status(403).json({message: PAID_ACCESS_NOTE, code: "PAID_ACCESS_REQUIRED"}); return;
+    }
 
     // Item 12: require email verification before consuming credits.
     // OAuth users (Google/Apple) are always verified. Email+password users
@@ -262,6 +238,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         runLease = claimed.lease;
         sessionId = clientSessionId;
         previousSession = claimed.session;
+        if (previousSession.memorySaved === false) throw new SessionRunError(403, "This Free conversation has no saved memory.");
       } catch (error) {
         res.status(error instanceof SessionRunError ? error.status : 503).json({
           message: error instanceof SessionRunError ? error.message : "Could not load the saved session. Please retry.",
@@ -277,7 +254,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
       try {
         const parent = (await db.collection("sessions").doc(parentSessionId).get()).data();
-        if (!parent || parent.userId !== uid) {
+        if (!parent || parent.userId !== uid || parent.memorySaved === false) {
           res.status(403).json({ message: "Parent session not found or access denied." }); return;
         }
         parentSession = parent;
@@ -311,13 +288,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   }
 
   if (uid && !isAdminRun) {
-    const account = (await db!.collection("users").doc(uid).get()).data();
-    const proAllowed = canCreateArtifacts(account?.plan);
-    if (templateId && !proAllowed) {
-      res.status(403).json({ message: PAID_ACCESS_NOTE, code: "PAID_ACCESS_REQUIRED" });
-      return;
+    if (templateId && !fullAccess) {
+      res.status(403).json({message: PAID_ACCESS_NOTE, code: "PAID_ACCESS_REQUIRED"}); return;
     }
-    effectiveConfig = applyArtifactAccess(effectiveConfig, proAllowed);
+    effectiveConfig = applyArtifactAccess(effectiveConfig, fullAccess);
   }
   try {
     prepared = await prepareSession(effectiveConfig, resumeWithFixedPipeline === true);
@@ -522,7 +496,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       // an error event and a refund of the remaining collected charge.
       try {
         const pricedCalls = annotateCalls(result.tokenUsage.calls ?? [], prepared.rates);
-        const savedResult = {
+        const savedResult = storedSessionRecord({
           sessionId: result.sessionId,
           userId: uid,
           title: previousSession?.title ?? sessionTitle,
@@ -566,7 +540,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           } : {}),
           createdAt: previousSession?.createdAt ?? FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
-        };
+        }, fullAccess);
         if (runLease) await writeSessionRun(db, runLease, savedResult);
         else await sessionRef.set(savedResult, { merge: true });
       } catch (e) {
@@ -578,12 +552,13 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       try {
         const userSnap = await db.collection("users").doc(uid).get();
         const userData = userSnap.data() ?? {};
-        const newBalance = (userData.creditBalance as number) ?? 0;
+        let newBalance = (userData.creditBalance as number) ?? 0;
 
         await db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
           .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
 
-        await checkAndTriggerAutoRefill(uid, newBalance, createAutoRefillUrl);
+        await checkAndTriggerAutoRefill(uid, newBalance, result.sessionId);
+        newBalance = (await db.collection("users").doc(uid).get()).data()?.creditBalance ?? newBalance;
 
         if (isResendConfigured()) {
           const billingDefaults = await getBillingDefaults();
@@ -593,11 +568,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           if (emailThreshold > 0 && newBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
             key => sendLowCreditsEmail(sessionUid, newBalance, emailThreshold, key),
             {sentField: "lowCreditEmailSentAt", cooldownMs: 86400_000}));
-          if (status === "complete" && userData.notifySessionComplete === true && result.sessionId) {
+          if (fullAccess && status === "complete" && userData.notifySessionComplete === true && result.sessionId) {
             notifications.push(sendTrackedEmail(sessionUid, "sessionComplete",
               key => sendSessionCompleteEmail(sessionUid, result.sessionId, sessionTitle, actualCost, key), {eventId: result.sessionId}));
           }
-          if (status === "complete" && result.sessionId) notifications.push(sendTrackedEmail(sessionUid, "firstSession",
+          if (fullAccess && status === "complete" && result.sessionId) notifications.push(sendTrackedEmail(sessionUid, "firstSession",
             key => sendFirstSessionEmail(sessionUid, result.sessionId, sessionTitle, key), {sentField: "firstSessionEmailSent"}));
           if (newBalance <= 0) notifications.push(sendTrackedEmail(sessionUid, "zeroCredits",
             key => sendZeroCreditsEmail(sessionUid, key), {sentField: "zeroCreditsEmailSentAt", cooldownMs: 86400_000}));
@@ -613,7 +588,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
 
       // ── Step 5: session_turns subcollection ──────────────────────────────
-      try {
+      if (fullAccess) try {
         const turnsCol = sessionRef.collection("session_turns");
         const oldTurns = previousSession ? await turnsCol.get() : null;
         const offset = oldTurns ? oldTurns.docs.reduce((max, d) => Math.max(max, Number(d.data().turnIndex ?? -1) + 1), 0) : 0;
@@ -670,12 +645,12 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         if (runLease) {
           await writeSessionRun(db, runLease, failure);
         } else {
-          await db.collection("sessions").doc(sessionId).create({
+          await db.collection("sessions").doc(sessionId).create(storedSessionRecord({
             ...failure, userId: uid, title: question.slice(0, 80), question,
             config: prepared.config, templateId: templateId ?? null,
             status: "error", creditsUsed: 0, shared: false,
             createdAt: FieldValue.serverTimestamp(),
-          });
+          }, fullAccess));
         }
       } catch {
         console.error("[brain] Could not persist session failure", { sessionId });

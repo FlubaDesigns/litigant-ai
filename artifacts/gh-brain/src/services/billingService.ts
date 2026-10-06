@@ -122,6 +122,8 @@ export async function grantSignupBonus(user: User): Promise<void> {
  * Persist auto-refill preference to the server (Firestore-backed).
  */
 export async function setAutoRefill(opts: {
+  consent?: boolean;
+  useRecentCard?: boolean;
   enabled: boolean;
   thresholdCredits?: number;
   dollarAmount?: number;
@@ -200,4 +202,15 @@ export async function createCustomCheckoutSession(
  */
 export async function createPortalSession(): Promise<string | null> {
   return null;
+}
+
+export interface AutoRefillStatus {available:boolean;enabled:boolean;card:{brand:string;last4:string}|null;recentCard:{brand:string;last4:string}|null;status:string;error:string|null}
+export async function getAutoRefillStatus():Promise<AutoRefillStatus> {
+  const res=await fetch(`${API_BASE}/billing/auto-refill`,{headers:await authHeaders(),cache:"no-store"});
+  if(!res.ok) throw new Error("Could not load Auto Top-Up. Retry to check your card.");
+  return res.json();
+}
+export async function removeAutoRefillCard() {
+  const res=await fetch(`${API_BASE}/billing/auto-refill/card`,{method:"DELETE",headers:await authHeaders()});
+  if(!res.ok) throw new Error("Could not remove the saved card. Please retry.");
 }

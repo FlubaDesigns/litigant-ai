@@ -108,7 +108,7 @@ export function resolveModelByIntelligence(
 
 export const PAID_ACCESS_BADGE = "Paid credits required";
 export const PAID_ACCESS_CTA = "Unlock all features";
-export const PAID_ACCESS_NOTE = "Any paid credit purchase unlocks all features. Free promotional credits provide dialogue only. Sessions still use credits.";
+export const PAID_ACCESS_NOTE = "Any paid credit purchase unlocks all features. Free promotional credits provide dialogue only, without saved conversation memory. Sessions still use credits.";
 
 /** Shared full-feature entitlement. The stored "pro" value is legacy account access, not the Pro credit package. */
 export function canCreateArtifacts(plan: unknown, isAdmin = false): boolean {
@@ -124,4 +124,11 @@ export function accountAccess(plan: unknown, isAdmin = false) {
 
 export function applyArtifactAccess<T extends Partial<CourtConfig>>(config: T, allowed: boolean): T {
   return allowed ? config : {...config, outputPreferenceMode: "answer-only", artifactType: "none", outputStrategy: config.outputStrategy === "artifact" ? "moderator-consensus" : config.outputStrategy};
+}
+
+/** Only usage/accounting metadata survives a Free run; never its content or custom instructions. */
+export function storedSessionRecord(record: Record<string, any>, fullAccess: boolean): Record<string, any> {
+  if (fullAccess) return {...record, memorySaved: true};
+  const fields = new Set(["sessionId", "userId", "priceSnapshot", "callUsage", "inputTokens", "outputTokens", "costUSD", "model", "creditsUsed", "fixedStageTokens", "status", "createdAt", "updatedAt", "lastRunErrorAt", "lastRunErrorMessage"]);
+  return {...Object.fromEntries(Object.entries(record).filter(([key]) => fields.has(key))), memorySaved: false, shared: false};
 }

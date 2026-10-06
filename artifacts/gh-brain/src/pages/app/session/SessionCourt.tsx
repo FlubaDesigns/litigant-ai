@@ -298,7 +298,7 @@ export function SessionCourt({
           )}
 
           {/* Paused decision card */}
-          {isPaused && state.pauseReason && (
+          {artifactsAllowed && isPaused && state.pauseReason && (
             <div className="session-pause-card">
               <div className="session-pause-title">
                 {state.pauseReason === "credit_cap"
@@ -351,10 +351,11 @@ export function SessionCourt({
             </div>
           )}
 
+          {!artifactsAllowed && !isRunning && <p className="text-sm text-muted-foreground">Free conversations have no saved memory. Copy anything you need before leaving. <button onClick={onReset}>Start a new conversation</button></p>}
           {state.acceptanceError && <p role="alert">{state.acceptanceError}</p>}
 
           {/* Relay needed card — Auditor flagged a missing determinative fact */}
-          {isRelayNeeded && state.relayQuestion && (
+          {artifactsAllowed && isRelayNeeded && state.relayQuestion && (
             <div style={{ background: "rgba(100,120,255,.07)", border: "1px solid rgba(100,120,255,.35)", borderRadius: 9, padding: "14px 16px" }}>
               <div style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#8fa8ff", marginBottom: 8 }}>
                 ℹ️ Court needs more information
@@ -582,7 +583,7 @@ export function SessionCourt({
               </Tabs>
 
               {/* Challenge the Verdict */}
-              <div style={{ border: "1px solid rgba(0,200,83,.25)", borderRadius: 10, background: "rgba(0,200,83,.03)", overflow: "hidden" }}>
+              {artifactsAllowed && <div style={{ border: "1px solid rgba(0,200,83,.25)", borderRadius: 10, background: "rgba(0,200,83,.03)", overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderBottom: "1px solid rgba(0,200,83,.12)", background: "rgba(0,200,83,.06)" }}>
                   <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#00c853" }}>
                     ⚖ Challenge the Verdict
@@ -658,7 +659,7 @@ export function SessionCourt({
                     </div>
                   )}
                 </div>
-              </div>
+              </div>}
 
               {/* Input area for complete + template rerun */}
               {state.template && (

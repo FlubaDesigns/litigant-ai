@@ -96,7 +96,7 @@ import { runBrainSession } from "../lib/brainEngine.js";
 
 /** Minimal in-memory Firestore that handles the collections the brain route uses. */
 function createMockDb(sessions: Record<string, any> = {}) {
-  const store: Record<string, any> = {};
+  const store: Record<string, any> = Object.fromEntries(["owner", "user-A", "user-B"].map(uid => [`users/${uid}`, {plan:"pro"}]));
 
   // Pre-populate session documents
   for (const [id, data] of Object.entries(sessions)) {

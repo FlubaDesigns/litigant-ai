@@ -1,3 +1,5 @@
+import { getAutoRefillStatus, removeAutoRefillCard } from "../lib/autoRefill.js";
+import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import { Router } from "express";
 import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
@@ -71,7 +73,8 @@ router.patch("/billing/auto-refill", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  const { enabled, thresholdCredits, dollarAmount, warningThresholdCredits } = req.body as {
+  const { enabled, thresholdCredits, dollarAmount, warningThresholdCredits, consent, useRecentCard } = req.body as {
+    consent?: boolean; useRecentCard?: boolean;
     enabled?: boolean;
     thresholdCredits?: number;
     dollarAmount?: number;
@@ -87,18 +90,32 @@ router.patch("/billing/auto-refill", async (req, res) => {
   if (warningThresholdCredits !== undefined && (typeof warningThresholdCredits !== "number" || !Number.isInteger(warningThresholdCredits) || warningThresholdCredits < 1 || warningThresholdCredits > 50_000)) {
     return res.status(400).json({ error: "warningThresholdCredits must be an integer between 1 and 50,000" });
   }
-  if (dollarAmount !== undefined && (typeof dollarAmount !== "number" || dollarAmount < 1 || dollarAmount > 500)) {
+  if (dollarAmount !== undefined && (typeof dollarAmount !== "number" || !Number.isFinite(dollarAmount) || Math.abs(dollarAmount * 100 - Math.round(dollarAmount * 100)) > 0.000001 || dollarAmount < 1 || dollarAmount > 500)) {
     return res.status(400).json({ error: "dollarAmount must be a number between 1 and 500" });
   }
 
-  await setAutoRefillPreference(user.uid, {
-    enabled,
-    thresholdCredits: thresholdCredits ?? 100,
-    dollarAmount: dollarAmount ?? 20,
-    ...(warningThresholdCredits !== undefined && { warningThresholdCredits }),
-  });
+  try {
+    const defaults = await getBillingDefaults();
+    await setAutoRefillPreference(user.uid, {
+      enabled, thresholdCredits: thresholdCredits ?? defaults.defaultThresholdCredits,
+      dollarAmount: dollarAmount ?? defaults.defaultAutoRefillAmount,
+      warningThresholdCredits: warningThresholdCredits ?? defaults.defaultWarningThresholdCredits,
+      consent: consent === true, useRecentCard: useRecentCard === true,
+    });
+    return res.json({success:true});
+  } catch (error) { return res.status(400).json({error:error instanceof Error ? error.message : "Could not update Auto Top-Up."}); }
 
-  return res.json({ success: true });
+});
+
+router.get("/billing/auto-refill", async (req,res) => {
+  const user=await requireAuth(req,res); if(!user) return;
+  try { res.json(await getAutoRefillStatus(user.uid)); }
+  catch { res.status(503).json({error:"Could not load Auto Top-Up."}); }
+});
+router.delete("/billing/auto-refill/card", async (req,res) => {
+  const user=await requireAuth(req,res); if(!user) return;
+  try { await removeAutoRefillCard(user.uid); res.json({success:true}); }
+  catch { res.status(503).json({error:"Auto Top-Up is off, but the saved card could not be removed. Please retry."}); }
 });
 
 /**

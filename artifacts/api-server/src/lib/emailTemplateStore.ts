@@ -21,7 +21,6 @@ export const EMAIL_TEMPLATE_IDS = [
   "lowCredits",
   "sessionComplete",
   "paymentReceipt",
-  "autoRefillTriggered",
   "accountSuspended",
   "reengagement",
   "firstSession",
@@ -118,18 +117,6 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, EmailTemplateMeta> = {
       "Your payment went through and your credits are ready to use. Here's a summary of your purchase.",
     tokens: ["name", "credits"],
     canDisable: false,
-  },
-  autoRefillTriggered: {
-    label: "Auto top-up ready",
-    trigger: "When auto-refill checkout URL is generated (balance crossed threshold)",
-    badgeText: "Auto Top-Up Ready",
-    badgeColor: "#f59e0b",
-    defaultSubject: "Your auto top-up is ready — complete your ${amount} reload",
-    defaultHeadline: "Top-up prepared, {name}.",
-    defaultIntroText:
-      "Your balance has dropped to {balance} credits, triggering your auto top-up. A ${amount} checkout has been prepared for you — click below to complete it and reload your credits instantly.",
-    tokens: ["name", "balance", "amount"],
-    canDisable: true,
   },
   accountSuspended: {
     label: "Account suspended",

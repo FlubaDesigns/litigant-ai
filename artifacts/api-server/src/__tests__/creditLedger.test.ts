@@ -52,7 +52,6 @@ vi.mock("../lib/emailService.js", () => ({
   sendWelcomeEmail:              vi.fn(() => Promise.resolve()),
   sendVerificationEmail:         vi.fn(() => Promise.resolve()),
   sendPasswordResetEmail:        vi.fn(() => Promise.resolve()),
-  sendAutoRefillTriggeredEmail:  vi.fn(() => Promise.resolve()),
   sendLowCreditsEmail:           vi.fn(() => Promise.resolve()),
   sendSessionCompleteEmail:      vi.fn(() => Promise.resolve()),
   sendFirstSessionEmail:         vi.fn(() => Promise.resolve()),
@@ -107,7 +106,7 @@ import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, reserveCredits
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
 import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
-import { sendAutoRefillTriggeredEmail, isResendConfigured } from "../lib/emailService.js";
+import { isResendConfigured } from "../lib/emailService.js";
 import app from "../app-firebase.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -459,7 +458,7 @@ function makeBrainMock({
  */
 function createRouteMockDb(uid: string, creditBalance: number) {
   const initial: Record<string, any> = {};
-  initial[`users/${uid}`] = { creditBalance, email: "test@example.com" };
+  initial[`users/${uid}`] = { plan:"pro", creditBalance, email: "test@example.com" };
   const db = createMockDb(initial);
 
   // Expose a .add() on every sub-collection the route touches
@@ -719,215 +718,6 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
 // Suite 5 — checkAndTriggerAutoRefill (direct unit tests)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("checkAndTriggerAutoRefill()", () => {
-  let mockDb: ReturnType<typeof createMockDb>;
-  const UID = "uid-autorefill-test";
-
-  /** Minimal auto-refill preference that is enabled and configured. */
-  const ENABLED_PREFS = {
-    enabled: true,
-    thresholdCredits: 200,
-    dollarAmount: 10,
-  };
-
-  /** createCheckoutUrl stub that always returns a deterministic URL. */
-  const stubCheckout = vi.fn(async (_dollarAmount: number, _uid: string) =>
-    "https://square.link/checkout/test-url"
-  );
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    stubCheckout.mockResolvedValue("https://square.link/checkout/test-url");
-  });
-
-  it("writes autoRefillCheckoutUrl when balance drops below threshold", async () => {
-    // User has auto-refill enabled; balance (50) < threshold (200) → should trigger.
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
-
-    // createCheckoutUrl must have been called with the configured dollar amount and uid.
-    expect(stubCheckout).toHaveBeenCalledWith(ENABLED_PREFS.dollarAmount, UID);
-
-    // The user document must now carry the checkout URL.
-    const userDoc = mockDb._store[`users/${UID}`];
-    expect(userDoc.autoRefillCheckoutUrl).toBe("https://square.link/checkout/test-url");
-    expect(userDoc.autoRefillTriggeredAt).toBeDefined();
-  });
-
-  it("is a no-op when balance stays at or above the threshold", async () => {
-    // balance (200) === threshold (200) → should NOT trigger.
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 200, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 200, stubCheckout);
-
-    expect(stubCheckout).not.toHaveBeenCalled();
-    const userDoc = mockDb._store[`users/${UID}`];
-    expect(userDoc.autoRefillCheckoutUrl).toBeUndefined();
-  });
-
-  it("is a no-op when balance is well above the threshold", async () => {
-    // balance (500) > threshold (200) → should NOT trigger.
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 500, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 500, stubCheckout);
-
-    expect(stubCheckout).not.toHaveBeenCalled();
-  });
-
-  it("is a no-op when auto-refill is disabled", async () => {
-    // Pref exists but enabled=false → should NOT trigger regardless of balance.
-    mockDb = createMockDb({
-      [`users/${UID}`]: {
-        creditBalance: 10,
-        autoRefill: { ...ENABLED_PREFS, enabled: false },
-      },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
-
-    expect(stubCheckout).not.toHaveBeenCalled();
-    const userDoc = mockDb._store[`users/${UID}`];
-    expect(userDoc.autoRefillCheckoutUrl).toBeUndefined();
-  });
-
-  it("is a no-op when the user has no auto-refill preference set", async () => {
-    // No autoRefill field on the user doc at all.
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 10 },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
-
-    expect(stubCheckout).not.toHaveBeenCalled();
-  });
-
-  it("is a no-op when the user document does not exist", async () => {
-    // Empty store — no user document at all.
-    mockDb = createMockDb({});
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
-
-    expect(stubCheckout).not.toHaveBeenCalled();
-  });
-
-  it("does not write the checkout URL when createCheckoutUrl returns null", async () => {
-    // balance below threshold but checkout creation fails.
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    stubCheckout.mockResolvedValueOnce(null as any);
-
-    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
-
-    expect(stubCheckout).toHaveBeenCalled();
-    const userDoc = mockDb._store[`users/${UID}`];
-    expect(userDoc.autoRefillCheckoutUrl).toBeUndefined();
-  });
-
-  it("is a no-op when Firebase is not configured", async () => {
-    const { isFirebaseConfigured } = await import("../lib/firebaseAdmin.js");
-    vi.mocked(isFirebaseConfigured).mockReturnValueOnce(false);
-
-    // Should return early without touching mockDb or calling stubCheckout.
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 10, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-
-    await checkAndTriggerAutoRefill(UID, 10, stubCheckout);
-
-    expect(stubCheckout).not.toHaveBeenCalled();
-  });
-
-  // ── Email notification tests ─────────────────────────────────────────────
-
-  it("calls sendAutoRefillTriggeredEmail with the correct arguments when Resend is configured and threshold is crossed", async () => {
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(isResendConfigured).mockReturnValue(true);
-
-    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
-
-    expect(sendAutoRefillTriggeredEmail).toHaveBeenCalledOnce();
-    expect(sendAutoRefillTriggeredEmail).toHaveBeenCalledWith(
-      UID,                                       // uid
-      50,                                        // newBalance
-      "https://square.link/checkout/test-url",   // checkout URL
-      ENABLED_PREFS.dollarAmount                 // dollarAmount
-    );
-  });
-
-  it("does not send the auto-refill email when balance stays at or above the threshold", async () => {
-    // balance (200) === threshold (200) → trigger does not fire, no email
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 200, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(isResendConfigured).mockReturnValue(true);
-
-    await checkAndTriggerAutoRefill(UID, 200, stubCheckout);
-
-    expect(sendAutoRefillTriggeredEmail).not.toHaveBeenCalled();
-  });
-
-  it("does not send the auto-refill email when Resend is not configured", async () => {
-    // balance below threshold, Resend absent → URL written but email suppressed
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(isResendConfigured).mockReturnValue(false); // default, but explicit here
-
-    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
-
-    // Checkout URL must still be written — the email absence is the only difference
-    expect(mockDb._store[`users/${UID}`].autoRefillCheckoutUrl).toBe(
-      "https://square.link/checkout/test-url"
-    );
-    expect(sendAutoRefillTriggeredEmail).not.toHaveBeenCalled();
-  });
-
-  it("does not send the auto-refill email when checkout URL creation fails", async () => {
-    // If createCheckoutUrl returns null, the function returns early before the email call
-    mockDb = createMockDb({
-      [`users/${UID}`]: { creditBalance: 50, autoRefill: ENABLED_PREFS },
-    });
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    vi.mocked(isResendConfigured).mockReturnValue(true);
-    stubCheckout.mockResolvedValueOnce(null as any);
-
-    await checkAndTriggerAutoRefill(UID, 50, stubCheckout);
-
-    expect(sendAutoRefillTriggeredEmail).not.toHaveBeenCalled();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Suite 6 — Settlement crash protection (refund transaction throws)
-//
-// When the refund transaction fails (e.g. Firestore is temporarily unavailable), the session result has already
-// been streamed to the client.  The settlement catch block must:
-//   1. Immediately refund the full reservation so credits are not stranded.
-//   2. Write a durable `settlement_failure` audit entry for admin review.
-//   3. Never drive the user's balance below its pre-run value.
-// ─────────────────────────────────────────────────────────────────────────────
-
 describe("settlement crash — refund transaction fails", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1092,7 +882,7 @@ describe("saved session continuity", () => {
     vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);
   });
   it("resumes the stored question/config/transcript and appends turns without resetting metadata", async()=>{
-    const db=createRouteMockDb(FAKE_UID,1000);
+    const db=createRouteMockDb(FAKE_UID,1000); db._store[`users/${FAKE_UID}`].plan="pro";
     db._store["sessions/saved"]={status:"paused_credit_cap",userId:FAKE_UID,question:"Original question",title:"My saved title",config:{...BRAIN_BODY.config,litigantCount:4,maxCredits:500},
       transcript:"**Litigant:** Original evidence\n\n---\n\n**Moderator (Summary):** Summary",debateNotes:"Original notes",creditsUsed:30,
       starred:true,archived:false,shared:true,shareId:"keep-link",createdAt:"original-date"};
@@ -1141,7 +931,7 @@ describe("saved session continuity", () => {
     vi.mocked(email.isResendConfigured).mockReturnValue(false);
   });
   it("refunds the remaining net charge and emits error if saving the result fails", async()=>{
-    const db=createRouteMockDb(FAKE_UID,500);
+    const db=createRouteMockDb(FAKE_UID,500); db._store[`users/${FAKE_UID}`].plan="pro";
     const collection=db.collection.bind(db);
     db.collection=(name:string)=>{
       const col=collection(name);
@@ -1167,7 +957,7 @@ describe("one active run per saved session", () => {
   const resume = (body = resumeBody) => request(app).post("/api/run-brain")
     .set("Authorization", `Bearer ${FAKE_TOKEN}`).send(body);
   function savedDb(balance = 1000) {
-    const db = createRouteMockDb(FAKE_UID, balance);
+    const db = createRouteMockDb(FAKE_UID, balance); db._store[`users/${FAKE_UID}`].plan="pro";
     db._store["sessions/saved"] = { userId: FAKE_UID, status: "incomplete", creditsUsed: 30,
       question: "Saved question", finalAnswer: "Prior answer", transcript: "Prior evidence", config: resumeBody.config };
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
@@ -1438,5 +1228,27 @@ describe("invited session wiring",()=>{
     const entry=Object.values(db._store).find((value:any)=>value.source==="brain_reservation") as any;
     expect(entry.amount).toBe(-100);
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(50);
+  });
+});
+
+describe("Free conversations have no saved memory",()=>{
+  beforeEach(()=>{vi.clearAllMocks();vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);});
+  it("delivers an answer but stores only accounting, with no transcript, question, files or turns",async()=>{
+    const db=createRouteMockDb(FAKE_UID,500);db._store[`users/${FAKE_UID}`].plan="free";
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
+    const response=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send({...BRAIN_BODY,caseFile:[{id:"evidence",type:"file",name:"private.txt",content:"Private material"}]});
+    expect(response.text).toContain("Test answer");
+    const entries=Object.entries(db._store).filter(([key])=>key.startsWith("sessions/"));expect(entries).toHaveLength(1);
+    const [path,record]=entries[0];expect(record).toMatchObject({memorySaved:false,creditsUsed:100});
+    for(const field of ["title","question","finalAnswer","debateNotes","transcript","caseFile","config"])expect(record).not.toHaveProperty(field);
+    expect((await request(app).get("/api/sessions").set("Authorization",`Bearer ${FAKE_TOKEN}`)).status).toBe(403);
+    expect((await request(app).get(`/api/${path}`).set("Authorization",`Bearer ${FAKE_TOKEN}`)).status).toBe(403);
+    db._store[`users/${FAKE_UID}`].plan="pro";
+    expect((await request(app).get(`/api/${path}`).set("Authorization",`Bearer ${FAKE_TOKEN}`)).status).toBe(404);
+  });
+  it.each([{sessionId:"old"},{rebuttalContext:{parentSessionId:"old",challenge:"Why?",originalVerdict:"old",rebuttalRound:1}},{continueFromTranscript:["Old memory"]}])("blocks saved context before reserving or calling AI: %j",async context=>{
+    const db=createRouteMockDb(FAKE_UID,500);db._store[`users/${FAKE_UID}`].plan="free";vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    const response=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send({...BRAIN_BODY,...context});
+    expect(response.status).toBe(403);expect(runBrainSession).not.toHaveBeenCalled();expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(500);
   });
 });

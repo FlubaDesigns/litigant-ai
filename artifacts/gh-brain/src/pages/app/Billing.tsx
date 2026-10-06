@@ -1,4 +1,4 @@
-import { CREDITS_PER_DOLLAR } from "@workspace/api-zod/billing";
+import { CREDITS_PER_DOLLAR, AUTO_REFILL_CONSENT_VERSION } from "@workspace/api-zod/billing";
 import { PAID_ACCESS_NOTE, accountAccess } from "@workspace/api-zod/session";
 import { useBillingDefaults, useCreditPacks } from "@/hooks/useConfiguration";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -15,9 +15,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
-import { db, isConfigured as isFirebaseConfigured } from "@/lib/firebase";
 import {
+  getAutoRefillStatus, removeAutoRefillCard, type AutoRefillStatus,
   getTransactions,
   getPaymentHistory,
   setAutoRefill,
@@ -364,23 +363,17 @@ export default function BillingPage() {
     if (didCancel) toast.info("Payment cancelled.");
   }, [didSucceed, didCancel]);
 
-  // Listen for auto-refill checkout URL written by the server after a session
-  const autoRefillHandled = useRef(false);
-  useEffect(() => {
-    if (!user || !isFirebaseConfigured) return;
-    const userRef = doc(db, "users", user.uid);
-    const unsub = onSnapshot(userRef, async (snap) => {
-      if (!snap.exists()) return;
-      const url = snap.data()?.autoRefillCheckoutUrl as string | undefined;
-      if (!url || autoRefillHandled.current) return;
-      autoRefillHandled.current = true;
-      // Clear the field so we don't re-trigger
-      await updateDoc(userRef, { autoRefillCheckoutUrl: deleteField(), autoRefillTriggeredAt: deleteField() }).catch(() => {});
-      toast.info("Your balance is low — redirecting to complete your top-up…");
-      window.location.href = url;
-    });
-    return () => unsub();
-  }, [user]);
+  const [refillStatus,setRefillStatus]=useState<AutoRefillStatus|null>(null);
+  const [refillError,setRefillError]=useState("");
+  const [refillConsent,setRefillConsent]=useState(false);
+  const [useRecentCard,setUseRecentCard]=useState(false);
+  const refreshRefill=useCallback(async()=>{
+    if(!user) return;
+    try {const status=await getAutoRefillStatus();setRefillStatus(status);setAutoRefillEnabled(status.enabled);setRefillError("");}
+    catch(error) {setRefillError(error instanceof Error?error.message:"Could not load Auto Top-Up.");}
+  },[user]);
+  useEffect(()=>{void refreshRefill();},[refreshRefill,userProfile?.creditBalance]);
+  useEffect(()=>{setRefillConsent(false);},[autoRefillAmount,autoRefillThreshold,useRecentCard]);
 
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
@@ -427,7 +420,7 @@ export default function BillingPage() {
   useEffect(() => {
     const pref = userProfile?.autoRefill as any;
     if (!pref) return;
-    if (typeof pref.enabled === "boolean") setAutoRefillEnabled(pref.enabled);
+    if (typeof pref.enabled === "boolean") setAutoRefillEnabled(pref.enabled && pref.consentVersion === AUTO_REFILL_CONSENT_VERSION);
     if (typeof pref.dollarAmount === "number") setAutoRefillAmount(pref.dollarAmount);
     if (typeof pref.thresholdCredits === "number") setAutoRefillThreshold(pref.thresholdCredits);
     if (typeof pref.warningThresholdCredits === "number") setWarningThreshold(pref.warningThresholdCredits);
@@ -449,14 +442,15 @@ export default function BillingPage() {
     setAutoRefillSaving(true);
     try {
       await setAutoRefill({
-        enabled: next,
+        enabled: next, consent: refillConsent, useRecentCard,
         thresholdCredits: autoRefillThreshold,
         dollarAmount: autoRefillAmount,
         warningThresholdCredits: warningThreshold,
       });
+      setRefillConsent(false); await refreshRefill();
       toast.success(
         next
-          ? `Auto top-up enabled — you'll be redirected to checkout when you drop below ${autoRefillThreshold} credits.`
+          ? `Auto Top-Up enabled — your saved card will be charged $${autoRefillAmount.toFixed(2)} after a session leaves your balance below ${autoRefillThreshold} credits.`
           : "Auto top-up disabled."
       );
     } catch (err: any) {
@@ -472,11 +466,12 @@ export default function BillingPage() {
     setCreditControlsSaving(true);
     try {
       await setAutoRefill({
-        enabled: autoRefillEnabled,
+        enabled: autoRefillEnabled, consent: refillConsent, useRecentCard,
         thresholdCredits: autoRefillThreshold,
         dollarAmount: autoRefillAmount,
         warningThresholdCredits: warningThreshold,
       });
+      setRefillConsent(false); controlsEdited.current=false; await refreshRefill();
       toast.success("Credit control settings saved.");
     } catch (err: any) {
       toast.error(err.message ?? "Failed to save credit control settings.");
@@ -624,12 +619,12 @@ export default function BillingPage() {
                 <div>
                   <p className="text-sm font-medium">Auto Top-Up</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Get a checkout link to top up when your balance runs low.
+                    Automatically charge your saved card after a session leaves your balance below your threshold.
                   </p>
                 </div>
                 <button
                   onClick={handleToggleAutoRefill}
-                  disabled={autoRefillSaving}
+                  disabled={autoRefillSaving || (!autoRefillEnabled && (!refillStatus?.available || (!refillStatus.card && !refillStatus.recentCard) || !refillConsent))}
                   className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                   aria-label="Toggle auto top-up"
                 >
@@ -641,6 +636,18 @@ export default function BillingPage() {
                     <ToggleLeft className="w-8 h-8" />
                   )}
                 </button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                {refillStatus?.card ? <p>Saved card: {refillStatus.card.brand} ending {refillStatus.card.last4}</p> : <p>To set up: buy credits with a credit or debit card, then enable Auto Top-Up here within 24 hours. Apple Pay, Google Pay and Square Pay cannot be used for this setup.</p>}
+                {refillStatus?.recentCard && <p>Recent purchase card: {refillStatus.recentCard.brand} ending {refillStatus.recentCard.last4}</p>}
+                {refillStatus?.card && refillStatus.recentCard && <label className="flex gap-3 items-start"><input type="checkbox" checked={useRecentCard} onChange={e=>setUseRecentCard(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" />Use the card from my recent purchase</label>}
+                {(refillStatus?.card || refillStatus?.recentCard) && <label className="flex gap-3 items-start"><input type="checkbox" checked={refillConsent} onChange={e=>setRefillConsent(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" /><span>I authorize saving this card with Square and automatic charges of ${autoRefillAmount.toFixed(2)} for {(autoRefillAmount*CREDITS_PER_DOLLAR).toLocaleString()} credits whenever a session leaves my balance below {autoRefillThreshold} credits. I can turn this off here. A charge already started may still complete.</span></label>}
+                <p className="text-xs text-muted-foreground">Custom top-up rate shown above. Credit packs keep their own prices and bonus credits.</p>
+                {(refillError || refillStatus?.error) && <p role="alert" className="text-amber-500">{refillError || refillStatus?.error}</p>}
+                {refillStatus?.status === "pending" && <p role="status">Top-up payment confirmation pending.</p>}
+                <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>void refreshRefill()}>Refresh card status</Button>
+                {refillStatus?.card && <Button variant="outline" disabled={autoRefillSaving} onClick={async()=>{setAutoRefillSaving(true);try{await removeAutoRefillCard();setAutoRefillEnabled(false);await refreshRefill();toast.success("Auto Top-Up disabled and card removed.");}catch(error){toast.error(error instanceof Error?error.message:"Could not remove card.");}finally{setAutoRefillSaving(false);}}}>Remove saved card</Button>}</div>
               </div>
 
               {/* Charge Amount */}

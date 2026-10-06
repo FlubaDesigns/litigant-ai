@@ -1,3 +1,4 @@
+import { recordRefillPayment } from "./autoRefill.js";
 import { CREDITS_PER_DOLLAR } from "./creditPacks.js";
 import crypto from "crypto";
 import { addCredits } from "./creditLedger.js";
@@ -155,6 +156,8 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         paymentId: payment.id as string,
         idempotencyKey: `payment_${payment.id as string}`,
       });
+
+      await recordRefillPayment(userId, payment);
 
       if (result?.skipped) {
         logger.info(`[SquareEvent] Event ${event.event_id} already processed — skipped`);

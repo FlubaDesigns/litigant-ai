@@ -29,7 +29,7 @@ import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { hasActiveSessionRun } from "./sessionRunLock.js";
 import { getBillingDefaults } from "./billingDefaultsConfig.js";
-import { sendAutoRefillTriggeredEmail, isResendConfigured } from "./emailService.js";
+import { isResendConfigured } from "./emailService.js";
 
 /**
  * All valid credit movement categories.
@@ -307,90 +307,7 @@ export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean;
   return { skipped: result?.skipped === true, amount };
 }
 
-/**
- * Persists the user's auto-refill preference to Firestore.
- *
- * When enabled, a Square Payment Link is created and stored on
- * users/{uid}.autoRefillCheckoutUrl whenever the balance drops below
- * thresholdCredits. The frontend listens to that field and redirects
- * the user to complete the purchase.
- *
- * See checkAndTriggerAutoRefill() below.
- */
-export async function setAutoRefillPreference(
-  uid: string,
-  opts: {
-    enabled: boolean;
-    /** Balance level that triggers a top-up (in credits) */
-    thresholdCredits: number;
-    /** Dollar amount to charge per automatic top-up */
-    dollarAmount: number;
-    /** Balance level that shows a low-credit warning to the user (in credits) */
-    warningThresholdCredits?: number;
-  }
-): Promise<void> {
-  if (!isFirebaseConfigured()) return;
-  const db = getFirestoreDb();
-  if (!db) return;
-
-  await db.collection("users").doc(uid).set(
-    { autoRefill: opts, updatedAt: FieldValue.serverTimestamp() },
-    { merge: true }
-  );
-}
-
-/**
- * Checks whether the user's new balance has dropped below their auto-refill
- * threshold, and if so, generates a Square Payment Link URL and stores it on
- * the user document so the frontend can redirect them to complete the purchase.
- *
- * Called from brain.ts after session credit reconciliation.
- *
- * @param uid                - Firebase UID.
- * @param newBalance         - Balance AFTER the deduction.
- * @param createCheckoutUrl  - Callback that creates a Square Payment Link URL
- *                             for the given priceId and uid.
- */
-export async function checkAndTriggerAutoRefill(
-  uid: string,
-  newBalance: number,
-  createCheckoutUrl: (dollarAmount: number, uid: string) => Promise<string | null>
-): Promise<void> {
-  if (!isFirebaseConfigured()) return;
-  const db = getFirestoreDb();
-  if (!db) return;
-
-  try {
-    const userSnap = await db.collection("users").doc(uid).get();
-    if (!userSnap.exists) return;
-
-    const data       = userSnap.data()!;
-    const autoRefill = data["autoRefill"] as
-      | { enabled: boolean; thresholdCredits: number; dollarAmount: number; warningThresholdCredits?: number }
-      | undefined;
-
-    if (!autoRefill?.enabled)                      return;
-    if (newBalance >= autoRefill.thresholdCredits) return; // still above threshold
-
-    const url = await createCheckoutUrl(autoRefill.dollarAmount, uid);
-    if (!url) return;
-
-    await db.collection("users").doc(uid).set(
-      {
-        autoRefillCheckoutUrl:    url,
-        autoRefillTriggeredAt:    FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    if (isResendConfigured()) {
-      sendAutoRefillTriggeredEmail(uid, newBalance, url, autoRefill.dollarAmount)
-        .catch((e) => console.error("[CreditLedger] Auto-refill email failed (non-fatal):", e));
-    }
-  } catch (err) {
-    console.error("[CreditLedger] checkAndTriggerAutoRefill error:", err);
-  }
-}
+export {setAutoRefillPreference, checkAndTriggerAutoRefill} from "./autoRefill.js";
 
 export async function getCourtesyCreditEligibility(uid: string): Promise<boolean> {
   const db = getFirestoreDb();

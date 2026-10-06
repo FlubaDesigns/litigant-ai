@@ -22,6 +22,7 @@ async function squareFetch<T = unknown>(
 
   const res = await fetch(`${SQUARE_BASE_URL}${path}`, {
     ...options,
+    signal: AbortSignal.timeout(20000),
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -32,9 +33,7 @@ async function squareFetch<T = unknown>(
 
   const body = await res.json();
   if (!res.ok) {
-    const errMsg =
-      (body as any)?.errors?.[0]?.detail ?? `Square API error ${res.status}`;
-    throw new Error(errMsg);
+    throw new SquareApiError(res.status, (body as any)?.errors?.[0]?.code ?? "UNKNOWN");
   }
   return body as T;
 }
@@ -88,4 +87,28 @@ export async function listPayments(limit = 20): Promise<any[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   const data = await squareFetch<{ payments?: any[] }>(`/v2/payments?${params}`);
   return data.payments ?? [];
+}
+
+export class SquareApiError extends Error {
+  constructor(public status: number, public code: string) { super("Square could not complete the request."); }
+}
+export type SquarePayment = {
+  id: string; status: string; note?: string; created_at?: string; customer_id?: string;
+  amount_money?: {amount: number; currency: string}; location_id?: string;
+  card_details?: {created_at?: string; status?: string; entry_method?: string; card?: {card_brand?: string; last_4?: string}};
+};
+export async function getSquarePayment(id: string): Promise<SquarePayment> {
+  return (await squareFetch<{payment:SquarePayment}>(`/v2/payments/${encodeURIComponent(id)}`)).payment;
+}
+export async function createSquareCustomer(uid: string, email: string | undefined, key: string) {
+  return (await squareFetch<{customer:{id:string}}>("/v2/customers", {method:"POST", body:JSON.stringify({idempotency_key:key,reference_id:uid,...(email ? {email_address:email} : {})})})).customer;
+}
+export async function saveSquareCard(paymentId: string, customerId: string, key: string) {
+  return (await squareFetch<{card:{id:string;card_brand?:string;last_4?:string}}>("/v2/cards", {method:"POST",body:JSON.stringify({idempotency_key:key,source_id:paymentId,card:{customer_id:customerId}})})).card;
+}
+export async function disableSquareCard(id: string) {
+  await squareFetch(`/v2/cards/${encodeURIComponent(id)}/disable`, {method:"POST",body:"{}"});
+}
+export async function chargeSquareCard(request: Record<string, unknown>): Promise<SquarePayment> {
+  return (await squareFetch<{payment:SquarePayment}>("/v2/payments", {method:"POST",body:JSON.stringify(request)})).payment;
 }

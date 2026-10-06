@@ -300,29 +300,6 @@ function paymentReceiptTemplate(
   });
 }
 
-function autoRefillTriggeredTemplate(
-  balance: number,
-  topUpUrl: string,
-  dollarAmount: number,
-  intro: string,
-  headline: string
-): string {
-  return baseTemplate({
-    badge: EMAIL_TEMPLATE_META.autoRefillTriggered.badgeText,
-    badgeColor: EMAIL_TEMPLATE_META.autoRefillTriggered.badgeColor,
-    headline,
-    body: `
-      ${renderIntro(intro)}
-      ${callout("This checkout link is unique to your account and expires after 24 hours.", "#f59e0b")}
-      ${ctaRow(
-        { text: "Complete top-up", url: topUpUrl, bg: "#f59e0b", fg: "#000" },
-        { text: "Manage billing", url: `${APP_URL}/billing` }
-      )}
-    `,
-    footerExtra: "You received this because your balance crossed your auto top-up threshold.",
-  });
-}
-
 function accountSuspendedTemplate(reason: string | undefined, intro: string, headline: string): string {
   return baseTemplate({
     badge: EMAIL_TEMPLATE_META.accountSuspended.badgeText,
@@ -404,7 +381,6 @@ const SAMPLE_VARS: Record<EmailTemplateId, Record<string, string | number>> = {
   lowCredits:          { name: "Alex", balance: 42, threshold: 100 },
   sessionComplete:     { name: "Alex", credits: 120 },
   paymentReceipt:      { name: "Alex", credits: 500 },
-  autoRefillTriggered: { name: "Alex", balance: 45, amount: 20 },
   accountSuspended:    { name: "Alex" },
   reengagement:        { name: "Alex", credits: 350 },
   firstSession:        { name: "Alex" },
@@ -433,8 +409,6 @@ export async function renderTemplatePreview(id: EmailTemplateId, overrides?: {
       return sessionCompleteTemplate("previewSessionId", "Sample legal query preview", 120, intro, headline);
     case "paymentReceipt":
       return paymentReceiptTemplate(500, "$25.00", 850, intro, headline);
-    case "autoRefillTriggered":
-      return autoRefillTriggeredTemplate(45, `${APP_URL}/billing`, 20, intro, headline);
     case "accountSuspended":
       return accountSuspendedTemplate("Violation of terms of service", intro, headline);
     case "reengagement":
@@ -575,24 +549,6 @@ export async function sendPaymentReceiptEmail(
   return true;
 }
 
-export async function sendAutoRefillTriggeredEmail(
-  uid: string, balance: number, topUpUrl: string, dollarAmount: number
-): Promise<boolean> {
-  if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
-  const user = await getAuth().getUser(uid);
-  if (!user.email) return false;
-  const name = user.displayName ?? "there";
-  const { enabled, subject, headline, intro } = await resolveTemplate("autoRefillTriggered", {
-    name, balance: balance.toLocaleString(), amount: dollarAmount,
-  });
-  if (!enabled) return false;
-  const { error } = await getResend().emails.send({
-    from: FROM, to: user.email!, subject,
-    html: autoRefillTriggeredTemplate(balance, topUpUrl, dollarAmount, intro, headline),
-  });
-  if (error) throw new Error(`Resend: ${error.message}`);
-  return true;
-}
 
 export async function sendAccountSuspendedEmail(uid: string, reason?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");

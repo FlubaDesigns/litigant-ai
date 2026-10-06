@@ -87,21 +87,6 @@ const COURT_SEATS = [
   },
 ];
 
-// ── Testimonials ──────────────────────────────────────────────────────────────
-const TESTIMONIALS = [
-  {
-    quote: "I used it to stress-test our Series A pitch before the investor meeting. The Skeptic found a hole in our unit economics that we'd missed for six months.",
-    name: "Founder, B2B SaaS",
-    role: "Series A",
-  },
-  {
-    quote: "I put a contract clause on trial before signing. The Architect built a risk memo I could actually send to our legal team. Saved me $800 in billable hours.",
-    name: "Operations Lead",
-    role: "Mid-size logistics firm",
-  },
-];
-
-
 // ── Accordion components ──────────────────────────────────────────────────────
 const AI_LABELS = [
   { name: "GPT-5",            color: "#10a37f" },
@@ -492,32 +477,6 @@ export default function LandingPage() {
         </section>
 
         <LandingPricing isSignedIn={isSignedIn} signupBonus={signupBonus} />
-
-        {/* ── 9. In the Field ── */}
-        <section id="in-the-field" className="section border-t border-white/[0.06]">
-            <div className="row"><div className="max-w-3xl">
-              <p className="text-xs font-mono text-amber-500/60 tracking-widest mb-3 uppercase">In the Field</p>
-              <h2 className="font-['Playfair_Display'] text-3xl font-semibold text-white">What practitioners say</h2>
-            </div></div>
-            <div className="row">
-            <div className="layout__split-2">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="border-l-2 border-white/[0.08] pl-6"
-                >
-                  <p className="text-zinc-300 text-sm leading-relaxed mb-5">"{t.quote}"</p>
-                  <div className="text-white text-xs font-medium">{t.name}</div>
-                  <div className="text-zinc-600 text-xs font-mono mt-0.5">{t.role}</div>
-                </motion.div>
-              ))}
-            </div>
-            </div>
-        </section>
 
         {/* ── 10. CTA ── */}
         <section className="section border-t border-white/[0.06] relative overflow-hidden">

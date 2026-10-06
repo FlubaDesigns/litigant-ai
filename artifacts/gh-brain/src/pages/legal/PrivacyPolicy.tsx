@@ -60,7 +60,7 @@ export default function PrivacyPolicyPage() {
               <h2 className="text-lg font-semibold text-foreground mb-3">2. Information We Collect</h2>
               <div className="space-y-3 text-muted-foreground leading-relaxed">
                 <p><strong className="text-foreground">Account information:</strong> When you register, we collect your name, email address, and optionally your organization and role.</p>
-                <p><strong className="text-foreground">Session content:</strong> Questions and prompts you submit are processed by third-party AI providers (OpenAI, Anthropic, Google, xAI) to generate responses. We may retain session data to improve the service and to maintain your session history.</p>
+                <p><strong className="text-foreground">Session content:</strong> Questions and prompts you submit are processed by third-party AI providers (OpenAI, Anthropic, Google, xAI) to generate responses. Paid accounts have saved conversation history. New Free conversations do not retain questions, answers, transcripts or attached content as account memory; usage and billing records are retained.</p>
                 <p><strong className="text-foreground">Payment information:</strong> Payments are processed by Square. We do not store your full card number. We retain transaction records (amount, date, credit grant) for billing purposes.</p>
                 <p><strong className="text-foreground">Usage data:</strong> We collect standard server logs including IP addresses, browser type, pages visited, and feature usage to operate and improve the service.</p>
               </div>
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
                 <li>To provide and operate the Litigant AI service</li>
                 <li>To process payments and manage your credit balance</li>
                 <li>To send transactional emails (account verification, password reset)</li>
-                <li>To maintain session history accessible to your account</li>
+                <li>To maintain saved conversation history for paid accounts</li>
                 <li>To detect and prevent abuse or fraudulent activity</li>
                 <li>To improve our models and service quality</li>
               </ul>

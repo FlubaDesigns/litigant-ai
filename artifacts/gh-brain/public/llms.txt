@@ -23,7 +23,7 @@ See the [live pricing section](https://litigant-ai.com/#pricing) for current cre
 
 ## Templates
 
-Each template provides questions and court settings for a specific use case. Browsing is public; any paid credit purchase unlocks every template and all features. Free promotional credits provide dialogue only. Sessions still use credits. Templates review supplied material and do not perform live research, automated website testing or code execution. Examples are authored illustrations, not recorded AI sessions.
+Each template provides questions and court settings for a specific use case. Browsing is public; any paid credit purchase unlocks every template and all features. Free promotional credits provide dialogue only, without saved conversation memory. Sessions still use credits. Templates review supplied material and do not perform live research, automated website testing or code execution. Examples are authored illustrations, not recorded AI sessions.
 
 - [Templates](https://litigant-ai.com/templates): Browse the current template catalog, with individual pages showing descriptions, intake questions, examples and launch options.
 
@@ -46,6 +46,6 @@ Each template provides questions and court settings for a specific use case. Bro
 
 - This site is a React SPA served from a CDN. Template pages at /templates/* are public and do not require authentication.
 - The API is at /api-server/api and requires authentication for all session endpoints.
-- Session content is saved to the account and processed by the AI providers used. Public report sharing is optional.
+- Paid session content is saved to the account and processed by the AI providers used. New Free conversations retain usage and billing metadata, without saved conversation content. Public report sharing is optional for paid accounts.
 - AI review scores are uncalibrated assessments, not measured probabilities of correctness.
 - Litigant AI outputs are not legal, financial, or medical advice.

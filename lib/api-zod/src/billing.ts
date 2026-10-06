@@ -9,3 +9,5 @@ export interface BillingDefaults {
   signupBonusCredits: number;
   emailCreditWarningThreshold: number;
 }
+
+export const AUTO_REFILL_CONSENT_VERSION = 1;

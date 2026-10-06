@@ -18,7 +18,7 @@ service cloud.firestore {
         // Ban state
         'banned', 'bannedReason', 'bannedAt', 'bannedBy',
         // Auto-refill config
-        'autoRefill',
+        'autoRefill', 'autoRefillCheckoutUrl', 'autoRefillTriggeredAt',
         // Email lifecycle / "send once" flags — clients must not reset these
         // or they could re-trigger transactional emails at will.
         'welcomeEmailSent', 'firstSessionEmailSent',
@@ -28,31 +28,10 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedFields);
     }
 
-    // autoRefillCheckoutUrl / autoRefillTriggeredAt are written by the
-    // server (creditLedger.ts → checkAndTriggerAutoRefill) when a session's
-    // post-run reconciliation drops the balance below the user's threshold.
-    // Billing.tsx listens for that URL via onSnapshot, redirects the user to
-    // Square, and then clears the field itself with:
-    //   updateDoc(userRef, { autoRefillCheckoutUrl: deleteField() })
-    // so the redirect doesn't re-fire on the next snapshot.
-    // That cleanup delete is a legitimate client write and must stay allowed —
-    // this function only blocks the client from SETTING a new value (forging
-    // a checkout URL), not from deleting the one the server already wrote.
-    function setsAutoRefillCheckoutFields() {
-      let autoRefillCheckoutFields = ['autoRefillCheckoutUrl', 'autoRefillTriggeredAt'];
-      let touched = request.resource.data.diff(resource.data).affectedKeys().hasAny(autoRefillCheckoutFields);
-      let isDeleteOnly =
-        !('autoRefillCheckoutUrl' in request.resource.data) &&
-        !('autoRefillTriggeredAt' in request.resource.data);
-      return touched && !isDeleteOnly;
-    }
-
     // Users can read their own profile. Writes are allowed only for
     // non-financial, non-lifecycle fields (displayName, defaultSettings,
     // notification preferences, etc.) — the fields listed in
     // touchesProtectedUserFields() can only change via the Admin SDK.
-    // The auto-refill checkout fields may be cleared by the client (see
-    // setsAutoRefillCheckoutFields above) but never set to a new value.
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId
@@ -65,8 +44,7 @@ service cloud.firestore {
                          'lastSessionAt', 'reengagementEmailSentAt'
                        ]);
       allow update: if request.auth != null && request.auth.uid == userId
-                    && !touchesProtectedUserFields()
-                    && !setsAutoRefillCheckoutFields();
+                    && !touchesProtectedUserFields();
     }
 
     function trialAllowsData() {
@@ -85,7 +63,9 @@ service cloud.firestore {
     // CREATE (the document doesn't exist yet) — this correctly denies client-side
     // creates, since all sessions are written by the Admin SDK via brain.ts.
     match /sessions/{sessionId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId && trialAllowsData();
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId && trialAllowsData()
+        && (request.auth.token.get('admin', false) == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('plan', 'free') == 'pro')
+        && resource.data.get('memorySaved', true) != false;
       // Persisted transcript, configuration and billing fields are server-owned.
       allow write: if false;
     }

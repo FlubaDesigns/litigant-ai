@@ -39,18 +39,6 @@ export interface ChecklistItem extends ChecklistItemDef {
 // removing an entry here removes it from the dashboard on next load.
 export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   // ── Agent: code fixes ──────────────────────────────────────────────────
-  {
-    id: "agent-automatic-credit-refill",
-    section: "agent",
-    text: "Implement true automatic credit refill alongside manual top-ups",
-    steps: [
-      "Let each Free or Member user opt in or out in Billing, choose a refill amount, and set their low-credit threshold.",
-      "Obtain the user's authorization to charge a saved Square payment method when their balance falls below that threshold.",
-      "Use the existing payment and credit ledger flow, prevent duplicate charges, and add credits only after confirmed payment.",
-      "Keep manual credit-pack and custom-amount purchases available. Show failed payments clearly without repeatedly charging.",
-      "Current behavior only generates a checkout link; it does not automatically charge or refill the balance.",
-    ],
-  },
   { id: "agent-credit-formula", section: "agent", text: "Unify the credit-estimate formula across backend reservation, admin pricing table, and frontend display/Run-gate", note: "Audit Pass 1 #2, Pass 2 #5, Pass 9 #27 — currently four separately hand-maintained copies of the same stale, pre-8-call-pipeline formula. Blocked on owner's fill-rate input." },
   { id: "agent-anthropic-abort", section: "agent", text: "Cancel in-flight Anthropic requests when a session is aborted", note: "Audit Pass 3 #7 — the other three providers already do this correctly." },
   { id: "agent-dup-model-map", section: "agent", text: "Remove the duplicate hardcoded default-model map in createProviderAsync", note: "Audit Pass 3 #8 — should reference the single DEFAULT_MODELS export." },

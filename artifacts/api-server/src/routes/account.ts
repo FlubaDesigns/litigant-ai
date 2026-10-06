@@ -1,3 +1,4 @@
+import { removeAutoRefillCard } from "../lib/autoRefill.js";
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { getAuth } from "firebase-admin/auth";
@@ -42,6 +43,16 @@ router.delete("/account", async (req, res) => {
   const uid = decoded.uid;
 
   try {
+    await removeAutoRefillCard(uid);
+    const billingAccount=db.collection("billing_accounts").doc(uid);
+    if ((await billingAccount.get()).data()?.activeAttempt) {
+      res.status(409).json({message:"Auto Top-Up is off. A payment is still awaiting confirmation; retry account deletion once it is resolved."});
+      return;
+    }
+    await billingAccount.delete();
+    const refills=await db.collection("auto_refill_attempts").where("uid", "==", uid).get();
+    await Promise.all(refills.docs.map(doc=>doc.ref.delete()));
+
     // ── 1. Firestore data ───────────────────────────────────────────────────
 
     // Sessions + session_turns subcollections

@@ -1,3 +1,6 @@
+import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
+import { useArtifactAccess } from "@/hooks/useArtifactAccess";
+import { Link } from "wouter";
 import { lazy, Suspense } from "react";
 import { safeNext } from "@/lib/authUtils";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
@@ -57,6 +60,11 @@ function ProtectedWithLayout({ children, requireAdmin }: { children: React.React
   );
 }
 
+function SavedConversationAccess({children}: {children: React.ReactNode}) {
+  const allowed = useArtifactAccess();
+  return allowed ? <>{children}</> : <div className="row py-8 space-y-4"><h1>Saved conversations</h1><p>{PAID_ACCESS_NOTE}</p><Link href="/billing">Buy credits to unlock all features</Link></div>;
+}
+
 function AppRoutes() {
   return (
     <Switch>
@@ -87,7 +95,7 @@ function AppRoutes() {
       </Route>
       <Route path="/session/:sessionId">
         <ProtectedWithLayout>
-          <SessionPage />
+          <SavedConversationAccess><SessionPage /></SavedConversationAccess>
         </ProtectedWithLayout>
       </Route>
       <Route path="/tools"><Redirect to={`/templates${window.location.search}`} /></Route>
@@ -96,7 +104,7 @@ function AppRoutes() {
       <Route path="/templates/:slug" component={TemplatePage} />
       <Route path="/history">
         <ProtectedWithLayout>
-          <HistoryPage />
+          <SavedConversationAccess><HistoryPage /></SavedConversationAccess>
         </ProtectedWithLayout>
       </Route>
 
