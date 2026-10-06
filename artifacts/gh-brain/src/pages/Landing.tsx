@@ -23,36 +23,20 @@ const TEMPLATE_ICON_MAP: Record<string, React.ElementType> = {
 
 // ── How it works ─────────────────────────────────────────────────────────────
 const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "You Submit the Question",
-    desc: "Put any contested claim, decision, or hypothesis on trial. Free-form — no template required. The Orchestrator frames it and opens the courtroom.",
-  },
-  {
-    step: "02",
-    title: "Litigants Debate",
-    desc: "A panel of AI models argue the question in real time — each holding a distinct position. Add as many as you want using the +/− control. The larger the panel, the sharper the cross-examination.",
-  },
-  {
-    step: "03",
-    title: "Moderator Collects",
-    desc: "The Moderator synthesises the debate: what was agreed, what was contested, what was the strongest argument on each side.",
-  },
-  {
-    step: "04",
-    title: "Architect Designs the Output",
-    desc: "The Architect reads the deliberation and decides what gets built — a legal brief, a decision memo, a risk matrix — whatever the question actually calls for.",
-  },
-  {
-    step: "05",
-    title: "Builder Produces It",
-    desc: "The Builder constructs the artifact to spec. A production-ready document the Auditor then quality-checks before release.",
-  },
-  {
-    step: "06",
-    title: "Verdict Delivered",
-    desc: "The Orchestrator returns a direct answer plus the built artifact. You challenge it — the court responds. Loop continues until you're satisfied or credits run out.",
-  },
+  { step: "01", title: "Orchestrator — frames your question",
+    desc: "Starts with your question, context, and chosen settings. Asks for essential missing information when needed, then opens the discussion." },
+  { step: "02", title: "Litigants — examine different positions",
+    desc: "The selected AI panel debates the question, challenges assumptions, and examines competing answers within your round and credit limits." },
+  { step: "03", title: "Moderator — brings the reasoning together",
+    desc: "Collects agreement, disagreement, and limitations. Routes a direct answer to the Auditor, or sends work that needs a deliverable to the Architect and Builder." },
+  { step: "04", title: "Architect — plans the deliverable",
+    desc: "When a deliverable is needed, defines what to build, its structure, and the requirements it must meet." },
+  { step: "05", title: "Builder — produces the work",
+    desc: "Builds from the Architect's plan. The Architect checks it against that plan and requests corrections before the Auditor reviews it." },
+  { step: "06", title: "Auditor — checks the result",
+    desc: "Reviews the answer or deliverable for completeness, support, and limitations. Approves it, requests revisions, or identifies information still needed." },
+  { step: "07", title: "Orchestrator — returns the result to you",
+    desc: "Explains the result and its review status, presents any deliverable, and brings unresolved questions back to you." },
 ];
 
 // ── Court seats ───────────────────────────────────────────────────────────────
@@ -195,7 +179,8 @@ function HowItWorksRow({
     <div className="border-b border-white/[0.07]">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-6 py-5 text-left group"
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 sm:gap-6 py-5 text-left group"
       >
         <span className="text-xs font-mono text-zinc-600 w-6 shrink-0 select-none">{step.step}</span>
         <span className="flex-1 text-sm font-medium text-white group-hover:text-white/70 transition-colors">
@@ -266,11 +251,23 @@ export default function LandingPage() {
   const [openBench, setOpenBench] = useState<number | null>(null);
   const [openTemplate, setOpenTemplate] = useState<number>(0);
 
+  function openBrainFlow() {
+    setOpenPanel(1);
+    setOpenHIW(0);
+    requestAnimationFrame(() => document.getElementById("the-bench")?.scrollIntoView({ block: "start" }));
+  }
+  useEffect(() => {
+    const followHash = () => { if (window.location.hash === "#the-bench") openBrainFlow(); };
+    followHash();
+    window.addEventListener("hashchange", followHash);
+    return () => window.removeEventListener("hashchange", followHash);
+  }, []);
+
   return (
     <div>
 
       {/* ── Navbar (shared SiteHeader — edit SiteHeader.tsx to update everywhere) ── */}
-      <SiteHeader variant="landing" />
+      <SiteHeader variant="landing" onSectionNavigate={href => { if (href === "/#the-bench") openBrainFlow(); }} />
 
       <main>
 
@@ -370,18 +367,20 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Panel 2 — Trial Protocol */}
-            <div className="border-t border-white/[0.07]">
+            {/* Panel 2 — The Bench: existing Brain flow */}
+            <div id="the-bench" className="border-t border-white/[0.07] scroll-mt-20">
               <button
+                aria-expanded={openPanel === 1}
+                aria-controls="brain-flow"
                 onClick={() => setOpenPanel(openPanel === 1 ? null : 1)}
                 className="w-full flex items-center gap-6 py-6 text-left group"
               >
                 <span className="text-xs font-mono text-amber-500/50 tracking-widest w-6 shrink-0 select-none">02</span>
                 <div className="flex-1">
                   <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 1 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
-                    Trial Protocol
+                    The Bench
                   </span>
-                  <span className="text-xs text-zinc-600 mt-0.5 block">From question to verdict — six deliberate steps.</span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">From Orchestrator through the Brain and back to you.</span>
                 </div>
                 {openPanel === 1
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
@@ -394,9 +393,9 @@ export default function LandingPage() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="pb-8 pl-12">
-                    <p className="text-zinc-500 text-sm mb-6 max-w-lg leading-relaxed">
-                      Not a chatbot. A structured pipeline of specialised AI seats — each with a defined job, in a defined order.
+                  <div id="brain-flow" className="pb-8 pl-4 sm:pl-12">
+                    <p className="text-zinc-400 text-sm mb-6 max-w-lg leading-relaxed">
+                      The Orchestrator opens and closes the process. The Brain debates, combines the reasoning, builds when needed, and reviews the result before returning it to you.
                     </p>
                     <div className="border-t border-white/[0.07]">
                       {HOW_IT_WORKS.map((step, i) => (

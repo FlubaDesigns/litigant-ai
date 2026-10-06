@@ -190,3 +190,30 @@ test.describe("Public page layout — .main-inner removal regression", () => {
   });
 
 });
+
+for (const width of [360, 768, 1440]) {
+  test(`Homepage navigation opens the Brain flow at ${width}px`, async ({page}) => {
+    await page.setViewportSize({width,height:900});
+    await page.goto("/");
+    if (width < 768) await page.getByRole("button",{name:"Open menu",exact:true}).click();
+    await expect(page.getByRole("link",{name:"Tools",exact:true})).toHaveCount(0);
+    await expect(page.getByRole("link",{name:"Docs",exact:true})).toHaveCount(0);
+    await expect(page.getByRole("link",{name:"Status",exact:true})).toHaveCount(0);
+    await page.getByRole("link",{name:"The Bench",exact:true}).filter({visible:true}).click();
+    await expect(page).toHaveURL(/#the-bench$/);
+    const bench=page.locator("#the-bench");
+    await expect(bench.locator("button[aria-controls='brain-flow']")).toHaveAttribute("aria-expanded","true");
+    for (const title of ["Orchestrator — frames your question","Litigants — examine different positions","Moderator — brings the reasoning together","Architect — plans the deliverable","Builder — produces the work","Auditor — checks the result","Orchestrator — returns the result to you"]) {
+      await expect(bench.getByRole("button",{name:new RegExp(title)})).toBeVisible();
+    }
+    await bench.getByRole("button",{name:/Moderator — brings/}).click();
+    await expect(bench.getByText(/Routes a direct answer to the Auditor/)).toBeVisible();
+    await bench.locator("button[aria-controls='brain-flow']").click();
+    if (width < 768) await page.getByRole("button",{name:"Open menu",exact:true}).click();
+    await page.getByRole("link",{name:"The Bench",exact:true}).filter({visible:true}).click();
+    await expect(bench.locator("button[aria-controls='brain-flow']")).toHaveAttribute("aria-expanded","true");
+    await page.reload();
+    await expect(page.locator("#brain-flow")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  });
+}

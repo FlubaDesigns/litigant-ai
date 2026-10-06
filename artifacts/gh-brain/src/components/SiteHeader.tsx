@@ -21,11 +21,10 @@ const APP_NAV = [
 const LANDING_NAV = [
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/#the-bench",    label: "The Bench" },
-  { href: "/#tools",        label: "Tools" },
   { href: "/#pricing",      label: "Pricing" },
 ];
 
-export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app" }) {
+export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant?: "landing" | "app"; onSectionNavigate?: (href: string) => void }) {
   const [location] = useLocation();
   const { user, logOut, isAdmin, firebaseReady } = useAuth();
   const { credits, plan } = useUserProfile();
@@ -111,7 +110,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
           ) : (
             <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500 flex-1">
               {LANDING_NAV.map(({ href, label }) => (
-                <a key={href} href={href} className="hover:text-white transition-colors">{label}</a>
+                <a key={href} href={href} onClick={() => onSectionNavigate?.(href)} className="hover:text-white transition-colors">{label}</a>
               ))}
             </nav>
           )}
@@ -178,6 +177,8 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
                 {/* Mobile hamburger for landing */}
                 <button
                   className="md:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-white transition-colors"
+                  aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileOpen}
                   onClick={() => setMobileOpen(!mobileOpen)}
                 >
                   {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -252,7 +253,7 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             <a
               key={href}
               href={href}
-              onClick={() => setMobileOpen(false)}
+              onClick={() => { setMobileOpen(false); onSectionNavigate?.(href); }}
               className="block px-3 py-2.5 text-sm text-zinc-400 hover:text-white transition-colors rounded-md hover:bg-white/5"
             >
               {label}
