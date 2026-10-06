@@ -40,8 +40,6 @@ export function SiteFooter({ variant = "landing" }: { variant?: "landing" | "app
           <span className="font-mono text-xs text-zinc-700">© {new Date().getFullYear()}</span>
         </div>
         <div className="flex-row gap-5 text-xs font-mono text-zinc-600">
-          <a href="#" className="hover:text-white transition-colors">Docs</a>
-          <a href="#" className="hover:text-white transition-colors">Status</a>
           <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
           <Link href="/terms"   className="hover:text-white transition-colors">Terms</Link>
         </div>
