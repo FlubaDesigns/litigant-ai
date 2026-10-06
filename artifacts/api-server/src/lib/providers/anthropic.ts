@@ -1,3 +1,4 @@
+import { assertAiEnabled } from "../aiStudioConfig.js";
 import { PROVIDER_BASE_URLS } from "./types.js";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
@@ -30,6 +31,7 @@ export class AnthropicProvider implements AIProvider {
     }
 
     this._lastUsage = null;
+    await assertAiEnabled();
     let inputTokens = 0;
     let outputTokens = 0;
 
@@ -40,7 +42,7 @@ export class AnthropicProvider implements AIProvider {
         system: systemMsg,
         messages: conversation,
       },
-      { signal }  // forwards AbortSignal into the SDK — cancels the HTTP request, not just the local loop
+      { signal, maxRetries: 0 }  // forwards AbortSignal into the SDK — cancels the HTTP request, not just the local loop
     );
 
     for await (const event of stream) {

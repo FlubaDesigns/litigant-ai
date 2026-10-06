@@ -1,3 +1,4 @@
+import { AiDisabledError } from "./providerErrors.js";
 import { getAdminLimits } from "./adminLimitsConfig.js";
 import { CourtConfigSchema, resolveModelByIntelligence, type CourtConfig, type SeatAssignment } from "@workspace/api-zod/session";
 import { getProviderCatalog } from "./providerCatalog.js";
@@ -35,6 +36,7 @@ export async function prepareSession(input: unknown, pipelineOnly = false) {
   const limits = await getAdminLimits();
   config.litigantCount = Math.min(config.litigantCount, limits.maxLitigants!);
   const catalog = await getProviderCatalog();
+  if (catalog.aiEnabled === false) throw new AiDisabledError();
   if (config.provider && !catalog.providers.some(p => p.name === config.provider)) throw new Error(`Provider ${config.provider} is disabled or unavailable.`);
   const providers = catalog.providers.filter(p => p.models.length > 0).map(p => ({...p, defaultModel: p.models.some(m => m.id === p.defaultModel) ? p.defaultModel : p.models[0]!.id}));
   if (!providers.length) throw new Error("No enabled AI provider is available.");

@@ -812,3 +812,36 @@ test("AI Billing provides four direct provider funding links", async ({page}) =>
   await expect(billing.getByRole("link",{name:"Open Google Gemini billing"})).toHaveAttribute("href","https://aistudio.google.com/billing");
   await expect(billing.getByRole("link",{name:"Open xAI Grok billing"})).toHaveAttribute("href","https://console.x.ai/team/default/billing");
 });
+
+test("AI master power survives reload and restores provider selections on mobile", async ({page}) => {
+  await page.setViewportSize({width:360,height:800});
+  let aiEnabled=true;
+  const writes:boolean[]=[];
+  await page.route("**/api-server/api/admin/ai-studio/power", async route => {
+    aiEnabled=route.request().postDataJSON().enabled;
+    writes.push(aiEnabled);
+    await route.fulfill({json:{aiEnabled}});
+  });
+  await page.route("**/api-server/api/admin/ai-studio/models", async route => {
+    await route.fulfill({json:{...responses["/admin/ai-studio/models"], aiEnabled,
+      providers:[studioProvider,{...studioProvider,id:"gemini",label:"Google Gemini",enabled:false}],
+      disabledProviders:["gemini"], models:[{...model,available:aiEnabled}]}});
+  });
+  await page.goto("/admin?e2e=1&tab=ai-studio");
+  const power=page.getByRole("switch",{name:"All AI",exact:true});
+  await expect(power).toBeChecked();
+  const bounds=await power.boundingBox();
+  expect(bounds!.width).toBeGreaterThanOrEqual(60); expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  await power.click();
+  await expect(power).not.toBeChecked();
+  await expect(page.getByText("AI calls are off. Your selections are saved.")).toBeVisible();
+  await expect(page.getByRole("switch",{name:"Enable OpenAI",exact:true})).toBeDisabled();
+  await page.reload();
+  await expect(power).not.toBeChecked();
+  await power.click();
+  await expect(power).toBeChecked();
+  await expect(page.getByRole("switch",{name:"Enable OpenAI",exact:true})).toBeChecked();
+  await expect(page.getByRole("switch",{name:"Enable Google Gemini",exact:true})).not.toBeChecked();
+  expect(writes).toEqual([false,true]);
+  expect(await page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+});

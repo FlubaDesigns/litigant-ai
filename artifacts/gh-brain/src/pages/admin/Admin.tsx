@@ -52,7 +52,7 @@ import {
   activateEmailTemplateVersion, deleteEmailTemplateVersion,
   type EmailTemplate, type EmailTemplateVersion,
   getChecklist, setChecklistItemChecked,
-  getAiStudioModels, toggleAiStudioModel, toggleAiStudioProvider,
+  getAiStudioModels, setAiStudioPower, toggleAiStudioModel, toggleAiStudioProvider,
   addAiStudioProvider, deleteAiStudioProvider, setModelQualityScore,
   getSeatBriefs, patchSeatBrief, deleteSeatBrief,
   type AdminUser, type AdminSession, type AdminTransaction, type SessionTurn,
@@ -2732,6 +2732,18 @@ function AiStudioTab() {
     refetchOnReconnect: false,
   });
 
+  const powerMut = useMutation({
+    mutationFn: setAiStudioPower,
+    onSuccess: ({ aiEnabled }) => {
+      qc.setQueryData<AiStudioData>(["admin-ai-studio"], old => old ? { ...old, aiEnabled } : old);
+      for (const queryKey of [["admin-ai-studio"], ["admin-pricing"], ["configuration", "providers"]]) {
+        qc.invalidateQueries({ queryKey });
+      }
+      toast.success(aiEnabled ? "AI switched on" : "All AI switched off");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const toggleModelMut = useMutation({
     mutationFn: ({ modelId, enabled }: { modelId: string; enabled: boolean }) =>
       toggleAiStudioModel(modelId, enabled),
@@ -2797,13 +2809,23 @@ function AiStudioTab() {
     );
   }
 
-  const { models = [], providers = [] } = data;
-  const busy = toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending || multiplierMut.isPending;
-  const enabledCount = models.filter(m => m.available).length;
+  const { models = [], providers = [], aiEnabled = true } = data;
+  const busy = powerMut.isPending || toggleModelMut.isPending || toggleProviderMut.isPending || deleteProviderMut.isPending || scoreModelMut.isPending || multiplierMut.isPending;
+  const enabledCount = aiEnabled ? models.filter(m => m.available).length : 0;
   const byProvider = providers.map(provider => ({...provider, models:models.filter(m => m.provider === provider.id)}));
 
   return (
     <div className="space-y-6">
+      <section aria-label="AI master power" className="lgt-card lgt-card--compact flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <label htmlFor="ai-master-power" className="text-lg font-semibold cursor-pointer">All AI — {aiEnabled ? "ON" : "OFF"}</label>
+          <p className="text-sm text-muted-foreground">{aiEnabled ? "Your selected providers are enabled." : "AI calls are off. Your selections are saved."}</p>
+          {!aiEnabled && <p className="text-xs text-muted-foreground">A request already sent may finish.</p>}
+        </div>
+        <Switch id="ai-master-power" aria-label="All AI" checked={aiEnabled}
+          onCheckedChange={enabled => powerMut.mutate(enabled)} disabled={busy}
+          className="studio-master-switch" />
+      </section>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{models.length} verified models · {enabledCount} enabled</p>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}><RefreshCw className={cn("w-4 h-4 mr-1",isFetching && "animate-spin")} />Check connection</Button>
@@ -2821,12 +2843,12 @@ function AiStudioTab() {
           discoveredModels={discoveredModels}
           pricingUrl={pricingUrl}
           checking={isFetching}
-          providerEnabled={provEnabled}
+          providerEnabled={aiEnabled && provEnabled}
           custom={custom}
           open={openProvider === pid}
           onOpen={() => setOpenProvider(openProvider === pid ? null : pid)}
           onSetMultiplier={(modelId, multiplier) => multiplierMut.mutate({ modelId, multiplier })}
-          busy={busy}
+          busy={busy || !aiEnabled}
           onToggleProvider={(en) => toggleProviderMut.mutate({ providerId: pid, enabled: en })}
           onToggleModel={(modelId, en) => toggleModelMut.mutate({ modelId, enabled: en })}
           onSetScore={(modelId, score) => scoreModelMut.mutate({ modelId, score })}

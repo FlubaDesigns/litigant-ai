@@ -624,6 +624,7 @@ export interface AiStudioProvider {
   connection: {state: "connected" | "key_rejected" | "rate_limited" | "unavailable" | "not_configured"; checkedAt: string};
 }
 export interface AiStudioData {
+  aiEnabled: boolean;
   providers: AiStudioProvider[];
   models: AiStudioModel[];
   disabledProviders: string[];
@@ -634,6 +635,18 @@ export async function getAiStudioModels(): Promise<AiStudioData> {
   const res = await adminFetch("/admin/ai-studio/models");
   if (!res.ok) throw new Error("Failed to load AI Studio models");
   return res.json() as Promise<AiStudioData>;
+}
+
+export async function setAiStudioPower(enabled: boolean): Promise<{ aiEnabled: boolean }> {
+  const res = await adminFetch("/admin/ai-studio/power", {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? "Failed to change AI power");
+  }
+  return res.json();
 }
 
 export async function toggleAiStudioModel(modelId: string, enabled: boolean): Promise<void> {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getAiStudioConfig } from "./aiStudioConfig.js";
 import { getProviderAvailability } from "./providerAvailability.js";
 import { resolveModelPrice, isSessionModel, PROVIDER_PRICING_URLS, type ModelDefinition } from "./providers/types.js";
 import { getMultiplierOverrides, MultiplierSchema } from "./pricingConfig.js";
@@ -42,12 +43,12 @@ export function validateCustomProviders(custom: CustomProviderDefinition[]): voi
 export async function getModelRegistry(refreshAvailability = false) {
   const db = getFirestoreDb();
   const [studio, scores, overrides, fixed] = await Promise.all([
-    db?.collection("system_config").doc("aiStudio").get(),
+    getAiStudioConfig(),
     db?.collection("system_config").doc("modelScores").get(),
     getMultiplierOverrides(),
     getCalibratedFixedStageTokens(),
   ]);
-  const config = studio?.data() ?? {};
+  const config = studio;
   const disabledProviders = z.array(z.string()).parse(config.disabledProviders ?? []);
   const disabledModels = z.array(z.string()).parse(config.disabledModels ?? []);
   const customProviders = z.array(CustomProviderSchema).parse(config.customProviders ?? []);
@@ -65,7 +66,7 @@ export async function getModelRegistry(refreshAvailability = false) {
       name:p.id, displayName:p.label, defaultModel:p.defaultModel, custom:p.custom,
       discoveredModels:(connection.discoveredModels ?? []).filter(m => isSessionModel(p.id, m.id) && !p.models.some(known => known.id === m.id)),
       pricingUrl:PROVIDER_PRICING_URLS[p.id],
-      configured:connection.state !== "not_configured", connection, enabled:!disabledProviders.includes(p.id),
+      configured:connection.state !== "not_configured", connection, enabled:config.aiEnabled && !disabledProviders.includes(p.id),
       models:candidates.filter(m => connection.modelIds.includes(m.id)).map((m: ModelDefinition) => {
         const multiplier = MultiplierSchema.parse(overrides[m.id] ?? m.multiplier);
         const price = resolveModelPrice(m, multiplier);
@@ -78,7 +79,7 @@ export async function getModelRegistry(refreshAvailability = false) {
       }),
     };
   }));
-  return {creditValueUsd:CREDIT_VALUE_USD, providers, disabledProviders, customProviders};
+  return {aiEnabled:config.aiEnabled, creditValueUsd:CREDIT_VALUE_USD, providers, disabledProviders, customProviders};
 }
 
 export async function getProviderCatalog() {
@@ -88,7 +89,7 @@ export async function getProviderCatalog() {
     const {discoveredModels:_discovered, pricingUrl:_pricingUrl, connection:{discoveredModels:_listed, ...connection}, ...publicProvider} = p;
     return {...publicProvider, connection, models, defaultModel:models.some(m => m.id === p.defaultModel) ? p.defaultModel : models[0]?.id ?? ""};
   }).filter(p => p.models.length > 0);
-  return {configured:providers.map(p => p.name), creditValueUsd:registry.creditValueUsd, providers};
+  return {aiEnabled:registry.aiEnabled, configured:providers.map(p => p.name), creditValueUsd:registry.creditValueUsd, providers};
 }
 
 export async function getAdminPricingTable(refreshAvailability = false) {
@@ -113,8 +114,8 @@ export async function getAdminPricingTable(refreshAvailability = false) {
 export async function getAiStudioModels() {
   const registry = await getModelRegistry(true);
   return {
-    disabledProviders:registry.disabledProviders, customProviders:registry.customProviders,
-    providers:registry.providers.filter(p => p.configured).map(p => ({id:p.name,label:p.displayName,custom:p.custom,enabled:p.enabled,
+    aiEnabled:registry.aiEnabled, disabledProviders:registry.disabledProviders, customProviders:registry.customProviders,
+    providers:registry.providers.filter(p => p.configured).map(p => ({id:p.name,label:p.displayName,custom:p.custom,enabled:!registry.disabledProviders.includes(p.name),
       discoveredModels:p.discoveredModels, pricingUrl:p.pricingUrl,
       connection:{state:p.connection.state,checkedAt:p.connection.checkedAt},
     })),

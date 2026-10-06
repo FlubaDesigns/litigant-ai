@@ -12,6 +12,12 @@ export function providerFailureKind(error: unknown): ProviderFailureKind {
 export class ProviderFailureError extends Error {
   constructor(readonly kind: ProviderFailureKind) { super(`AI provider failure: ${kind}`); this.name="ProviderFailureError"; }
 }
+export class AiDisabledError extends Error {
+  constructor() {
+    super("AI is switched off by the administrator. Try again after AI is switched back on.");
+    this.name = "AiDisabledError";
+  }
+}
 export class SessionProviderError extends Error {
   constructor() {
     super("The AI providers could not return an answer; no approved result was produced. Your question has been kept. Try another model in Configure or try again later.");

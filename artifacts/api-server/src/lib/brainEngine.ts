@@ -1,4 +1,4 @@
-import { ProviderFailureError, SessionProviderError, providerFailureKind } from "./providerErrors.js";
+import { AiDisabledError, ProviderFailureError, SessionProviderError, providerFailureKind } from "./providerErrors.js";
 import type { CallUsage } from "./sessionPricing.js";
 import { type EngineConfig as CourtConfig, CourtConfigSchema, ANSWER_STYLES, parseReviewScore, REVIEW_SCORE_INSTRUCTION, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
 import type { Response } from "express";
@@ -374,6 +374,7 @@ async function streamRole(
   }
   throwIfAborted(signal);
   if (failure instanceof Error && failure.message === "Session aborted by client") throw failure;
+  if (failure instanceof AiDisabledError) throw failure;
   if (failure) throw new ProviderFailureError(providerFailureKind(failure));
   if (!output.trim()) throw new ProviderFailureError("empty_response");
 

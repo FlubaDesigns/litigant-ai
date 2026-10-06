@@ -1,3 +1,4 @@
+import { assertAiEnabled } from "../aiStudioConfig.js";
 import { PROVIDER_BASE_URLS } from "./types.js";
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
@@ -36,6 +37,7 @@ export class OpenAIProvider implements AIProvider {
 
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
     this._lastUsage = null;
+    await assertAiEnabled();
 
     const stream = await this.client.chat.completions.create(
       {
@@ -45,7 +47,7 @@ export class OpenAIProvider implements AIProvider {
         stream_options: { include_usage: true },
         messages,
       },
-      { signal }
+      { signal, maxRetries: 0 }
     );
 
     for await (const chunk of stream) {

@@ -1,4 +1,4 @@
-import { SessionProviderError } from "./providerErrors.js";
+import { AiDisabledError, SessionProviderError } from "./providerErrors.js";
 /**
  * safeError — safe client-facing error message.
  *
@@ -10,7 +10,7 @@ import { SessionProviderError } from "./providerErrors.js";
  *   return res.status(500).json({ error: safeError(err) });
  */
 export function safeError(err: unknown): string {
-  if (err instanceof SessionProviderError) return err.message;
+  if (err instanceof SessionProviderError || err instanceof AiDisabledError) return err.message;
   if (process.env["NODE_ENV"] !== "production") {
     if (err instanceof Error) return err.message;
     if (typeof err === "string") return err;

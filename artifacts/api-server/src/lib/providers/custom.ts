@@ -1,3 +1,4 @@
+import { assertAiEnabled } from "../aiStudioConfig.js";
 /**
  * CustomProvider — any OpenAI-compatible API endpoint.
  * Used for future providers added via Admin → API Keys.
@@ -30,6 +31,7 @@ export class CustomProvider implements AIProvider {
 
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
     this._lastUsage = null;
+    await assertAiEnabled();
 
     // Custom endpoints are arbitrary third-party OpenAI-compatible APIs —
     // we can't assume stream_options is supported. Try requesting usage;
@@ -40,12 +42,13 @@ export class CustomProvider implements AIProvider {
     try {
       stream = await this.client.chat.completions.create(
         { model: this.model, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, messages },
-        { signal }
+        { signal, maxRetries: 0 }
       );
     } catch {
+      await assertAiEnabled();
       stream = await this.client.chat.completions.create(
         { model: this.model, max_tokens: maxTokens, stream: true, messages },
-        { signal }
+        { signal, maxRetries: 0 }
       );
     }
 

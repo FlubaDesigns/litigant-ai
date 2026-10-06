@@ -17,7 +17,7 @@ beforeEach(()=>{
   const ref=(id:string)=>({id,get:async()=>{if(failRead && id!=="adminLimits")throw Error("read failed");return {exists:!!docs[id],data:()=>structuredClone(docs[id])};},set:async(v:any)=>{if(failWrite)throw Error("write failed");docs[id]={...docs[id],...v,multipliers:{...docs[id]?.multipliers,...v.multipliers}};}});
   vi.mocked(getFirestoreDb).mockReturnValue({collection:()=>({doc:ref,orderBy:()=>({limit:()=>({get:async()=>({docs:[]})})})}),runTransaction:async(fn:any)=>fn({get:(r:any)=>r.get(),update:(r:any,field:FieldPath)=>{if(failWrite)throw Error("write failed");expect(field.isEqual(new FieldPath("multipliers",model))).toBe(true);delete docs[r.id].multipliers[model];}})} as any);
 });
-const api=(method:"get"|"put"|"delete",path:string)=>request(app)[method](path).set("Authorization","Bearer test");
+const api=(method:"get"|"put"|"delete"|"patch",path:string)=>request(app)[method](path).set("Authorization","Bearer test");
 it("persists save/reset through the routes and uses the same value in every consumer",async()=>{
   const old=await prepareSession({provider:"acme",model,maxCredits:100000});
   expect((await api("put",`/admin/pricing/${encodeURIComponent(model)}`).send({multiplier:6.5})).status).toBe(200);
@@ -49,4 +49,28 @@ it("does not report failed writes or unreadable pricing as success",async()=>{
   failRead=true;
   expect((await api("get","/admin/pricing")).status).toBe(500);
   await expect(prepareSession({provider:"acme",model})).rejects.toThrow("read failed");
+});
+
+it("persists master OFF/ON without changing individual provider or model selections", async () => {
+  docs.aiStudio.disabledProviders = ["gemini"];
+  docs.aiStudio.disabledModels = ["gpt-5"];
+  const original = structuredClone(docs.aiStudio);
+  expect((await api("patch", "/admin/ai-studio/power").send({enabled:false})).body).toEqual({aiEnabled:false});
+  expect((await api("get", "/admin/ai-studio/models")).body.aiEnabled).toBe(false);
+  expect((await getProviderCatalog()).providers).toEqual([]);
+  await expect(prepareSession({provider:"acme",model})).rejects.toThrow("AI is switched off");
+  expect(docs.aiStudio).toMatchObject({...original, aiEnabled:false});
+  expect((await api("patch", "/admin/ai-studio/power").send({enabled:true})).status).toBe(200);
+  expect((await api("get", "/admin/ai-studio/models")).body.aiEnabled).toBe(true);
+  expect(docs.aiStudio).toMatchObject({...original, aiEnabled:true});
+  expect((await prepareSession({provider:"acme",model})).config.provider).toBe("acme");
+});
+it("rejects invalid or unauthenticated master changes and reports failed saves", async () => {
+  expect((await request(app).patch("/admin/ai-studio/power").send({enabled:false})).status).toBe(401);
+  for (const enabled of [null, "false", 0, {}, []]) {
+    expect((await api("patch", "/admin/ai-studio/power").send({enabled})).status).toBe(400);
+  }
+  failWrite=true;
+  expect((await api("patch", "/admin/ai-studio/power").send({enabled:false})).status).toBe(500);
+  expect(docs.aiStudio.aiEnabled).toBeUndefined();
 });

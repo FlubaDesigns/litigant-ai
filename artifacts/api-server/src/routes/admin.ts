@@ -1549,10 +1549,23 @@ router.put("/admin/billing-defaults", requireAdmin, async (req: any, res) => {
   }
 });
 
-/**
- * GET /admin/ai-studio/models
- * Returns all known models with API cost, user cost, credits, and enabled status.
- */
+// Master power changes only this flag; individual selections remain intact.
+router.patch("/admin/ai-studio/power", requireAdmin, async (req, res) => {
+  const { enabled } = req.body ?? {};
+  if (typeof enabled !== "boolean") return res.status(400).json({ error: "enabled must be boolean" });
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({ error: "Firebase not configured" });
+  try {
+    await db.collection("system_config").doc("aiStudio").set(
+      { aiEnabled: enabled, updatedAt: FieldValue.serverTimestamp() }, { merge: true },
+    );
+    return res.json({ aiEnabled: enabled });
+  } catch (err) {
+    return res.status(500).json({ error: safeError(err) });
+  }
+});
+
+/** Returns all known models, their prices, and the saved master power state. */
 router.get("/admin/ai-studio/models", requireAdmin, async (_req, res) => {
   try {
     return res.json(await getAiStudioModels());

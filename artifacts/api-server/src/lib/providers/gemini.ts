@@ -1,3 +1,4 @@
+import { assertAiEnabled } from "../aiStudioConfig.js";
 import { PROVIDER_BASE_URLS } from "./types.js";
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
@@ -25,6 +26,7 @@ export class GeminiProvider implements AIProvider {
 
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
     this._lastUsage = null;
+    await assertAiEnabled();
 
     // include_usage is part of the OpenAI-compatible wire format Gemini's
     // endpoint speaks here — same flag OpenAIProvider sets. Without it the
@@ -32,7 +34,7 @@ export class GeminiProvider implements AIProvider {
     // every Gemini session.
     const stream = await this.client.chat.completions.create(
       { model: this.model, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, messages },
-      { signal }
+      { signal, maxRetries: 0 }
     );
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;

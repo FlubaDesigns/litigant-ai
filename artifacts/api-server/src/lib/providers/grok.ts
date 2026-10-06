@@ -1,3 +1,4 @@
+import { assertAiEnabled } from "../aiStudioConfig.js";
 import { PROVIDER_BASE_URLS, DEFAULT_MODELS } from "./types.js";
 import OpenAI from "openai";
 import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
@@ -25,13 +26,14 @@ export class GrokProvider implements AIProvider {
 
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
     this._lastUsage = null;
+    await assertAiEnabled();
 
     // x.ai's API speaks the OpenAI wire format, including stream_options.
     // Without include_usage the brain engine fell back to estimating tokens
     // from character count for every Grok session.
     const stream = await this.client.chat.completions.create(
       { model: this.model, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true }, messages },
-      { signal }
+      { signal, maxRetries: 0 }
     );
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;

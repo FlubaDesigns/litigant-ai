@@ -39,3 +39,10 @@
 .studio-rates th:first-child { width: 25%; text-align: left; }
 .studio-rates thead { color: hsl(var(--muted-foreground)); }
 .studio-rates td:last-child { color: hsl(var(--primary)); }
+
+/* Large mobile target; the shared Switch retains keyboard and ARIA behavior. */
+button.lgt-switch.studio-master-switch { width: 64px; min-width: 64px; height: 44px; }
+.studio-master-switch.lgt-switch::before { left: 0; top: 6px; width: 64px; height: 32px; background: #dc2626; }
+.studio-master-switch.lgt-switch[data-state="checked"]::before { background: #16a34a; }
+.studio-master-switch .lgt-switch__thumb { left: 4px; top: 10px; width: 24px; height: 24px; background: white; }
+.studio-master-switch.lgt-switch[data-state="checked"] .lgt-switch__thumb { transform: translateX(32px); }
