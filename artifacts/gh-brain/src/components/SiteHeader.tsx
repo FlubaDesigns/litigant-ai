@@ -21,6 +21,7 @@ const APP_NAV = [
 const LANDING_NAV = [
   { href: "/#how-it-works", label: "How It Works" },
   { href: "/#the-bench",    label: "The Bench" },
+  { href: "/templates",     label: "Templates" },
   { href: "/#pricing",      label: "Pricing" },
 ];
 
@@ -108,7 +109,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
               )}
             </nav>
           ) : (
-            <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-500 flex-1">
+            <nav className="hidden lg:flex items-center gap-5 text-sm text-zinc-500 flex-1">
               {LANDING_NAV.map(({ href, label }) => (
                 <a key={href} href={href} onClick={() => onSectionNavigate?.(href)} className="hover:text-white transition-colors">{label}</a>
               ))}
@@ -161,7 +162,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
                   </Link>
                 ) : (
                   <>
-                    <Link href="/sign-in" className="hidden md:block text-sm text-zinc-500 hover:text-white transition-colors">
+                    <Link href="/sign-in" className="hidden lg:block text-sm text-zinc-500 hover:text-white transition-colors">
                       Sign In
                     </Link>
                     <Link href="/register" className="hidden sm:block">
@@ -176,7 +177,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
                 )}
                 {/* Mobile hamburger for landing */}
                 <button
-                  className="md:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-white transition-colors"
+                  className="lg:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-white transition-colors"
                   aria-label={mobileOpen ? "Close menu" : "Open menu"}
                   aria-expanded={mobileOpen}
                   onClick={() => setMobileOpen(!mobileOpen)}
@@ -191,7 +192,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
 
       {/* ── Backdrop ── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 md:hidden" onClick={() => setMobileOpen(false)} />
+        <div className={cn("fixed inset-0 z-30", variant === "app" ? "md:hidden" : "lg:hidden")} onClick={() => setMobileOpen(false)} />
       )}
 
       {/* ── App mobile menu ── */}
@@ -248,7 +249,7 @@ export function SiteHeader({ variant = "landing", onSectionNavigate }: { variant
 
       {/* ── Landing mobile menu ── */}
       {variant === "landing" && mobileOpen && (
-        <div className="fixed top-14 left-0 right-0 z-40 md:hidden border-b border-white/[0.06] bg-[#0e0e0e] px-4 py-3 space-y-1">
+        <div className="fixed top-14 left-0 right-0 z-40 lg:hidden border-b border-white/[0.06] bg-[#0e0e0e] px-4 py-3 space-y-1">
           {LANDING_NAV.map(({ href, label }) => (
             <a
               key={href}

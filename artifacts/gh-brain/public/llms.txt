@@ -19,25 +19,13 @@ The product is built for high-stakes decisions where getting it wrong matters: b
 
 ## Pricing
 
-- Free: 50 credits on signup (~3 sessions), 2 AI models per session
-- Starter ($19/mo): 500 credits, 4 AI models, unlimited sessions
-- Pro ($49/mo): 2,000 credits, all AI models, priority processing
-- Team ($149/mo): 10,000 credits, shared workspace, admin dashboard
+See the [live pricing section](https://litigant-ai.com/#pricing) for current credit packs and signup credits.
 
-## AI Analysis Tools (free to try)
+## Templates
 
-Each tool is a pre-configured adversarial session targeting a specific use case. All tools are publicly accessible without an account.
+Each template provides questions and court settings for a specific use case. Template descriptions are public; starting a session requires an account or a guest invitation.
 
-- [Business Plan Analyzer](https://litigant-ai.com/tools/business-plan-analyzer): Stress-tests a business concept across viability, market fit, financials, and competition. 4 AI litigants, adversarial mode.
-- [AI Website Audit](https://litigant-ai.com/tools/website-audit): Multi-model critique of any website covering UX, conversion, content, and technical issues.
-- [Marketing Strategy Analyzer](https://litigant-ai.com/tools/marketing-strategy): Evaluates marketing strategies across channel fit, messaging, audience alignment, and ROI realism.
-- [AI Code Review](https://litigant-ai.com/tools/code-review): Security, performance, architecture, and maintainability audit of code or system designs.
-- [Contract Review Prep](https://litigant-ai.com/tools/contract-review): Identifies unfavorable clauses, missing protections, and negotiation leverage points in any contract. Not legal advice.
-- [Decision Analysis](https://litigant-ai.com/tools/decision-analysis): Structured pros/cons with second-order effects, assumption mapping, and a confidence-scored recommendation.
-- [Medical Appointment Prep](https://litigant-ai.com/tools/medical-appointment-prep): Generates informed questions and plain-English explanations before any medical appointment. Not medical advice.
-- [Product Idea Validator](https://litigant-ai.com/tools/product-validator): Adversarially challenges core assumptions of a product concept before any building begins.
-- [Writing & Manuscript Critique](https://litigant-ai.com/tools/manuscript-critique): Multi-model editorial critique covering argument, structure, clarity, and audience impact.
-- [Research Summarizer](https://litigant-ai.com/tools/research-summarizer): Synthesizes research findings, maps consensus vs. controversy, and extracts practical implications.
+- [Templates](https://litigant-ai.com/templates): Browse the current template catalog, with individual pages showing descriptions, intake questions, examples and launch options.
 
 ## How a session works
 
@@ -50,13 +38,13 @@ Each tool is a pre-configured adversarial session targeting a specific use case.
 ## Key pages
 
 - [Home](https://litigant-ai.com/): Product overview, use cases, pricing, and how it works
-- [All Tools](https://litigant-ai.com/tools): Index of all 10 free AI analysis tools
-- [Sign up](https://litigant-ai.com/register): Create a free account (50 credits, no card required)
+- [Templates](https://litigant-ai.com/templates): Current template catalog
+- [Sign up](https://litigant-ai.com/register): Create an account; current signup credits appear on the registration page
 - [Sign in](https://litigant-ai.com/sign-in): Existing user login
 
 ## Technical notes for AI systems
 
-- This site is a React SPA served from a CDN. Tool pages at /tools/* are public and do not require authentication.
+- This site is a React SPA served from a CDN. Template pages at /templates/* are public and do not require authentication.
 - The API is at /api-server/api and requires authentication for all session endpoints.
 - Session content is private to the user and not indexed.
 - All AI model outputs include confidence scores and explicit caveats.

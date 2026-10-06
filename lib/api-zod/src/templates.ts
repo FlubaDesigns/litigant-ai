@@ -619,6 +619,194 @@ Examine: Severity/frequency of the problem; willingness to pay and switch; compe
 Document structure: Strongest case for and against; evidence versus assumptions; ranked risks and decision-critical assumptions; inexpensive validation experiments naming the target participant, method, measure, time/cost limit and proposed pass/fail threshold; proceed, revise or stop recommendation with conditions; next actions.
 Validation discipline: Distinguish proposed experiment thresholds from observed results. Never invent market size, customer demand, success probability or validation. Explain which evidence would reverse the recommendation and avoid treating enthusiasm as proof of willingness to pay.`,
   },
+  {
+    id: "competitive-intel",
+    category: "business",
+    title: "Competitive Intelligence",
+    description: "Compare your competitive position using supplied evidence, challenge claimed advantages, and identify practical next moves.",
+    icon: "Search",
+    estimatedCredits: 25,
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 4, confidenceTarget: 85, outputPreferenceMode: "document", artifactType: "report" },
+    inputFields: [
+      {
+        "id": "business",
+        "label": "Your business and offer",
+        "placeholder": "Describe what you sell, to whom, and in which market.",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "competitors",
+        "label": "Competitors and evidence",
+        "placeholder": "Name the competitors and supply their offers, prices, links or relevant excerpts.",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "decision",
+        "label": "Decision to support",
+        "placeholder": "What decision should this comparison help you make?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "advantages",
+        "label": "Claimed advantages",
+        "placeholder": "What do you believe sets you apart? Include supporting evidence where available.",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "constraints",
+        "label": "Constraints",
+        "placeholder": "Budget, timing, market limits, and gaps in your information.",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    systemPrompt: `${TEMPLATE_METHOD}\n\nEvaluate the supplied competitive evidence, distinguish direct competitors from substitutes, and challenge unproven differentiation. Produce a competitive brief with an evidence inventory, comparison table, customer and positioning implications, defensibility risks, prioritized next moves and unanswered research questions. Cite only supplied or actually retrieved sources. Do not claim to have visited URLs or obtained live pricing without tool results. Mark missing competitor information as unknown.`,
+  },
+  {
+    id: "debate-prep",
+    category: "research",
+    title: "Debate Preparation",
+    description: "Build an evidence-based position, test counterarguments, and prepare rebuttals and cross-examination questions.",
+    icon: "Scale",
+    estimatedCredits: 25,
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 4, confidenceTarget: 85, outputPreferenceMode: "document", artifactType: "report" },
+    inputFields: [
+      {
+        "id": "motion",
+        "label": "Motion or proposition",
+        "placeholder": "State the exact proposition being debated.",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "position",
+        "label": "Your position and goal",
+        "placeholder": "Which side are you taking and what must you demonstrate?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "audience",
+        "label": "Audience and format",
+        "placeholder": "Who is the audience? Include format, speaking time and rules.",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "evidence",
+        "label": "Available evidence",
+        "placeholder": "Paste your sources, arguments, excerpts, or research notes.",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "opposition",
+        "label": "Expected opposition",
+        "placeholder": "What are the strongest opposing arguments?",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    systemPrompt: `${TEMPLATE_METHOD}\n\nPrepare the requested side while steelmanning the opposition. Produce a debate brief with the burden of proof, definitions, argument map, evidence gaps, strongest counterarguments, fair rebuttals, cross-examination questions and a suggested opening and closing. Distinguish persuasive framing from evidence. Do not invent quotations, statistics or references. Identify claims the user should verify or avoid.`,
+  },
+  {
+    id: "hypothesis-test",
+    category: "research",
+    title: "Hypothesis Testing",
+    description: "Challenge a hypothesis, evaluate the available evidence, and design a test that could disprove it.",
+    icon: "FlaskConical",
+    estimatedCredits: 25,
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 4, confidenceTarget: 85, outputPreferenceMode: "document", artifactType: "report" },
+    inputFields: [
+      {
+        "id": "hypothesis",
+        "label": "Hypothesis",
+        "placeholder": "State the testable claim and its scope.",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "evidence",
+        "label": "Evidence or observations",
+        "placeholder": "Supply the data, observations, or studies; say if evidence is not yet available.",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "alternatives",
+        "label": "Alternative explanations",
+        "placeholder": "What else might explain the observations?",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "method",
+        "label": "Method and measures",
+        "placeholder": "Describe the sample, measurements and collection method, if known.",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "constraints",
+        "label": "Testing constraints",
+        "placeholder": "Time, resources, ethical constraints, and the decision the test must inform.",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    systemPrompt: `${TEMPLATE_METHOD}\n\nAssess falsifiability, causal assumptions, confounding, measurement quality and alternative explanations. Produce a hypothesis review with the precise claim, evidence assessment, competing explanations, proposed test design, measures, decision thresholds, limitations and next steps. Label proposed thresholds as proposals. Never fabricate data, significance values, sample sizes or experimental results; describe what would be required to calculate them.`,
+  },
+  {
+    id: "report-critique",
+    category: "writing",
+    title: "Report Critique",
+    description: "Review a report for evidence, reasoning, structure, and usefulness to its intended audience.",
+    icon: "FileText",
+    estimatedCredits: 25,
+    defaultConfig: { ...DEFAULT_CONFIG, litigantCount: 4, confidenceTarget: 85, outputPreferenceMode: "document", artifactType: "report" },
+    inputFields: [
+      {
+        "id": "report",
+        "label": "Report text or excerpts",
+        "placeholder": "Paste the report or relevant sections, or attach the document in Case Files.",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "purpose",
+        "label": "Audience and purpose",
+        "placeholder": "Who will use the report and what decision should it support?",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "criteria",
+        "label": "Review criteria",
+        "placeholder": "Any required structure, rubric, policy or standard?",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "sources",
+        "label": "Supporting evidence",
+        "placeholder": "Supply sources or data needed to check the report’s claims.",
+        "type": "textarea",
+        "required": false
+      },
+      {
+        "id": "focus",
+        "label": "Priority concerns",
+        "placeholder": "Which sections or claims need the most attention?",
+        "type": "textarea",
+        "required": false
+      }
+    ],
+    systemPrompt: `${TEMPLATE_METHOD}\n\nCritique only the report and evidence available. Produce a report review with an executive assessment, strengths, prioritized findings tied to supplied sections, unsupported claims, logical gaps, clarity and structure improvements, suggested revisions and verification tasks. Distinguish factual errors from unverified claims and stylistic preferences. Do not claim to have verified external sources without evidence. Preserve the author’s intent when suggesting edits.`,
+  },
 ];
 
 export function getTemplateById(id: string): Template | undefined {

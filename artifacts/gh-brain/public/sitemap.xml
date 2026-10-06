@@ -11,7 +11,7 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools</loc>
+    <loc>https://litigant-ai.com/templates</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -28,72 +28,72 @@
 
   <!-- Tool landing pages -->
   <url>
-    <loc>https://litigant-ai.com/tools/business-plan-analyzer</loc>
+    <loc>https://litigant-ai.com/templates/business-plan-analyzer</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/website-audit</loc>
+    <loc>https://litigant-ai.com/templates/website-audit</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/marketing-strategy</loc>
+    <loc>https://litigant-ai.com/templates/marketing-strategy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/code-review</loc>
+    <loc>https://litigant-ai.com/templates/code-review</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/contract-review</loc>
+    <loc>https://litigant-ai.com/templates/contract-review</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/decision-analysis</loc>
+    <loc>https://litigant-ai.com/templates/decision-analysis</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/medical-appointment-prep</loc>
+    <loc>https://litigant-ai.com/templates/medical-appointment-prep</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/product-validator</loc>
+    <loc>https://litigant-ai.com/templates/product-validator</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/manuscript-critique</loc>
+    <loc>https://litigant-ai.com/templates/manuscript-critique</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/research-summarizer</loc>
+    <loc>https://litigant-ai.com/templates/research-summarizer</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/competitive-intelligence</loc>
+    <loc>https://litigant-ai.com/templates/competitive-intelligence</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/debate-prep</loc>
+    <loc>https://litigant-ai.com/templates/debate-prep</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/hypothesis-testing</loc>
+    <loc>https://litigant-ai.com/templates/hypothesis-testing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://litigant-ai.com/tools/report-critique</loc>
+    <loc>https://litigant-ai.com/templates/report-critique</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>

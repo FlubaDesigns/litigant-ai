@@ -82,7 +82,7 @@ All other artifact types show the same sub-label to all users. No other UI eleme
 
 ## Static Assets
 
-Tool page images referenced in `artifacts/gh-brain/src/data/toolPages.ts` use `.jpg` extensions — confirmed 14 `.jpg` references and zero `.png` references in that file. Do not re-add PNG versions — they were ~15 MB combined vs ~1 MB as JPEG at quality 82.
+Template page images referenced in `artifacts/gh-brain/src/data/templatePages.ts` use `.jpg` extensions — confirmed 14 `.jpg` references and zero `.png` references in that file. Do not re-add PNG versions — they were ~15 MB combined vs ~1 MB as JPEG at quality 82.
 
 ## Release Builds
 

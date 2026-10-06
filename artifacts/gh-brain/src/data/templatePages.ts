@@ -1,14 +1,16 @@
-export interface ToolFAQ {
+import { TEMPLATE_CATEGORIES, type Template } from "./templates";
+
+export interface TemplateFAQ {
   q: string;
   a: string;
 }
 
-export interface ToolBenefit {
+export interface TemplateBenefit {
   title: string;
   description: string;
 }
 
-export interface ToolSampleOutput {
+export interface TemplateSampleOutput {
   scenario: string;
   question: string;
   confidence: number;
@@ -21,41 +23,23 @@ export interface ToolSampleOutput {
   debateRole: string;
 }
 
-export interface ToolPage {
+export interface TemplatePageContent {
   slug: string;
   templateId: string;
-  title: string;
-  metaTitle: string;
-  metaDescription: string;
-  badge: string;
   headline: string;
-  subheadline: string;
-  ctaLabel: string;
-  subject: string;
   howItWorks: { step: string; title: string; desc: string }[];
-  benefits: ToolBenefit[];
+  benefits: TemplateBenefit[];
   outputSummary: string;
-  sampleOutput: ToolSampleOutput;
-  faqs: ToolFAQ[];
-  icon: string;
+  sampleOutput: TemplateSampleOutput;
+  faqs: TemplateFAQ[];
   image: string;
-  category: string;
 }
 
-export const TOOL_PAGES: ToolPage[] = [
+export const TEMPLATE_PAGE_CONTENT: TemplatePageContent[] = [
   {
     slug: "business-plan-analyzer",
     templateId: "business-plan",
-    title: "Business Plan Analyzer",
-    metaTitle: "AI Business Plan Analyzer — Stress-Test Your Business Idea | Litigant AI",
-    metaDescription: "Use multiple competing AI models to stress-test your business plan across viability, market fit, financials, and competition. Get a structured verdict in minutes.",
-    badge: "Business Strategy",
     headline: "Stress-Test Your Business Plan Before Investors Do",
-    subheadline: "Multiple AI models argue for and against your business concept — exposing weak assumptions, blind spots, and competitive risks you haven't considered yet.",
-    ctaLabel: "Analyze my business plan",
-    subject: "business plan",
-    category: "business",
-    icon: "Briefcase",
     image: "/tools/business-plan-analyzer.jpg",
     howItWorks: [
       { step: "01", title: "Describe your concept", desc: "Enter your business idea, target market, revenue model, and any known competition. The more specific, the sharper the analysis." },
@@ -90,16 +74,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "website-audit",
     templateId: "website-audit",
-    title: "AI Website Audit",
-    metaTitle: "AI Website Audit Tool — UX, Conversion & Content Review | Litigant AI",
-    metaDescription: "Get a multi-model AI audit of any website covering UX, content effectiveness, conversion optimization, and technical performance. Actionable findings in minutes.",
-    badge: "Digital & UX",
     headline: "Get an Honest AI Audit of Any Website",
-    subheadline: "Multiple AI reviewers critique your website's UX, messaging, conversion flow, and content — giving you the kind of candid feedback a polite agency never will.",
-    ctaLabel: "Audit my website",
-    subject: "website",
-    category: "technical",
-    icon: "Globe",
     image: "/tools/website-audit.jpg",
     howItWorks: [
       { step: "01", title: "Share your URL and goals", desc: "Provide the website URL, its primary business goal, and any specific concerns you want examined." },
@@ -134,16 +109,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "marketing-strategy",
     templateId: "marketing-strategy",
-    title: "Marketing Strategy Analyzer",
-    metaTitle: "AI Marketing Strategy Analyzer — Evaluate Your Marketing Plan | Litigant AI",
-    metaDescription: "Multiple AI models evaluate your marketing strategy across channels, messaging, audience fit, and ROI potential. Get an adversarial critique before you spend a dollar.",
-    badge: "Marketing",
     headline: "Know If Your Marketing Strategy Will Actually Work",
-    subheadline: "Before you spend a dollar, run your marketing plan through a panel of AI skeptics who will challenge every assumption about your channels, messaging, and target audience.",
-    ctaLabel: "Analyze my marketing strategy",
-    subject: "marketing strategy",
-    category: "business",
-    icon: "TrendingUp",
     image: "/tools/marketing-strategy.jpg",
     howItWorks: [
       { step: "01", title: "Describe your strategy", desc: "Share your product, target audience, marketing channels, budget range, and primary goal — awareness, leads, or sales." },
@@ -178,16 +144,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "code-review",
     templateId: "code-audit",
-    title: "AI Code Review",
-    metaTitle: "AI Code Review Tool — Security, Architecture & Performance Audit | Litigant AI",
-    metaDescription: "Get a multi-model AI review of your code or system architecture covering security vulnerabilities, performance issues, and maintainability. Fast and brutally honest.",
-    badge: "Engineering",
     headline: "Code Review That Actually Finds the Hard Problems",
-    subheadline: "Multiple AI models — each playing a different specialist role — examine your code for security vulnerabilities, architectural debt, performance bottlenecks, and maintainability issues.",
-    ctaLabel: "Review my code",
-    subject: "code or architecture",
-    category: "technical",
-    icon: "Code2",
     image: "/tools/code-review.jpg",
     howItWorks: [
       { step: "01", title: "Share your code or architecture", desc: "Paste a code snippet, describe your system architecture, or outline a technical decision you're evaluating." },
@@ -222,16 +179,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "contract-review",
     templateId: "contract-review",
-    title: "AI Contract Review Prep",
-    metaTitle: "AI Contract Review Prep — Identify Risks & Negotiation Points | Litigant AI",
-    metaDescription: "Use AI to identify unfavorable clauses, hidden risks, and negotiation opportunities in any contract before you sign. Not legal advice — a thinking tool for smarter decisions.",
-    badge: "Legal & Contracts",
     headline: "Know What You're Signing Before You Sign It",
-    subheadline: "A panel of AI reviewers examines your contract for unfavorable clauses, hidden risks, missing protections, and leverage points for negotiation — in plain language.",
-    ctaLabel: "Review my contract",
-    subject: "contract",
-    category: "personal",
-    icon: "FileText",
     image: "/tools/contract-review.jpg",
     howItWorks: [
       { step: "01", title: "Share the key clauses", desc: "Paste the contract text, summary, or the specific sections that concern you. Tell the AI your role — buyer, employee, vendor, etc." },
@@ -267,16 +215,7 @@ export const TOOL_PAGES: ToolPage[] = [
     slug: "decision-analysis",
     templateId: "major-decision",
     image: "/tools/decision-analysis.jpg",
-    title: "AI Decision Analysis",
-    metaTitle: "AI Decision Analysis Tool — Pros, Cons & Confidence Score | Litigant AI",
-    metaDescription: "Analyze any major decision with multiple AI perspectives. Get a structured pros/cons analysis, risk assessment, second-order effects, and a confidence-scored recommendation.",
-    badge: "Decision Making",
     headline: "Make Big Decisions With More Confidence",
-    subheadline: "Stop going in circles. Multiple AI minds examine your decision from every angle — risks, second-order effects, what you might be missing — and deliver a structured recommendation.",
-    ctaLabel: "Analyze my decision",
-    subject: "decision",
-    category: "personal",
-    icon: "Scale",
     howItWorks: [
       { step: "01", title: "Describe the decision", desc: "Lay out your options, constraints, and what matters most to you — financially, personally, professionally." },
       { step: "02", title: "AI models debate each option", desc: "Advocate and skeptic AIs argue for and against each option, while an analyst surfaces second-order effects and a synthesizer looks for hidden assumptions." },
@@ -310,16 +249,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "medical-appointment-prep",
     templateId: "medical-prep",
-    title: "Medical Appointment Prep",
-    metaTitle: "AI Medical Appointment Prep — Questions to Ask Your Doctor | Litigant AI",
-    metaDescription: "Use AI to prepare informed questions for any medical appointment. Understand your situation better and walk in knowing what to ask your doctor. Not medical advice.",
-    badge: "Health",
     headline: "Walk Into Your Next Medical Appointment Fully Prepared",
-    subheadline: "AI generates the questions you didn't know to ask, explains what your diagnosis means in plain English, and helps you make the most of limited time with your doctor.",
-    ctaLabel: "Prepare for my appointment",
-    subject: "medical appointment",
-    category: "personal",
-    icon: "BookOpen",
     image: "/tools/medical-appointment-prep.jpg",
     howItWorks: [
       { step: "01", title: "Describe your situation", desc: "Share your symptoms, diagnosis, or the type of appointment you're preparing for. Include any questions you already have." },
@@ -354,16 +284,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "product-validator",
     templateId: "product-stress-test",
-    title: "AI Product Idea Validator",
-    metaTitle: "AI Product Idea Validator — Stress-Test Before You Build | Litigant AI",
-    metaDescription: "Multiple AI models adversarially challenge your product idea's core assumptions, market fit, competitive positioning, and viability before you invest in building it.",
-    badge: "Product Strategy",
     headline: "Find Out If Your Product Idea Is Worth Building",
-    subheadline: "Before you write a line of code or spend a dollar on ads, run your product concept through a panel of adversarial AI models designed to expose fatal flaws.",
-    ctaLabel: "Validate my product idea",
-    subject: "product idea",
-    category: "business",
-    icon: "FlaskConical",
     image: "/tools/product-validator.jpg",
     howItWorks: [
       { step: "01", title: "Describe your product concept", desc: "Share the problem you're solving, who has it, your proposed solution, and why someone would choose it over alternatives." },
@@ -398,16 +319,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "manuscript-critique",
     templateId: "book-critique",
-    title: "AI Writing & Manuscript Critique",
-    metaTitle: "AI Writing & Manuscript Critique — Structure, Clarity & Impact | Litigant AI",
-    metaDescription: "Get a multi-model AI critique of any writing — books, essays, reports, or articles — covering argument strength, structure, clarity, and audience impact.",
-    badge: "Writing & Publishing",
     headline: "Get the Critique Your Writing Actually Needs",
-    subheadline: "Multiple AI editors — each with a different critical lens — tear into your writing's structure, argument logic, clarity, and emotional resonance. Honest feedback, no feelings spared.",
-    ctaLabel: "Critique my writing",
-    subject: "writing",
-    category: "writing",
-    icon: "BookOpen",
     image: "/tools/manuscript-critique.jpg",
     howItWorks: [
       { step: "01", title: "Share an excerpt or summary", desc: "Paste a chapter, excerpt, or detailed summary of your work. Tell the AI the genre, intended audience, and what you most want feedback on." },
@@ -442,16 +354,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "competitive-intelligence",
     templateId: "competitive-intel",
-    title: "Competitive Intelligence Analyzer",
-    metaTitle: "AI Competitive Intelligence Tool — Stress-Test Your Positioning | Litigant AI",
-    metaDescription: "Use multiple AI models to pressure-test your product positioning against competitors. Surface gaps, threats, and opportunities you haven't considered.",
-    badge: "Business Strategy",
     headline: "Pressure-Test Your Competitive Position Before the Market Does",
-    subheadline: "Multiple AI analysts argue for and against your competitive moat — surfacing blind spots, positioning gaps, and threats you may have dismissed too quickly.",
-    ctaLabel: "Analyze my competitive position",
-    subject: "competitive position",
-    category: "business",
-    icon: "Search",
     image: "/tools/competitive-intelligence.jpg",
     howItWorks: [
       { step: "01", title: "Describe your market position", desc: "Share your product, key competitors, your claimed differentiation, and the customers you're targeting." },
@@ -487,16 +390,7 @@ export const TOOL_PAGES: ToolPage[] = [
     slug: "debate-prep",
     templateId: "debate-prep",
     image: "/tools/debate-prep.jpg",
-    title: "AI Debate Preparation",
-    metaTitle: "AI Debate Prep Tool — Find the Strongest Counterarguments | Litigant AI",
-    metaDescription: "Use adversarial AI models to find every strong counterargument to your position before you face a live opponent. Never be blindsided in a debate again.",
-    badge: "Personal",
     headline: "Find Every Counterargument Before Your Opponent Does",
-    subheadline: "AI litigants take the opposing side and argue against your position with maximum intensity — so you can identify, prepare for, and neutralize the strongest objections before they land in real life.",
-    ctaLabel: "Prepare my argument",
-    subject: "argument",
-    category: "personal",
-    icon: "Scale",
     howItWorks: [
       { step: "01", title: "State your position", desc: "Describe the argument you're making, the context (debate, negotiation, presentation), and who you're arguing against or persuading." },
       { step: "02", title: "AI models take the other side", desc: "Adversarial AI litigants argue against your position as forcefully as possible — surfacing every weakness, inconsistency, and rebuttal a prepared opponent would use." },
@@ -530,16 +424,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "hypothesis-testing",
     templateId: "hypothesis-test",
-    title: "AI Hypothesis Testing",
-    metaTitle: "AI Hypothesis Testing Tool — Stress-Test Any Idea or Assumption | Litigant AI",
-    metaDescription: "Use adversarial AI models to challenge your hypothesis from every angle before you invest in testing it. Surface fatal flaws and strengthen your assumptions.",
-    badge: "Research & Analysis",
     headline: "Stress-Test Your Hypothesis Before You Invest in It",
-    subheadline: "Multiple AI models examine your hypothesis from competing perspectives — challenging your assumptions, surfacing alternative explanations, and identifying what would need to be true for it to hold up.",
-    ctaLabel: "Test my hypothesis",
-    subject: "hypothesis",
-    category: "research",
-    icon: "FlaskConical",
     image: "/tools/hypothesis-testing.jpg",
     howItWorks: [
       { step: "01", title: "State your hypothesis", desc: "Describe your hypothesis, the evidence or reasoning behind it, and what you're trying to decide or prove." },
@@ -574,16 +459,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "report-critique",
     templateId: "report-critique",
-    title: "AI Report Critique",
-    metaTitle: "AI Report Critique Tool — Find Logic Gaps Before You Publish | Litigant AI",
-    metaDescription: "Use multiple AI models to surface hidden assumptions, logical gaps, and weak evidence in any report or document before it reaches your audience.",
-    badge: "Writing",
     headline: "Find the Gaps in Your Report Before Your Audience Does",
-    subheadline: "Multiple AI reviewers examine your report for logical inconsistencies, unsupported claims, missing evidence, and structural problems — giving you the critical read a polite colleague never will.",
-    ctaLabel: "Critique my report",
-    subject: "report",
-    category: "writing",
-    icon: "FileText",
     image: "/tools/report-critique.jpg",
     howItWorks: [
       { step: "01", title: "Share your report or summary", desc: "Paste the full text, an executive summary, or key sections. Tell the AI the intended audience and the decision you want the report to support." },
@@ -618,16 +494,7 @@ export const TOOL_PAGES: ToolPage[] = [
   {
     slug: "research-summarizer",
     templateId: "research-summary",
-    title: "AI Research Summarizer",
-    metaTitle: "AI Research Summarizer — Synthesize & Stress-Test Findings | Litigant AI",
-    metaDescription: "Use multiple AI models to synthesize research findings, identify consensus vs. contested areas, surface methodological concerns, and extract practical implications.",
-    badge: "Research & Analysis",
     headline: "Understand Complex Research Faster and More Critically",
-    subheadline: "Multiple AI analysts synthesize findings across a research area, separate consensus from contested territory, and flag the methodological concerns that change how you should interpret the evidence.",
-    ctaLabel: "Analyze my research",
-    subject: "research topic",
-    category: "research",
-    icon: "Search",
     image: "/tools/research-summarizer.jpg",
     howItWorks: [
       { step: "01", title: "Describe the research topic", desc: "Share a paper abstract, research question, or a summary of the evidence you're trying to understand. Add context about what decision you're trying to make." },
@@ -661,14 +528,28 @@ export const TOOL_PAGES: ToolPage[] = [
   },
 ];
 
-export function getToolBySlug(slug: string): ToolPage | undefined {
-  return TOOL_PAGES.find((t) => t.slug === slug);
+// Presentation only: never a second list of available templates.
+// Admin-managed names, descriptions, categories, questions and settings come
+// from useTemplates(), the same catalog used for session intake and execution.
+export function templatePagePath(templateId: string): string {
+  const content = TEMPLATE_PAGE_CONTENT.find(page => page.templateId === templateId);
+  return `/templates/${encodeURIComponent(content?.slug ?? templateId)}`;
 }
 
-export const TOOL_CATEGORIES = [
-  { id: "business", label: "Business Strategy" },
-  { id: "technical", label: "Technical" },
-  { id: "personal", label: "Personal" },
-  { id: "writing", label: "Writing" },
-  { id: "research", label: "Research" },
-];
+export function resolveTemplatePages(templates: Template[]) {
+  return templates.map(template => {
+    const content = TEMPLATE_PAGE_CONTENT.find(page => page.templateId === template.id);
+    return {
+      slug: content?.slug ?? template.id,
+      image: content?.image,
+      content,
+      template,
+      title: template.title,
+      description: template.description,
+      category: template.category,
+      icon: template.icon,
+      badge: TEMPLATE_CATEGORIES.find(category => category.id === template.category)?.label ?? template.category,
+      href: templatePagePath(template.id),
+    };
+  });
+}

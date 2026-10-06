@@ -40,7 +40,8 @@ import {
   getSessions, getSession, updateSession, deleteSession,
   generateShareLink, exportSessionAsMarkdown, type SavedSession,
 } from "@/services/sessionService";
-import { TEMPLATES } from "@/data/templates";
+import { type Template } from "@/data/templates";
+import { useTemplates } from "@/hooks/useConfiguration";
 
 type TabView = "all" | "starred" | "archived";
 
@@ -71,9 +72,9 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: diffDays > 365 ? "numeric" : undefined });
 }
 
-function getTemplateName(templateId: string | null): string {
+function getTemplateName(templateId: string | null, templates: Template[]): string {
   if (!templateId) return "Custom";
-  return TEMPLATES.find((t) => t.id === templateId)?.title ?? templateId;
+  return templates.find((t) => t.id === templateId)?.title ?? templateId;
 }
 
 function SessionDetail({ session, onClose, onRerun, onResume }: {
@@ -216,6 +217,7 @@ function SessionDetail({ session, onClose, onRerun, onResume }: {
 }
 
 interface SessionRowProps {
+  templateTitle: string;
   session: SavedSession;
   onOpen: () => void;
   onRename: (title: string) => void;
@@ -228,7 +230,7 @@ interface SessionRowProps {
 }
 
 function SessionRow({
-  session, onOpen, onRename, onToggleStar, onToggleArchive, onDelete, onExport, onShare, onRerun,
+  session, templateTitle, onOpen, onRename, onToggleStar, onToggleArchive, onDelete, onExport, onShare, onRerun,
 }: SessionRowProps) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(session.title);
@@ -297,7 +299,7 @@ function SessionRow({
 
       {/* Meta */}
       <div className="hidden sm:flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-        <span>{getTemplateName(session.templateId)}</span>
+        <span>{templateTitle}</span>
         {session.confidence > 0 && (
           <span className="flex items-center gap-1">
             <Target className="w-3 h-3" />{confidenceLabel(session.confidence)}
@@ -354,6 +356,7 @@ function SessionRow({
 const PAGE_SIZE = 20;
 
 export default function HistoryPage() {
+  const { data: templates = [] } = useTemplates();
   const artifactsAllowed = useArtifactAccess();
   const { user, firebaseReady } = useAuth();
   const [, setLocation] = useLocation();
@@ -617,7 +620,7 @@ export default function HistoryPage() {
                   {hasCustom && <option value="__custom__">Custom (no template)</option>}
                   {uniqueNamed.map((tid) => (
                     <option key={tid} value={tid}>
-                      {getTemplateName(tid)}
+                      {getTemplateName(tid, templates)}
                     </option>
                   ))}
                 </select>
@@ -666,6 +669,7 @@ export default function HistoryPage() {
               <div className="flex flex-col gap-2">
                 {filtered.map((session) => (
                   <SessionRow
+                    templateTitle={getTemplateName(session.templateId, templates)}
                     key={session.id}
                     session={session}
                     onOpen={() => openDetail(session)}

@@ -12,7 +12,8 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingDemoPlayer from "@/components/LandingDemoPlayer";
-import { TEMPLATES } from "@/data/templates";
+import { useTemplates } from "@/hooks/useConfiguration";
+import { templatePagePath } from "@/data/templatePages";
 import { LandingPricing } from "@/components/LandingPricing";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 
@@ -243,6 +244,7 @@ function BenchRow({
 
 // ── Landing Page ──────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const { data: templates = [] } = useTemplates();
   const { user, loading } = useAuth();
   const isSignedIn = !loading && !!user;
   const { signupBonusCredits: signupBonus } = usePublicConfig();
@@ -424,7 +426,7 @@ export default function LandingPage() {
                   <span className={`block text-base font-semibold font-['Playfair_Display'] transition-colors ${openPanel === 2 ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
                     Start From a Template
                   </span>
-                  <span className="text-xs text-zinc-600 mt-0.5 block">10 pre-built courtrooms — pick a case type and go.</span>
+                  <span className="text-xs text-zinc-600 mt-0.5 block">Choose a template and make it your own.</span>
                 </div>
                 {openPanel === 2
                   ? <ChevronUp className="w-5 h-5 text-[#39f70a] shrink-0" />
@@ -439,7 +441,7 @@ export default function LandingPage() {
                 >
                   <div className="pb-6 pl-12">
                     <div className="flex flex-col">
-                      {TEMPLATES.map((t, i) => {
+                      {templates.map((t, i) => {
                         const Icon = TEMPLATE_ICON_MAP[t.icon] || Scale;
                         const isOpen = openTemplate === i;
                         return (
@@ -452,7 +454,7 @@ export default function LandingPage() {
                               <span className={`flex-1 text-xs font-medium transition-colors ${isOpen ? "text-white" : "text-zinc-400 group-hover/t:text-zinc-200"}`}>
                                 {t.title}
                               </span>
-                              <span className="text-[10px] text-zinc-700 tabular-nums shrink-0">{t.estimatedCredits}cr</span>
+                              <span className="text-[10px] text-zinc-700 tabular-nums shrink-0">View template</span>
                               {isOpen
                                 ? <ChevronUp className="w-4 h-4 text-[#39f70a] shrink-0" />
                                 : <ChevronDown className="w-4 h-4 text-[#39f70a]/50 shrink-0 animate-pulse" />}
@@ -465,6 +467,7 @@ export default function LandingPage() {
                                 className="overflow-hidden"
                               >
                                 <p className="text-[11px] text-zinc-500 leading-relaxed pb-3 pl-[1.625rem]">{t.description}</p>
+                                <Link href={templatePagePath(t.id)} className="text-xs text-primary inline-block pb-3 pl-[1.625rem]">View template →</Link>
                               </motion.div>
                             )}
                           </div>

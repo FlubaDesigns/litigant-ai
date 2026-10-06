@@ -1,4 +1,5 @@
 import {test as base, expect} from "@playwright/test";
+import { TEMPLATES } from "../../../lib/api-zod/src/templates";
 export const test=base.extend({
   page: async ({page},use)=>{
     await page.route("**/api-server/api/**",async route=>{
@@ -9,7 +10,7 @@ export const test=base.extend({
       if(path.endsWith("/billing/products")) json={packs:[]};
       if(path.endsWith("/limits")) json={maxLitigants:10,overdraftLimit:500};
       if(path.endsWith("/providers")) json={providers:[],configured:[]};
-      if(path.endsWith("/templates")) json=[];
+      if(path.endsWith("/templates")) json=TEMPLATES;
       if(path.endsWith("/session-estimate")) json={estimatedCredits:12,maxCredits:500,config:route.request().postDataJSON().config};
       await route.fulfill({json});
     });

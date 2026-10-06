@@ -3,7 +3,7 @@ import { test, expect } from "./fixtures";
 /**
  * Layout regression tests for public pages after .main-inner wrapper removal.
  *
- * These tests confirm that Landing, ToolsIndex, ToolPage, Terms, PrivacyPolicy,
+ * These tests confirm that Landing, Templates, TemplatePage, Terms, PrivacyPolicy,
  * and ShareReport all render without layout breaks, double-gutters, or missing
  * structural elements after the .main-inner wrapper was removed from every
  * non-admin public page.
@@ -52,7 +52,7 @@ test.describe("Public page layout — .main-inner removal regression", () => {
     await expect(page.locator("text=Open a Case")).toBeVisible({ timeout: 10_000 });
   });
 
-  test("ToolsIndex — hero, category filters, and tool grid render correctly", async ({ page }) => {
+  test("Templates — hero, category filters, and template grid render correctly", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") errors.push(msg.text());
@@ -65,12 +65,12 @@ test.describe("Public page layout — .main-inner removal regression", () => {
 
     // Hero heading
     await expect(page.locator("h1")).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator("h1")).toContainText("Put Your Toughest Questions");
+    await expect(page.locator("h1")).toContainText("Templates");
 
     // Category filters present
-    await expect(page.locator("text=All tools")).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator("text=All templates")).toBeVisible({ timeout: 5_000 });
 
-    // At least one tool card renders
+    // At least one template card renders
     await expect(page.locator(".layout__auto > div").first()).toBeVisible({ timeout: 10_000 });
 
     // .main-inner must NOT be present
@@ -80,7 +80,7 @@ test.describe("Public page layout — .main-inner removal regression", () => {
     expect(errors.filter((e) => !e.includes("favicon"))).toEqual([]);
   });
 
-  test("ToolPage — hero, image, and sections render correctly", async ({ page }) => {
+  test("TemplatePage — hero, image, and sections render correctly", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") errors.push(msg.text());
@@ -195,7 +195,7 @@ for (const width of [360, 768, 1440]) {
   test(`Homepage navigation opens the Brain flow at ${width}px`, async ({page}) => {
     await page.setViewportSize({width,height:900});
     await page.goto("/");
-    if (width < 768) await page.getByRole("button",{name:"Open menu",exact:true}).click();
+    if (width < 1024) await page.getByRole("button",{name:"Open menu",exact:true}).click();
     await expect(page.getByRole("link",{name:"Tools",exact:true})).toHaveCount(0);
     await expect(page.getByRole("link",{name:"Docs",exact:true})).toHaveCount(0);
     await expect(page.getByRole("link",{name:"Status",exact:true})).toHaveCount(0);
@@ -209,7 +209,7 @@ for (const width of [360, 768, 1440]) {
     await bench.getByRole("button",{name:/Moderator — brings/}).click();
     await expect(bench.getByText(/Routes a direct answer to the Auditor/)).toBeVisible();
     await bench.locator("button[aria-controls='brain-flow']").click();
-    if (width < 768) await page.getByRole("button",{name:"Open menu",exact:true}).click();
+    if (width < 1024) await page.getByRole("button",{name:"Open menu",exact:true}).click();
     await page.getByRole("link",{name:"The Bench",exact:true}).filter({visible:true}).click();
     await expect(bench.locator("button[aria-controls='brain-flow']")).toHaveAttribute("aria-expanded","true");
     await page.reload();

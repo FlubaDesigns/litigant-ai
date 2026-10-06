@@ -20,7 +20,7 @@ import { buildMarkdown, buildText, exportPDF, exportDocx, exportJsPdf } from "@/
 import { useBrainSession } from "@/hooks/useBrainSession";
 import { useQuery } from "@tanstack/react-query";
 import { getCourtesyCredit } from "@/services/billingService";
-import { TEMPLATES, TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
+import { TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
 import type { CourtConfig } from "@/data/templates";
 import { makeDefaultSeatMap, type SeatAssignment } from "@/data/seatTypes";
 import { submitFeedback } from "@/services/feedbackService";

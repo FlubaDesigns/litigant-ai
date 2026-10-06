@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { TEMPLATES } from "@/data/templates";
+import { useTemplates } from "@/hooks/useConfiguration";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 
 import { API_BASE } from "@/lib/apiUrl";
@@ -57,6 +57,7 @@ function MarkdownBlock({ text }: { text: string }) {
 }
 
 export default function ShareReportPage() {
+  const { data: templates = [] } = useTemplates();
   const { signupBonusCredits: signupBonus } = usePublicConfig();
   const { shareId } = useParams<{ shareId: string }>();
   const [report, setReport] = useState<SharedReport | null>(null);
@@ -221,7 +222,7 @@ export default function ShareReportPage() {
               </span>
             )}
             {report.templateId && (() => {
-              const tpl = TEMPLATES.find((t) => t.id === report.templateId);
+              const tpl = templates.find((t) => t.id === report.templateId);
               return tpl ? (
                 <span className="flex items-center gap-1">
                   <LayoutTemplate className="w-3.5 h-3.5" />

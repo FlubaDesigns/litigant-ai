@@ -16,8 +16,7 @@ const SignInPage = lazy(() => import("@/pages/auth/SignIn"));
 const RegisterPage = lazy(() => import("@/pages/auth/Register"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPassword"));
 const VerifyEmailPage = lazy(() => import("@/pages/auth/VerifyEmail"));
-const ToolsIndexPage = lazy(() => import("@/pages/tools/ToolsIndex"));
-const ToolPage = lazy(() => import("@/pages/tools/ToolPage"));
+const TemplatePage = lazy(() => import("@/pages/templates/TemplatePage"));
 
 // App pages (protected)
 const SessionPage = lazy(() => import("@/pages/app/Session"));
@@ -91,14 +90,10 @@ function AppRoutes() {
           <SessionPage />
         </ProtectedWithLayout>
       </Route>
-      {/* Public SEO tool pages */}
-      <Route path="/tools" component={ToolsIndexPage} />
-      <Route path="/tools/:slug" component={ToolPage} />
-      <Route path="/templates">
-        <ProtectedWithLayout>
-          <TemplatesPage />
-        </ProtectedWithLayout>
-      </Route>
+      <Route path="/tools"><Redirect to={`/templates${window.location.search}`} /></Route>
+      <Route path="/tools/:slug">{params => <Redirect to={`/templates/${encodeURIComponent(params.slug)}${window.location.search}`} />}</Route>
+      <Route path="/templates" component={TemplatesPage} />
+      <Route path="/templates/:slug" component={TemplatePage} />
       <Route path="/history">
         <ProtectedWithLayout>
           <HistoryPage />

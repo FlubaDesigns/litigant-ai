@@ -27,7 +27,7 @@ REQUIRED_FILES = [
     "artifacts/gh-brain/src/services/adminService.ts",
     "artifacts/gh-brain/src/contexts/AuthContext.tsx",
     "artifacts/gh-brain/src/data/templates.ts",
-    "artifacts/gh-brain/src/data/toolPages.ts",
+    "artifacts/gh-brain/src/data/templatePages.ts",
     "artifacts/gh-brain/src/pages/app/Billing.tsx",
     "artifacts/gh-brain/src/pages/app/History.tsx",
     "artifacts/gh-brain/src/pages/app/Settings.tsx",

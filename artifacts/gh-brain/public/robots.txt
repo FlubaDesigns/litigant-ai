@@ -14,7 +14,7 @@ Disallow: /api-server/
 # ── OpenAI (ChatGPT, GPT-4, Operator) ────────────────────────────────────────
 User-agent: GPTBot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 Disallow: /session
 Disallow: /history
 Disallow: /billing
@@ -23,7 +23,7 @@ Disallow: /admin
 
 User-agent: ChatGPT-User
 Allow: /
-Allow: /tools/
+Allow: /templates/
 Disallow: /session
 Disallow: /history
 Disallow: /billing
@@ -32,25 +32,25 @@ Disallow: /admin
 
 User-agent: OAI-SearchBot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Anthropic (Claude) ────────────────────────────────────────────────────────
 User-agent: ClaudeBot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 User-agent: anthropic-ai
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 User-agent: Claude-Web
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Google (Gemini, AI Overviews) ─────────────────────────────────────────────
 User-agent: Googlebot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 Disallow: /session
 Disallow: /history
 Disallow: /billing
@@ -59,54 +59,54 @@ Disallow: /admin
 
 User-agent: Google-Extended
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Perplexity ────────────────────────────────────────────────────────────────
 User-agent: PerplexityBot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Meta AI ───────────────────────────────────────────────────────────────────
 User-agent: Meta-ExternalAgent
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 User-agent: Meta-ExternalFetcher
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Cohere ────────────────────────────────────────────────────────────────────
 User-agent: cohere-ai
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Common Crawl (foundation data for many AI models) ────────────────────────
 User-agent: CCBot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Amazon / Alexa ────────────────────────────────────────────────────────────
 User-agent: Amazonbot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Bing / Copilot ────────────────────────────────────────────────────────────
 User-agent: Bingbot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 User-agent: BingPreview
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Apple ─────────────────────────────────────────────────────────────────────
 User-agent: Applebot
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 User-agent: Applebot-Extended
 Allow: /
-Allow: /tools/
+Allow: /templates/
 
 # ── Sitemaps ──────────────────────────────────────────────────────────────────
 Sitemap: https://litigant-ai.com/sitemap.xml

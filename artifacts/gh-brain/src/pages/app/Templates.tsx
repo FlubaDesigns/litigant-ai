@@ -1,369 +1,188 @@
-import { useTemplates } from "@/hooks/useConfiguration";
-import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
-  Stethoscope, Scale, Search, FlaskConical, Zap, ChevronRight,
-  LayoutTemplate, SearchX,
-} from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
+import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { ChevronRight, Briefcase, Globe, TrendingUp, Code2, FileText, Scale, BookOpen, FlaskConical, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolveTemplatePages } from "@/data/templatePages";
+import { TEMPLATE_CATEGORIES } from "@/data/templates";
+import { useTemplates } from "@/hooks/useConfiguration";
+import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "@/components/ui/input";
+import { usePageMeta } from "@/hooks/usePageMeta";
+import { useState } from "react";
+import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { cn } from "@/lib/utils";
-import { TEMPLATE_CATEGORIES, type Template } from "@/data/templates";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
-import { API_BASE } from "@/lib/apiUrl";
-
-// ── Icon map ──────────────────────────────────────────────────────────────────
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Briefcase, Globe, TrendingUp, Code2, FileText, BookOpen,
-  Stethoscope, Scale, Search, FlaskConical,
+const ICON_MAP: Record<string, React.ElementType> = {
+  Briefcase, Globe, TrendingUp, Code2, FileText, Scale, BookOpen, FlaskConical, Search,
 };
 
-// ── Category styling ──────────────────────────────────────────────────────────
 const CATEGORY_COLORS: Record<string, string> = {
-  business:  "border-amber-500/40  text-amber-400  bg-amber-500/10",
-  technical: "border-blue-500/40   text-blue-400   bg-blue-500/10",
-  personal:  "border-purple-500/40 text-purple-400 bg-purple-500/10",
-  research:  "border-cyan-500/40   text-cyan-400   bg-cyan-500/10",
-  writing:   "border-rose-500/40   text-rose-400   bg-rose-500/10",
+  business: "text-primary border-primary/30 bg-primary/10",
+  technical: "text-blue-400 border-blue-400/30 bg-blue-400/10",
+  personal: "text-purple-400 border-purple-400/30 bg-purple-400/10",
+  writing: "text-orange-400 border-orange-400/30 bg-orange-400/10",
+  research: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10",
 };
 
-function categoryLabel(cat: string) {
-  return TEMPLATE_CATEGORIES.find((c) => c.id === cat)?.label ?? cat;
-}
-
-const RESPONSE_MODE_LABELS: Record<string, string> = {
-  balanced:  "Balanced",
-  thorough:  "Thorough",
-  concise:   "Concise",
-};
-
-// ── Fetch helpers ─────────────────────────────────────────────────────────────
-
-
-// ── Template card ─────────────────────────────────────────────────────────────
-function TemplateCard({ template, onClick }: { template: Template; onClick: () => void }) {
-  const Icon = ICON_MAP[template.icon] ?? Briefcase;
-  return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="group text-left w-full rounded-xl border border-border/60 bg-card/50 hover:border-primary/40 hover:bg-primary/5 p-4 transition-all duration-200"
-    >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-          <Icon className="w-4 h-4 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-semibold truncate">{template.title}</span>
-            <span className="ml-auto text-xs font-mono text-muted-foreground shrink-0">
-              Live quote
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-            {template.description}
-          </p>
-          <div className="mt-2">
-            <span className={cn(
-              "inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide",
-              CATEGORY_COLORS[template.category] ?? "border-border text-muted-foreground"
-            )}>
-              {categoryLabel(template.category)}
-            </span>
-          </div>
-        </div>
-      </div>
-    </motion.button>
-  );
-}
-
-// ── Detail sheet ──────────────────────────────────────────────────────────────
-function TemplateDetail({ template, onClose, onLaunch }: {
-  template: Template;
-  onClose: () => void;
-  onLaunch: () => void;
-}) {
-  const Icon = ICON_MAP[template.icon] ?? Briefcase;
-  const cfg = template.defaultConfig;
-
-  const configPills = [
-    `${cfg.litigantCount} litigants`,
-    `${cfg.confidenceTarget ?? 90}/100 review target`,
-    cfg.debateMode,
-    RESPONSE_MODE_LABELS[cfg.responseMode ?? "balanced"] ?? cfg.responseMode,
-  ].filter(Boolean);
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <SheetHeader className="px-5 pt-5 pb-4 border-b border-border/50 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <SheetTitle className="text-base font-bold text-foreground leading-tight">
-              {template.title}
-            </SheetTitle>
-            <span className={cn(
-              "inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide mt-0.5",
-              CATEGORY_COLORS[template.category] ?? "border-border text-muted-foreground"
-            )}>
-              {categoryLabel(template.category)}
-            </span>
-          </div>
-        </div>
-      </SheetHeader>
-
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-        {/* Description */}
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {template.description}
-        </p>
-
-        {/* Input fields preview */}
-        {template.inputFields.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-primary/60">
-              You'll fill in
-            </div>
-            <div className="space-y-1.5">
-              {template.inputFields.map((f) => (
-                <div
-                  key={f.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card/30"
-                >
-                  <div className="flex-1">
-                    <span className="text-xs font-medium text-foreground">{f.label}</span>
-                    {f.required && (
-                      <span className="ml-1.5 text-[10px] text-primary/60 font-mono">required</span>
-                    )}
-                    <div className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">
-                      {f.placeholder}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Court config */}
-        <div className="space-y-2">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-primary/60">
-            Court Configuration
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {configPills.map((pill) => (
-              <span
-                key={pill}
-                className="px-2.5 py-1 border border-primary/25 rounded-lg text-[11px] text-primary/70 bg-primary/5 capitalize"
-              >
-                {pill}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Credit estimate */}
-        <div className="rounded-lg border border-primary/25 bg-primary/5 p-3 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Estimated cost</span>
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-primary" />
-            <span className="text-sm font-bold text-primary font-mono">
-              ~{template.estimatedCredits} credits
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Launch button */}
-      <div className="px-5 pb-5 pt-3 border-t border-border/50 shrink-0 space-y-2">
-        <Button
-          onClick={onLaunch}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold gap-2"
-        >
-          Launch in Court
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-        <p className="text-[11px] text-center text-muted-foreground/60">
-          You'll fill in your details on the next screen
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function TemplatesPage() {
-  const [, navigate] = useLocation();
-  const {data:templates = []} = useTemplates();
-  const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selected, setSelected] = useState<Template | null>(null);
+  const { signupBonusCredits: signupBonus } = usePublicConfig();
+  const { user } = useAuth();
+  const { data: templates = [], isPending, isError, refetch } = useTemplates();
+  const pages = resolveTemplatePages(templates);
+  const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
+  usePageMeta({
+    title: "Templates — Litigant AI | Multi-Model Adversarial Reasoning",
+    description: "Ready-to-use templates for business plans, websites, contracts, decisions, code reviews, and more. Multiple AI models debate and deliver a structured verdict.",
+    canonicalPath: "/templates",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Templates — Litigant AI",
+      "url": "https://litigant-ai.com/templates",
+      "description": "Ready-to-use templates. Multiple AI models debate your question and deliver a confidence-scored verdict.",
+      "hasPart": pages.map((t) => ({
+        "@type": "WebPage",
+        "name": t.title,
+        "url": `https://litigant-ai.com${t.href}`,
+        "description": t.description,
+      })),
+    },
+  });
 
-  // Filter: category + keyword search
-  const filtered = useMemo(() => {
-    let list = activeCategory === "all"
-      ? templates
-      : templates.filter((t) => t.category === activeCategory);
+  const [activeCategory, setActiveCategory] = useState("all");
 
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
-          categoryLabel(t.category).toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [templates, activeCategory, searchQuery]);
-
-  // Count per category (from full list, not filtered)
-  const countByCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const t of templates) {
-      map[t.category] = (map[t.category] ?? 0) + 1;
-    }
-    return map;
-  }, [templates]);
-
-  function handleLaunch() {
-    if (!selected) return;
-    navigate(`/session?templateId=${selected.id}`);
-  }
+  const filtered = pages.filter(t => (activeCategory === "all" || t.category === activeCategory) &&
+    `${t.title} ${t.description} ${t.badge}`.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
-    <>
+    <div className="min-h-screen bg-background text-foreground">
+      <SiteHeader variant={user ? "app" : "landing"} />
 
-            {/* ── Page header ── */}
-            <div className="row" style={{ paddingTop: "var(--sv)", paddingBottom: "calc(var(--sv) * 0.5)" }}>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center">
-                  <LayoutTemplate className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Pre-configured courts for common tasks — pick one and go.
-                  </p>
-                </div>
-              </div>
+      <main className="main">
+
+        {/* Hero */}
+        <section className="section text-center">
+            <div className="row">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                <span className="inline-block text-xs font-semibold text-primary border border-primary/30 bg-primary/10 px-3 py-1 rounded-full mb-5 tracking-wider uppercase">
+                  Choose your starting point
+                </span>
+                <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+                  Templates
+                </h1>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                  Choose a template, see what it covers, then bring your question to the court.
+                </p>
+              </motion.div>
             </div>
+        </section>
 
-            {/* ── Search + category filters ── */}
-            <div className="row" style={{ paddingBottom: "1.25rem" }}>
-              {/* Search */}
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="text"
-                  placeholder="Search templates…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 h-9 text-sm bg-card/40 border-border/60 focus:border-primary/50"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              {/* Category pills */}
+        {/* Category filter */}
+        <section className="section">
+            <div className="row">
+              <Input aria-label="Search templates" placeholder="Search templates…" value={search} onChange={event => setSearch(event.target.value)} className="mb-4" />
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setActiveCategory("all")}
                   className={cn(
-                    "px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors",
+                    "text-sm px-3 py-1.5 rounded-full border transition-colors",
                     activeCategory === "all"
-                      ? "border-primary bg-primary/15 text-primary"
-                      : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                      ? "bg-primary/10 text-primary border-primary/30 font-medium"
+                      : "border-border/50 text-muted-foreground hover:text-foreground hover:border-border"
                   )}
                 >
-                  All ({templates.length})
+                  All templates
                 </button>
-                {TEMPLATE_CATEGORIES.map((cat) => (
+                {TEMPLATE_CATEGORIES.map(({ id, label }) => (
                   <button
-                    key={cat.id}
-                    onClick={() => setActiveCategory(cat.id)}
+                    key={id}
+                    onClick={() => setActiveCategory(id)}
                     className={cn(
-                      "px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors",
-                      activeCategory === cat.id
-                        ? "border-primary bg-primary/15 text-primary"
-                        : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                      "text-sm px-3 py-1.5 rounded-full border transition-colors",
+                      activeCategory === id
+                        ? cn("font-medium border", CATEGORY_COLORS[id])
+                        : "border-border/50 text-muted-foreground hover:text-foreground hover:border-border"
                     )}
                   >
-                    {cat.label} ({countByCategory[cat.id] ?? 0})
+                    {label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ── Template grid ── */}
-            <div className="row" style={{ paddingBottom: "var(--sv)" }}>
-              <AnimatePresence mode="popLayout">
-                {filtered.length === 0 ? (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground"
-                  >
-                    <SearchX className="w-8 h-8 opacity-40" />
-                    <p className="text-sm">No templates match your search.</p>
-                    <button
-                      onClick={() => { setSearchQuery(""); setActiveCategory("all"); }}
-                      className="text-xs text-primary hover:underline"
+            {/* Template grid */}
+            <div className="row">
+              {isPending && <p role="status">Loading templates…</p>}
+              {isError && <div role="alert">Templates could not be refreshed. <Button variant="outline" onClick={() => refetch()}>Retry</Button></div>}
+              {!isPending && !isError && filtered.length === 0 && <p>No templates match your search.</p>}
+              <div className="layout__auto">
+                {filtered.map((page, i) => {
+                  const Icon = ICON_MAP[page.icon] ?? Briefcase;
+                  return (
+                    <motion.div
+                      key={page.slug}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.04 }}
                     >
-                      Clear filters
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={`${activeCategory}-${searchQuery}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    className="layout__split-3"
-                  >
-                    {filtered.map((template) => (
-                      <TemplateCard
-                        key={template.id}
-                        template={template}
-                        onClick={() => setSelected(template)}
-                      />
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      <Link href={page.href}>
+                        <div className="group rounded-xl border border-border/60 bg-card/40 overflow-hidden h-full hover:border-primary/40 hover:bg-primary/5 transition-all duration-150 cursor-pointer flex flex-col">
+                          <div className="relative h-36 overflow-hidden bg-card/60">
+                            {page.image ? <img
+                              src={page.image}
+                              alt={page.title}
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+                            /> : <Icon className="w-14 h-14 text-primary m-auto mt-10" />}
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+                            <div className="absolute top-2 left-2">
+                              <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded border", CATEGORY_COLORS[page.category])}>
+                                {page.badge}
+                              </span>
+                            </div>
+                            <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-background/70 backdrop-blur-sm border border-border/40 flex items-center justify-center">
+                              <Icon className="w-3.5 h-3.5 text-primary" />
+                            </div>
+                          </div>
+                          <div className="p-4 flex flex-col flex-1">
+                            <h2 className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">
+                              {page.title}
+                            </h2>
+                            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+                              {page.description}
+                            </p>
+                            <div className="mt-3 flex items-center gap-1 text-xs text-primary font-medium transition-colors">
+                              View template <ChevronRight className="w-3 h-3" />
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
+        </section>
 
+        {/* Bottom CTA */}
+        <section className="section section--bordered section--alt text-center">
+            <div className="row">
+              <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                {signupBonus === null ? "No credit card required." : `${signupBonus} free credits on signup. No credit card required.`}
+              </p>
+              <Link href={user ? "/session" : "/register"}>
+                <Button size="lg" className="font-semibold gap-2">
+                  {user ? "Open courtroom" : "Create free account"} <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+        </section>
 
-      {/* ── Detail sheet ── */}
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent
-          side="right"
-          className="w-full max-w-sm bg-[#060e06] border-l-2 border-primary/40 p-0 flex flex-col"
-        >
-          {selected && (
-            <TemplateDetail
-              template={selected}
-              onClose={() => setSelected(null)}
-              onLaunch={handleLaunch}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
-    </>
+      </main>
+
+      <SiteFooter variant="landing" />
+    </div>
   );
 }
