@@ -145,7 +145,7 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, EmailTemplateMeta> = {
   },
   reengagement: {
     label: "Re-engagement",
-    trigger: "Daily campaign — users with credits inactive 14+ days",
+    trigger: "Manual campaign — users with credits inactive 14+ days",
     badgeText: "We Miss You",
     badgeColor: "#00c853",
     defaultSubject: "You have {credits} credits waiting, {name}",
@@ -223,9 +223,9 @@ export function validateTemplateContent(id: EmailTemplateId, content: EmailTempl
 export async function getTemplateConfig(id: EmailTemplateId): Promise<EmailTemplateConfig> {
   const fallback: EmailTemplateConfig = { id, enabled: true };
 
-  if (!isFirebaseConfigured()) return fallback;
+  if (!isFirebaseConfigured()) throw new Error("Email settings unavailable");
   const db = getFirestoreDb();
-  if (!db) return fallback;
+  if (!db) throw new Error("Email settings unavailable");
 
   try {
     const snap = await db.collection("email_templates").doc(id).get();
@@ -244,7 +244,7 @@ export async function getTemplateConfig(id: EmailTemplateId): Promise<EmailTempl
     };
     return config;
   } catch {
-    return fallback;
+    throw new Error("Email settings could not be loaded. No email was sent.");
   }
 }
 

@@ -26,6 +26,7 @@
  */
 import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { hasActiveSessionRun } from "./sessionRunLock.js";
 import { getBillingDefaults } from "./billingDefaultsConfig.js";
 import { sendAutoRefillTriggeredEmail, isResendConfigured } from "./emailService.js";
 
@@ -103,8 +104,12 @@ export async function addCredits(
     sessionId?: string;
     paymentId?: string;
     idempotencyKey?: string;
+    refundTransactionId?: string;
   } = {}
 ): Promise<{ newBalance: number; skipped?: boolean } | null> {
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount === 0) {
+    throw new Error("Credits must be a nonzero whole number");
+  }
   if (!isFirebaseConfigured()) {
     console.warn("[CreditLedger] Firebase not configured — skipping credit grant for", uid);
     return null;
@@ -127,6 +132,37 @@ export async function addCredits(
         return { newBalance: 0, skipped: true };
       }
 
+    }
+
+    // Refund the collected charge, accounting for automatic reconciliation and
+    // earlier admin refunds. All reads and the grant share the balance transaction.
+    let refundSessionId: string | undefined;
+    if (opts.refundTransactionId) {
+      const original = await tx.get(db.collection("credit_transactions").doc(opts.refundTransactionId));
+      const charge = original.data();
+      if (!charge || charge.userId !== uid || charge.type !== "usage" || !(charge.amount < 0)) {
+        throw new InvalidRefundError("Select a collected usage charge to refund.");
+      }
+      refundSessionId = charge.sessionId || undefined;
+      const history = await tx.get(db.collection("credit_transactions").where("userId", "==", uid));
+      const entries = history.docs.map(doc => doc.data());
+      const previouslyReturned = entries.filter(entry => entry.type === "refund" &&
+        (entry.refundTransactionId === original.id || entry.source === `refund_for_tx_${original.id}`))
+        .reduce((sum, entry) => sum + entry.amount, 0);
+      let remaining = -charge.amount - previouslyReturned;
+      if (refundSessionId) {
+        const session = (await tx.get(db.collection("sessions").doc(refundSessionId))).data();
+        if (!session || hasActiveSessionRun(session) || session.status === "running") {
+          throw new InvalidRefundError("Wait for this conversation to finish before refunding it.");
+        }
+        const netCharge = -entries.filter(entry => entry.sessionId === refundSessionId &&
+          (entry.type === "usage" || entry.type === "refund"))
+          .reduce((sum, entry) => sum + entry.amount, 0);
+        remaining = Math.min(remaining, netCharge);
+      }
+      if (amount <= 0 || amount > remaining) {
+        throw new InvalidRefundError(`Only ${Math.max(0, remaining)} credits remain refundable.`);
+      }
     }
 
     // ── Balance update ────────────────────────────────────────────────────────
@@ -157,7 +193,8 @@ export async function addCredits(
       amount,
       balanceAfter: newBalance,
       source:       opts.source ?? type,
-      sessionId:    opts.sessionId ?? null,
+      sessionId:    refundSessionId ?? opts.sessionId ?? null,
+      ...(opts.refundTransactionId ? {refundTransactionId: opts.refundTransactionId} : {}),
       paymentId:    opts.paymentId ?? null,
       createdAt:    FieldValue.serverTimestamp(),
     });
@@ -165,6 +202,8 @@ export async function addCredits(
     return { newBalance };
   });
 }
+
+export class InvalidRefundError extends Error {}
 
 /**
  * Paginated transaction history for a user, ordered newest-first.

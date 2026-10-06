@@ -48,6 +48,7 @@ vi.mock("../lib/billingDefaultsConfig.js", () => ({
 }));
 
 vi.mock("../lib/emailService.js", () => ({
+  sendTrackedEmail: vi.fn((_uid, _kind, deliver) => deliver("fixture-notification")),
   sendWelcomeEmail:              vi.fn(() => Promise.resolve()),
   sendVerificationEmail:         vi.fn(() => Promise.resolve()),
   sendPasswordResetEmail:        vi.fn(() => Promise.resolve()),

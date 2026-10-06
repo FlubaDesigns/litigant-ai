@@ -1,12 +1,18 @@
+import { z } from "zod";
 import { CourtConfigSchema, type CourtConfig } from "./session";
 export type { CourtConfig, ArtifactType, ProviderName } from "./session";
-export interface TemplateInputField {
-  id: string;
-  label: string;
-  placeholder: string;
-  type: "text" | "textarea" | "url";
-  required: boolean;
-}
+export const TemplateInputFieldSchema = z.object({
+  id: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
+  label: z.string().trim().min(1).max(300),
+  placeholder: z.string().max(1000).default(""),
+  type: z.enum(["text", "textarea", "url"]),
+  required: z.boolean(),
+});
+export const TemplateInputFieldsSchema = z.array(TemplateInputFieldSchema).max(30).refine(
+  fields => new Set(fields.map(field => field.id)).size === fields.length,
+  {message: "Each question must have a unique ID"},
+);
+export type TemplateInputField = z.infer<typeof TemplateInputFieldSchema>;
 
 export interface Template {
   id: string;

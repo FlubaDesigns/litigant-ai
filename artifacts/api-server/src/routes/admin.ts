@@ -1,13 +1,14 @@
 import { InvalidBillingDefaultsError } from "../lib/billingDefaultsConfig.js";
 import { DEFAULT_LIMITS, LIMIT_RANGES, getAdminLimits } from "../lib/adminLimitsConfig.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
+import { TemplateInputFieldsSchema } from "@workspace/api-zod/templates";
 import { getTemplates } from "../lib/templateStore.js";
 import { Router } from "express";
 import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
-import { addCredits } from "../lib/creditLedger.js";
-import { FieldValue } from "firebase-admin/firestore";
+import { addCredits, InvalidRefundError } from "../lib/creditLedger.js";
+import { FieldValue, FieldPath } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getBillingDefaults, saveBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import { getChecklist, setChecklistItemChecked } from "../lib/checklistConfig.js";
@@ -113,17 +114,24 @@ function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot): Record<string, u
 }
 
 // Individual invitation links are controlled only by the administrator.
-router.get("/admin/guest-invitations", requireAdmin, async (_req, res) => {
+router.get("/admin/guest-invitations", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({error: "Invitation service unavailable."});
   try {
-    const docs = await db.collection("guest_invitations").orderBy("createdAt", "desc").limit(100).get();
-    const invitations = await Promise.all(docs.docs.map(async doc => {
+    let query = db.collection("guest_invitations").orderBy("createdAt", "desc").limit(51);
+    if (typeof req.query.cursor === "string") {
+      const cursor = await db.collection("guest_invitations").doc(req.query.cursor).get();
+      if (!cursor.exists) return res.status(400).json({error: "This page has changed. Refresh the list."});
+      query = query.startAfter(cursor);
+    }
+    const docs = await query.get();
+    const page = docs.docs.slice(0, 50);
+    const invitations = await Promise.all(page.map(async doc => {
       const data = doc.data();
       const profile = data.claimedBy ? (await db.collection("users").doc(data.claimedBy).get()).data() : null;
       return invitationView(doc.id, data, profile?.creditBalance);
     }));
-    return res.json({invitations});
+    return res.json({invitations, hasMore: docs.size > 50, nextCursor: docs.size > 50 ? page.at(-1)?.id : null});
   } catch { return res.status(503).json({error: "Could not load invitations."}); }
 });
 router.post("/admin/guest-invitations", requireAdmin, async (req, res) => {
@@ -309,58 +317,47 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
 
 router.get("/admin/users", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ users: [] });
+  if (!db) return res.status(503).json({ error: "User service unavailable" });
 
   const search = (req.query["search"] as string | undefined)?.toLowerCase();
   const limit = Math.min(Number(req.query["limit"]) || 20, 100);
   const cursor = req.query["cursor"] as string | undefined;
 
   try {
-    let q: FirebaseFirestore.Query;
-
-    if (search && search.includes("@")) {
-      // Email range query — proper server-side search by email prefix
-      q = db
-        .collection("users")
-        .where("email", ">=", search)
-        .where("email", "<=", search + "\uf8ff")
-        .limit(limit + 1);
-    } else if (search) {
-      // Name search: fetch a larger page and filter client-side
-      q = db.collection("users").orderBy("createdAt", "desc").limit(200);
-    } else {
-      q = db.collection("users").orderBy("createdAt", "desc").limit(limit + 1);
-      if (cursor) {
-        const cursorDoc = await db.collection("users").doc(cursor).get();
-        if (cursorDoc.exists) q = q.startAfter(cursorDoc) as any;
+    if (search) {
+      // Walk the same stable ordering on each page. Search all accounts, including
+      // old accounts and mixed-case emails, without a hidden recent-account cap.
+      const users: Record<string, unknown>[] = [];
+      let after = cursor;
+      let exhausted = false;
+      while (users.length <= limit && !exhausted) {
+        let query = db.collection("users").orderBy(FieldPath.documentId()).limit(500);
+        if (after) query = query.startAfter(after);
+        const batch = await query.get();
+        exhausted = batch.size < 500;
+        for (const doc of batch.docs) {
+          const user = serializeDoc(doc);
+          if ([user.email, user.displayName].some(value => typeof value === "string" && value.toLowerCase().includes(search))) {
+            users.push(user);
+            if (users.length > limit) break;
+          }
+        }
+        after = batch.docs.at(-1)?.id;
       }
+      const hasMore = users.length > limit;
+      const page = users.slice(0, limit);
+      return res.json({users: page, hasMore, nextCursor: hasMore ? page.at(-1)?.id : null});
     }
-
+    let q: FirebaseFirestore.Query = db.collection("users").orderBy("createdAt", "desc").limit(limit + 1);
+    if (cursor) {
+      const cursorDoc = await db.collection("users").doc(cursor).get();
+      if (!cursorDoc.exists) return res.status(400).json({error: "This page has changed. Refresh the list."});
+      q = q.startAfter(cursorDoc);
+    }
     const snap = await q.get();
-    let users = snap.docs.map((d) => serializeDoc(d));
-
-    if (search && !search.includes("@")) {
-      users = users.filter(
-        (u: any) =>
-          (u.email as string)?.toLowerCase().includes(search) ||
-          (u.displayName as string)?.toLowerCase().includes(search)
-      );
-    }
-
-    // Apply limit and hasMore consistently across all branches.
-    // For name searches the source window is the 200 most-recent accounts —
-    // boundedSearch:true tells the caller the result may be incomplete
-    // (older accounts that match won't appear) rather than implying it's exhaustive.
-    const hasMore = users.length > limit;
-    const boundedSearch = !!(search && !search.includes("@"));
-    users = users.slice(0, limit);
-
-    return res.json({
-      users,
-      hasMore,
-      nextCursor: hasMore ? users[users.length - 1]?.id : null,
-      ...(boundedSearch ? { boundedSearch: true } : {}),
-    });
+    const hasMore = snap.size > limit;
+    const users = snap.docs.slice(0, limit).map(serializeDoc);
+    return res.json({users, hasMore, nextCursor: hasMore ? users.at(-1)?.id : null});
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
@@ -401,7 +398,7 @@ router.get("/admin/users/:uid", requireAdmin, async (req, res) => {
 
 router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => {
   const { amount, reason } = req.body as { amount?: number; reason?: string };
-  if (!amount || isNaN(amount)) {
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount === 0) {
     return res.status(400).json({ error: "amount (number) is required" });
   }
 
@@ -511,17 +508,29 @@ router.post("/admin/users/:uid/test-model", requireAdmin, async (req: any, res) 
 /**
  * POST /admin/send-reengagement
  * Triggers the re-engagement email campaign for users inactive for ≥ N days.
- * Designed to be called by Cloud Scheduler (daily cron). Falls back to the
- * default of 14 days if `inactiveDays` is not supplied in the body.
+ * Manually triggered by the owner. Defaults to 14 days of inactivity.
  */
 router.post("/admin/send-reengagement", requireAdmin, async (req: any, res) => {
-  const inactiveDays = Number(req.body?.inactiveDays) || 14;
+  const inactiveDays = req.body?.inactiveDays ?? 14;
+  if (!Number.isInteger(inactiveDays) || inactiveDays < 1 || inactiveDays > 365) return res.status(400).json({error: "Choose 1–365 inactive days"});
   try {
-    const sent = await runReengagementCampaign(inactiveDays);
-    return res.json({ success: true, emailsSent: sent, inactiveDays });
+    const result = await runReengagementCampaign(inactiveDays);
+    return res.json({ success: true, emailsSent: result.sent, failed: result.failed, skipped: result.skipped, inactiveDays });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
+});
+
+router.get("/admin/email-deliveries", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({error: "Email history unavailable"});
+  try {
+    const records = await db.collection("email_deliveries").orderBy("updatedAt", "desc").limit(25).get();
+    return res.json({deliveries: records.docs.map(doc => {
+      const data = doc.data();
+      return {id: doc.id, userId: data.userId, templateId: data.templateId, status: data.status, updatedAt: data.updatedAt};
+    })});
+  } catch { return res.status(503).json({error: "Email history unavailable"}); }
 });
 
 // ── Email template management ─────────────────────────────────────────────────
@@ -730,7 +739,7 @@ router.delete(
 
 router.get("/admin/sessions", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ sessions: [] });
+  if (!db) return res.status(503).json({error: "Session service unavailable"});
 
   const limit = Math.min(Number(req.query["limit"]) || 20, 100);
   const cursor = req.query["cursor"] as string | undefined;
@@ -787,7 +796,7 @@ router.get("/admin/sessions/:id", requireAdmin, async (req, res) => {
 
 router.get("/admin/transactions", requireAdmin, async (req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ transactions: [] });
+  if (!db) return res.status(503).json({error: "Transaction service unavailable"});
 
   const limit = Math.min(Number(req.query["limit"]) || 30, 100);
   const cursor = req.query["cursor"] as string | undefined;
@@ -821,23 +830,23 @@ router.get("/admin/transactions", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/credits/refund", requireAdmin, async (req: any, res) => {
-  const { userId, amount, reason } = req.body as {
-    userId?: string;
-    amount?: number;
-    reason?: string;
-  };
-  if (!userId || !amount || amount <= 0) {
-    return res.status(400).json({ error: "userId and amount (positive) are required" });
+  const { userId, amount, reason, transactionId, requestId } = req.body ?? {};
+  if (typeof userId !== "string" || !userId || typeof amount !== "number" || !Number.isSafeInteger(amount) || amount <= 0 ||
+      typeof transactionId !== "string" || !/^[^/]{1,200}$/.test(transactionId) ||
+      typeof requestId !== "string" || !/^[a-zA-Z0-9-]{16,100}$/.test(requestId) ||
+      (reason !== undefined && typeof reason !== "string")) {
+    return res.status(400).json({ error: "A charge, request ID and positive whole-credit amount are required." });
   }
-
   try {
     const result = await addCredits(userId, amount, "refund", {
-      source: reason ?? `admin_refund_by_${req.adminUid as string}`,
+      source: reason || `admin_refund_by_${req.adminUid}`,
+      refundTransactionId: transactionId,
+      idempotencyKey: `admin_refund_${req.adminUid}_${requestId}`,
     });
     if (!result) return res.status(503).json({ error: "Firebase not configured" });
-    return res.json({ success: true, newBalance: result.newBalance });
+    return res.json({ success: true, ...result });
   } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
+    return res.status(err instanceof InvalidRefundError ? 400 : 500).json({ error: err instanceof InvalidRefundError ? err.message : safeError(err) });
   }
 });
 
@@ -1276,7 +1285,7 @@ router.patch("/admin/conscience", requireAdmin, async (req: any, res) => {
 
 router.get("/admin/templates", requireAdmin, async (_req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ templates: [] });
+  if (!db) return res.status(503).json({error: "Template service unavailable"});
 
   try {
     return res.json({ templates: await getTemplates(true) });
@@ -1298,12 +1307,23 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
   };
 
   const updates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
-  if (title !== undefined) updates["title"] = title;
-  if (description !== undefined) updates["description"] = description;
+  if (title !== undefined) {
+    if (typeof title !== "string" || !title.trim() || title.length > 200) return res.status(400).json({error: "Enter a title of 1–200 characters"});
+    updates["title"] = title.trim();
+  }
+  if (description !== undefined) {
+    if (typeof description !== "string" || description.length > 2000) return res.status(400).json({error: "Description must be at most 2,000 characters"});
+    updates["description"] = description;
+  }
   if (typeof isActive === "boolean") updates["isActive"] = isActive;
   if (systemPrompt !== undefined) {
     if (typeof systemPrompt !== "string") return res.status(400).json({ error: "Invalid template instructions" });
     updates["systemPrompt"] = systemPrompt.trim() ? systemPrompt : FieldValue.delete();
+  }
+  if (req.body.inputFields !== undefined) {
+    const fields = TemplateInputFieldsSchema.safeParse(req.body.inputFields);
+    if (!fields.success) return res.status(400).json({error: "Questions need unique IDs, labels, valid types and required/optional settings (maximum 30)."});
+    updates["inputFields"] = fields.data;
   }
   if (defaultSettings || req.body.defaultConfig) {
     const config = CourtConfigFieldsSchema.partial().safeParse(req.body.defaultConfig ?? defaultSettings);

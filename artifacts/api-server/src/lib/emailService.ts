@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Resend } from "resend";
 import { getAuth } from "firebase-admin/auth";
 import { isFirebaseConfigured, getFirestoreDb } from "./firebaseAdmin.js";
@@ -474,7 +475,7 @@ async function resolveTemplate(id: EmailTemplateId, vars: Record<string, string 
 
 // ── Public send functions ─────────────────────────────────────────────────────
 
-export async function sendVerificationEmail(uid: string): Promise<void> {
+export async function sendVerificationEmail(uid: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const [user, billing] = await Promise.all([getAuth().getUser(uid), getBillingDefaults()]);
   const link = await getAuth().generateEmailVerificationLink(user.email!, { url: `${APP_URL}/login?verified=1` });
@@ -482,192 +483,267 @@ export async function sendVerificationEmail(uid: string): Promise<void> {
   const { enabled, subject, headline, intro } = await resolveTemplate("verification", {
     name, bonusCredits: billing.signupBonusCredits,
   });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: verificationTemplate(link, intro, headline),
   });
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-export async function sendPasswordResetEmail(email: string): Promise<void> {
+export async function sendPasswordResetEmail(email: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const link = await getAuth().generatePasswordResetLink(email, { url: `${APP_URL}/login?reset=1` });
   let name = "there";
   try { name = (await getAuth().getUserByEmail(email)).displayName ?? name; } catch { /* ok */ }
   const { enabled, subject, headline, intro } = await resolveTemplate("passwordReset", { name });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: email, subject,
     html: passwordResetTemplate(link, intro, headline),
   });
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-export async function sendWelcomeEmail(uid: string): Promise<void> {
+export async function sendWelcomeEmail(uid: string, idempotencyKey?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("welcome", { name });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: welcomeTemplate(intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-export async function sendLowCreditsEmail(uid: string, balance: number, threshold: number): Promise<void> {
+export async function sendLowCreditsEmail(uid: string, balance: number, threshold: number, idempotencyKey?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("lowCredits", {
     name, balance: balance.toLocaleString(), threshold: threshold.toLocaleString(),
   });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: lowCreditsTemplate(intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
 export async function sendSessionCompleteEmail(
-  uid: string, sessionId: string, title: string, creditsUsed: number
-): Promise<void> {
+  uid: string, sessionId: string, title: string, creditsUsed: number, idempotencyKey?: string
+): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("sessionComplete", { name });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: sessionCompleteTemplate(sessionId, title, creditsUsed, intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
 export async function sendPaymentReceiptEmail(
   uid: string, creditsAdded: number, amountPaidCents: number, newBalance: number
-): Promise<void> {
+): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("paymentReceipt", {
     name, credits: creditsAdded.toLocaleString(),
   });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: paymentReceiptTemplate(creditsAdded, `$${(amountPaidCents / 100).toFixed(2)}`, newBalance, intro, headline),
   });
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
 export async function sendAutoRefillTriggeredEmail(
   uid: string, balance: number, topUpUrl: string, dollarAmount: number
-): Promise<void> {
+): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("autoRefillTriggered", {
     name, balance: balance.toLocaleString(), amount: dollarAmount,
   });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: autoRefillTriggeredTemplate(balance, topUpUrl, dollarAmount, intro, headline),
   });
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-export async function sendAccountSuspendedEmail(uid: string, reason?: string): Promise<void> {
+export async function sendAccountSuspendedEmail(uid: string, reason?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  if (!user.email) return;
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("accountSuspended", { name });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email, subject,
     html: accountSuspendedTemplate(reason, intro, headline),
   });
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-export async function sendReengagementEmail(uid: string, creditBalance: number): Promise<void> {
+export async function sendReengagementEmail(uid: string, creditBalance: number, idempotencyKey?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
-  if (!user.email) return;
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("reengagement", {
     name, credits: creditBalance.toLocaleString(),
   });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email, subject,
     html: reengagementTemplate(creditBalance, intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
 export async function sendFirstSessionEmail(
-  uid: string, sessionId: string, title: string
-): Promise<void> {
+  uid: string, sessionId: string, title: string, idempotencyKey?: string
+): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("firstSession", { name });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: firstSessionTemplate(sessionId, title, intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-export async function sendZeroCreditsEmail(uid: string): Promise<void> {
+export async function sendZeroCreditsEmail(uid: string, idempotencyKey?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
+  if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("zeroCredits", { name });
-  if (!enabled) return;
+  if (!enabled) return false;
   const { error } = await getResend().emails.send({
     from: FROM, to: user.email!, subject,
     html: zeroCreditsTemplate(intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
+  return true;
 }
 
-/**
- * Re-engagement campaign — queries Firestore for users with credits who
- * haven't had a session in `inactiveDays` days, and haven't been re-engaged
- * in that same window.  Returns the number of emails successfully sent.
+/** Claim a notification atomically; record acceptance only after an actual send.
+ * Failed attempts can retry on the next trigger with the same provider key.
+ * No polling or background campaign is started here.
  */
-export async function runReengagementCampaign(inactiveDays = 14): Promise<number> {
-  if (!isFirebaseConfigured()) return 0;
+export async function sendTrackedEmail(
+  uid: string, kind: EmailTemplateId, deliver: (key: string) => Promise<boolean>,
+  options: {sentField?: string; cooldownMs?: number; eventId?: string} = {},
+): Promise<boolean> {
   const db = getFirestoreDb();
-  if (!db) return 0;
+  if (!db) throw new Error("Email tracking unavailable");
+  const userRef = db.collection("users").doc(uid);
+  const ref = db.collection("email_deliveries").doc(crypto.createHash("sha256").update(`${uid}:${kind}:${options.eventId ?? ""}`).digest("hex"));
+  const now = Date.now();
+  const attempt = await db.runTransaction(async tx => {
+    const state = (await tx.get(ref)).data();
+    const user = (await tx.get(userRef)).data();
+    if (!user) return null;
+    const alreadySent = options.sentField ? user[options.sentField] : undefined;
+    if ((alreadySent === true && !options.cooldownMs) ||
+        (typeof alreadySent === "number" && alreadySent > now - (options.cooldownMs ?? 0)) ||
+        (state?.status === "accepted" && (!options.cooldownMs || state.acceptedAt > now - options.cooldownMs)) ||
+        (state?.status === "sending" && state.startedAt > now - 5 * 60_000)) return null;
+    const key = state && ["sending", "failed"].includes(state.status) && state.attemptAt > now - 23 * 3600_000
+      ? state.attemptKey : crypto.randomUUID();
+    tx.set(ref, {userId: uid, templateId: kind, status: "sending", startedAt: now,
+      updatedAt: now, attemptKey: key, attemptAt: key === state?.attemptKey ? state!.attemptAt : now});
+    return key as string;
+  });
+  if (!attempt) return false;
+  try {
+    const sent = await deliver(attempt);
+    await db.runTransaction(async tx => {
+      const current = (await tx.get(ref)).data();
+      if (current?.attemptKey !== attempt) return;
+      tx.update(ref, {status: sent ? "accepted" : "skipped", updatedAt: Date.now(), ...(sent ? {acceptedAt: Date.now()} : {})});
+      if (sent && options.sentField) tx.update(userRef, {[options.sentField]: options.cooldownMs ? Date.now() : true});
+    });
+    return sent;
+  } catch (error) {
+    await db.runTransaction(async tx => {
+      if ((await tx.get(ref)).data()?.attemptKey === attempt) {
+        tx.update(ref, {status: "failed", updatedAt: Date.now()});
+      }
+    }).catch(() => {});
+    throw error;
+  }
+}
 
-  const cutoffMs = Date.now() - inactiveDays * 24 * 60 * 60 * 1000;
+function timestampMs(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (value instanceof Date) return value.getTime();
+  if (value && typeof (value as any).toMillis === "function") return (value as any).toMillis();
+  if (typeof value === "string") return Date.parse(value);
+  return 0;
+}
+
+export function eligibleForReengagement(data: Record<string, any>, cutoffMs: number): boolean {
+  if (data.banned || data.guestInvitationId || !(data.creditBalance > 0)) return false;
+  const lastActivity = Math.max(timestampMs(data.lastSessionAt), timestampMs(data.createdAt));
+  return Number.isFinite(lastActivity) && lastActivity > 0 && lastActivity <= cutoffMs &&
+    timestampMs(data.reengagementEmailSentAt) <= cutoffMs;
+}
+
+/** Manual campaign. The existing admin endpoint is the only trigger. */
+export async function runReengagementCampaign(inactiveDays = 14): Promise<{sent: number; failed: number; skipped: number}> {
+  if (!Number.isInteger(inactiveDays) || inactiveDays < 1 || inactiveDays > 365) throw new Error("Inactive days must be between 1 and 365");
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Email campaign unavailable");
+  const stats = {sent: 0, failed: 0, skipped: 0};
+  if (!(await getTemplateConfig("reengagement")).enabled) return stats;
+  const cooldownMs = inactiveDays * 86400_000;
+  const cutoffMs = Date.now() - cooldownMs;
   const snap = await db.collection("users").where("creditBalance", ">", 0).get();
-  let sent = 0;
-
   for (const doc of snap.docs) {
     const data = doc.data();
-    if (data["banned"]) continue;
-    if ((data["lastSessionAt"] as number | undefined ?? 0) > cutoffMs) continue;
-    if ((data["reengagementEmailSentAt"] as number | undefined ?? 0) > cutoffMs) continue;
-
+    if (!eligibleForReengagement(data, cutoffMs)) continue;
     try {
-      await sendReengagementEmail(doc.id, data["creditBalance"] as number);
-      await doc.ref.update({ reengagementEmailSentAt: Date.now() });
-      sent++;
-    } catch (e: any) {
-      console.error(`[Reengagement] uid=${doc.id}: ${e.message}`);
+      const sent = await sendTrackedEmail(doc.id, "reengagement", key => sendReengagementEmail(doc.id, data.creditBalance, key),
+        {sentField: "reengagementEmailSentAt", cooldownMs});
+      stats[sent ? "sent" : "skipped"]++;
+    } catch (error) {
+      stats.failed++;
+      console.error("[Reengagement] send failed", {uid: doc.id});
     }
   }
-  return sent;
+  return stats;
 }
 
 export function isResendConfigured(): boolean {

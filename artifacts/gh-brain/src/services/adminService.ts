@@ -1,3 +1,4 @@
+import type { CourtConfig, TemplateInputField } from "@workspace/api-zod/templates";
 import { refreshConfiguration } from "@/lib/queryClient";
 import { auth } from "@/lib/firebase";
 
@@ -194,11 +195,13 @@ export async function listAdminTransactions(params?: {
 export async function issueRefund(
   userId: string,
   amount: number,
-  reason: string
-): Promise<{ newBalance: number }> {
+  reason: string,
+  transactionId: string,
+  requestId: string
+): Promise<{ newBalance: number; skipped?: boolean }> {
   const res = await adminFetch("/admin/credits/refund", {
     method: "POST",
-    body: JSON.stringify({ userId, amount, reason }),
+    body: JSON.stringify({ userId, amount, reason, transactionId, requestId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -352,14 +355,18 @@ export async function updateAdminTemplate(
     description?: string;
     isActive?: boolean;
     systemPrompt?: string;
-    defaultSettings?: Record<string, unknown>;
+    defaultConfig?: Partial<CourtConfig>;
+    inputFields?: TemplateInputField[];
   }
 ): Promise<void> {
   const res = await adminFetch(`/admin/templates/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to update template");
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error ?? "Failed to update template");
+  }
 }
 
 export interface SystemHealth {
@@ -833,4 +840,16 @@ export async function deleteEmailTemplateVersion(id: string, versionId: string):
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error ?? "Failed to delete version");
   }
+}
+
+export async function sendReengagementCampaign(): Promise<{emailsSent: number; failed: number; skipped: number}> {
+  const res = await adminFetch("/admin/send-reengagement", {method: "POST", body: JSON.stringify({inactiveDays: 14})});
+  if (!res.ok) throw new Error("Campaign could not be started");
+  return res.json();
+}
+export interface EmailDelivery {id: string; userId: string; templateId: string; status: string; updatedAt: number}
+export async function getEmailDeliveries(): Promise<EmailDelivery[]> {
+  const res = await adminFetch("/admin/email-deliveries");
+  if (!res.ok) throw new Error("Email history unavailable");
+  return (await res.json()).deliveries;
 }

@@ -1,3 +1,5 @@
+import { TemplateEditModal } from "./TemplateEditModal";
+import { AiBillingTab, KNOWN_PROVIDERS } from "./AiBillingTab";
 import { MarketingTab } from "./MarketingTab";
 import "./admin.css";
 import { useState, useEffect, useRef } from "react";
@@ -45,7 +47,7 @@ import {
   getPricingConfig, updateModelMultiplier, resetModelMultiplier,
   getApiKeys, saveApiKey, deleteApiKey,
   getAdminBillingDefaults, saveAdminBillingDefaults,
-  getEmailTemplates, updateEmailTemplate, fetchEmailTemplatePreview,
+  getEmailTemplates, updateEmailTemplate, fetchEmailTemplatePreview, getEmailDeliveries, sendReengagementCampaign,
   getEmailTemplateVersions, saveEmailTemplateVersion,
   activateEmailTemplateVersion, deleteEmailTemplateVersion,
   type EmailTemplate, type EmailTemplateVersion,
@@ -63,7 +65,7 @@ import {
 type AdminTab =
   | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
   | "api-usage" | "errors" | "abuse" | "marketing" | "templates" | "pricing" | "credit-packs" | "api-keys"
-  | "checklist" | "ai-studio" | "seat-orders" | "emails";
+  | "ai-billing" | "checklist" | "ai-studio" | "seat-orders" | "emails";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "overview",     label: "Overview",       icon: Activity },
@@ -71,6 +73,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "health",       label: "System Health",  icon: Server },
   { id: "ai-studio",    label: "AI Studio",      icon: Bot },
   { id: "seat-orders",  label: "Seat Orders",    icon: ScrollText },
+  { id: "ai-billing", label: "AI Billing", icon: DollarSign },
   { id: "pricing",      label: "Pricing",        icon: DollarSign },
   { id: "api-keys",     label: "API Keys",       icon: Shield },
   { id: "users",        label: "Users",           icon: Users },
@@ -304,6 +307,13 @@ function ChecklistTab() {
 }
 
 // ─── Users Tab ────────────────────────────────────────────────────────────────
+function LoadError({ onRetry }: { onRetry: () => unknown }) {
+  return <div role="alert" className="lgt-card lgt-card--compact space-y-3">
+    <p>Could not load these records.</p>
+    <Button variant="outline" onClick={() => onRetry()}>Retry</Button>
+  </div>;
+}
+
 function UsersTab() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -320,6 +330,7 @@ function UsersTab() {
   const {
     data: pages,
     isLoading,
+    isError,
     isFetchingNextPage,
     fetchNextPage,
     hasNextPage,
@@ -352,6 +363,7 @@ function UsersTab() {
         </Button>
       </div>
 
+      {isError && <LoadError onRetry={refetch} />}
       {isLoading ? (
         <TabSkeleton />
       ) : (
@@ -416,7 +428,7 @@ function UsersTab() {
               </article>
             ))}
           </div>
-          {!users.length && <p className="py-6 text-center text-muted-foreground text-sm">No users found</p>}
+          {!isError && !users.length && <p className="py-6 text-center text-muted-foreground text-sm">No users found</p>}
 
           {/* Pagination */}
           {hasNextPage && (
@@ -434,7 +446,7 @@ function UsersTab() {
               </Button>
             </div>
           )}
-          {!hasNextPage && users.length > 0 && (
+          {!isError && !hasNextPage && users.length > 0 && (
             <p className="text-center text-xs text-muted-foreground py-1">
               Showing all {users.length} users
             </p>
@@ -891,15 +903,18 @@ function SessionsTab() {
     return () => clearTimeout(t);
   }, [filterUserId]);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data: pages, isLoading, isError, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["admin-sessions", filterStatus, debouncedUserId, filterTemplateId],
-    queryFn: () => listAdminSessions({
+    queryFn: ({pageParam}) => listAdminSessions({
       status: filterStatus || undefined,
       userId: debouncedUserId || undefined,
       templateId: filterTemplateId || undefined,
-      limit: 25,
+      limit: 25, cursor: pageParam,
     }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: last => last.hasMore && last.nextCursor ? last.nextCursor : undefined,
   });
+  const records = pages?.pages.flatMap(page => page.sessions) ?? [];
 
   return (
     <div className="space-y-4">
@@ -914,6 +929,9 @@ function SessionsTab() {
           <option value="complete">Complete</option>
           <option value="incomplete">Incomplete</option>
           <option value="error">Error</option>
+          <option value="relay_needed">Waiting for answers</option>
+          <option value="paused_credit_cap">Paused for credits</option>
+          <option value="running">Running</option>
         </select>
         <Input
           value={filterUserId}
@@ -934,11 +952,12 @@ function SessionsTab() {
         </Button>
       </div>
 
+      {isError && <LoadError onRetry={refetch} />}
       {isLoading ? (
         <TabSkeleton />
       ) : (
         <div className="row layout__split-2">
-          {(data?.sessions ?? []).map((s) => {
+          {records.map((s) => {
             const title = s.title ?? s.question ?? "Untitled";
             return (
               <article key={s.id} className="lgt-card lgt-card--compact space-y-3" aria-label={`Session ${title}`}>
@@ -990,11 +1009,15 @@ function SessionsTab() {
               </article>
             );
           })}
-          {!data?.sessions?.length && (
+          {!isError && !records.length && (
             <p className="py-12 text-center text-muted-foreground text-sm">No sessions found</p>
           )}
         </div>
       )}
+
+      {hasNextPage && <Button variant="outline" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
+        {isFetchingNextPage ? "Loading…" : "Load more sessions"}
+      </Button>}
 
       {selectedId && (
         <SessionDetailSheet id={selectedId} onClose={() => setSelectedId(null)} />
@@ -1151,14 +1174,17 @@ function TransactionsTab() {
     return () => clearTimeout(t);
   }, [filterUserId]);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data: pages, isLoading, isError, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["admin-transactions", filterType, debouncedUserId],
-    queryFn: () => listAdminTransactions({
+    queryFn: ({pageParam}) => listAdminTransactions({
       type: filterType || undefined,
       userId: debouncedUserId || undefined,
-      limit: 30,
+      limit: 30, cursor: pageParam,
     }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: last => last.hasMore && last.nextCursor ? last.nextCursor : undefined,
   });
+  const records = pages?.pages.flatMap(page => page.transactions) ?? [];
 
   // Separate query for unresolved shortfalls — always runs regardless of filter
   const { data: shortfallData } = useQuery({
@@ -1179,9 +1205,9 @@ function TransactionsTab() {
         <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4 flex items-start gap-3">
           <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
           <div className="text-sm text-amber-300">
-            <span className="font-semibold">{shortfallCount} unresolved credit shortfall{shortfallCount !== 1 ? "s" : ""}</span>
+            <span className="font-semibold">{shortfallCount} recent credit shortfall{shortfallCount !== 1 ? "s" : ""}</span>
             {" "}— sessions where the actual cost exceeded the user's available balance or settlement crashed.
-            Filter by <code className="text-xs bg-amber-400/10 px-1 rounded">usage_shortfall</code> or <code className="text-xs bg-amber-400/10 px-1 rounded">settlement_failure</code> to review and issue manual refunds.
+            Filter by <code className="text-xs bg-amber-400/10 px-1 rounded">usage_shortfall</code> or <code className="text-xs bg-amber-400/10 px-1 rounded">settlement_failure</code> to review. Refunds apply only to collected usage charges.
           </div>
         </div>
       )}
@@ -1215,11 +1241,12 @@ function TransactionsTab() {
         </Button>
       </div>
 
+      {isError && <LoadError onRetry={refetch} />}
       {isLoading ? (
         <TabSkeleton />
       ) : (
         <div className="row layout__split-2">
-          {(data?.transactions ?? []).map((tx) => {
+          {records.map((tx) => {
             const isShortfall = SHORTFALL_TYPES.has(tx.type ?? "");
             const typeLabel = tx.type?.replace(/_/g, " ") ?? "Transaction";
             return (
@@ -1236,7 +1263,7 @@ function TransactionsTab() {
                     {isShortfall && <AlertTriangle className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" />}
                     {typeLabel}
                   </Badge>
-                  {(tx.type === "usage" || isShortfall) && (
+                  {(tx.type === "usage" && (tx.amount ?? 0) < 0) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1288,17 +1315,21 @@ function TransactionsTab() {
               </article>
             );
           })}
-          {!data?.transactions?.length && (
+          {!isError && !records.length && (
             <p className="py-12 text-center text-muted-foreground text-sm">No transactions found</p>
           )}
         </div>
       )}
 
+      {hasNextPage && <Button variant="outline" disabled={isFetchingNextPage} onClick={() => fetchNextPage()}>
+        {isFetchingNextPage ? "Loading…" : "Load more transactions"}
+      </Button>}
+
       {refundTarget && (
         <RefundModal
           tx={refundTarget}
           onClose={() => setRefundTarget(null)}
-          onSuccess={() => qc.invalidateQueries({ queryKey: ["admin-transactions"] })}
+          onSuccess={() => { void qc.invalidateQueries({ queryKey: ["admin-transactions"] }); void qc.invalidateQueries({ queryKey: ["admin-users"] }); void qc.invalidateQueries({ queryKey: ["admin-user"] }); }}
         />
       )}
     </div>
@@ -1314,11 +1345,12 @@ function RefundModal({
 }) {
   const [amount, setAmount] = useState(String(Math.abs(tx.amount ?? 0)));
   const [reason, setReason] = useState("");
+  const [requestId] = useState(() => crypto.randomUUID());
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => issueRefund(tx.userId!, Number(amount), reason || `refund_for_tx_${tx.id}`),
+    mutationFn: () => issueRefund(tx.userId!, Number(amount), reason, tx.id, requestId),
     onSuccess: (data) => {
-      toast.success(`Refund issued. New balance: ${data.newBalance}`);
+      toast.success(data.skipped ? "This refund was already processed." : `Refund issued. New balance: ${data.newBalance}`);
       onSuccess();
       onClose();
     },
@@ -1342,6 +1374,8 @@ function RefundModal({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               min={1}
+              max={Math.abs(tx.amount ?? 0)}
+              step={1}
               className="font-mono"
             />
           </div>
@@ -1356,7 +1390,7 @@ function RefundModal({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => mutate()} disabled={!amount || isPending}>
+          <Button onClick={() => mutate()} disabled={!Number.isSafeInteger(Number(amount)) || Number(amount) <= 0 || isPending}>
             {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Issue Refund
           </Button>
@@ -1816,7 +1850,7 @@ function TemplatesTab() {
   const qc = useQueryClient();
   const [editTarget, setEditTarget] = useState<any | null>(null);
 
-  const { data: templates, isLoading, refetch } = useQuery({
+  const { data: templates, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-templates"],
     queryFn: listAdminTemplates,
   });
@@ -1832,6 +1866,7 @@ function TemplatesTab() {
   });
 
   if (isLoading) return <TabSkeleton />;
+  if (isError) return <LoadError onRetry={refetch} />;
 
   return (
     <div className="space-y-4">
@@ -1858,7 +1893,7 @@ function TemplatesTab() {
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">{t.category}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditTarget(t)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit ${t.title ?? t.id}`} onClick={() => setEditTarget(t)}>
                   <Edit3 className="w-3.5 h-3.5" />
                 </Button>
                 <Switch
@@ -1882,69 +1917,6 @@ function TemplatesTab() {
         />
       )}
     </div>
-  );
-}
-
-function TemplateEditModal({
-  template, onClose, onSuccess,
-}: {
-  template: any;
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [title, setTitle] = useState(template.title ?? "");
-  const [description, setDescription] = useState(template.description ?? "");
-  const [systemPrompt, setSystemPrompt] = useState(template.systemPrompt ?? "");
-  const [isActive, setIsActive] = useState(template.isActive !== false);
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => updateAdminTemplate(template.id, { title, description, systemPrompt, isActive }),
-    onSuccess: () => { toast.success("Template updated"); onSuccess(); },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-admin-panel="" className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit Template</DialogTitle>
-          <DialogDescription>ID: <span className="font-mono text-xs">{template.id}</span></DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Description</label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">System Prompt Override</label>
-            <Textarea
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder="Leave blank to use the built-in default for this template…"
-              className="font-mono text-xs min-h-[120px] resize-y"
-            />
-            <p className="text-xs text-muted-foreground">
-              Overrides the default system prompt sent to AI litigants for this template.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
-            <label className="text-sm">Active (visible to users)</label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => mutate()} disabled={isPending}>
-            {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -2166,12 +2138,7 @@ function FeedbackFlagsTab() {
 }
 
 // ─── API Keys Tab ────────────────────────────────────────────────────────────
-const KNOWN_PROVIDERS = [
-  { id: "openai", label: "OpenAI", keyUrl: "https://platform.openai.com/api-keys" },
-  { id: "anthropic", label: "Anthropic (Claude)", keyUrl: "https://platform.claude.com/settings/keys" },
-  { id: "grok", label: "xAI Grok", keyUrl: "https://console.x.ai/team/default/api-keys" },
-  { id: "gemini", label: "Google Gemini", keyUrl: "https://aistudio.google.com/apikey" },
-];
+
 
 interface KeyFormState {
   providerId: string;
@@ -3050,18 +3017,31 @@ function EmailRow({ template, onEdit, onToggle }: { template: EmailTemplate; onE
   );
 }
 
+function EmailActivity() {
+  const history = useQuery({queryKey: ["admin-email-deliveries"], queryFn: getEmailDeliveries});
+  return <details className="lgt-card lgt-card--compact">
+    <summary className="min-h-11 cursor-pointer py-3">Recent email attempts</summary>
+    <Button variant="outline" onClick={() => history.refetch()}>Refresh email history</Button>
+    {history.isLoading ? <p role="status">Loading…</p> : history.isError ? <LoadError onRetry={history.refetch} /> :
+      <div className="space-y-3 pt-3">{history.data?.map(item => <div key={item.id} className="border-t border-border pt-3 text-sm">
+        <p>{item.templateId} · {item.status === "accepted" ? "Accepted by email provider" : item.status}</p>
+        <p className="text-xs text-muted-foreground break-all">{item.userId} · {new Date(item.updatedAt).toLocaleString()}</p>
+      </div>)}{!history.data?.length && <p>No tracked email attempts yet.</p>}</div>}
+  </details>;
+}
+
 function EmailsTab() {
   const qc = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [edited, setEdited] = useState<Partial<BillingDefaults>>({});
 
-  const { data: templates, isLoading: templatesLoading } = useQuery({
+  const { data: templates, isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useQuery({
     queryKey: ["admin-email-templates"],
     queryFn: getEmailTemplates,
   } as any);
 
-  const { data: defaults, isLoading: defaultsLoading, isError: defaultsError } = useQuery({
+  const { data: defaults, isLoading: defaultsLoading, isError: defaultsError, refetch: refetchDefaults } = useQuery({
     queryKey: ["admin-billing-defaults"],
     queryFn: getAdminBillingDefaults,
   } as any);
@@ -3076,13 +3056,18 @@ function EmailsTab() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const campaign = useMutation({mutationFn: sendReengagementCampaign,
+    onSuccess: result => { toast.success(`${result.emailsSent} emails accepted; ${result.skipped} skipped; ${result.failed} failed.`); void qc.invalidateQueries({queryKey: ["admin-email-deliveries"]}); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const current = defaults ? { ...defaults, ...edited } : null;
 
   const allTemplates: EmailTemplate[] = (templates as any) ?? [];
   const editingTemplate = allTemplates.find(t => t.id === editingId) ?? null;
 
   if (templatesLoading || defaultsLoading) return <TabSkeleton />;
-  if (defaultsError || !current) return <p role="alert">Could not load billing defaults. Reload to try again.</p>;
+  if (templatesError || defaultsError || !current) return <LoadError onRetry={() => Promise.all([refetchTemplates(), refetchDefaults()])} />;
 
   const liveCount = allTemplates.filter(t => t.enabled).length;
 
@@ -3099,6 +3084,14 @@ function EmailsTab() {
         </p>
       </div>
 
+      <div className="lgt-card lgt-card--compact space-y-3">
+        <h3 className="font-semibold">Re-engagement</h3>
+        <p className="text-sm text-muted-foreground">Manually email registered users with credits who have been inactive for 14 days.</p>
+        <Button disabled={campaign.isPending || !allTemplates.find(t => t.id === "reengagement")?.enabled} onClick={() => campaign.mutate()}>
+          {campaign.isPending ? "Sending…" : "Send re-engagement emails"}
+        </Button>
+      </div>
+      <EmailActivity />
       {/* Email list */}
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
         <div className="px-5 py-3 bg-muted/20 flex items-center justify-between">
@@ -3391,6 +3384,7 @@ export default function AdminPage() {
           {activeTab === "credit-packs" && <CreditPacksTab />}
           {activeTab === "limits"       && <LimitsTab />}
           {activeTab === "marketing"    && <MarketingTab />}
+          {activeTab === "ai-billing" && <AiBillingTab />}
           {activeTab === "templates"    && <TemplatesTab />}
           {activeTab === "emails"       && <EmailsTab />}
         </motion.div>

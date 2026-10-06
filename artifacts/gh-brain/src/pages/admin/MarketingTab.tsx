@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { guestFetch, type GuestInvitation } from "@/services/guestService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,11 @@ export function MarketingTab() {
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [expiresAt, setExpiresAt] = useState(() => localDate(new Date(Date.now() + 7 * 86400_000)));
   const [createdLink, setCreatedLink] = useState("");
-  const query = useQuery({queryKey: ["admin-guest-invitations"], queryFn: () => guestFetch<{invitations: GuestInvitation[]}>("/admin/guest-invitations"), retry: false});
+  const query = useInfiniteQuery({queryKey: ["admin-guest-invitations"],
+    queryFn: ({pageParam}) => guestFetch<{invitations: GuestInvitation[]; hasMore: boolean; nextCursor: string | null}>(`/admin/guest-invitations${pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ""}`),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: last => last.hasMore && last.nextCursor ? last.nextCursor : undefined, retry: false});
+  const invitations = query.data?.pages.flatMap(page => page.invitations) ?? [];
   const create = useMutation({mutationFn: () => guestFetch<{id: string}>("/admin/guest-invitations", {method: "POST", body: JSON.stringify({label, credits: Number(credits), plan, expiresAt: new Date(expiresAt).toISOString()})}),
     onSuccess: data => {setCreatedLink(invitationLink(data.id)); setLabel(""); void qc.invalidateQueries({queryKey: ["admin-guest-invitations"]}); toast.success("Invitation created.");}, onError: (e: Error) => toast.error(e.message)});
   const revoke = useMutation({mutationFn: (id: string) => guestFetch(`/admin/guest-invitations/${id}`, {method: "DELETE"}),
@@ -43,14 +47,14 @@ export function MarketingTab() {
     </form>
     {query.isPending && <p role="status">Loading invitations…</p>}
     {query.isError && <div role="alert"><p>Could not load invitations.</p><Button variant="outline" onClick={() => query.refetch()}>Retry</Button></div>}
-    {query.data?.invitations.length === 0 && <p className="text-sm text-muted-foreground">No invitations yet.</p>}
-    <div className="row layout__split-2">{query.data?.invitations.map(invite => <article key={invite.id} aria-label={`Invitation for ${invite.label}`} className="lgt-card lgt-card--compact space-y-2 min-w-0">
+    {!query.isPending && !query.isError && invitations.length === 0 && <p className="text-sm text-muted-foreground">No invitations yet.</p>}
+    <div className="row layout__split-2">{invitations.map(invite => <article key={invite.id} aria-label={`Invitation for ${invite.label}`} className="lgt-card lgt-card--compact space-y-2 min-w-0">
       <h4 className="font-semibold break-words">{invite.label}</h4>
       <p className="text-sm">{invite.plan === "pro" ? "Pro" : "Free"} · {invite.status === "signed_up" ? `${invite.credits} trial credits` : `${invite.remainingCredits} / ${invite.credits} credits left`}</p>
       <p className="text-xs text-muted-foreground">Expires {new Date(invite.expiresAt).toLocaleString()}</p>
       <p className="text-xs capitalize">{invite.status.replace("_", " ")}</p>
       {["ready", "claimed"].includes(invite.status) && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => copy(invitationLink(invite.id))}>Copy link</Button><Button variant="ghost" disabled={revoke.isPending} onClick={() => revoke.mutate(invite.id)}>Revoke</Button></div>}
     </article>)}</div>
-    {!!query.data?.invitations.length && <p className="text-xs text-muted-foreground">Latest 100 invitations.</p>}
+    {query.hasNextPage && <Button variant="outline" disabled={query.isFetchingNextPage} onClick={() => query.fetchNextPage()}>{query.isFetchingNextPage ? "Loading…" : "Load more invitations"}</Button>}
   </section>;
 }

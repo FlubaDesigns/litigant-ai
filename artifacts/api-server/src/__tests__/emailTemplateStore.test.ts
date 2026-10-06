@@ -26,3 +26,8 @@ it("rejects unknown variables and disabling mandatory account emails before writ
   await expect(saveTemplateConfig("verification", { enabled: false }, "owner")).rejects.toThrow("cannot be disabled");
   expect(set).not.toHaveBeenCalled();
 });
+
+it("does not enable defaults when saved email settings cannot be read", async () => {
+  get.mockRejectedValue(new Error("Firestore unavailable"));
+  await expect(getTemplateConfig("welcome")).rejects.toThrow("No email was sent");
+});

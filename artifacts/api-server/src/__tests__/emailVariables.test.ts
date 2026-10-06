@@ -24,7 +24,7 @@ beforeEach(() => {
   });
 });
 
-const senders: Record<EmailTemplateId, () => Promise<void>> = {
+const senders: Record<EmailTemplateId, () => Promise<boolean>> = {
   verification: () => email.sendVerificationEmail("fixture"),
   passwordReset: () => email.sendPasswordResetEmail("test@example.test"),
   welcome: () => email.sendWelcomeEmail("fixture"),

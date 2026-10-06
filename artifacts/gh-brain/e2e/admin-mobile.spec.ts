@@ -1,4 +1,5 @@
 import {test, expect} from "./fixtures";
+import { TEMPLATES } from "../../../lib/api-zod/src/templates";
 
 const longId = "a-long-existing-record-identifier-that-must-wrap-on-a-phone";
 const model = {id:"gpt-5",model:"gpt-5",label:"GPT model with a long descriptive name",provider:"openai",providerLabel:"OpenAI",inputRatePer1k:0.001,outputRatePer1k:0.002,userInputPer1k:0.002,userOutputPer1k:0.004,multiplier:2,exampleCredits:12,qualityScore:80,enabled:true,available:true};
@@ -25,6 +26,7 @@ const responses: Record<string,unknown> = {
   "/admin/guest-invitations":{invitations:[]},
   "/admin/templates":{templates:[]},
   "/admin/email-templates":{templates:[email]},
+  "/admin/email-deliveries":{deliveries:[]},
   "/admin/email-templates/welcome/versions":{versions:[]},
   "/admin/billing-defaults":{autoRefillAmounts:[10,20,50],defaultAutoRefillAmount:20,defaultThresholdCredits:100,defaultWarningThresholdCredits:200,signupBonusCredits:500,emailCreditWarningThreshold:100},
 };
@@ -747,4 +749,66 @@ test("email preview and saved version use the edited draft and its variables", a
   await page.getByPlaceholder("e.g. Launch copy, A/B test v2…").fill("New draft");
   await page.getByRole("button",{name:"Save",exact:true}).click();
   await expect.poll(()=>versionBody).toEqual({versionName:"New draft",draft:{subject:"Hello {name}",headline:"Draft for {name}",introText:"Your next steps, {name}."}});
+});
+
+test("admin template questions and output defaults save and appear in intake", async ({page}) => {
+  await page.setViewportSize({width:360,height:915});
+  let template = structuredClone(TEMPLATES[0]);
+  let saved: any;
+  await page.route("**/api-server/api/admin/templates**", async route => {
+    if (route.request().method() === "PUT") {
+      saved = route.request().postDataJSON();
+      template = {...template, ...saved};
+      return route.fulfill({json:{success:true}});
+    }
+    return route.fulfill({json:{templates:[template]}});
+  });
+  await page.route("**/api-server/api/templates", route => route.fulfill({json:[template]}));
+  await page.goto("/admin?tab=templates&e2e=1");
+  await page.getByRole("button",{name:`Edit ${template.title}`,exact:true}).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Question", {exact:true}).first().fill("What should we build?");
+  await dialog.getByRole("switch", {name:"Question 1 required"}).click();
+  await dialog.getByRole("button", {name:"Add question",exact:true}).click();
+  await dialog.getByLabel("Question", {exact:true}).last().fill("What would success look like?");
+  await dialog.getByText("Deliverable defaults", {exact:true}).click();
+  await dialog.getByLabel("Document type", {exact:true}).selectOption("memo");
+  await dialog.getByLabel("Download format", {exact:true}).selectOption("docx");
+  expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await dialog.getByRole("button", {name:"Save",exact:true}).click();
+  await expect(dialog).toHaveCount(0);
+  expect(saved.inputFields[0]).toMatchObject({label:"What should we build?",required:false});
+  expect(saved.defaultConfig).toMatchObject({artifactType:"memo",format:"docx"});
+  await page.goto(`/session?templateId=${template.id}&e2e=1`);
+  const intake = page.getByTestId("template-questions");
+  await intake.getByText(/Optional details/).click();
+  await expect(intake.getByLabel("What should we build?")).toBeVisible();
+  await expect(intake.getByLabel("What would success look like?")).toBeVisible();
+});
+
+test("admin lists expose failed reads and cursor pagination", async ({page}) => {
+  let fail = true;
+  await page.route("**/api-server/api/admin/sessions?**", async route => {
+    if (fail) return route.fulfill({status:503,json:{error:"Unavailable"}});
+    const cursor = new URL(route.request().url()).searchParams.get("cursor");
+    return route.fulfill({json:{sessions:[{id:cursor ? "older" : "recent",title:cursor ? "Older conversation" : "Recent conversation",status:"complete"}],hasMore:!cursor,nextCursor:cursor ? null : "recent"}});
+  });
+  await page.goto("/admin?tab=sessions&e2e=1");
+  await expect(page.getByRole("alert")).toContainText("Could not load");
+  await expect(page.getByText("No sessions found", {exact:true})).toHaveCount(0);
+  fail = false;
+  await page.getByRole("button",{name:"Retry",exact:true}).click();
+  await page.getByRole("button",{name:"Load more sessions",exact:true}).click();
+  await expect(page.getByRole("article",{name:"Session Recent conversation"})).toBeVisible();
+  await expect(page.getByRole("article",{name:"Session Older conversation"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Load more sessions",exact:true})).toHaveCount(0);
+});
+
+test("AI Billing provides four direct provider funding links", async ({page}) => {
+  await page.goto("/admin?tab=ai-billing&e2e=1");
+  const billing = page.getByRole("region",{name:"AI provider billing"});
+  await expect(billing.getByRole("link",{name:"Open OpenAI billing"})).toHaveAttribute("href","https://platform.openai.com/account/billing");
+  await expect(billing.getByRole("link",{name:"Open Anthropic (Claude) billing"})).toHaveAttribute("href","https://platform.claude.com/settings/billing");
+  await expect(billing.getByRole("link",{name:"Open Google Gemini billing"})).toHaveAttribute("href","https://aistudio.google.com/billing");
+  await expect(billing.getByRole("link",{name:"Open xAI Grok billing"})).toHaveAttribute("href","https://console.x.ai/team/default/billing");
 });

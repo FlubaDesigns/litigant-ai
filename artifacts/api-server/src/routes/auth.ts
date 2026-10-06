@@ -1,3 +1,4 @@
+import { sendTrackedEmail } from "../lib/emailService.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
@@ -168,10 +169,7 @@ router.post("/auth/provision", async (req, res) => {
  * Sends the post-verification welcome email exactly once per user.
  * Called by the frontend when the user confirms their email is verified.
  *
- * Idempotent — uses a mark-then-send pattern with rollback on email failure.
- * The mark update is serialized so concurrent calls from the same user
- * (e.g. two tabs both noticing verification at once) don't double-send:
- * one will find welcomeEmailSent already true and return "already_sent".
+ * Uses the same atomic notification tracking as post-session emails.
  */
 router.post("/auth/welcome", async (req, res) => {
   const authHeader = req.headers["authorization"] as string | undefined;
@@ -185,38 +183,9 @@ router.post("/auth/welcome", async (req, res) => {
   if (!db) return res.json({ sent: false, reason: "firestore_unavailable" });
 
   const uid = decoded.uid;
-  const userRef = db.collection("users").doc(uid);
-
   try {
-    // Atomically claim the "send welcome email" slot via a transaction.
-    // Only the first concurrent call that sees welcomeEmailSent == false
-    // will write true and proceed to send; subsequent calls find it already
-    // set and return early. This eliminates the read-then-write race.
-    let shouldSend = false;
-    await db.runTransaction(async (txn) => {
-      const snap = await txn.get(userRef);
-      if (snap.data()?.welcomeEmailSent) {
-        shouldSend = false;
-        return;
-      }
-      txn.update(userRef, { welcomeEmailSent: true, updatedAt: FieldValue.serverTimestamp() });
-      shouldSend = true;
-    });
-
-    if (!shouldSend) {
-      return res.json({ sent: false, reason: "already_sent" });
-    }
-
-    try {
-      await sendWelcomeEmail(uid);
-    } catch (emailErr: any) {
-      // Roll back the flag so a retry can attempt re-send
-      await userRef.update({ welcomeEmailSent: false }).catch(() => {});
-      console.error("[Auth] welcome email failed:", emailErr.message);
-      return res.status(502).json({ error: "Failed to send welcome email" });
-    }
-
-    return res.json({ sent: true });
+    const sent = await sendTrackedEmail(uid, "welcome", key => sendWelcomeEmail(uid, key), {sentField: "welcomeEmailSent"});
+    return res.json({sent, ...(!sent ? {reason: "disabled_or_already_sent"} : {})});
   } catch (err: any) {
     console.error("[Auth] /auth/welcome error:", err.message);
     return res.status(500).json({ error: "Internal error" });

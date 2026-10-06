@@ -13,6 +13,7 @@ export async function getTemplates(includeInactive = false): Promise<Template[]>
       if (template) catalog.set(doc.id, template);
     }
     } catch (error) {
+      if (includeInactive) throw new Error("Saved templates could not be loaded");
       console.error("[templates] Override catalogue unavailable; using shared defaults", {code: (error as {code?: unknown}).code});
     }
   }

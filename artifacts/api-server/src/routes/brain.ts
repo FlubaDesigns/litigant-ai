@@ -41,6 +41,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { checkAndTriggerAutoRefill, reserveCredits, reconcileCredits } from "../lib/creditLedger.js";
 import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import {
+  sendTrackedEmail,
   sendLowCreditsEmail,
   sendSessionCompleteEmail,
   sendFirstSessionEmail,
@@ -572,44 +573,34 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         const userData = userSnap.data() ?? {};
         const newBalance = (userData.creditBalance as number) ?? 0;
 
+        await db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
+          .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
+
         await checkAndTriggerAutoRefill(uid, newBalance, createAutoRefillUrl);
 
         if (isResendConfigured()) {
           const billingDefaults = await getBillingDefaults();
           const emailThreshold = billingDefaults.emailCreditWarningThreshold;
 
-          if (newBalance < emailThreshold) {
-            const lastSentMs = (userData.lowCreditEmailSentAt as number | undefined) ?? 0;
-            if (lastSentMs < Date.now() - 24 * 60 * 60 * 1000) {
-              sendLowCreditsEmail(uid, newBalance, emailThreshold)
-                .then(() => db.collection("users").doc(sessionUid).update({ lowCreditEmailSentAt: Date.now() }))
-                .catch((e) => console.error("[brain] Low-credits email failed (non-fatal):", e));
-            }
-          }
-
+          const notifications: Promise<boolean>[] = [];
+          if (emailThreshold > 0 && newBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
+            key => sendLowCreditsEmail(sessionUid, newBalance, emailThreshold, key),
+            {sentField: "lowCreditEmailSentAt", cooldownMs: 86400_000}));
           if (status === "complete" && userData.notifySessionComplete === true && result.sessionId) {
-            sendSessionCompleteEmail(uid, result.sessionId, sessionTitle, actualCost)
-              .catch((e) => console.error("[brain] Session-complete email failed (non-fatal):", e));
+            notifications.push(sendTrackedEmail(sessionUid, "sessionComplete",
+              key => sendSessionCompleteEmail(sessionUid, result.sessionId, sessionTitle, actualCost, key), {eventId: result.sessionId}));
           }
-
-          if (status === "complete" && !userData.firstSessionEmailSent && result.sessionId) {
-            sendFirstSessionEmail(uid, result.sessionId, sessionTitle)
-              .then(() => db.collection("users").doc(sessionUid).update({ firstSessionEmailSent: true }))
-              .catch((e) => console.error("[brain] First-session email failed (non-fatal):", e));
-          }
-
-          if (newBalance <= 0) {
-            const lastZeroMs = (userData.zeroCreditsEmailSentAt as number | undefined) ?? 0;
-            if (Date.now() - lastZeroMs > 24 * 60 * 60 * 1000) {
-              sendZeroCreditsEmail(uid)
-                .then(() => db.collection("users").doc(sessionUid).update({ zeroCreditsEmailSentAt: Date.now() }))
-                .catch((e) => console.error("[brain] Zero-credits email failed (non-fatal):", e));
-            }
-          }
+          if (status === "complete" && result.sessionId) notifications.push(sendTrackedEmail(sessionUid, "firstSession",
+            key => sendFirstSessionEmail(sessionUid, result.sessionId, sessionTitle, key), {sentField: "firstSessionEmailSent"}));
+          if (newBalance <= 0) notifications.push(sendTrackedEmail(sessionUid, "zeroCredits",
+            key => sendZeroCreditsEmail(sessionUid, key), {sentField: "zeroCreditsEmailSentAt", cooldownMs: 86400_000}));
+          const outcomes = await Promise.allSettled(notifications);
+          outcomes.forEach(outcome => {
+            if (outcome.status === "rejected") console.error("[brain] Notification failed (non-fatal):", outcome.reason);
+          });
         }
 
-        db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
-          .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
+
       } catch (e) {
         console.error("[brain] Post-session notifications failed (non-fatal):", e);
       }
