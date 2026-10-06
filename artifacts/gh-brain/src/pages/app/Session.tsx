@@ -582,7 +582,7 @@ export default function SessionPage() {
                   />
                   <button
                     onClick={handleRun}
-                    disabled={insufficientCredits}
+                    disabled={insufficientCredits || !quote.ready}
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm transition-all"
                     style={{
                       background: insufficientCredits ? "rgba(0,200,83,.15)" : "#00c853",
@@ -591,7 +591,7 @@ export default function SessionPage() {
                     }}
                   >
                     <Play className="w-4 h-4" />
-                    Run Trial
+                    {quote.ready ? "Run Trial" : quote.isError ? "Estimate unavailable" : "Estimating…"}
                   </button>
                 </div>
               ) : (
@@ -608,7 +608,7 @@ export default function SessionPage() {
                     <span className="text-[11px] text-muted-foreground/30 flex-1">Enter to run · Shift+Enter for new line</span>
                     <button
                       onClick={handleRun}
-                      disabled={!state.question.trim() || insufficientCredits}
+                      disabled={!state.question.trim() || insufficientCredits || !quote.ready}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shrink-0"
                       style={{
                         background: (!state.question.trim() || insufficientCredits) ? "rgba(0,200,83,.15)" : "#00c853",
@@ -617,7 +617,7 @@ export default function SessionPage() {
                       }}
                     >
                       <Play className="w-3.5 h-3.5" />
-                      Run Trial
+                      {quote.ready ? "Run Trial" : quote.isError ? "Estimate unavailable" : "Estimating…"}
                     </button>
                   </div>
                 </div>
