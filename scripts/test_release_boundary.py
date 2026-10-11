@@ -70,9 +70,14 @@ class ReleaseBoundaryTests(unittest.TestCase):
             {'fieldPath': 'createdAt', 'order': 'DESCENDING'},
         ]
         self.assertEqual(sum(x['queryScope'] == 'COLLECTION' and x['fields'] == required for x in indexes), 1)
-        # The existing live two-field index is managed outside this source catalog;
-        # inspectPaymentIndexes requires it READY and verifies preservation.
+        history = [required[0], required[2]]
+        self.assertEqual(sum(x['queryScope'] == 'COLLECTION' and x['fields'] == history for x in indexes), 1)
+        self.assertEqual(len(indexes), 2)
+        # Both exact indexes must be READY before production; no catalog deployment.
         self.assertIn("'create exact payment-history index', 'POST', PAYMENT_INDEX", controller)
+        self.assertIn("'create exact unfiltered payment-history index', 'POST', HISTORY_INDEX", controller)
+        self.assertEqual(release.count('inspectPaymentIndexes(await paymentIndexes())'), 2)
+        self.assertLess(release.index('inspectPaymentIndexes(await paymentIndexes())'), release.index("'run', 'services', 'update'"))
         self.assertIn("'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions'", controller)
 
     def test_release_controller_guards(self):

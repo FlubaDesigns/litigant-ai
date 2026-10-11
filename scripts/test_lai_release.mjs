@@ -719,3 +719,63 @@ test('payment-index diagnostic exposes bounded schema and match results without 
   const bounded = paymentIndexMetadata(Array.from({ length: 101 }, () => ({ ...standard, fields: Array.from({ length: 21 }, () => standard.fields[0]) })));
   assert.equal(bounded.count, 101); assert.equal(bounded.truncated, true); assert.equal(bounded.indexes.length, 100); assert.equal(bounded.indexes[0].fields.length, 20);
 });
+
+test('both frozen index POST bodies are exact and arbitrary index kinds cannot be written', async () => {
+  const { HISTORY_INDEX, createRequiredPaymentIndex } = await import('./lai-release.mjs'); const calls = [];
+  const write = async (...args) => { calls.push(args); return { name: 'operation' }; };
+  await createRequiredPaymentIndex('history', write); await createRequiredPaymentIndex('target', write);
+  assert.deepEqual(calls, [
+    [`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact unfiltered payment-history index', 'POST', { queryScope: 'COLLECTION', fields: [{ fieldPath: 'userId', order: 'ASCENDING' }, { fieldPath: 'createdAt', order: 'DESCENDING' }] }],
+    [`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact payment-history index', 'POST', PAYMENT_INDEX],
+  ]);
+  assert(Object.isFrozen(HISTORY_INDEX) && Object.isFrozen(HISTORY_INDEX.fields) && HISTORY_INDEX.fields.every(Object.isFrozen));
+  for (const kind of ['', 'sessions', null, {}, 'HISTORY']) await assert.rejects(createRequiredPaymentIndex(kind, write), /unapproved/);
+  assert.equal(calls.length, 2);
+});
+for (const history of ['MISSING', 'CREATING', 'READY']) for (const target of ['MISSING', 'CREATING', 'READY']) {
+  const initial = () => [...(history === 'MISSING' ? [] : [indexFixture(false, history)]), ...(target === 'MISSING' ? [] : [indexFixture(true, target)])];
+  test(`two-index inspect ${history}/${target} reports the plan without writes`, async () => {
+    let writes = 0;
+    const result = await paymentHistoryIndexGate({ controllerSha: SOURCE }, inspectedDescriptor(), { list: async () => initial(), create: async () => { writes++; } });
+    assert.equal(result.historyState, history); assert.equal(result.state, target); assert.equal(writes, 0);
+  });
+  test(`two-index deployment ${history}/${target} creates only missing exact definitions`, async () => {
+    const writes = []; const events = []; let reads = 0;
+    const result = await paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+      list: async () => reads++ === 0 ? initial() : [indexFixture(), indexFixture(true)],
+      create: async kind => { events.push(kind); writes.push(kind); return {}; }, recheck: async () => { events.push('recheck'); }, polls: 1,
+    });
+    assert.deepEqual(writes, [...(history === 'MISSING' ? ['history'] : []), ...(target === 'MISSING' ? ['target'] : [])]);
+    for (const kind of writes) assert.equal(events[events.indexOf(kind) - 1], 'recheck');
+    assert.equal(events.at(-1), 'recheck'); assert.equal(result.historyState, 'READY'); assert.equal(result.state, 'READY');
+  });
+}
+for (const interruptedBy of ['second POST', 'second evidence recheck']) {
+  test(`interrupted ${interruptedBy} preserves and reuses the first pending index on retry`, async () => {
+    const stored = []; const writes = []; let rechecks = 0;
+    await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+      list: async () => clone(stored),
+      create: async kind => { writes.push(kind); if (kind === 'target') throw Error('second POST failed'); stored.push(indexFixture(false, 'CREATING')); return {}; },
+      recheck: async () => { if (++rechecks === 2 && interruptedBy === 'second evidence recheck') throw Error('Main moved'); }, polls: 1,
+    }), interruptedBy === 'second POST' ? /second POST failed/ : /Main moved/);
+    assert.deepEqual(stored, [indexFixture(false, 'CREATING')]);
+    let reads = 0;
+    const result = await paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+      list: async () => reads++ === 0 ? clone(stored) : [indexFixture(), indexFixture(true)],
+      create: async kind => { writes.push(kind); return {}; }, recheck: async () => {}, polls: 1,
+    });
+    assert.equal(writes.filter(kind => kind === 'history').length, 1);
+    assert.equal(writes.at(-1), 'target'); assert.equal(result.historyState, 'READY');
+  });
+}
+test('a ready target cannot release while the unfiltered index is still building', async () => {
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+    list: async () => [indexFixture(false, 'CREATING'), indexFixture(true)], recheck: async () => {}, polls: 1,
+  }), /not READY yet/);
+});
+test('two-index planning rejects ambiguous and repair-state history indexes', async () => {
+  const { inspectPaymentIndexSet } = await import('./lai-release.mjs');
+  assert.throws(() => inspectPaymentIndexSet([indexFixture(), indexFixture(false, 'READY', 'second')]), /ambiguous/);
+  assert.throws(() => inspectPaymentIndexSet([indexFixture(false, 'NEEDS_REPAIR')]), /needs repair/);
+  assert.equal(inspectPaymentIndexSet([changed(indexFixture(), x => { x.queryScope = 'COLLECTION_GROUP'; })]).history, null);
+});

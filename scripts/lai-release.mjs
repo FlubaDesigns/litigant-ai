@@ -288,14 +288,14 @@ async function cloud(url, label, method = 'GET', body) { return request(url, { l
 const SERVICE_URL = 'https://us-central1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/litigant-ai/services/api';
 async function serviceSnapshot() { return assertServiceReady(await cloud(SERVICE_URL, 'Cloud Run api/us-central1/litigant-ai')); }
 
-// One additive index only. Never deploy the index catalog or mutate Firestore rules/data.
+// Two exact additive payment-history indexes. Never deploy the catalog or mutate rules/data.
 export const PAYMENT_INDEX_PARENT = 'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions';
 export const PAYMENT_INDEX = Object.freeze({ queryScope: 'COLLECTION', fields: Object.freeze([
   Object.freeze({ fieldPath: 'userId', order: 'ASCENDING' }),
   Object.freeze({ fieldPath: 'type', order: 'ASCENDING' }),
   Object.freeze({ fieldPath: 'createdAt', order: 'DESCENDING' }),
 ]) });
-const HISTORY_INDEX = { queryScope: 'COLLECTION', fields: [PAYMENT_INDEX.fields[0], PAYMENT_INDEX.fields[2]] };
+export const HISTORY_INDEX = Object.freeze({ queryScope: 'COLLECTION', fields: Object.freeze([PAYMENT_INDEX.fields[0], PAYMENT_INDEX.fields[2]]) });
 function indexDefinition(index) {
   const { name, state, ...definition } = index;
   return definition;
@@ -310,7 +310,7 @@ function matchesIndex(index, expected) {
   }
   return JSON.stringify(sorted(fields)) === JSON.stringify(sorted(expected.fields));
 }
-export function inspectPaymentIndexes(indexes) {
+export function inspectPaymentIndexSet(indexes) {
   assert(Array.isArray(indexes), 'index list required');
   const names = new Set();
   for (const index of indexes) {
@@ -318,11 +318,17 @@ export function inspectPaymentIndexes(indexes) {
     assert(!names.has(index.name), 'duplicate index resource'); names.add(index.name);
   }
   const history = indexes.filter(index => matchesIndex(index, HISTORY_INDEX));
-  assert(history.some(index => index.state === 'READY'), 'existing unfiltered payment-history index must remain READY');
   const matches = indexes.filter(index => matchesIndex(index, PAYMENT_INDEX));
+  assert(history.length <= 1, 'ambiguous unfiltered payment-history index');
   assert(matches.length <= 1, 'ambiguous payment-history index');
+  if (history[0]) assert(['READY', 'CREATING'].includes(history[0].state), 'unfiltered payment-history index needs repair; no production release');
   if (matches[0]) assert(['READY', 'CREATING'].includes(matches[0].state), 'payment-history index needs repair; no production release');
-  return matches[0] ?? null;
+  return { history: history[0] ?? null, target: matches[0] ?? null };
+}
+export function inspectPaymentIndexes(indexes) {
+  const result = inspectPaymentIndexSet(indexes);
+  assert.equal(result.history?.state, 'READY', 'existing unfiltered payment-history index must remain READY');
+  return result.target;
 }
 function assertIndexesPreserved(before, after) {
   for (const index of before) {
@@ -385,37 +391,44 @@ export function paymentIndexMetadata(indexes) {
     })),
   };
 }
-export async function paymentHistoryIndexGate(context, descriptor, { list = paymentIndexes, create = () => cloud(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact payment-history index', 'POST', PAYMENT_INDEX), recheck, pause = sleep, polls = 120, delayMs = 10000 } = {}) {
+export async function createRequiredPaymentIndex(kind, write = cloud) {
+  assert(['history', 'target'].includes(kind), 'unapproved payment index kind');
+  if (kind === 'history') return write(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact unfiltered payment-history index', 'POST', HISTORY_INDEX);
+  return write(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact payment-history index', 'POST', PAYMENT_INDEX);
+}
+export async function paymentHistoryIndexGate(context, descriptor, { list = paymentIndexes, create = createRequiredPaymentIndex, recheck, pause = sleep, polls = 120, delayMs = 10000 } = {}) {
   if (descriptor.action === 'inspect') assert.equal(descriptor.sourceCommit, context.controllerSha, 'inspection source mismatch');
   validateDescriptor(descriptor.action === 'inspect' ? { ...descriptor, sourceCommit: null } : descriptor, context.controllerSha);
   assert(Number.isSafeInteger(polls) && polls > 0 && polls <= 120, 'invalid index wait bound');
   const before = await list();
-  let index = inspectPaymentIndexes(before);
+  let indexes = inspectPaymentIndexSet(before);
   if (descriptor.action === 'inspect') {
-    console.log(`Read-only index plan: credit_transactions userId ASC, type ASC, createdAt DESC is ${index?.state ?? 'MISSING'}; existing history index preserved.`);
-    return { state: index?.state ?? 'MISSING', created: false };
+    console.log(`Read-only index plan: credit_transactions COLLECTION userId ASC, createdAt DESC is ${indexes.history?.state ?? 'MISSING'}; userId ASC, type ASC, createdAt DESC is ${indexes.target?.state ?? 'MISSING'}. Deployment creates only missing planned indexes and waits for both READY; existing indexes are preserved.`);
+    return { state: indexes.target?.state ?? 'MISSING', historyState: indexes.history?.state ?? 'MISSING', created: false };
   }
   assert(typeof recheck === 'function', 'release evidence recheck required');
   let created = false;
-  if (!index) {
-    await recheck();
-    console.log('Release stage: creating only the approved additive payment-history index; API and Hosting unchanged.');
-    const operation = await create();
-    assert(operation && !operation.error, 'payment-history index creation failed');
-    created = true;
+  for (const kind of ['history', 'target']) {
+    if (!indexes[kind]) {
+      await recheck();
+      console.log(`Release stage: creating only the approved ${kind} payment-history index; API and Hosting unchanged.`);
+      const operation = await create(kind);
+      assert(operation && !operation.error, 'payment-history index creation failed');
+      created = true;
+    }
   }
   for (let attempt = 0; attempt < polls; attempt++) {
     const current = await list();
     assertIndexesPreserved(before, current);
-    index = inspectPaymentIndexes(current);
-    if (index?.state === 'READY') {
+    indexes = inspectPaymentIndexSet(current);
+    if (indexes.history?.state === 'READY' && indexes.target?.state === 'READY') {
       await recheck();
-      console.log(`Payment-history index READY: ${index.name}; all existing indexes preserved.`);
-      return { state: 'READY', created, name: index.name };
+      console.log(`Both payment-history indexes READY: ${indexes.history.name}, ${indexes.target.name}; all existing indexes preserved.`);
+      return { state: 'READY', historyState: 'READY', created, name: indexes.target.name, historyName: indexes.history.name };
     }
     if (attempt + 1 < polls) await pause(delayMs);
   }
-  fail('Payment-history index is not READY yet; API and Hosting unchanged. Recheck the existing build before retrying; do not delete or recreate it.');
+  fail('At least one payment-history index is not READY yet; API and Hosting unchanged. Recheck existing builds before retrying; do not delete or recreate them.');
 }
 
 async function permissions(url, names, label) {
