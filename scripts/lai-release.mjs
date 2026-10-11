@@ -339,7 +339,9 @@ export async function paymentIndexes(read = cloud) {
   // Firestore API requires the database-wide metadata catalog. POST stays exact.
   let parent = read === cloud ? paymentIndexReadParent : PAYMENT_INDEX_PARENT;
   for (let page = 0; page < 100; page++) {
-    const readPage = () => read(`https://firestore.googleapis.com/v1/${parent}/indexes?pageSize=100${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, 'read payment-history indexes');
+    // Firestore currently accepts only its default page size (0). Keep returned
+    // page tokens and the bounded loop without sending an unsupported pageSize.
+    const readPage = () => read(`https://firestore.googleapis.com/v1/${parent}/indexes${pageToken ? `?pageToken=${encodeURIComponent(pageToken)}` : ''}`, 'read payment-history indexes');
     let data;
     try { data = await readPage(); }
     catch (error) {

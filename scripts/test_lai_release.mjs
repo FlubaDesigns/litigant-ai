@@ -654,8 +654,9 @@ test('index listing follows escaped pagination and uses only the fixed read endp
     calls.push(args); return calls.length === 1 ? { indexes: [indexFixture()], nextPageToken: 'token/+?' } : { indexes: [indexFixture(true)] };
   });
   assert.equal(result.length, 2); assert.equal(calls.length, 2);
-  assert.equal(calls[0][0], `https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes?pageSize=100`);
-  assert.equal(calls[1][0], `${calls[0][0]}&pageToken=token%2F%2B%3F`);
+  assert.equal(calls[0][0], `https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`);
+  assert.equal(calls[1][0], `${calls[0][0]}?pageToken=token%2F%2B%3F`);
+  assert(calls.every(args => !new URL(args[0]).searchParams.has('pageSize')));
   assert(calls.every(args => args.length === 2));
 });
 test('index listing fails closed on malformed lists, repeating pages or excessive pagination', async () => {
@@ -677,9 +678,10 @@ test('invalid-argument list fallback uses only the official read-only catalog an
     return { indexes: [indexFixture(true)] };
   });
   assert.deepEqual(result, [indexFixture(), indexFixture(true)]);
-  assert.equal(calls[0][0], `https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes?pageSize=100`);
-  assert.equal(calls[1][0], 'https://firestore.googleapis.com/v1/projects/litigant-ai/databases/(default)/collectionGroups/-/indexes?pageSize=100');
-  assert.equal(calls[2][0], `${calls[1][0]}&pageToken=next%2F%2B%3F`);
+  assert.equal(calls[0][0], `https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`);
+  assert.equal(calls[1][0], 'https://firestore.googleapis.com/v1/projects/litigant-ai/databases/(default)/collectionGroups/-/indexes');
+  assert.equal(calls[2][0], `${calls[1][0]}?pageToken=next%2F%2B%3F`);
+  assert(calls.every(args => !new URL(args[0]).searchParams.has('pageSize')));
   assert(calls.every(args => args.length === 2)); // No POST or other mutating method.
 });
 test('list fallback never bypasses permissions or retries an unrelated failure', async () => {
