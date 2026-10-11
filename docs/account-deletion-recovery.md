@@ -1,0 +1,13 @@
+# Account deletion recovery
+
+The owner-only DELETE /account response confirms success only after app-data deletion, Firebase Auth deletion (or verified user-not-found), and deletion-state cleanup have completed. Errors include a phase, independently confirmed app/Auth progress, and whether the owner can retry. API-log deletion failures are no longer silently ignored.
+
+A temporary `account_deletions/{uid}` document serializes attempts and prevents account provisioning, new reservations and new automatic charges during teardown. It contains only phase, app-data completion, a random request ID and an expiring lease. Existing Firestore rules deny client access to this collection; no rule or IAM expansion is required. The profile's boolean accountDeletion field is only a UI hint, never an authorization boundary. State writes are ownership-fenced. Completed deletion removes the profile and temporary deletion record. Existing payment deduplication/fulfillment records retain their existing behavior; this change adds no permanent tombstone or retention policy.
+
+Deletion disables Auto Top-Up and reconciles already-authorized payment/run activity before erasing the data needed to settle it. Unresolved payments or runs return a retryable conflict. After app data has been erased, retries only finish Auth deletion and state cleanup, without recreating a profile, signup credits or a card charge. Auth provisioning revalidates the identity inside its missing-profile transaction to close requests that were verified before deletion but resumed after teardown. Delayed credit delivery to a missing profile fails for review rather than resurrecting that profile.
+
+The client requires an explicit complete response rather than treating HTTP 200 as proof. It keeps deletion recovery available when the profile disappears and after a restored sign-in. Recovery never invokes account setup or a client-SDK-only account delete. Concurrent retry clicks are guarded; the server also serializes requests.
+
+If Auth deletion is not confirmed, the signed-in owner can retry. If Auth is removed but final deletion-state cleanup fails, the response says cleanup requires support and does not claim full completion or promise an authenticated retry. Support should identify the exact UID, verify its Auth account is absent and the deletion state records appDataDeleted before performing separately authorized cleanup. A lost response is reported as unconfirmed; it must not be interpreted as untouched data or complete deletion.
+
+Verification for this change is offline with in-memory Firestore and mocked Auth, Square and email. No real account, payment, AI request, email or production deletion was exercised.

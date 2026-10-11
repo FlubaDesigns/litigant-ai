@@ -1,5 +1,5 @@
 import { InvalidBillingDefaultsError } from "../lib/billingDefaultsConfig.js";
-import { DEFAULT_LIMITS, LIMIT_RANGES, getAdminLimits } from "../lib/adminLimitsConfig.js";
+import { DEFAULT_LIMITS, LIMIT_RANGES, getAdminLimitSettings } from "../lib/adminLimitsConfig.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { TemplateInputFieldsSchema } from "@workspace/api-zod/templates";
 import { getTemplates } from "../lib/templateStore.js";
@@ -1016,7 +1016,7 @@ router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
 //
 // The same saved limits govern public controls, estimates and session runs.
 router.get("/limits", async (_req, res) => {
-  try { return res.json({ limits: await getAdminLimits() }); }
+  try { return res.json(await getAdminLimitSettings()); }
   catch { return res.status(503).json({error:"Platform limits are temporarily unavailable"}); }
 });
 

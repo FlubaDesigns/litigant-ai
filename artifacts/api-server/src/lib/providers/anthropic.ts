@@ -1,7 +1,7 @@
 import { assertAiEnabled } from "../aiStudioConfig.js";
-import { PROVIDER_BASE_URLS } from "./types.js";
+import { PROVIDER_BASE_URLS, completionFromFinishReason } from "./types.js";
 import Anthropic from "@anthropic-ai/sdk";
-import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
+import type { AIProvider, ChatMessage, ProviderCompletion, ProviderName, TokenUsageSnapshot } from "./types.js";
 
 export class AnthropicProvider implements AIProvider {
   readonly name: ProviderName = "anthropic";
@@ -9,6 +9,7 @@ export class AnthropicProvider implements AIProvider {
   readonly model: string;
   private client: Anthropic;
   private _lastUsage: TokenUsageSnapshot | null = null;
+  private _lastCompletion: ProviderCompletion = { status: "incomplete", finishReason: null };
 
   constructor(model = "claude-haiku-4-5", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
@@ -21,7 +22,13 @@ export class AnthropicProvider implements AIProvider {
     return this._lastUsage;
   }
 
+  getLastCompletion(): ProviderCompletion {
+    return this._lastCompletion;
+  }
+
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
+    this._lastUsage = null;
+    this._lastCompletion = { status: "incomplete", finishReason: null };
     const systemMsg = messages.find((m) => m.role === "system")?.content ?? "";
     const conversation = messages
       .filter((m) => m.role !== "system")
@@ -30,10 +37,10 @@ export class AnthropicProvider implements AIProvider {
       conversation.unshift({ role: "user", content: "Begin." });
     }
 
-    this._lastUsage = null;
     await assertAiEnabled();
     let inputTokens = 0;
     let outputTokens = 0;
+    let sawMessageStop = false;
 
     const stream = this.client.messages.stream(
       {
@@ -56,6 +63,13 @@ export class AnthropicProvider implements AIProvider {
         outputTokens = event.message.usage.output_tokens ?? 0;
         this._lastUsage = {inputTokens, outputTokens, cachedInputTokens, cacheWriteTokens, cacheWrite1hTokens, estimated:true};
       }
+      if (event.type === "message_delta" && typeof event.delta?.stop_reason === "string") {
+        this._lastCompletion = completionFromFinishReason(event.delta.stop_reason, false, "end_turn");
+        sawMessageStop = false;
+      }
+      if (event.type === "message_stop") {
+        sawMessageStop = this._lastCompletion.finishReason === "end_turn";
+      }
       if (event.type === "message_delta" && event.usage) {
         outputTokens = event.usage.output_tokens ?? 0;
         if (this._lastUsage) { this._lastUsage.outputTokens = outputTokens; this._lastUsage.estimated = false; }
@@ -65,6 +79,11 @@ export class AnthropicProvider implements AIProvider {
       }
     }
 
+    this._lastCompletion = completionFromFinishReason(
+      this._lastCompletion.finishReason,
+      sawMessageStop && !signal?.aborted,
+      "end_turn"
+    );
     // Keep null if no provider usage arrived; preserve partial usage on errors.
   }
 }

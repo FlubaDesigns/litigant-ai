@@ -72,7 +72,7 @@ router.post("/auth/provision", async (req, res) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const decoded = await verifyIdToken(authHeader.slice(7), {allowExpiredGuest: true});
+  const decoded = await verifyIdToken(authHeader.slice(7), {allowExpiredGuest: true, allowAccountDeletion: true});
   if (!decoded) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -113,9 +113,18 @@ router.post("/auth/provision", async (req, res) => {
     // have the second .set() clobber the balance after grantSignupBonus ran.
     if (decoded.guest && decoded.email) await convertInvitation(db, uid, decoded.email, decoded.name);
     let newUser = false;
+    let deletionPending = false;
+    let identityUnavailable = false;
     await db.runTransaction(async (txn) => {
       const snap = await txn.get(userRef);
+      if ((await txn.get(db.collection("account_deletions").doc(uid))).exists) { deletionPending = true; return; }
       if (!snap.exists) {
+        // Revalidate Auth inside the transaction, AFTER its profile/fence reads.
+        // A provision request verified before deletion may resume after teardown.
+        // If deletion changes either read before commit, Firestore retries this
+        // callback and repeats the revoked/deleted Auth check before creation.
+        const currentIdentity = await verifyIdToken(authHeader.slice(7), { allowExpiredGuest: true, allowAccountDeletion: true });
+        if (!currentIdentity || currentIdentity.uid !== uid) { identityUnavailable = true; return; }
         newUser = true;
         txn.set(userRef, {
           email:              decoded.email ?? "",
@@ -137,6 +146,8 @@ router.post("/auth/provision", async (req, res) => {
       }
     });
 
+    if (identityUnavailable) return res.status(401).json({ error: "This sign-in account is no longer available." });
+    if (deletionPending) return res.json({ provisioned: true, newUser: false, bonusGranted: false, deletionPending: true });
     if (!newUser) await syncPaidProAccess(uid);
 
     // Grant signup bonus — only to verified accounts.
@@ -146,10 +157,8 @@ router.post("/auth/provision", async (req, res) => {
     // grantSignupBonus is idempotent — whichever concurrent call wins
     // the transaction above, only one bonus is ever applied.
     let bonusGranted = false;
-    if (decoded.emailVerified !== false) {
-      // emailVerified may be undefined when Firebase isn't fully configured (dev mode);
-      // treat undefined as "not blocked" so dev environments still function.
-      const { skipped } = await grantSignupBonus(uid);
+    if (decoded.emailVerified === true) {
+      const { skipped } = await grantSignupBonus(uid, decoded);
       bonusGranted = !skipped;
     }
 

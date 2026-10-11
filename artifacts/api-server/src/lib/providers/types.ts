@@ -15,6 +15,24 @@ export interface TokenUsageSnapshot {
   estimated?: boolean;
 }
 
+export type ProviderCompletion = {
+  status: "complete" | "truncated" | "blocked" | "incomplete";
+  finishReason: string | null;
+};
+
+/** A normal reason is only conclusive after the stream has ended cleanly. */
+export function completionFromFinishReason(
+  finishReason: string | null,
+  streamFinished: boolean,
+  normalFinishReason: "stop" | "end_turn" = "stop"
+): ProviderCompletion {
+  let status: ProviderCompletion["status"] = "incomplete";
+  if (finishReason === "length" || finishReason === "max_tokens") status = "truncated";
+  else if (finishReason === "content_filter" || finishReason === "refusal") status = "blocked";
+  else if (streamFinished && finishReason === normalFinishReason) status = "complete";
+  return { status, finishReason };
+}
+
 export interface AIProvider {
   readonly model?: string;
   name: ProviderName;
@@ -26,6 +44,8 @@ export interface AIProvider {
   ): AsyncIterable<string>;
   /** Returns real token counts from the most recent streamChat call, if available. */
   getLastUsage?(): TokenUsageSnapshot | null;
+  /** Returns completion integrity separately from token accounting, when supported. */
+  getLastCompletion?(): ProviderCompletion;
 }
 
 export interface ProviderConfig {

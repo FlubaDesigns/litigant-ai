@@ -235,13 +235,14 @@ export function SessionCourt({
   onNavigate,
 }: SessionCourtProps) {
   const [relayAnswer, setRelayAnswer] = useState("");
+  const needsInput = !isRunning && !!state.relayQuestion && (isRelayNeeded || state.pauseReason === "output_incomplete");
   const answeredQuestion = useRef<string | null>(null);
   useEffect(() => {
-    if (isRelayNeeded && state.relayQuestion && answeredQuestion.current !== state.sessionId) {
+    if (needsInput && state.relayQuestion && answeredQuestion.current !== `${state.sessionId}:${state.relayCount}:${state.relayQuestion}`) {
       setRelayAnswer("");
-      answeredQuestion.current = state.sessionId;
+      answeredQuestion.current = `${state.sessionId}:${state.relayCount}:${state.relayQuestion}`;
     }
-  }, [isRelayNeeded, state.relayQuestion, state.sessionId]);
+  }, [needsInput, state.relayQuestion, state.sessionId, state.relayCount]);
   const artifactsAllowed = useArtifactAccess();
   const output = sessionOutput(state);
   return (
@@ -289,6 +290,7 @@ export function SessionCourt({
             <div className="session-running-badge">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse inline-block" />
               ⚡ Brain is thinking…
+              <button type="button" onClick={onStop} className="session-pause-btn-secondary ml-auto" aria-label="Stop session">Stop</button>
               {state.currentRound > 0 && state.currentRound < 99 && (
                 <span className="session-round-label">
                   Revolution {state.currentRound} / {state.config.maxIterations}
@@ -297,8 +299,23 @@ export function SessionCourt({
             </div>
           )}
 
+          {state.settlementStatus === "pending" && <p role="status" className="text-sm text-amber-400">{state.creditsReserved} credits still reserved; settlement pending. The final charge or refund is not yet confirmed.</p>}
+          {state.phase === "cancelled" && <div role="status" className="session-pause-card">
+            <p className="session-pause-title">Stopped. Partial output is not an approved result.</p>
+            <p className="text-sm">{state.stopPersistence === "saved" ? "The stopped session and partial output are saved in History."
+              : state.stopPersistence === "pending" ? "Confirming the saved partial result… Keep this page open."
+              : state.stopPersistence === "not_saved" ? "Free conversations have no saved memory. Copy anything you need before leaving."
+              : "The saved result is not yet confirmed. Keep this text and check History before starting again."}</p>
+            <div className="session-pause-btns"><button onClick={onCopyMarkdown} className="session-pause-btn-secondary">Copy partial output</button>
+              {artifactsAllowed && <button onClick={() => onNavigate("/history")} className="session-pause-btn-secondary">Check History</button>}
+              <button onClick={onReset} className="session-pause-btn-secondary">New session</button></div>
+          </div>}
+
+          {state.phase === "cancelled" && state.stopPersistence !== "saved" && <p className="text-xs text-muted-foreground">Credits may still be reserved until the server confirms settlement.</p>}
+          {state.errorMessage && !isError && <p role="alert" className="text-sm text-amber-400">{state.errorMessage} Your previous result and retry context are retained. Credits may still be reserved; check History or Billing before retrying.</p>}
+
           {/* Paused decision card */}
-          {artifactsAllowed && isPaused && state.pauseReason && (
+          {artifactsAllowed && isPaused && !needsInput && state.pauseReason && (
             <div className="session-pause-card">
               <div className="session-pause-title">
                 {state.pauseReason === "credit_cap"
@@ -306,7 +323,12 @@ export function SessionCourt({
                   : `⏸ Review incomplete — ${confidenceLabel(state.confidence)} (target ${state.config.confidenceTarget}/100)`}
               </div>
 
-              {state.pauseReason === "credit_cap" ? (
+              {state.pauseReason === "output_incomplete" ? (
+                <>
+                  <p className="text-sm mb-3">A provider response was interrupted. Any document below is an unapproved draft. Retry before relying on it.</p>
+                  <button onClick={() => void onContinue()} className="session-pause-btn-primary">Retry incomplete session</button>
+                </>
+              ) : state.pauseReason === "credit_cap" ? (
                 <>
                   <div style={{ fontSize: 12, color: "#9ab89a", marginBottom: 10, lineHeight: 1.5 }}>
                     Your credits ran out mid-debate. The court's best answer from what was argued is below —
@@ -355,7 +377,7 @@ export function SessionCourt({
           {state.acceptanceError && <p role="alert">{state.acceptanceError}</p>}
 
           {/* Relay needed card — Auditor flagged a missing determinative fact */}
-          {artifactsAllowed && isRelayNeeded && state.relayQuestion && (
+          {artifactsAllowed && needsInput && state.relayQuestion && (
             <div style={{ background: "rgba(100,120,255,.07)", border: "1px solid rgba(100,120,255,.35)", borderRadius: 9, padding: "14px 16px" }}>
               <div style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#8fa8ff", marginBottom: 8 }}>
                 ℹ️ Court needs more information
@@ -363,6 +385,7 @@ export function SessionCourt({
               <div style={{ fontSize: 13, color: "#b8c8ff", lineHeight: 1.65, marginBottom: 12, whiteSpace: "pre-wrap" }}>
                 {state.relayQuestion}
               </div>
+              {state.courtroomOutcome?.reason === "output_incomplete" && <p className="text-sm mb-3">The final response was interrupted. Any document is an unapproved draft. Answer the court's question to continue.</p>}
               <textarea
                 value={relayAnswer}
                 onChange={(e) => setRelayAnswer(e.target.value)}
@@ -411,6 +434,7 @@ export function SessionCourt({
             <div style={{ background: "rgba(200,64,64,.08)", border: "1px solid rgba(200,64,64,.3)", borderRadius: 9, padding: "16px", textAlign: "center" }}>
               <div style={{ fontSize: 14, color: "#ff6b6b", fontWeight: 700, marginBottom: 6 }}>Session Error</div>
               <div style={{ fontSize: 12, color: "#9a5a5a", marginBottom: 10 }}>{state.errorMessage}</div>
+              <p className="text-xs mb-3">Credits may still be reserved while billing settles. Check History or Billing before retrying.</p>
               <button onClick={onRun} style={{ background: "transparent", border: "1px solid #c84040", borderRadius: 8, color: "#ff6b6b", padding: "6px 16px", cursor: "pointer", fontSize: 13 }}>Try Again</button>
             </div>
           )}
@@ -429,6 +453,15 @@ export function SessionCourt({
                 items={state.runtimeFeed.filter((f) => isOrchestratorRole(f.role))}
               />
             </div>
+          )}
+
+          {!isRunning && !isComplete && (state.artifacts || state.finalAnswer || state.transcript) && (
+            <details className="session-pause-card" open={state.phase === "cancelled" || state.pauseReason === "output_incomplete"}>
+              <summary>Partial output / unapproved draft</summary>
+              {state.artifacts && <div className="whitespace-pre-wrap text-sm mt-3">{state.artifacts}</div>}
+              {state.finalAnswer && <div className="whitespace-pre-wrap text-sm mt-3">{state.finalAnswer}</div>}
+              {state.transcript && <details><summary>Partial transcript</summary><div className="whitespace-pre-wrap text-sm">{state.transcript}</div></details>}
+            </details>
           )}
 
           {/* Courtroom outcome metadata line — shown after session completes or relay needed */}
@@ -458,6 +491,7 @@ export function SessionCourt({
                   : state.courtroomOutcome.reason === "not_enough" ? "Awaiting information"
                   : state.courtroomOutcome.reason === "convergence_failure" ? "Convergence failure"
                   : state.courtroomOutcome.reason === "credit_cap" ? "Credit cap"
+                  : state.courtroomOutcome.reason === "output_incomplete" ? "Provider output incomplete"
                   : "Iteration limit"}
               </span>
               <span style={{ fontSize: 11, color: "#4a6a4a" }}>·</span>

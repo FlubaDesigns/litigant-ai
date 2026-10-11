@@ -159,7 +159,7 @@ it("excludes new, guest and banned users from re-engagement, including accounts 
 
 it("honors a zero signup bonus without blocking account provisioning", async () => {
   store["config/billingDefaults"] = {signupBonusCredits: 0};
-  expect(await grantSignupBonus("u")).toEqual({skipped: false, amount: 0});
-  expect(await grantSignupBonus("u")).toEqual({skipped: true, amount: 0});
+  expect(await grantSignupBonus("u", {emailVerified:true})).toEqual({skipped: false, amount: 0});
+  expect(await grantSignupBonus("u", {emailVerified:true})).toEqual({skipped: true, amount: 0});
   expect(store["users/u"].creditBalance).toBe(100);
 });

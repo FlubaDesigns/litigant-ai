@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./session": "./src/session.ts",
     "./templates": "./src/templates.ts",
-    "./billing": "./src/billing.ts"
+    "./billing": "./src/billing.ts",
+    "./limits": "./src/limits.ts"
   },
   "dependencies": {
     "zod": "catalog:"

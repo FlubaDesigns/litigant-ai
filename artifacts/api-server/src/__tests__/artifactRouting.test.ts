@@ -434,14 +434,14 @@ describe("Artifact path — standard behaviour", () => {
     vi.clearAllMocks();
   });
 
-  it("produces finalArtifact from Auditor-approved output on APPROVED", async () => {
+  it("produces finalArtifact from the reviewed Builder source on APPROVED", async () => {
     const artifactText = "# Climate Report\n\nSection 1: Overview\n...";
     const provider = makeProvider([
       "Orchestrator opens.",
       "Litigant argues.",
       "Deliberation complete. ARTIFACT_NEEDED: yes",
       "Blueprint: Intro, Body, Conclusion.",
-      "Draft artifact body.",
+      artifactText,
       "PASS",
       `APPROVED\n${artifactText}`,
       "Here is your report.",

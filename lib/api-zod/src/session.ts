@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { MAX_LITIGANTS } from "./limits";
 export type ProviderName = string;
 export const SeatAssignmentSchema = z.object({
   provider: z.string().min(1).max(100), model: z.string().max(200).optional(),
   intelligenceLevel: z.number().min(0).max(100).optional(), useMasterSettings: z.boolean().optional(),
 });
 export const CourtConfigFieldsSchema = z.object({
-  litigantCount: z.number().int().min(1).max(10).default(4),
+  litigantCount: z.number().int().min(1).max(MAX_LITIGANTS).default(4),
   confidenceTarget: z.number().int().min(50).max(100).default(90),
   maxIterations: z.number().int().min(1).max(20).default(5),
   responseMode: z.enum(["balanced", "thorough", "concise"]).default("balanced"),
@@ -23,7 +24,7 @@ export const CourtConfigFieldsSchema = z.object({
   seatMap: z.object({
     orchestrator: SeatAssignmentSchema, moderator: SeatAssignmentSchema,
     architect: SeatAssignmentSchema, builder: SeatAssignmentSchema, auditor: SeatAssignmentSchema,
-    litigants: z.array(SeatAssignmentSchema).max(10),
+    litigants: z.array(SeatAssignmentSchema).max(MAX_LITIGANTS),
   }).optional(),
 });
 // Normalize saved configurations once at the boundary; execution and UI use only these fields.
@@ -42,6 +43,13 @@ export const CourtConfigSchema = z.preprocess((input) => {
   return value;
 }, CourtConfigFieldsSchema);
 export type CourtConfig = z.infer<typeof CourtConfigSchema>;
+/** Apply the current saved admin ceiling without expanding the supported role set. */
+export function applyLitigantLimit<T extends {litigantCount: number; seatMap?: CourtConfig["seatMap"]}>(config: T, maximum: number): T {
+  const cap = Math.max(1, Math.min(MAX_LITIGANTS, Math.floor(maximum)));
+  const litigantCount = Math.min(config.litigantCount, cap);
+  if (litigantCount === config.litigantCount && (config.seatMap?.litigants.length ?? 0) <= cap) return config;
+  return {...config, litigantCount, ...(config.seatMap ? {seatMap:{...config.seatMap, litigants:config.seatMap.litigants.slice(0, cap)}} : {})};
+}
 /** Repair the formerly offered 25-round preference when reading saved data. New requests remain strict. */
 export function restoreCourtConfig(input: Partial<CourtConfig> = {}): CourtConfig {
   return CourtConfigSchema.parse({...input, maxIterations: input.maxIterations === 25 ? 20 : input.maxIterations});
@@ -129,6 +137,15 @@ export function applyArtifactAccess<T extends Partial<CourtConfig>>(config: T, a
 /** Only usage/accounting metadata survives a Free run; never its content or custom instructions. */
 export function storedSessionRecord(record: Record<string, any>, fullAccess: boolean): Record<string, any> {
   if (fullAccess) return {...record, memorySaved: true};
-  const fields = new Set(["sessionId", "userId", "priceSnapshot", "callUsage", "inputTokens", "outputTokens", "costUSD", "model", "creditsUsed", "fixedStageTokens", "status", "createdAt", "updatedAt", "lastRunErrorAt", "lastRunErrorMessage"]);
+  const fields = new Set(["sessionId", "userId", "priceSnapshot", "callUsage", "inputTokens", "outputTokens", "costUSD", "model", "provider", "modelProvenance", "creditsUsed", "billingRunId", "creditsDebited", "creditsReserved", "settlementStatus", "fixedStageTokens", "status", "createdAt", "updatedAt", "lastRunErrorAt", "lastRunErrorMessage"]);
   return {...Object.fromEntries(Object.entries(record).filter(([key]) => fields.has(key))), memorySaved: false, shared: false};
+}
+
+/** Canonical opt-in. An explicit nested false always wins over legacy data. */
+export function sessionCompleteNotificationsEnabled(profile: {
+  notifications?: { sessionComplete?: boolean } | null;
+  notifySessionComplete?: boolean;
+} | null | undefined): boolean {
+  return typeof profile?.notifications?.sessionComplete === "boolean"
+    ? profile.notifications.sessionComplete : profile?.notifySessionComplete === true;
 }

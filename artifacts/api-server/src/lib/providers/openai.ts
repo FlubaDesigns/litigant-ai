@@ -1,7 +1,7 @@
 import { assertAiEnabled } from "../aiStudioConfig.js";
-import { PROVIDER_BASE_URLS } from "./types.js";
+import { PROVIDER_BASE_URLS, completionFromFinishReason } from "./types.js";
 import OpenAI from "openai";
-import type { AIProvider, ChatMessage, ProviderName, TokenUsageSnapshot } from "./types.js";
+import type { AIProvider, ChatMessage, ProviderCompletion, ProviderName, TokenUsageSnapshot } from "./types.js";
 
 export class OpenAIProvider implements AIProvider {
   readonly name: ProviderName = "openai";
@@ -9,6 +9,7 @@ export class OpenAIProvider implements AIProvider {
   readonly model: string;
   private client: OpenAI;
   private _lastUsage: TokenUsageSnapshot | null = null;
+  private _lastCompletion: ProviderCompletion = { status: "incomplete", finishReason: null };
 
   constructor(model = "gpt-5", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
@@ -35,8 +36,13 @@ export class OpenAIProvider implements AIProvider {
     return this._lastUsage;
   }
 
+  getLastCompletion(): ProviderCompletion {
+    return this._lastCompletion;
+  }
+
   async *streamChat(messages: ChatMessage[], maxTokens: number, signal?: AbortSignal): AsyncIterable<string> {
     this._lastUsage = null;
+    this._lastCompletion = { status: "incomplete", finishReason: null };
     await assertAiEnabled();
 
     const stream = await this.client.chat.completions.create(
@@ -51,8 +57,10 @@ export class OpenAIProvider implements AIProvider {
     );
 
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) yield content;
+      const choice = chunk.choices[0];
+      if (typeof choice?.finish_reason === "string") {
+        this._lastCompletion = completionFromFinishReason(choice.finish_reason, false);
+      }
 
       if (chunk.usage) {
         this._lastUsage = {
@@ -62,6 +70,12 @@ export class OpenAIProvider implements AIProvider {
           cacheWriteTokens: (chunk.usage.prompt_tokens_details as {cache_write_tokens?: number} | undefined)?.cache_write_tokens ?? 0,
         };
       }
+
+      if (signal?.aborted) break;
+      const content = choice?.delta?.content;
+      if (content) yield content;
     }
+
+    this._lastCompletion = completionFromFinishReason(this._lastCompletion.finishReason, !signal?.aborted);
   }
 }

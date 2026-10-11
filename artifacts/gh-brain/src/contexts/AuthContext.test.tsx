@@ -51,7 +51,7 @@ beforeEach(() => {
   vi.mocked(onAuthStateChanged).mockImplementation(((_auth: any, callback: any) => {
     authChanged = callback; return vi.fn();
   }) as any);
-  vi.mocked(ensureAccountSetup).mockResolvedValue();
+  vi.mocked(ensureAccountSetup).mockResolvedValue(false);
   vi.mocked(getUserProfile).mockResolvedValue(profile);
   vi.mocked(onUserProfileSnapshot).mockReturnValue(vi.fn());
   (auth as any).currentUser = user;
@@ -60,13 +60,13 @@ beforeEach(() => {
 
 describe("account readiness gate", () => {
   it("keeps loading until provisioning AND the saved profile are confirmed", async () => {
-    const setup = deferred<void>(), saved = deferred<any>();
+    const setup = deferred<boolean>(), saved = deferred<any>();
     vi.mocked(ensureAccountSetup).mockReturnValue(setup.promise);
     vi.mocked(getUserProfile).mockReturnValue(saved.promise);
     authChanged(user);
     expect(render()).toMatchObject({ loading: true, userProfile: null });
     expect(getUserProfile).not.toHaveBeenCalled();
-    setup.resolve();
+    setup.resolve(false);
     await vi.waitFor(() => expect(getUserProfile).toHaveBeenCalled());
     expect(render().loading).toBe(true);
     saved.resolve(profile);
@@ -91,12 +91,13 @@ describe("account readiness gate", () => {
   });
 
   it("ignores a setup response that arrives after logout", async () => {
-    const setup = deferred<void>();
+    const setup = deferred<boolean>();
     vi.mocked(ensureAccountSetup).mockReturnValue(setup.promise);
     authChanged(user);
     authChanged(null);
-    setup.resolve();
-    await vi.waitFor(() => expect(getUserProfile).toHaveBeenCalled());
+    setup.resolve(false);
+    await setup.promise;
+    expect(getUserProfile).not.toHaveBeenCalled();
     expect(render()).toMatchObject({ user: null, userProfile: null, loading: false, isAdmin: false, setupError: null });
     expect(onUserProfileSnapshot).not.toHaveBeenCalled();
   });
@@ -109,5 +110,33 @@ describe("account readiness gate", () => {
     expect(render().setupError).toContain("Retry setup");
     await render().retryAccountSetup();
     expect(render().setupError).toBeNull();
+  });
+});
+
+
+describe("account deletion readiness", () => {
+  it("restores a pending deletion without fetching or recreating a profile", async () => {
+    vi.mocked(ensureAccountSetup).mockResolvedValue(true);
+    authChanged(user);
+    await vi.waitFor(() => expect(render()).toMatchObject({ loading:false, accountDeletionPending:true, userProfile:null, setupError:null }));
+    expect(getUserProfile).not.toHaveBeenCalled();
+    expect(onUserProfileSnapshot).not.toHaveBeenCalled();
+  });
+  it("keeps deletion recovery through profile removal even when snapshots skip the UI hint", async () => {
+    authChanged(user);
+    await vi.waitFor(() => expect(render().loading).toBe(false));
+    render().beginAccountDeletion();
+    const snapshot = vi.mocked(onUserProfileSnapshot).mock.calls[0][1];
+    snapshot(null);
+    expect(render()).toMatchObject({ accountDeletionPending:true, userProfile:null });
+    authChanged(null);
+    expect(render().accountDeletionPending).toBe(false);
+  });
+  it("passes the first request's manual-cleanup result into the recovery screen", async () => {
+    authChanged(user);
+    await vi.waitFor(() => expect(render().loading).toBe(false));
+    const result={success:false,code:"cleanup_required",phase:"profile",appDataDeleted:true,authDeleted:true,retryable:false};
+    render().setAccountDeletionResult(result);
+    expect(render().accountDeletionResult).toEqual(result);
   });
 });

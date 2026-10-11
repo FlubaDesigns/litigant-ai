@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -15,7 +15,7 @@ import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { usePublicConfig } from "@/hooks/usePublicConfig";
 import { FcGoogle } from "react-icons/fc";
 import { USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
-import { safeNext } from "@/lib/authUtils";
+import { authPath, safeNext } from "@/lib/authUtils";
 
 const ALLOWED_ROLES = new Set(Object.keys(USER_ROLE_LABELS) as UserRole[]);
 
@@ -32,10 +32,10 @@ const registerSchema = z.object({
 
 export default function RegisterPage() {
   const { signupBonusCredits: signupBonus } = usePublicConfig();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { signUp, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const next = safeNext(new URLSearchParams(location.split("?")[1] ?? "").get("next"));
+  const next = safeNext(new URLSearchParams(useSearch()).get("next"));
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -53,7 +53,7 @@ export default function RegisterPage() {
         values.organization?.trim() || undefined,
       );
       toast.success("Account created — please verify your email.");
-      setLocation(`/verify-email?next=${encodeURIComponent(next)}`);
+      setLocation(authPath("/verify-email", next));
     } catch (error: any) {
       toast.error(error.message || "Failed to create account.");
     } finally {
@@ -93,7 +93,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <div className="bg-card border border-border p-8 rounded-lg shadow-2xl space-y-6">
+        <div className="bg-card border border-border p-6 sm:p-8 rounded-lg shadow-2xl space-y-6">
           {/* Free trial callout */}
           <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
             <Zap className="w-4 h-4 text-primary shrink-0" />
@@ -102,6 +102,18 @@ export default function RegisterPage() {
               <div className="text-xs text-muted-foreground mt-0.5">No card required. Top up anytime — credits never expire.</div>
             </div>
           </div>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Review our{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              Terms of Service<span className="sr-only"> (opens in a new tab)</span>
+            </a>{" "}
+            and{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+            </a>{" "}
+            before creating an account.
+          </p>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
@@ -156,7 +168,7 @@ export default function RegisterPage() {
                 onValueChange={(v) => form.setValue("role", v)}
                 defaultValue=""
               >
-                <SelectTrigger className="bg-background border-border/50">
+                <SelectTrigger id="role" className="bg-background border-border/50">
                   <SelectValue placeholder="Pick one — or skip" />
                 </SelectTrigger>
                 <SelectContent>
@@ -220,7 +232,7 @@ export default function RegisterPage() {
 
         <p className="text-center mt-6 text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/sign-in" className="text-primary hover:opacity-80 transition-opacity font-medium">
+          <Link href={authPath("/sign-in", next)} className="text-primary hover:opacity-80 transition-opacity font-medium">
             Sign in
           </Link>
         </p>

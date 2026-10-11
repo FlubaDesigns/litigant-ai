@@ -1,3 +1,4 @@
+import { applyLitigantLimit } from "@workspace/api-zod/session";
 import { PAID_ACCESS_NOTE, PAID_ACCESS_BADGE, applyArtifactAccess } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput } from "@/lib/sessionOutput";
@@ -203,6 +204,11 @@ export default function SessionPage() {
   const limits = useLimits();
   // Preserve the current draft while the saved limit loads; do not allow additions.
   const maxLitigants = limits?.maxLitigants ?? state.config.litigantCount;
+  useEffect(() => {
+    if (!limits || !["idle", "configuring"].includes(state.phase)) return;
+    const bounded = applyLitigantLimit(state.config, limits.maxLitigants);
+    if (bounded !== state.config) setConfig(bounded);
+  }, [limits, state.phase, state.config, setConfig]);
   const {data:courtesy} = useQuery({queryKey:["configuration", "courtesy-credit", user?.uid, credits, plan], queryFn:getCourtesyCredit, enabled:!!user && !isAdmin && !userProfile?.guestInvitationId, retry:false});
 
   const isRunning     = state.phase === "running";

@@ -50,6 +50,31 @@ class ReleaseBoundaryTests(unittest.TestCase):
                         r'--set-env-vars', r'--env-vars-file', r'run services replace']:
             self.assertNotRegex(cloud, pattern)
 
+    def test_exact_additive_index_boundary(self):
+        controller = (ROOT / 'scripts/lai-release.mjs').read_text()
+        release = controller.split('async function release() {', 1)[1]
+        self.assertLess(release.index("descriptor.action === 'inspect'"), release.index("{ recheck }"))
+        self.assertLess(release.index('paymentHistoryIndexGate(context, descriptor, { recheck })'), release.index("'configure-docker'"))
+        self.assertLess(release.index('paymentHistoryIndexGate(context, descriptor, { recheck })'), release.index("'run', 'services', 'update'"))
+        self.assertIn("'datastore.indexes.list', 'datastore.indexes.create'", controller)
+        self.assertNotRegex(controller, r"datastore\.indexes\.(delete|update)")
+        self.assertNotIn("'DELETE'", controller)
+        self.assertNotIn("'--only', 'firestore'", controller)
+        self.assertNotIn("'--only', 'firestore:indexes'", controller)
+        import json
+        catalog = json.loads((ROOT / 'firestore.indexes.json').read_text())
+        indexes = [x for x in catalog['indexes'] if x['collectionGroup'] == 'credit_transactions']
+        required = [
+            {'fieldPath': 'userId', 'order': 'ASCENDING'},
+            {'fieldPath': 'type', 'order': 'ASCENDING'},
+            {'fieldPath': 'createdAt', 'order': 'DESCENDING'},
+        ]
+        self.assertEqual(sum(x['queryScope'] == 'COLLECTION' and x['fields'] == required for x in indexes), 1)
+        # The existing live two-field index is managed outside this source catalog;
+        # inspectPaymentIndexes requires it READY and verifies preservation.
+        self.assertIn("'create exact payment-history index', 'POST', PAYMENT_INDEX", controller)
+        self.assertIn("'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions'", controller)
+
     def test_release_controller_guards(self):
         subprocess.run(['node', '--test', 'scripts/test_lai_release.mjs'], cwd=ROOT, check=True,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)

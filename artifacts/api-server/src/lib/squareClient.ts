@@ -112,3 +112,19 @@ export async function disableSquareCard(id: string) {
 export async function chargeSquareCard(request: Record<string, unknown>): Promise<SquarePayment> {
   return (await squareFetch<{payment:SquarePayment}>("/v2/payments", {method:"POST",body:JSON.stringify(request)})).payment;
 }
+
+/** Read-only recovery after a create response was lost. A missing match is NOT a
+ * failed payment: retain the durable attempt instead of issuing another charge. */
+export async function findSquareRefillPayment(attemptId: string, createdAt: number, locationId: string): Promise<SquarePayment | null> {
+  if (!Number.isFinite(createdAt)) throw new Error("Top-up creation time unavailable");
+  const params = new URLSearchParams({ begin_time: new Date(createdAt - 60_000).toISOString(),
+    location_id: locationId, sort_order: "ASC", limit: "100" });
+  for (let page = 0; page < 10; page++) {
+    const result = await squareFetch<{payments?: SquarePayment[]; cursor?: string}>(`/v2/payments?${params}`);
+    const match = result.payments?.find(payment => payment.note?.split(",").includes(`refill=${attemptId}`));
+    if (match) return match;
+    if (!result.cursor) return null;
+    params.set("cursor", result.cursor);
+  }
+  throw new Error("Top-up requires payment reconciliation beyond the status lookup window");
+}

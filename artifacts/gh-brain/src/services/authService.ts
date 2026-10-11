@@ -19,10 +19,11 @@ import { API_BASE } from "@/lib/apiUrl";
 
 type ProfileDetails = { role?: string; organization?: string };
 let signInAttempt: Promise<User> | null = null;
+let deletionPendingForUid: string | null = null;
 let pendingProfile: { uid: string; extra: ProfileDetails } | null = null;
 
 /** One account-setup path for sign-in, restored logins and explicit retries. */
-async function provisionUser(user: User, extra?: ProfileDetails): Promise<void> {
+async function provisionUser(user: User, extra?: ProfileDetails): Promise<boolean> {
   if (extra) pendingProfile = { uid: user.uid, extra };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
@@ -38,7 +39,9 @@ async function provisionUser(user: User, extra?: ProfileDetails): Promise<void> 
     if (!response.ok || data?.provisioned !== true) {
       throw new Error(data?.error ?? "Account setup was not confirmed.");
     }
+    deletionPendingForUid = data.deletionPending === true ? user.uid : null;
     if (pendingProfile?.uid === user.uid) pendingProfile = null;
+    return data.deletionPending === true;
   } catch {
     throw new Error("Your sign-in succeeded, but account setup could not finish. Retry setup to continue with this same account.");
   } finally { clearTimeout(timeout); }
@@ -51,7 +54,7 @@ async function performSignIn(operation: () => Promise<User>): Promise<User> {
   finally { if (signInAttempt === attempt) signInAttempt = null; }
 }
 
-export async function ensureAccountSetup(user: User): Promise<void> {
+export async function ensureAccountSetup(user: User): Promise<boolean> {
   // Firebase emits auth changes before the sign-in operation finishes. Wait for
   // that operation so registration details and provisioning are not duplicated.
   const attempt = signInAttempt;
@@ -59,8 +62,9 @@ export async function ensureAccountSetup(user: User): Promise<void> {
     const ready = await attempt;
     if (ready.uid !== user.uid) throw new Error("The signed-in account changed. Please retry.");
   } else {
-    await provisionUser(user);
+    return await provisionUser(user);
   }
+  return deletionPendingForUid === user.uid;
 }
 
 export async function startGuestTrial(invitation: string): Promise<User> {
@@ -146,6 +150,7 @@ export async function signInWithGoogle(): Promise<User> {
 export async function signOut(): Promise<void> {
   await firebaseSignOut(auth);
   pendingProfile = null;
+  deletionPendingForUid = null;
 }
 
 /**

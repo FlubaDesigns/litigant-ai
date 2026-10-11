@@ -1,3 +1,4 @@
+import { PlatformLimitsSchema, type PlatformLimitSettings } from "@workspace/api-zod/limits";
 import type { CourtConfig, TemplateInputField } from "@workspace/api-zod/templates";
 import { refreshConfiguration } from "@/lib/queryClient";
 import { auth } from "@/lib/firebase";
@@ -250,12 +251,11 @@ export async function setChecklistItemChecked(id: string, checked: boolean): Pro
   if (!res.ok) throw new Error("Failed to update checklist item");
 }
 
-export async function getAdminLimits(): Promise<Record<string, number>> {
+export async function getAdminLimits(): Promise<PlatformLimitSettings> {
   const res = await fetch(`${API_BASE}/limits`, {cache:"no-store"});
   if (!res.ok) throw new Error("Unable to load platform limits");
   const data = await res.json();
-  if (!data.limits) throw new Error("Platform limits are missing");
-  return data.limits;
+  return {...data, limits:PlatformLimitsSchema.parse(data.limits)};
 }
 
 export async function setAdminLimit(name: string, value: number): Promise<void> {

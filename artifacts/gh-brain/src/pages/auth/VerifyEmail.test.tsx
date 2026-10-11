@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("react", async original => ({
   ...await original<typeof import("react")>(), useState: vi.fn(), useEffect: vi.fn(),
 }));
-vi.mock("wouter", () => ({ Link: "a", useLocation: vi.fn() }));
+vi.mock("wouter", () => ({ Link: "a", useLocation: vi.fn(), useSearch: vi.fn() }));
 vi.mock("firebase/auth", () => ({ reload: vi.fn() }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("@/components/ui/button", () => ({ Button: "button" }));
@@ -10,7 +10,7 @@ vi.mock("@/lib/apiUrl", () => ({ API_BASE: "/api" }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { reload } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ beforeEach(() => {
   vi.mocked(useState).mockImplementation(((value: any) => [value, vi.fn()]) as any);
   vi.mocked(useEffect).mockImplementation(effect => { effect(); });
   vi.mocked(useLocation).mockReturnValue(["/verify-email", navigate]);
+  vi.mocked(useSearch).mockReturnValue("");
   vi.mocked(useAuth).mockImplementation(() => context);
   vi.mocked(reload).mockImplementation(async () => { context.user.emailVerified = true; });
 });

@@ -1,3 +1,4 @@
+import type { AccountDeletionResult } from "@/services/sessionService";
 import { useContext, useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth, isConfigured } from "@/lib/firebase";
@@ -22,6 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(isConfigured);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [accountDeletionResult, setAccountDeletionResult] = useState<AccountDeletionResult | null>(null);
+  const [accountDeletionPending, setAccountDeletionPending] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
   const generation = useRef(0);
   const profileUnsub = useRef<(() => void) | null>(null);
@@ -34,10 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserProfile(null);
     setIsAdmin(false);
     setSetupError(null);
+    setAccountDeletionPending(false);
+    setAccountDeletionResult(null);
     setLoading(!!firebaseUser);
     if (!firebaseUser) return;
     try {
-      await ensureAccountSetup(firebaseUser);
+      const deletionPending = await ensureAccountSetup(firebaseUser);
+      if (version !== generation.current) return;
+      if (deletionPending) { setAccountDeletionPending(true); return; }
       const [token, profile] = await Promise.all([
         firebaseUser.getIdTokenResult(), getUserProfile(firebaseUser.uid),
       ]);
@@ -48,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profileUnsub.current = onUserProfileSnapshot(firebaseUser.uid, next => {
         if (version !== generation.current) return;
         setUserProfile(next);
+        // Keep the recovery screen mounted when teardown removes the profile.
+        if (next?.accountDeletion) setAccountDeletionPending(true);
         if (!next) setSetupError("Your account profile is unavailable. Retry setup to continue.");
       }, () => {
         if (version === generation.current) setSetupError("Your account profile could not be refreshed. Retry setup to reconnect.");
@@ -84,6 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userProfile,
     loading,
     setupError,
+    accountDeletionPending,
+    beginAccountDeletion: () => setAccountDeletionPending(true),
+    accountDeletionResult, setAccountDeletionResult,
     retryAccountSetup,
     isAdmin,
     firebaseReady: isConfigured,

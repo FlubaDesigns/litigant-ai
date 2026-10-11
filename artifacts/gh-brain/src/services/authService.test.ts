@@ -43,7 +43,7 @@ describe("confirmed account provisioning", () => {
   it("allows retry after a network failure without signing in or creating an account again", async () => {
     fetchMock.mockRejectedValueOnce(new TypeError("Network unavailable"));
     await expect(signInWithEmail("test@example.com", "test-password")).rejects.toThrow("Retry setup");
-    await expect(ensureAccountSetup(user)).resolves.toBeUndefined();
+    await expect(ensureAccountSetup(user)).resolves.toBe(false);
     expect(signInWithEmailAndPassword).toHaveBeenCalledTimes(1);
     expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
     expect(user.getIdToken).toHaveBeenCalledWith(true);
@@ -109,5 +109,25 @@ describe("guest signup preserves the existing identity", () => {
     expect(deleteUser).not.toHaveBeenCalled();
     expect(createUserWithEmailAndPassword).toHaveBeenCalledTimes(1);
     expect(linkWithCredential).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("pending deletion restores recovery without a new profile", () => {
+  it("returns pending state to the auth observer on a restored login", async () => {
+    fetchMock.mockResolvedValue(response({ provisioned: true, deletionPending: true, newUser: false, bonusGranted: false }));
+    expect(await ensureAccountSetup(user)).toBe(true);
+    expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+  it("shares the pending-deletion result with an observer waiting for sign-in", async () => {
+    let finish!: (value: Response) => void;
+    fetchMock.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const login = signInWithEmail("test@example.com", "test-password");
+    const observer = ensureAccountSetup(user);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    finish(response({ provisioned: true, deletionPending: true }));
+    await login;
+    expect(await observer).toBe(true);
   });
 });

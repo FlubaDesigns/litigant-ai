@@ -6,7 +6,7 @@ import { getApiUrl } from "@/lib/apiUrl";
 
 
 
-export type PauseReason = "credit_cap" | "iteration_limit";
+export type PauseReason = "credit_cap" | "iteration_limit" | "output_incomplete";
 
 export interface RebuttalContext {
   challenge: string;
@@ -63,7 +63,8 @@ export interface CourtroomOutcome {
     | "convergence_failure"
     | "credit_cap"
     | "iteration_limit"
-    | "aborted";
+    | "aborted"
+    | "output_incomplete";
   confidenceAtExit: number;
   round: number;
 }
@@ -102,6 +103,10 @@ export interface SSEEvent {
   fullContent?: string;
   confidence?: number;
   creditsUsed?: number;
+  settlementStatus?: "pending" | "settled";
+  creditsReserved?: number;
+  creditsDebited?: number;
+  outputIncomplete?: {role: string; reason: string};
   sessionId?: string;
   estimatedCredits?: number;
   finalAnswer?: string;
@@ -235,11 +240,17 @@ export interface SavedSession {
   templateId: string | null;
   confidence: number;
   creditsUsed: number;
+  settlementStatus?: "pending" | "settled";
+  creditsReserved?: number;
+  creditsDebited?: number;
+  outputIncomplete?: {role: string; reason: string};
+  pauseReason?: PauseReason | null;
+  activeRun?: {id: string; expiresAt: number} | null;
   inputTokens?: number;
   outputTokens?: number;
   costUSD?: number;
   model?: string;
-  status: "complete" | "incomplete" | "error" | "paused_credit_cap" | "relay_needed";
+  status: "complete" | "incomplete" | "error" | "paused_credit_cap" | "relay_needed" | "cancelled";
   starred?: boolean;
   archived?: boolean;
   shared?: boolean;
@@ -249,6 +260,7 @@ export interface SavedSession {
   finalAnswer?: string;
   debateNotes?: string;
   transcript?: string;
+  transcriptLines?: string[];
   caveats?: string;
   artifacts?: string;
   /** Set when Auditor returned NOT_ENOUGH — the specific missing info the user must supply. */
@@ -265,7 +277,7 @@ export interface SessionsPage {
 
 export async function getSessions(
   idToken?: string,
-  opts: { limit?: number; cursor?: string | null; starred?: boolean; archived?: boolean } = {}
+  opts: { limit?: number; cursor?: string | null; starred?: boolean; archived?: boolean; search?: string; template?: string; includeArchived?: boolean } = {}
 ): Promise<SessionsPage> {
   const headers: Record<string, string> = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
@@ -274,6 +286,9 @@ export async function getSessions(
   if (opts.cursor) params.set("cursor", opts.cursor);
   if (opts.starred) params.set("starred", "true");
   if (opts.archived) params.set("archived", "true");
+  if (opts.includeArchived) params.set("includeArchived", "true");
+  if (opts.search?.trim()) params.set("search", opts.search.trim());
+  if (opts.template && opts.template !== "all") params.set("template", opts.template);
   const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(getApiUrl(`/sessions${qs}`), { headers });
   if (!res.ok) throw new Error("Failed to fetch sessions");
@@ -285,14 +300,42 @@ export async function getSessions(
   return data as SessionsPage;
 }
 
-export async function deleteAccount(idToken?: string): Promise<void> {
+export interface AccountDeletionResult {
+  success: boolean;
+  code: string;
+  phase: string;
+  appDataDeleted: boolean | null;
+  authDeleted: boolean | null;
+  retryable: boolean;
+  message?: string;
+}
+export class AccountDeletionError extends Error {
+  constructor(public readonly result: AccountDeletionResult) {
+    super(result.message ?? "Deletion is incomplete. Some data may already have been removed. Retry or contact support.");
+    this.name = "AccountDeletionError";
+  }
+}
+const unknownDeletion = (message?: string): AccountDeletionResult => ({ success: false, code: "unconfirmed", phase: "unknown",
+  appDataDeleted: null, authDeleted: null, retryable: true,
+  message: message ?? "The deletion result could not be confirmed. Some data may already have been removed. Retry, or contact support if your sign-in no longer works." });
+
+export async function deleteAccount(idToken?: string): Promise<AccountDeletionResult> {
   const headers: Record<string, string> = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  const res = await fetch(getApiUrl("/account"), { method: "DELETE", headers });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).message || `Delete account failed (${res.status})`);
-  }
+  let res: Response;
+  try { res = await fetch(getApiUrl("/account"), { method: "DELETE", headers }); }
+  catch { throw new AccountDeletionError(unknownDeletion()); }
+  const data = await res.json().catch(() => null);
+  // HTTP 200 alone, or the old success:true/authDeleted:false response, is NOT
+  // proof of account deletion. Fail closed on incomplete or malformed replies.
+  if (res.ok && data?.success === true && data.authDeleted === true && data.appDataDeleted === true) return data;
+  const failure = unknownDeletion(typeof data?.message === "string" ? data.message : undefined);
+  if (typeof data?.appDataDeleted === "boolean") failure.appDataDeleted = data.appDataDeleted;
+  if (typeof data?.authDeleted === "boolean") failure.authDeleted = data.authDeleted;
+  if (typeof data?.phase === "string") failure.phase = data.phase;
+  if (typeof data?.code === "string") failure.code = data.code;
+  if (data?.retryable === false || res.status === 401) failure.retryable = false;
+  throw new AccountDeletionError(failure);
 }
 
 export async function getSession(id: string, idToken?: string): Promise<SavedSession> {
@@ -337,7 +380,8 @@ export async function getAllSessions(idToken?: string): Promise<SavedSession[]> 
   const all: SavedSession[] = [];
   let cursor: string | null = null;
   do {
-    const page = await getSessions(idToken, { limit: 100, cursor });
+    const page = await getSessions(idToken, { limit: 100, cursor, includeArchived: true });
+    if (page.hasMore && (!page.nextCursor || page.nextCursor === cursor)) throw new Error("Session pagination did not advance. Please retry.");
     all.push(...page.sessions);
     cursor = page.hasMore ? page.nextCursor : null;
   } while (cursor);
@@ -373,4 +417,13 @@ export function exportSessionAsMarkdown(session: SavedSession): string {
     `_Generated by Litigant AI — Don't just ask AI. Put the question on trial._`,
   ];
   return lines.filter((l) => l !== null).join("\n");
+}
+
+/** Server-generated complete backup; throws before download on any failed read. */
+export async function exportAccountData(idToken: string): Promise<Record<string, unknown>> {
+  const response = await fetch(getApiUrl("/account/export"), {headers: {Authorization: `Bearer ${idToken}`}});
+  if (!response.ok) throw new Error("Could not complete your export. Please retry.");
+  const data = await response.json();
+  if (data?.schemaVersion !== 1 || !Array.isArray(data.sessions) || !data.user) throw new Error("Export was not confirmed. Please retry.");
+  return data;
 }

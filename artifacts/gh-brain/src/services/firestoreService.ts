@@ -29,6 +29,8 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export interface UserProfile {
+  /** UI hint only; the server-only deletion record is authoritative. */
+  accountDeletion?: boolean;
   userId?: string;
   guestInvitationId?: string | null;
   email: string;
@@ -45,6 +47,8 @@ export interface UserProfile {
   squareCustomerId?: string;
   onboardingComplete?: boolean;
   defaultSettings: Partial<CourtConfig>;
+  /** Legacy read fallback only. New writes use notifications.sessionComplete. */
+  notifySessionComplete?: boolean;
   notifications?: {
     sessionComplete: boolean;
     weeklyDigest: boolean;
@@ -85,6 +89,11 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function updateUserProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
   const ref = doc(db, "users", uid);
   await updateDoc(ref, data as Record<string, unknown>);
+}
+
+/** Change only the delivered email preference; preserve unavailable options verbatim. */
+export async function updateSessionCompleteNotification(uid: string, enabled: boolean): Promise<void> {
+  await updateDoc(doc(db, "users", uid), { "notifications.sessionComplete": enabled });
 }
 
 export function onUserProfileSnapshot(

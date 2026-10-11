@@ -35,3 +35,8 @@ describe("configuration readers do not invent fallback offers", () => {
     await expect(getLimits()).rejects.toThrow("Invalid platform limits response");
   });
 });
+
+it.each([11,20,0,-1,2.5])("rejects a public limit outside the shared supported contract: %s",async maximum=>{
+  vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify({limits:{maxLitigants:maximum,overdraftLimit:25}}))));
+  await expect(getLimits()).rejects.toThrow("Invalid platform limits response");
+});

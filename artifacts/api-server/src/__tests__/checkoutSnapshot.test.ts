@@ -13,6 +13,7 @@ vi.mock("../lib/squareClient.js", () => ({
   createPaymentLink: vi.fn(),
 }));
 vi.mock("../lib/autoRefill.js", () => ({
+  validateRefillPayment: vi.fn(async () => null),
   recordRefillPayment: vi.fn(),
   getAutoRefillStatus: vi.fn(),
   removeAutoRefillCard: vi.fn(),

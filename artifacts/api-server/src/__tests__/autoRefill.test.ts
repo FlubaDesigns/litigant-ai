@@ -1,31 +1,24 @@
+import { billingRecoveryDatabase } from "./billingRecoveryDatabase.js";
 import {beforeEach,describe,it,expect,vi} from "vitest";
 vi.mock("../lib/firebaseAdmin.js",()=>({getFirestoreDb:vi.fn(),isFirebaseConfigured:()=>true}));
-vi.mock("../lib/squareClient.js",async original=>({...await original<typeof import("../lib/squareClient.js")>(),isSquareConfigured:()=>true,getSquareLocationId:()=>"location",getSquarePayment:vi.fn(),createSquareCustomer:vi.fn(),saveSquareCard:vi.fn(),disableSquareCard:vi.fn(),chargeSquareCard:vi.fn()}));
+vi.mock("../lib/squareClient.js",async original=>({...await original<typeof import("../lib/squareClient.js")>(),isSquareConfigured:()=>true,getSquareLocationId:()=>"location",getSquarePayment:vi.fn(),createSquareCustomer:vi.fn(),saveSquareCard:vi.fn(),disableSquareCard:vi.fn(),chargeSquareCard:vi.fn(),findSquareRefillPayment:vi.fn()}));
 vi.mock("../lib/emailService.js",()=>({isResendConfigured:()=>false,sendPaymentReceiptEmail:vi.fn()}));
 import {getFirestoreDb} from "../lib/firebaseAdmin.js";
-import {chargeSquareCard,getSquarePayment,saveSquareCard,createSquareCustomer,SquareApiError} from "../lib/squareClient.js";
-import {checkAndTriggerAutoRefill,setAutoRefillPreference,eligibleCardPayment,recordRefillPayment} from "../lib/autoRefill.js";
+import {chargeSquareCard,getSquarePayment,findSquareRefillPayment,saveSquareCard,createSquareCustomer,SquareApiError} from "../lib/squareClient.js";
+import {checkAndTriggerAutoRefill,setAutoRefillPreference,eligibleCardPayment,recordRefillPayment,reconcileAutoRefillAttempt,getAutoRefillStatus,removeAutoRefillCard} from "../lib/autoRefill.js";
+import {reserveCreditRun,prepareCreditRunSettlement,applyCreditRunSettlement} from "../lib/creditRunSettlement.js";
 import {handleSquareEvent} from "../lib/squareEventHandler.js";
 
-function database() {
- const store:Record<string,any>={}; let lock=Promise.resolve();let nextId=0;
- const merge=(path:string,value:any,patch=false)=>{
-  if(!patch)store[path]={}; store[path]??={};
-  for(const [key,val] of Object.entries(value)){const keys=key.split('.');let at=store[path];while(keys.length>1){const part=keys.shift()!;at[part]??={};at=at[part];}at[keys[0]]=val;}
- };
- const ref=(path:string):any=>({path,get:async()=>({exists:path in store,data:()=>store[path]}),set:async(v:any,o:any)=>merge(path,v,o?.merge),update:async(v:any)=>merge(path,v,true)});
- return {store,collection:(name:string)=>({doc:(id:string)=>ref(`${name}/${id}`),add:async(v:any)=>{const id=String(++nextId);merge(`${name}/${id}`,v);return {id};}}),runTransaction:<T>(fn:(t:any)=>Promise<T>)=>{
-   const result=lock.then(async()=>{const writes:Array<()=>void>=[];const out=await fn({get:(r:any)=>r.get(),set:(r:any,v:any,o:any)=>writes.push(()=>merge(r.path,v,o?.merge)),update:(r:any,v:any)=>writes.push(()=>merge(r.path,v,true))});writes.forEach(f=>f());return out;});lock=result.then(()=>{},()=>{});return result;
- }};
-}
+function database() { return billingRecoveryDatabase(); }
+
 let db:ReturnType<typeof database>;
 const pref={enabled:true,thresholdCredits:100,dollarAmount:20,consentVersion:1,consentAt:123};
 const cardPayment=()=>({id:"manual",status:"COMPLETED",location_id:"location",note:"LITIGANT:userId=u,creditAmount=500,pack=starter",created_at:new Date().toISOString(),card_details:{status:"CAPTURED",entry_method:"KEYED",card:{card_brand:"VISA",last_4:"1111"}}});
 beforeEach(()=>{
- vi.clearAllMocks();db=database();vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+ vi.clearAllMocks();vi.stubGlobal("fetch",vi.fn(()=>{throw new Error("External calls forbidden");}));db=database();vi.mocked(getFirestoreDb).mockReturnValue(db as any);
  db.store['users/u']={plan:"pro",creditBalance:50,autoRefill:{...pref},email:"example@example.com"};
  db.store['billing_accounts/u']={customerId:"customer",cardId:"card",cardBrand:"VISA",cardLast4:"1111"};
- vi.mocked(chargeSquareCard).mockImplementation(async (r:any)=>({id:"payment",status:"COMPLETED",note:r.note,amount_money:r.amount_money}));
+ vi.mocked(chargeSquareCard).mockImplementation(async (r:any)=>({id:"payment",status:"COMPLETED",location_id:"location",note:r.note,amount_money:r.amount_money}));
 });
 describe("automatic card top-ups",()=>{
  it("charges once across concurrent runs and duplicate webhooks, then grants credits once",async()=>{
@@ -33,7 +26,7 @@ describe("automatic card top-ups",()=>{
   expect(chargeSquareCard).toHaveBeenCalledTimes(1);
   const request=vi.mocked(chargeSquareCard).mock.calls[0][0] as any;
   expect(request).toMatchObject({amount_money:{amount:2000,currency:"USD"},customer_details:{customer_initiated:false,seller_keyed_in:false}});
-  await handleSquareEvent({merchant_id:"",type:"payment.updated",event_id:"duplicate",data:{object:{payment:{id:"payment",status:"COMPLETED",note:request.note,amount_money:request.amount_money}}}});
+  await handleSquareEvent({merchant_id:"",type:"payment.updated",event_id:"duplicate",data:{object:{payment:{id:"payment",status:"COMPLETED",location_id:"location",note:request.note,amount_money:request.amount_money}}}});
   expect(db.store['users/u'].creditBalance).toBe(2050);
   expect(db.store['billing_accounts/u'].activeAttempt).toBeNull();
   expect(Object.keys(db.store).filter(k=>k.startsWith('credit_transactions/'))).toHaveLength(1);
@@ -77,5 +70,69 @@ describe("automatic card top-ups",()=>{
   expect(eligibleCardPayment(cardPayment(),'other')).toBe(false);
   expect(eligibleCardPayment({...cardPayment(),created_at:new Date(Date.now()-86400001).toISOString()},'u')).toBe(false);
   expect(eligibleCardPayment({...cardPayment(),card_details:{status:"CAPTURED",entry_method:"ON_FILE"}},'u')).toBe(false);
+ });
+});
+
+describe("existing top-up recovery while disabled",()=>{
+ async function pending() {
+  vi.mocked(chargeSquareCard).mockImplementation(async (request:any)=>({id:"pending",status:"PENDING",location_id:"location",note:request.note,amount_money:request.amount_money}));
+  await checkAndTriggerAutoRefill("u",50,"run");
+  const id=db.store["billing_accounts/u"].activeAttempt;
+  const attempt=db.store[`auto_refill_attempts/${id}`];
+  return {id,attempt,payment:{id:"pending",location_id:"location",note:attempt.request.note,amount_money:attempt.request.amount_money,status:"FAILED"}};
+ }
+ it.each(["FAILED","CANCELED"])("settles delayed %s events after disabling and removing the card",async status=>{
+  const {payment,id}=await pending();await removeAutoRefillCard("u");
+  await handleSquareEvent({merchant_id:"",type:"payment.updated",event_id:"terminal",data:{object:{payment:{...payment,status}}}});
+  expect(db.store["billing_accounts/u"]).toMatchObject({activeAttempt:null,refillStatus:"failed",cardId:null});
+  expect(db.store[`auto_refill_attempts/${id}`].status).toBe(status.toLowerCase());
+  await checkAndTriggerAutoRefill("u",50,"later");expect(chargeSquareCard).toHaveBeenCalledTimes(1);
+ });
+ it("queries and settles an existing payment without card or new-charge permission",async()=>{
+  const {payment,attempt}=await pending();await removeAutoRefillCard("u");attempt.leaseUntil=0;
+  vi.mocked(getSquarePayment).mockResolvedValue(payment);
+  await getAutoRefillStatus("u");expect(getSquarePayment).toHaveBeenCalledWith("pending");
+  expect(db.store["billing_accounts/u"].activeAttempt).toBeNull();expect(chargeSquareCard).toHaveBeenCalledTimes(1);
+ });
+ it("unknown payment lookup after disable never calls charge and no-match stays unresolved",async()=>{
+  const {attempt}=await pending();delete attempt.paymentId;attempt.leaseUntil=0;await removeAutoRefillCard("u");
+  vi.mocked(findSquareRefillPayment).mockResolvedValue(null);await reconcileAutoRefillAttempt("u");
+  expect(findSquareRefillPayment).toHaveBeenCalledOnce();expect(chargeSquareCard).toHaveBeenCalledTimes(1);
+  expect(db.store["billing_accounts/u"].activeAttempt).toBeTruthy();expect(db.store["users/u"].creditBalance).toBe(50);
+ });
+ it("does not overwrite a concurrent completed webhook with stale failed lookup status",async()=>{
+  const {payment,attempt}=await pending();attempt.leaseUntil=0;
+  vi.mocked(getSquarePayment).mockImplementation(async()=>{
+   await handleSquareEvent({merchant_id:"",type:"payment.updated",event_id:"paid",data:{object:{payment:{...payment,status:"COMPLETED"}}}});
+   throw new Error("Lost status response");
+  });
+  await expect(reconcileAutoRefillAttempt("u")).rejects.toThrow("Lost");
+  expect(db.store["billing_accounts/u"]).toMatchObject({activeAttempt:null,refillStatus:"completed",refillError:null});
+  expect(db.store["users/u"].creditBalance).toBe(2050);
+ });
+ it("a payment lookup 404 is not treated as a declined charge",async()=>{
+  const {attempt}=await pending();attempt.leaseUntil=0;
+  vi.mocked(getSquarePayment).mockRejectedValue(new SquareApiError(404,"NOT_FOUND"));
+  await checkAndTriggerAutoRefill("u",50,"later");
+  expect(db.store["billing_accounts/u"].activeAttempt).toBeTruthy();expect(db.store["users/u"].autoRefill.enabled).toBe(true);
+ });
+ it("validates location and immutable authorization before minting credits",async()=>{
+  const {payment}=await pending();
+  await expect(handleSquareEvent({merchant_id:"",type:"payment.updated",event_id:"wrong",data:{object:{payment:{...payment,status:"COMPLETED",location_id:"elsewhere"}}}})).rejects.toThrow("authorization");
+  expect(db.store["users/u"].creditBalance).toBe(50);
+ });
+});
+
+describe("holds never trigger new monetary charges",()=>{
+ it("defers charging until concurrent reservations have settled and genuine balance is low",async()=>{
+  db.store["users/u"].creditBalance=500;
+  await reserveCreditRun("u",100,"a","a");await reserveCreditRun("u",400,"b","b");
+  await prepareCreditRunSettlement("u","a",10,{userId:"u",status:"complete"});await applyCreditRunSettlement("u","a");
+  expect(db.store["users/u"].creditBalance).toBe(90);
+  await checkAndTriggerAutoRefill("u",90,"a");expect(chargeSquareCard).not.toHaveBeenCalled();
+  await prepareCreditRunSettlement("u","b",400,{userId:"u",status:"complete"});
+  await checkAndTriggerAutoRefill("u",90,"b");expect(chargeSquareCard).not.toHaveBeenCalled();
+  await applyCreditRunSettlement("u","b");await checkAndTriggerAutoRefill("u",90,"b");
+  expect(chargeSquareCard).toHaveBeenCalledOnce();expect(db.store["users/u"].creditBalance).toBe(2090);
  });
 });

@@ -550,3 +550,119 @@ test('read-only retry preserves terminal failure and respects its bound', async 
   assert.equal(calls, 2); assert.equal(waits, 1);
   await assert.rejects(retryRead(async () => {}, { attempts: 13 }), /invalid read retry bound/);
 });
+
+// Exact additive index creation, with no live database or cloud access.
+const { PAYMENT_INDEX_PARENT, PAYMENT_INDEX, inspectPaymentIndexes, paymentHistoryIndexGate } = await import('./lai-release.mjs');
+function indexFixture(typed = false, state = 'READY', id = typed ? 'typed' : 'history') {
+  const fields = typed ? clone(PAYMENT_INDEX.fields) : [clone(PAYMENT_INDEX.fields[0]), clone(PAYMENT_INDEX.fields[2])];
+  return { name: `${PAYMENT_INDEX_PARENT}/indexes/${id}`, queryScope: 'COLLECTION', fields: [...fields, { fieldPath: '__name__', order: 'DESCENDING' }], state };
+}
+const inspectedDescriptor = () => ({ ...descriptor(), sourceCommit: SOURCE });
+const indexContext = () => ({ controllerSha: DEPLOYMENT });
+test('index plan accepts only exact collection fields and preserves the existing history index', () => {
+  assert.equal(inspectPaymentIndexes([indexFixture()]), null);
+  const wanted = indexFixture(true); assert.equal(inspectPaymentIndexes([indexFixture(), wanted]), wanted);
+  assert.equal(inspectPaymentIndexes([indexFixture(), { ...wanted, fields: clone(PAYMENT_INDEX.fields) }]).state, 'READY');
+  assert.equal(inspectPaymentIndexes([indexFixture(), changed(wanted, x => { x.fields[0] = { order: 'ASCENDING', fieldPath: 'userId' }; })]).state, 'READY');
+});
+for (const [label, mutate] of [
+  ['collection group scope', x => { x.queryScope = 'COLLECTION_GROUP'; }],
+  ['wrong ordering', x => { x.fields[1].order = 'DESCENDING'; }],
+  ['wrong field order', x => { [x.fields[0], x.fields[1]] = [x.fields[1], x.fields[0]]; }],
+  ['extra field', x => { x.fields.splice(1, 0, { fieldPath: 'other', order: 'ASCENDING' }); }],
+  ['wrong document ordering', x => { x.fields.at(-1).order = 'ASCENDING'; }],
+  ['wrong API scope', x => { x.apiScope = 'MONGODB_COMPATIBLE_API'; }],
+  ['unique index', x => { x.unique = true; }],
+  ['dense index', x => { x.density = 'DENSE'; }],
+  ['multikey index', x => { x.multikey = true; }],
+  ['search index', x => { x.searchIndexOptions = {}; }],
+]) {
+  test(`index plan does not reuse ${label}`, () => assert.equal(inspectPaymentIndexes([indexFixture(), changed(indexFixture(true), mutate)]), null));
+}
+for (const state of ['NEEDS_REPAIR', 'STATE_UNSPECIFIED', undefined]) {
+  test(`index plan rejects terminal or unknown state ${state}`, () => {
+    const x = indexFixture(true); x.state = state;
+    assert.throws(() => inspectPaymentIndexes([indexFixture(), x]), /needs repair/);
+  });
+}
+test('index plan rejects wrong project, missing existing history and duplicate candidates', () => {
+  assert.throws(() => inspectPaymentIndexes([indexFixture(true)]), /existing unfiltered/);
+  assert.throws(() => inspectPaymentIndexes([indexFixture(false, 'CREATING')]), /existing unfiltered/);
+  assert.throws(() => inspectPaymentIndexes([changed(indexFixture(), x => { x.name = x.name.replace('litigant-ai', 'other'); })]), /unexpected index/);
+  assert.throws(() => inspectPaymentIndexes([indexFixture(), indexFixture(true), indexFixture(true, 'READY', 'other')]), /ambiguous/);
+  assert.throws(() => inspectPaymentIndexes([indexFixture(), indexFixture()]), /duplicate/);
+});
+test('inspection remains read-only for missing and building indexes', async () => {
+  for (const state of ['MISSING', 'CREATING', 'READY']) {
+    let writes = 0; let reads = 0;
+    const result = await paymentHistoryIndexGate({ controllerSha: SOURCE }, inspectedDescriptor(), {
+      list: async () => { reads++; return [indexFixture(), ...(state === 'MISSING' ? [] : [indexFixture(true, state)])]; },
+      create: async () => { writes++; },
+    });
+    assert.equal(result.state, state); assert.equal(result.created, false); assert.equal(writes, 0); assert.equal(reads, 1);
+  }
+});
+test('deployment creates once only after approval recheck and waits for READY', async () => {
+  const calls = []; let reads = 0;
+  const result = await paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+    list: async () => { calls.push('read'); return [indexFixture(), ...(reads++ === 0 ? [] : [indexFixture(true, reads < 3 ? 'CREATING' : 'READY')])]; },
+    create: async () => { calls.push('create'); return { name: 'operation' }; },
+    recheck: async () => { calls.push('recheck'); }, pause: async () => { calls.push('pause'); }, polls: 3,
+  });
+  assert.equal(result.state, 'READY'); assert.equal(result.created, true);
+  assert.deepEqual(calls, ['read', 'recheck', 'create', 'read', 'pause', 'read', 'recheck']);
+});
+for (const initial of ['READY', 'CREATING']) {
+  test(`deployment reuses ${initial} exact index without recreation`, async () => {
+    let reads = 0; let writes = 0;
+    const result = await paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+      list: async () => [indexFixture(), indexFixture(true, reads++ === 0 ? initial : 'READY')],
+      create: async () => { writes++; }, recheck: async () => {}, polls: 2, pause: async () => {},
+    });
+    assert.equal(result.state, 'READY'); assert.equal(result.created, false); assert.equal(writes, 0);
+  });
+}
+test('deployment cannot create without explicit deploy descriptor and required release recheck', async () => {
+  let writes = 0; const options = { list: async () => [indexFixture()], create: async () => { writes++; } };
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), { ...descriptor('deploy'), approval: null }, options));
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), options), /recheck required/);
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), { ...options, recheck: async () => { throw Error('Main moved'); } }), /Main moved/);
+  assert.equal(writes, 0);
+});
+test('index creation and polling failures stop before production deployment', async () => {
+  const base = { list: async () => [indexFixture()], recheck: async () => {}, pause: async () => {}, polls: 2 };
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), { ...base, create: async () => { throw Error('403'); } }), /403/);
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), { ...base, create: async () => ({ error: { code: 7 } }) }), /creation failed/);
+  let creates = 0;
+  await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), { ...base, create: async () => { creates++; return {}; } }), /not READY yet/);
+  assert.equal(creates, 1);
+});
+test('index polling rejects any existing definition disappearing or changing', async () => {
+  for (const mutate of [xs => xs.splice(1, 1), xs => { xs[1].fields[0].order = 'DESCENDING'; }]) {
+    let reads = 0;
+    const existing = indexFixture(true, 'READY', 'unrelated'); existing.queryScope = 'COLLECTION_GROUP';
+    await assert.rejects(paymentHistoryIndexGate(indexContext(), descriptor('deploy'), {
+      list: async () => { const xs = [indexFixture(), clone(existing), indexFixture(true, 'READY')]; if (reads++ > 0) mutate(xs); return xs; },
+      recheck: async () => {}, polls: 2,
+    }), /existing Firestore index/);
+  }
+});
+
+test('index listing follows escaped pagination and uses only the fixed read endpoint', async () => {
+  const { paymentIndexes } = await import('./lai-release.mjs'); const calls = [];
+  const result = await paymentIndexes(async (...args) => {
+    calls.push(args); return calls.length === 1 ? { indexes: [indexFixture()], nextPageToken: 'token/+?' } : { indexes: [indexFixture(true)] };
+  });
+  assert.equal(result.length, 2); assert.equal(calls.length, 2);
+  assert.equal(calls[0][0], `https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes?pageSize=100`);
+  assert.equal(calls[1][0], `${calls[0][0]}&pageToken=token%2F%2B%3F`);
+  assert(calls.every(args => args.length === 2));
+});
+test('index listing fails closed on malformed lists, repeating pages or excessive pagination', async () => {
+  const { paymentIndexes } = await import('./lai-release.mjs');
+  await assert.rejects(paymentIndexes(async () => ({ indexes: {} })), /invalid Firestore/);
+  await assert.rejects(paymentIndexes(async () => ({ nextPageToken: 'same' })), /invalid Firestore index pagination/);
+  let calls = 0;
+  await assert.rejects(paymentIndexes(async () => ({ nextPageToken: `page${++calls}` })), /pagination exceeded/);
+  assert.equal(calls, 100);
+});

@@ -4,8 +4,7 @@ import { canCreateArtifacts } from "@workspace/api-zod/session";
  *
  * ## Invariant
  *   Every change to users/{uid}.creditBalance MUST go through addCredits().
- *   Brain session reservations and refunds (brain.ts → reserveCredits /
- *   reconcileCredits) are exceptions: they write their own atomic transactions
+ *   Brain session reservations and refunds (creditRunSettlement.ts) are exceptions: they write their own atomic transactions
  *   for performance (avoiding a function call per stream chunk), but they
  *   follow the same pattern — balance update + ledger entry in one Firestore
  *   transaction.
@@ -27,7 +26,8 @@ import { canCreateArtifacts } from "@workspace/api-zod/session";
  */
 import { getFirestoreDb, isFirebaseConfigured } from "./firebaseAdmin.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { hasActiveSessionRun } from "./sessionRunLock.js";
+import { recoverCreditRuns } from "./creditRunSettlement.js";
+import { hasActiveSessionRun, SESSION_RUN_LEASE_MS } from "./sessionRunLock.js";
 import { getBillingDefaults } from "./billingDefaultsConfig.js";
 import { isResendConfigured } from "./emailService.js";
 
@@ -58,6 +58,8 @@ export interface CreditTransaction {
   source?: string;
   sessionId?: string | null;
   paymentId?: string | null;
+  paidAmountMinor?: number | null;
+  paidCurrency?: string | null;
   createdAt: string;
 }
 
@@ -104,6 +106,8 @@ export async function addCredits(
     source?: string;
     sessionId?: string;
     paymentId?: string;
+    paidAmountMinor?: number;
+    paidCurrency?: string;
     idempotencyKey?: string;
     refundTransactionId?: string;
     /** Verified immutable Square checkout; claimed atomically with the credit grant. */
@@ -121,6 +125,11 @@ export async function addCredits(
   const db = getFirestoreDb();
   if (!db) return null;
 
+  if (opts.paidAmountMinor !== undefined || opts.paidCurrency !== undefined) {
+    if (type !== "purchase" || !Number.isSafeInteger(opts.paidAmountMinor) || opts.paidAmountMinor! < 0
+      || !/^[A-Z]{3}$/.test(opts.paidCurrency ?? "")) throw new Error("Invalid verified payment amount");
+  }
+  if (opts.refundTransactionId) await recoverCreditRuns(uid);
   const userRef = db.collection("users").doc(uid);
 
   return db.runTransaction(async (tx) => {
@@ -170,7 +179,13 @@ export async function addCredits(
       let remaining = -charge.amount - previouslyReturned;
       if (refundSessionId) {
         const session = (await tx.get(db.collection("sessions").doc(refundSessionId))).data();
-        if (!session || hasActiveSessionRun(session) || session.status === "running") {
+        if (charge.runId) {
+          const run = (await tx.get(db.collection("credit_runs").doc(charge.runId))).data();
+          if (!run || run.userId !== uid || run.state !== "settled") throw new InvalidRefundError("Wait for credit settlement before refunding this conversation.");
+        }
+        const created = charge.createdAt?.toMillis?.() ?? (charge.createdAt instanceof Date ? charge.createdAt.getTime() : Date.parse(charge.createdAt));
+        const provenLegacyOrphan = !session && !charge.runId && Number.isFinite(created) && created <= Date.now() - SESSION_RUN_LEASE_MS;
+        if ((!session && !provenLegacyOrphan) || (session && (hasActiveSessionRun(session) || session.status === "running" || session.settlementStatus === "pending"))) {
           throw new InvalidRefundError("Wait for this conversation to finish before refunding it.");
         }
         const netCharge = -entries.filter(entry => entry.sessionId === refundSessionId &&
@@ -185,6 +200,10 @@ export async function addCredits(
 
     // ── Balance update ────────────────────────────────────────────────────────
     const snap    = await tx.get(userRef);
+    const deletion = (await tx.get(db.collection("account_deletions").doc(uid))).data();
+    if (deletion && type === "signup_bonus") return { newBalance: 0, skipped: true };
+    if (!snap.exists) throw new Error("Account profile is unavailable; credit delivery requires review");
+    if (deletion && deletion.phase !== "preparing") throw new Error("Account deletion is pending");
     const current: number = snap.exists ? ((snap.data()?.creditBalance as number) ?? 0) : 0;
     const newBalance = current + amount;
 
@@ -223,6 +242,7 @@ export async function addCredits(
       sessionId:    refundSessionId ?? opts.sessionId ?? null,
       ...(opts.refundTransactionId ? {refundTransactionId: opts.refundTransactionId} : {}),
       paymentId:    opts.paymentId ?? null,
+      ...(opts.paidAmountMinor !== undefined ? { paidAmountMinor: opts.paidAmountMinor, paidCurrency: opts.paidCurrency } : {}),
       createdAt:    FieldValue.serverTimestamp(),
     });
 
@@ -243,7 +263,8 @@ export class InvalidRefundError extends Error {}
 export async function getTransactions(
   uid: string,
   limit = 50,
-  cursor?: string
+  cursor?: string,
+  type?: CreditTxType
 ): Promise<{ items: CreditTransaction[]; nextCursor: string | null }> {
   if (!isFirebaseConfigured()) return { items: [], nextCursor: null };
 
@@ -251,15 +272,15 @@ export async function getTransactions(
   if (!db) return { items: [], nextCursor: null };
 
   try {
-    let q = db
-      .collection("credit_transactions")
-      .where("userId", "==", uid)
-      .orderBy("createdAt", "desc")
-      .limit(limit + 1); // fetch one extra to detect hasMore
+    limit = Math.min(100, Math.max(1, Math.floor(limit) || 50));
+    let filtered = db.collection("credit_transactions").where("userId", "==", uid);
+    if (type) filtered = filtered.where("type", "==", type);
+    let q = filtered.orderBy("createdAt", "desc").limit(limit + 1); // fetch one extra to detect hasMore
 
     if (cursor) {
       const cursorSnap = await db.collection("credit_transactions").doc(cursor).get();
-      if (cursorSnap.exists) q = q.startAfter(cursorSnap);
+      if (!cursorSnap.exists || cursorSnap.data()?.userId !== uid || (type && cursorSnap.data()?.type !== type)) throw new InvalidHistoryCursorError("Invalid history cursor");
+      q = q.startAfter(cursorSnap);
     }
 
     const snap    = await q.get();
@@ -277,6 +298,8 @@ export async function getTransactions(
         source:        data["source"]       as string | undefined,
         sessionId:     (data["sessionId"]   as string | null) ?? null,
         paymentId:     (data["paymentId"]   as string | null) ?? null,
+        paidAmountMinor: Number.isSafeInteger(data.paidAmountMinor) && data.paidAmountMinor >= 0 ? data.paidAmountMinor : null,
+        paidCurrency: typeof data.paidCurrency === "string" && /^[A-Z]{3}$/.test(data.paidCurrency) ? data.paidCurrency : null,
         createdAt:     toIsoString(data["createdAt"]),
       } satisfies CreditTransaction;
     });
@@ -284,9 +307,11 @@ export async function getTransactions(
     return { items, nextCursor: hasMore ? docs[limit - 1].id : null };
   } catch (err) {
     console.error("[CreditLedger] getTransactions error:", err);
-    return { items: [], nextCursor: null };
+    throw err;
   }
 }
+
+export class InvalidHistoryCursorError extends Error {}
 
 /** Updates plan / subscription fields on the user document (no credit change). */
 export async function updateUserPlan(
@@ -318,7 +343,10 @@ export async function updateUserPlan(
  * Uses "signup_bonus_{uid}" as the idempotency key so this fires at most
  * once per user even if the auth webhook fires multiple times.
  */
-export async function grantSignupBonus(uid: string): Promise<{ skipped: boolean; amount: number }> {
+export async function grantSignupBonus(uid: string, eligibility: {emailVerified?: boolean; guest?: boolean} = {}): Promise<{ skipped: boolean; amount: number }> {
+  // Only server-verified token eligibility may reach the one-time grant. Missing
+  // verification is not permission, including alternate provisioning entrypoints.
+  if (eligibility.emailVerified !== true || eligibility.guest) return {skipped:true,amount:0};
   const { signupBonusCredits } = await getBillingDefaults();
   const amount = signupBonusCredits;
   const result = await addCredits(uid, amount, "signup_bonus", {
@@ -357,7 +385,10 @@ export async function syncPaidProAccess(uid: string): Promise<void> {
   const account = (await ref.get()).data();
   if (!account || canCreateArtifacts(account.plan) || account.guestInvitationId) return;
   if (await hasPaidCreditPurchase(uid)) {
-    await ref.set({ plan: "pro", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.runTransaction(async tx => {
+      const [current, deletion] = await Promise.all([tx.get(ref), tx.get(db.collection("account_deletions").doc(uid))]);
+      if (current.exists && !deletion.exists) tx.update(ref, { plan: "pro", updatedAt: FieldValue.serverTimestamp() });
+    });
   }
 }
 
@@ -374,6 +405,7 @@ export async function reserveCredits(
   return db.runTransaction(async (txn) => {
     const userRef = db.collection("users").doc(uid);
     const userDoc = await txn.get(userRef);
+    if ((await txn.get(db.collection("account_deletions").doc(uid))).exists) return false;
     const balance = (userDoc.data()?.creditBalance as number) ?? 0;
     // Recheck under the balance transaction so simultaneous new runs cannot extend debt.
     if (source === "brain_reservation" && balance < 0) return false;

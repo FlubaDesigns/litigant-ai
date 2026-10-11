@@ -1,112 +1,126 @@
-import { removeAutoRefillCard } from "../lib/autoRefill.js";
+import crypto from "node:crypto";
+import { recoverCreditRuns } from "../lib/creditRunSettlement.js";
+import { removeAutoRefillCard, reconcileAutoRefillAttempt } from "../lib/autoRefill.js";
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { getAuth } from "firebase-admin/auth";
-import { safeError } from "../lib/safeError.js";
 
 const router = Router();
+type Phase = "preparing" | "data" | "auth" | "profile";
+const LEASE_MS = 15 * 60 * 1000;
 
-/**
- * DELETE /account — server-side account teardown.
- *
- * Order of operations is deliberate:
- *   1. Verify the request is from the account owner.
- *   2. Delete all Firestore data (sessions, turns, transactions, logs, profile).
- *   3. Delete the Firebase Auth user last.
- *
- * Deleting Auth last means: if Firestore deletion fails, the user still has a
- * valid Auth account and can retry. If Auth deletion fails after Firestore is
- * gone, we log the orphaned UID for manual cleanup — the client is told to sign
- * out so the session cookie is cleared; the orphaned Auth account has no
- * associated data and cannot re-provision credits (profile missing →
- * provision re-creates it, but grantSignupBonus is idempotent and the
- * original bonus transaction was deleted with credit_transactions).
- *
- * Frontend (`Settings.tsx`) calls this and then signs the user out —
- * it does NOT call Firebase client-SDK deleteUser() separately, since that
- * operation is done here by the Admin SDK with no need for recent-login auth.
+/** Owner-only, resumable teardown. The default-denied account_deletions collection carries a temporary,
+ * server-owned deletion fence. The profile only mirrors its status for the UI.
+ * The fence is removed after Auth deletion and final cleanup. No permanent record
+ * or credit/payment retention is introduced. Existing payment dedup records keep
+ * their existing retention policy; retry never provisions a profile or charges.
  */
 router.delete("/account", async (req, res) => {
   const db = getFirestoreDb();
   const authHeader = req.headers["authorization"];
-  if (!db || !authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  if (!db || !authHeader?.startsWith("Bearer ")) return res.status(401).json({ message: "Unauthorized" });
+  const decoded = await verifyIdToken(authHeader.slice(7), { allowAccountDeletion: true });
+  if (!decoded) return res.status(401).json({ message: "Sign in again to retry deletion, or contact support if the sign-in account is already unavailable." });
+
+  const uid = decoded.uid, user = db.collection("users").doc(uid);
+  const fence = db.collection("account_deletions").doc(uid);
+  const requestId = crypto.randomUUID();
+  let phase: Phase = "preparing", appDataDeleted = false, authDeleted = false, claimed = false;
+  const result = (code: string, message: string, retryable = true) => ({
+    success: false, code, phase, appDataDeleted, authDeleted, retryable, message,
+  });
+  // All marker writes are fenced: a timed-out request cannot restore a profile
+  // after a newer request has completed deletion. Never persist raw errors/PII.
+  async function checkpoint(next: Phase, minimal = false) {
+    await db!.runTransaction(async tx => {
+      const current = (await tx.get(fence)).data();
+      if (current?.requestId !== requestId) throw new Error("Deletion request superseded");
+      const accountDeletion = { phase: next, appDataDeleted, requestId, leaseUntil: Date.now() + LEASE_MS };
+      tx.set(fence, accountDeletion);
+      if (minimal) tx.delete(user);
+    });
+    phase = next;
   }
-
-  const decoded = await verifyIdToken(authHeader.slice(7));
-  if (!decoded) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  async function release() {
+    if (!claimed) return;
+    await db!.runTransaction(async tx => {
+      const current = (await tx.get(fence)).data();
+      if (current?.requestId === requestId) tx.update(fence, { leaseUntil: 0 });
+    });
   }
-
-  const uid = decoded.uid;
-
   try {
-    await removeAutoRefillCard(uid);
-    const billingAccount=db.collection("billing_accounts").doc(uid);
-    if ((await billingAccount.get()).data()?.activeAttempt) {
-      res.status(409).json({message:"Auto Top-Up is off. A payment is still awaiting confirmation; retry account deletion once it is resolved."});
-      return;
-    }
-    await billingAccount.delete();
-    const refills=await db.collection("auto_refill_attempts").where("uid", "==", uid).get();
-    await Promise.all(refills.docs.map(doc=>doc.ref.delete()));
+    claimed = await db.runTransaction(async tx => {
+      const previous = (await tx.get(fence)).data();
+      appDataDeleted = previous?.appDataDeleted === true;
+      phase = previous?.phase ?? "preparing";
+      if (previous?.leaseUntil > Date.now()) return false;
+      phase = appDataDeleted ? "auth" : "preparing";
+      const profile = await tx.get(user);
+      tx.set(fence, { phase, appDataDeleted, requestId, leaseUntil: Date.now() + LEASE_MS });
+      if (profile.exists) tx.update(user, { accountDeletion: true,
+        "autoRefill.enabled": false, "autoRefill.consentVersion": 0, "autoRefill.revision": requestId });
+      return true;
+    });
+    if (!claimed) return res.status(409).json(result("deletion_in_progress", "Account deletion is already running. Wait for it to finish before retrying."));
 
-    // ── 1. Firestore data ───────────────────────────────────────────────────
-
-    // Sessions + session_turns subcollections
-    const sessionsSnap = await db.collection("sessions").where("userId", "==", uid).get();
-    await Promise.all(
-      sessionsSnap.docs.map(async (sessionDoc) => {
-        const turnsSnap = await sessionDoc.ref.collection("session_turns").get();
-        await Promise.all(turnsSnap.docs.map((t) => t.ref.delete()));
-        await sessionDoc.ref.delete();
-      })
-    );
-
-    // Credit ledger — deleted for GDPR/right-to-erasure compliance.
-    // Square's own payment records are outside our control.
-    const txSnap = await db.collection("credit_transactions").where("userId", "==", uid).get();
-    await Promise.all(txSnap.docs.map((d) => d.ref.delete()));
-
-    // Feedback
-    const feedbackSnap = await db.collection("feedback").where("userId", "==", uid).get();
-    await Promise.all(feedbackSnap.docs.map((d) => d.ref.delete()));
-
-    // API logs (non-fatal — collection may not exist)
-    try {
-      const logsSnap = await db.collection("api_logs").where("userId", "==", uid).get();
-      await Promise.all(logsSnap.docs.map((d) => d.ref.delete()));
-    } catch {
-      // collection may not exist
-    }
-
-    // User profile — deleted last so auth context is still readable above
-    await db.collection("users").doc(uid).delete();
-
-    // ── 2. Firebase Auth user (Admin SDK — no recent-login requirement) ─────
-    // Done after Firestore so a failure here leaves the account in a predictable
-    // state: Firestore data gone, Auth account still exists. The client signs out
-    // unconditionally (see Settings.tsx), so the session is cleared either way.
-    // The orphaned Auth account has no Firestore profile — re-login would
-    // trigger /auth/provision which re-creates a zero-credit profile, but the
-    // original signup bonus was already recorded and grantSignupBonus is idempotent.
-    let authDeleted = true;
-    try {
-      await getAuth().deleteUser(uid);
-    } catch (authErr: any) {
-      authDeleted = false;
-      // auth/user-not-found is fine — already deleted (e.g. client SDK deleted it first)
-      if (authErr?.code !== "auth/user-not-found") {
-        console.error(`[account] Auth deletion failed for uid=${uid} — orphaned Auth account. Manual cleanup required.`, authErr?.message);
+    if (!appDataDeleted) {
+      // Recovery only: this never starts a top-up. Keep these guards before
+      // removing any billing proof or user data needed for settlement.
+      await removeAutoRefillCard(uid);
+      await reconcileAutoRefillAttempt(uid);
+      await recoverCreditRuns(uid);
+      const runs = await db.collection("credit_runs").where("userId", "==", uid).get();
+      const billingAccount = db.collection("billing_accounts").doc(uid);
+      if (runs.docs.some(doc => doc.data().state !== "settled")) {
+        await release();
+        return res.status(409).json(result("settlement_pending", "Auto Top-Up is off. A conversation or credit settlement is still in progress. Retry deletion after it finishes."));
       }
+      if ((await billingAccount.get()).data()?.activeAttempt) {
+        await release();
+        return res.status(409).json(result("payment_pending", "Auto Top-Up is off. A payment is still awaiting confirmation. Retry deletion once it is resolved."));
+      }
+      await checkpoint("data");
+      // Sequential stages make progress truthful and ensure no sibling deletes
+      // are still running when an error response invites a retry.
+      await billingAccount.delete();
+      for (const doc of runs.docs) await doc.ref.delete();
+      for (const [collection, field] of [["auto_refill_attempts", "uid"], ["sessions", "userId"],
+        ["credit_transactions", "userId"], ["feedback", "userId"], ["api_logs", "userId"]] as const) {
+        const snapshot = await db.collection(collection).where(field, "==", uid).get();
+        for (const doc of snapshot.docs) {
+          if (collection === "sessions") {
+            const turns = await doc.ref.collection("session_turns").get();
+            for (const turn of turns.docs) await turn.ref.delete();
+          }
+          await doc.ref.delete();
+        }
+      }
+      // Missing Firestore collections return empty snapshots. Permission/write
+      // errors (including logs) are real partial failures, never silent success.
+      appDataDeleted = true;
+      try { await checkpoint("auth", true); }
+      catch (error) { appDataDeleted = false; throw error; }
     }
-
-    res.json({ success: true, authDeleted });
-  } catch (e: any) {
-    console.error("[account] Delete account error:", e);
-    res.status(500).json({ message: safeError(e) });
+    await checkpoint("auth");
+    try { await getAuth().deleteUser(uid); }
+    catch (error: any) { if (error?.code !== "auth/user-not-found") throw error; }
+    authDeleted = true;
+    phase = "profile";
+    await db.runTransaction(async tx => {
+      const current = (await tx.get(fence)).data();
+      if (current?.requestId !== requestId) throw new Error("Deletion request superseded");
+      tx.delete(fence);
+    });
+    return res.json({ success: true, code: "deleted", phase: "complete", appDataDeleted: true, authDeleted: true, retryable: false });
+  } catch (error: any) {
+    console.error("[account] Deletion incomplete", { uid, phase, code: error?.code ?? "operation_failed" });
+    await release().catch(() => {}); // Failure leaves a bounded lease, not a success claim.
+    const message = authDeleted
+      ? "Your sign-in account and app data were removed, but final deletion cleanup is incomplete. Contact support with your account ID so they can remove the remaining deletion marker."
+      : appDataDeleted
+        ? "Your app data was removed, but your sign-in account has not been confirmed deleted. Retry deletion here. If this keeps failing, contact support with your account ID."
+        : "Account deletion is incomplete. Some data may already have been removed. Auto Top-Up may be off. Retry deletion here, or contact support if it keeps failing.";
+    return res.status(503).json(result(authDeleted ? "cleanup_required" : "deletion_incomplete", message, !authDeleted));
   }
 });
 

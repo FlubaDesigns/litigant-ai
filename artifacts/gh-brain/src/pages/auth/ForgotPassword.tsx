@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,12 +10,15 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, KeyRound, Loader2 } from "lucide-react";
 
+import { authPath, safeNext } from "@/lib/authUtils";
+
 const resetSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
 export default function ForgotPasswordPage() {
   const { resetPassword } = useAuth();
+  const next = safeNext(new URLSearchParams(useSearch()).get("next"));
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -69,7 +72,7 @@ export default function ForgotPasswordPage() {
               <p className="text-sm text-muted-foreground">
                 If the designation exists in our records, instructions have been securely transmitted to that channel.
               </p>
-              <Link href="/sign-in" className="inline-flex items-center text-primary hover:text-primary-glow text-sm font-medium transition-all">
+              <Link href={authPath("/sign-in", next)} className="inline-flex items-center text-primary hover:text-primary-glow text-sm font-medium transition-all">
                 <ArrowLeft className="mr-2 w-4 h-4" />
                 Return to Login
               </Link>
@@ -110,7 +113,7 @@ export default function ForgotPasswordPage() {
 
         {!isSubmitted && (
           <p className="text-center mt-8 text-sm text-muted-foreground">
-            <Link href="/sign-in" className="inline-flex items-center text-primary hover:text-primary-glow font-medium transition-all">
+            <Link href={authPath("/sign-in", next)} className="inline-flex items-center text-primary hover:text-primary-glow font-medium transition-all">
               <ArrowLeft className="mr-2 w-4 h-4" />
               Return to Login
             </Link>

@@ -57,7 +57,8 @@ export interface BillingProduct {
 export interface PaymentHistoryItem {
   id: string;
   amount: number | null;
-  currency: string;
+  currency: string | null;
+  amountKnown?: boolean;
   status: string;
   created: number;
   description: string | null;
@@ -73,29 +74,20 @@ export async function getProducts(): Promise<BillingProduct[]> {
 export async function getTransactions(
   cursor?: string
 ): Promise<{ items: CreditTransaction[]; nextCursor: string | null }> {
-  try {
-    const headers = await authHeaders();
-    const url = cursor
-      ? `${API_BASE}/billing/transactions?cursor=${cursor}`
-      : `${API_BASE}/billing/transactions`;
-    const res = await fetch(url, { headers });
-    if (!res.ok) return { items: [], nextCursor: null };
-    return res.json();
-  } catch {
-    return { items: [], nextCursor: null };
-  }
+  const headers = await authHeaders();
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  const res = await fetch(`${API_BASE}/billing/transactions${query}`, { headers, cache:"no-store" });
+  if (!res.ok) throw new Error("Could not load credit history. Please retry.");
+  return res.json();
 }
 
-export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
-  try {
-    const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/billing/payment-history`, { headers });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.data ?? [];
-  } catch {
-    return [];
-  }
+export async function getPaymentHistory(cursor?: string): Promise<{data: PaymentHistoryItem[]; nextCursor: string | null}> {
+  const headers = await authHeaders();
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  const res = await fetch(`${API_BASE}/billing/payment-history${query}`, { headers, cache: "no-store" });
+  if (!res.ok) throw new Error("Could not load payment history. Please retry.");
+  const result = await res.json();
+  return { data: result.data ?? [], nextCursor: result.nextCursor ?? null };
 }
 
 export async function getSubscription(): Promise<null> {

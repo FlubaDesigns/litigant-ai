@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIG } from "@/data/templates";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { useLimits } from "@/hooks/useLimits";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Swords, Users, AlignLeft, FileText, List, Gavel, ChevronRight, ChevronLeft, Check, Zap, Gauge, BookOpen } from "lucide-react";
@@ -20,12 +21,14 @@ async function savePreferences(prefs: {
   onboardingComplete: boolean;
 }): Promise<void> {
   const token = await auth.currentUser?.getIdToken();
-  if (!token) return;
-  await fetch(`${API_BASE}/auth/preferences`, {
+  if (!token) throw new Error("Sign in again to save your preferences.");
+  const response = await fetch(`${API_BASE}/auth/preferences`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(prefs),
   });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || result?.saved !== true) throw new Error("Could not save your preferences. Your choices are still here. Please retry.");
 }
 
 interface Prefs {
@@ -136,38 +139,63 @@ function OptionCard({
   );
 }
 
-export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
-  const [step, setStep] = useState(0);
+export function OnboardingWizard({ onComplete }: { onComplete: () => void | Promise<void> }) {
+  const draftKey = `lai:onboarding:${auth.currentUser?.uid ?? "signed-out"}`;
+  const [draft] = useState(() => {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(draftKey) ?? "null");
+      const parsed = CourtConfigFieldsSchema.pick({litigantCount:true, responseMode:true, outputFormat:true}).safeParse(value?.prefs);
+      return parsed.success ? {prefs: parsed.data, step: Math.max(0, Math.min(TOTAL_STEPS + 1, Number(value.step) || 0))} : null;
+    } catch { return null; }
+  });
+  const [step, setStep] = useState(draft?.step ?? 0);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const limits = useLimits();
-  const [prefs, setPrefs] = useState<Prefs>({
+  const [prefs, setPrefs] = useState<Prefs>(draft?.prefs ?? {
     litigantCount: DEFAULT_CONFIG.litigantCount,
     responseMode: DEFAULT_CONFIG.responseMode,
     outputFormat: DEFAULT_CONFIG.outputFormat,
   });
 
+  useEffect(() => {
+    try { sessionStorage.setItem(draftKey, JSON.stringify({prefs, step})); } catch { /* In-memory retry remains available. */ }
+  }, [draftKey, prefs, step]);
+
+  useEffect(() => {
+    if (limits) setPrefs(current => current.litigantCount > limits.maxLitigants
+      ? {...current, litigantCount: limits.maxLitigants} : current);
+  }, [limits?.maxLitigants]);
 
   function set<K extends keyof Prefs>(key: K, value: Prefs[K]) {
     setPrefs((p) => ({ ...p, [key]: value }));
   }
 
   async function handleFinish() {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
+    setSaveError(null);
     try {
       await savePreferences({
         defaultSettings: {
-          litigantCount: prefs.litigantCount,
+          litigantCount: Math.min(prefs.litigantCount, limits?.maxLitigants ?? prefs.litigantCount),
           responseMode: prefs.responseMode,
           outputFormat: prefs.outputFormat,
           confidenceTarget: DEFAULT_CONFIG.confidenceTarget,
         },
         onboardingComplete: true,
       });
-    } catch {
-      toast.error("Couldn't save preferences — you can update them in Settings anytime.");
+      await onComplete();
+      try { sessionStorage.removeItem(draftKey); } catch { /* Saved server-side. */ }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not save preferences. Please retry.";
+      setSaveError(message);
+      toast.error(message);
     } finally {
+      savingRef.current = false;
       setSaving(false);
-      onComplete();
     }
   }
 
@@ -179,8 +207,9 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const outputLabel = OUTPUT_FORMATS.find((m) => m.id === prefs.outputFormat)?.label ?? prefs.outputFormat;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm px-4">
+    <div role="dialog" aria-modal="true" aria-label="Set up your session defaults" className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/95 backdrop-blur-sm px-4 py-6">
       <div className="w-full max-w-xl">
+        {saveError && <p role="alert" className="mb-4 rounded-lg border border-destructive/50 bg-card p-3 text-sm">{saveError}</p>}
 
         {/* Progress bar */}
         {!isWelcome && !isDone && (
@@ -239,6 +268,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                 </Button>
                 <button
                   onClick={handleFinish}
+                  disabled={saving}
                   className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                 >
                   Skip — use defaults

@@ -3,7 +3,7 @@ import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput } from "@/lib/sessionOutput";
 import { confidenceLabel } from "@workspace/api-zod/session";
 import { sessionPath } from "@workspace/api-zod/session";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -58,6 +58,7 @@ const STATUS_LABELS: Record<string, string> = {
   complete: "Complete",
   incomplete: "Incomplete",
   error: "Error",
+  cancelled: "Stopped (partial)",
   paused_credit_cap: "Credit cap paused",
   relay_needed: "Needs your input",
 };
@@ -372,9 +373,17 @@ export default function HistoryPage() {
   const [templateFilter, setTemplateFilter] = useState<string>("all");
   const [detailSession, setDetailSession] = useState<SavedSession | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const generation = useRef(0);
+  const pageRequest = useRef<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const loadSessions = useCallback(async (cursor: string | null = null, append = false, tab: TabView = tabView) => {
     if (!user) return;
+    const requestKey = `${tab}:${search}:${templateFilter}:${cursor ?? "first"}`;
+    if (append && pageRequest.current === requestKey) return;
+    pageRequest.current = requestKey;
+    const version = ++generation.current;
+    setLoadError(false);
     cursor ? setLoadingMore(true) : setLoading(true);
     try {
       const idToken = await user.getIdToken();
@@ -383,21 +392,32 @@ export default function HistoryPage() {
         cursor,
         starred: tab === "starred",
         archived: tab === "archived",
+        search,
+        template: templateFilter,
       });
-      setSessions((prev) => append ? [...prev, ...page.sessions] : page.sessions);
+      if (version !== generation.current) return;
+      if (page.hasMore && (!page.nextCursor || page.nextCursor === cursor)) throw new Error("Pagination did not advance");
+      setSessions((prev) => append ? [...new Map([...prev, ...page.sessions].map(session => [session.id, session])).values()] : page.sessions);
       setHasMore(page.hasMore);
       setNextCursor(page.nextCursor);
     } catch {
-      toast.error("Failed to load sessions.");
+      if (version !== generation.current) return;
+      setLoadError(true);
+      toast.error("Failed to load sessions. Please retry.");
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (version === generation.current) {
+        setLoading(false);
+        setLoadingMore(false);
+        pageRequest.current = null;
+      }
     }
-  }, [user, tabView]);
+  }, [user, tabView, search, templateFilter]);
 
   useEffect(() => {
-    loadSessions(null, false, tabView);
-  }, [user, tabView]);
+    setSessions([]); setHasMore(false); setNextCursor(null);
+    void loadSessions();
+    return () => { ++generation.current; pageRequest.current = null; };
+  }, [loadSessions]);
 
   async function openDetail(session: SavedSession) {
     if (!user) return;
@@ -517,8 +537,8 @@ export default function HistoryPage() {
 
   // Unique templates present in loaded sessions
   const uniqueTemplateIds = [...new Set(sessions.map((s) => s.templateId))];
-  const hasCustom = uniqueTemplateIds.includes(null);
-  const uniqueNamed = uniqueTemplateIds.filter((id): id is string => id !== null);
+  const hasCustom = true;
+  const uniqueNamed = [...new Set([...templates.map(template => template.id), ...uniqueTemplateIds.filter((id): id is string => id !== null)])];
 
   const filtered = sessions.filter((s) => {
     if (tabView === "starred") return s.starred === true && !s.archived;
@@ -532,8 +552,8 @@ export default function HistoryPage() {
   }).filter((s) => {
     if (!search.trim()) return true;
     return (
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.question.toLowerCase().includes(search.toLowerCase())
+      (s.title ?? "").toLowerCase().includes(search.trim().toLowerCase()) ||
+      (s.question ?? "").toLowerCase().includes(search.trim().toLowerCase())
     );
   });
 
@@ -641,7 +661,7 @@ export default function HistoryPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <History className="w-10 h-10 text-muted-foreground/30 mb-3" />
-            {sessions.length === 0 ? (
+            {sessions.length === 0 && !search && templateFilter === "all" && tabView === "all" && !hasMore && !loadError ? (
               <>
                 <p className="text-muted-foreground text-sm mb-2">No sessions yet.</p>
                 <Button
@@ -654,7 +674,7 @@ export default function HistoryPage() {
               </>
             ) : (
               <>
-                <p className="text-muted-foreground text-sm">No sessions match your filters.</p>
+                <p className="text-muted-foreground text-sm">{hasMore ? "No matching sessions on this page. Load more to keep looking." : "No sessions match your filters."}</p>
                 <button
                   onClick={() => { setSearch(""); setTabView("all"); setTemplateFilter("all"); }}
                   className="mt-2 text-xs text-primary hover:underline"
@@ -686,8 +706,13 @@ export default function HistoryPage() {
               </div>
             </AnimatePresence>
 
+
+          </>
+        )}
+
+      {loadError && <p role="alert" className="mt-4 text-center">Could not load this page. <button onClick={() => void loadSessions(nextCursor, !!nextCursor)}>Retry</button></p>}
             {/* Load more */}
-            {hasMore && !search && templateFilter === "all" && (
+            {!loading && hasMore && (
               <div className="flex justify-center mt-6">
                 <Button
                   variant="outline"
@@ -700,8 +725,6 @@ export default function HistoryPage() {
                 </Button>
               </div>
             )}
-          </>
-        )}
 
       {/* Session detail sheet */}
       {detailSession && (

@@ -1,3 +1,4 @@
+import { recoverCreditRuns } from "../lib/creditRunSettlement.js";
 import { getAutoRefillStatus, removeAutoRefillCard } from "../lib/autoRefill.js";
 import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import { Router } from "express";
@@ -6,6 +7,7 @@ import { verifyIdToken, isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 import { isSquareConfigured, createPaymentLink } from "../lib/squareClient.js";
 import {
   getTransactions,
+  InvalidHistoryCursorError,
   updateUserPlan,
   grantSignupBonus,
   setAutoRefillPreference,
@@ -30,7 +32,7 @@ router.get("/billing/courtesy-credit", async (req, res) => {
 async function requireAuth(
   req: any,
   res: any
-): Promise<{ uid: string; email?: string } | null> {
+): Promise<{ uid: string; email?: string; emailVerified?: boolean; guest?: boolean } | null> {
   const authHeader = req.headers["authorization"] as string | undefined;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
@@ -53,12 +55,13 @@ router.post("/billing/signup-grant", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
+  if (user.emailVerified !== true) return res.status(403).json({granted:false,reason:"email_not_verified"});
   if (!isFirebaseConfigured()) {
     return res.json({ granted: false, reason: "firebase_not_configured" });
   }
 
   try {
-    const result = await grantSignupBonus(user.uid);
+    const result = await grantSignupBonus(user.uid, user);
     return res.json({ granted: !result.skipped, skipped: result.skipped });
   } catch (err: any) {
     console.error("[Billing] signup-grant error:", err.message);
@@ -110,7 +113,7 @@ router.patch("/billing/auto-refill", async (req, res) => {
 
 router.get("/billing/auto-refill", async (req,res) => {
   const user=await requireAuth(req,res); if(!user) return;
-  try { res.json(await getAutoRefillStatus(user.uid)); }
+  try { await recoverCreditRuns(user.uid); res.json(await getAutoRefillStatus(user.uid)); }
   catch { res.status(503).json({error:"Could not load Auto Top-Up."}); }
 });
 router.delete("/billing/auto-refill/card", async (req,res) => {
@@ -153,8 +156,10 @@ router.get("/billing/transactions", async (req, res) => {
   const limit = Math.min(Number(req.query["limit"]) || 50, 100);
   const cursor = (req.query["cursor"] as string) || undefined;
 
-  const result = await getTransactions(user.uid, limit, cursor);
-  return res.json(result);
+  try {
+    await recoverCreditRuns(user.uid);
+    return res.json(await getTransactions(user.uid, limit, cursor));
+  } catch (error) { return res.status(error instanceof InvalidHistoryCursorError ? 400 : 503).json({error:"Could not load credit history. Please retry."}); }
 });
 
 /**
@@ -165,19 +170,20 @@ router.get("/billing/payment-history", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  const { items } = await getTransactions(user.uid, 20);
-  const purchases = items
-    .filter((t) => t.type === "purchase")
-    .map((t) => ({
+  const limit = Math.min(100, Math.max(1, Math.floor(Number(req.query.limit) || 20)));
+  const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+  try {
+    await recoverCreditRuns(user.uid);
+    const { items, nextCursor } = await getTransactions(user.uid, limit, cursor, "purchase");
+    return res.json({ data: items.map(t => ({
       id: t.transactionId ?? t.paymentId ?? "",
-      amount: t.amount,
-      currency: "usd",
-      status: "completed",
-      created: Math.floor(new Date(t.createdAt).getTime() / 1000),
+      // Legacy records have credit units only. Never invent their monetary price.
+      amount: t.paidAmountMinor ?? null, currency: t.paidCurrency ?? null,
+      amountKnown: t.paidAmountMinor != null && t.paidCurrency != null,
+      status: "completed", created: Math.floor(new Date(t.createdAt).getTime() / 1000),
       description: `${t.amount} credits`,
-    }));
-
-  return res.json({ data: purchases });
+    })), nextCursor });
+  } catch (error) { return res.status(error instanceof InvalidHistoryCursorError ? 400 : 503).json({error:"Could not load payment history. Please retry."}); }
 });
 
 /**
@@ -210,7 +216,7 @@ router.post("/billing/checkout", async (req, res) => {
   let found: Awaited<ReturnType<typeof findCreditPackByPriceId>>;
   try { found = await findCreditPackByPriceId(priceId); }
   catch { return res.status(503).json({error:"Credit packs are temporarily unavailable"}); }
-  if (!found || !found.price.unit_amount) {
+  if (!found || !found.pack.active || !found.price.active || !found.price.unit_amount) {
     return res.status(404).json({ error: "Unknown price ID" });
   }
   const { pack: product, price } = found;

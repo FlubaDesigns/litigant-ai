@@ -12,6 +12,63 @@ import { getTemplate } from "../lib/templateStore.js";
 
 const router = Router();
 
+const EXPORT_PROFILE_FIELDS = ["email", "displayName", "role", "organization", "plan", "creditBalance", "subscriptionStatus", "createdAt", "updatedAt", "lastLoginAt", "onboardingComplete", "defaultSettings", "notifications", "notifySessionComplete"];
+const EXPORT_SESSION_FIELDS = ["title", "question", "templateId", "config", "caseFile", "caseFileMeta", "status", "pauseReason", "confidence", "creditsUsed", "inputTokens", "outputTokens", "costUSD", "model", "provider", "modelProvenance", "finalAnswer", "transcript", "transcriptLines", "debateNotes", "caveats", "artifacts", "artifactPath", "courtroomOutcome", "outputIncomplete", "relayQuestion", "relayCount", "rebuttalRound", "parentSessionId", "isRebuttal", "rebuttalChallenge", "conscienceVersion", "starred", "archived", "shared", "createdAt", "updatedAt", "acceptedAt", "settlementStatus", "creditsReserved", "creditsDebited", "callUsage", "priceSnapshot"];
+function exportFields(data: FirebaseFirestore.DocumentData, keys: string[]) {
+  return Object.fromEntries(keys.filter(key => data[key] !== undefined).map(key => [key, data[key]]));
+}
+function exportJson(value: unknown): unknown {
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") return value.toDate().toISOString();
+  if (Array.isArray(value)) return value.map(exportJson);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, exportJson(item)]));
+  return value;
+}
+
+// Profile export works on Free, but never opens Free saved-memory access. Paid
+// exports include archived sessions and legacy turn content, without run locks,
+// share tokens, payment identifiers, or authentication data.
+router.get("/account/export", async (req, res) => {
+  const token = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : null;
+  const decoded = token ? await verifyIdToken(token) : null;
+  if (!decoded) { res.status(401).json({message: "Unauthorized"}); return; }
+  const db = getFirestoreDb();
+  if (!db) { res.status(503).json({message: "Service unavailable"}); return; }
+  try {
+    const profile = (await db.collection("users").doc(decoded.uid).get()).data();
+    if (!profile) { res.status(404).json({message: "Account profile not found"}); return; }
+    const fullAccess = canCreateArtifacts(profile.plan, decoded.admin);
+    const sessions: Record<string, unknown>[] = [];
+    if (fullAccess) {
+      let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+      for (;;) {
+        let query = db.collection("sessions").where("userId", "==", decoded.uid).limit(100);
+        if (cursor) query = query.startAfter(cursor);
+        const page = await query.get();
+        for (const doc of page.docs) {
+          const data = doc.data();
+          if (data.memorySaved === false) continue;
+          // A failed legacy read must fail the export, never silently drop content.
+          const turns = await doc.ref.collection("session_turns").get();
+          turns.docs.sort((a, b) => Number(a.data().turnIndex ?? Number.MAX_SAFE_INTEGER) - Number(b.data().turnIndex ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
+          const sessionTurns: Record<string, unknown>[] = turns.docs.map(turn => ({id: turn.id, ...exportFields(turn.data(), ["role", "content", "round", "turnIndex", "provider", "model", "inputTokens", "outputTokens", "createdAt"])}));
+          const saved = exportFields(data, EXPORT_SESSION_FIELDS);
+          if (!saved.transcript) saved.transcript = sessionTurns.filter(turn => turn.role !== "Orchestrator").map(turn => `**${turn.role} (Round ${turn.round}):**\n${turn.content}`).join("\n\n---\n\n");
+          if (!saved.debateNotes) saved.debateNotes = sessionTurns.filter(turn => !["Orchestrator", "Verdict"].includes(String(turn.role))).map(turn => `### ${turn.role} — Round ${turn.round}\n${turn.content}`).join("\n\n---\n\n");
+          sessions.push({id: doc.id, ...saved, sessionTurns});
+        }
+        if (page.docs.length < 100) break;
+        cursor = page.docs[page.docs.length - 1];
+      }
+    }
+    res.json(exportJson({schemaVersion: 1, exportedAt: new Date().toISOString(), user: {uid: decoded.uid, ...exportFields(profile, EXPORT_PROFILE_FIELDS)}, sessions,
+      sessionExport: fullAccess ? "All owned saved sessions, including generated content and turns." : "Free conversations have no saved memory. This export contains account data only."}));
+  } catch (error) {
+    console.error("[sessions] account export failed:", error);
+    res.status(500).json({message: "Could not complete your export. No partial backup was produced. Please retry."});
+  }
+});
+
+
 // Free users can delete their old records, but cannot read or reuse saved conversations.
 router.use("/sessions", async (req, res, next) => {
   if (req.method === "DELETE") { next(); return; }
@@ -45,39 +102,55 @@ router.get("/sessions", async (req, res) => {
     return;
   }
 
-  const limit = Math.min(Number(req.query["limit"]) || 20, 100);
-  const cursor = (req.query["cursor"] as string) || null;
+  const limit = Math.max(1, Math.min(Math.floor(Number(req.query["limit"])) || 20, 100));
+  const cursor = typeof req.query["cursor"] === "string" ? req.query["cursor"] : null;
   const starredOnly = req.query["starred"] === "true";
   const archivedOnly = req.query["archived"] === "true";
+  const includeArchived = req.query["includeArchived"] === "true";
+  const search = typeof req.query["search"] === "string" ? req.query["search"].trim().toLowerCase().slice(0, 200) : "";
+  const template = typeof req.query["template"] === "string" ? req.query["template"].slice(0, 200) : "";
 
   try {
-    let query: FirebaseFirestore.Query = db
-      .collection("sessions")
-      .where("userId", "==", decoded.uid);
-    if (starredOnly) query = query.where("starred", "==", true);
-    else if (archivedOnly) query = query.where("archived", "==", true);
-    query = query.orderBy("updatedAt", "desc").limit(limit + 1);
-
+    let scanAfter: FirebaseFirestore.DocumentSnapshot | undefined;
     if (cursor) {
-      const cursorDoc = await db.collection("sessions").doc(cursor).get();
-      if (cursorDoc.exists) {
-        query = query.startAfter(cursorDoc) as typeof query;
+      const doc = await db.collection("sessions").doc(cursor).get();
+      if (!doc.exists || doc.data()?.userId !== decoded.uid) {
+        res.status(400).json({message: "Invalid session cursor. Refresh the list."}); return;
       }
+      scanAfter = doc;
     }
-
-    const snap = await query.get();
-    const docs = snap.docs.slice(0, limit);
-    const hasMore = snap.docs.length > limit;
-
+    const matches: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    let hasMore = false;
+    // Filter before constructing the visible page. Bound each request's reads;
+    // the continuation cursor also advances across empty, filtered pages.
+    for (let batch = 0; batch < 5; batch++) {
+      let query = db.collection("sessions").where("userId", "==", decoded.uid).orderBy("updatedAt", "desc").limit(100);
+      if (scanAfter) query = query.startAfter(scanAfter);
+      const page = await query.get();
+      hasMore = page.docs.length === 100;
+      for (let index = 0; index < page.docs.length; index++) {
+        const doc = page.docs[index];
+        scanAfter = doc;
+        const data = doc.data();
+        if (data.memorySaved === false || (archivedOnly ? data.archived !== true : !includeArchived && data.archived === true)) continue;
+        if (starredOnly && data.starred !== true) continue;
+        if (template && (template === "__custom__" ? data.templateId != null : data.templateId !== template)) continue;
+        if (search && ![data.title, data.question].some(value => typeof value === "string" && value.toLowerCase().includes(search))) continue;
+        matches.push(doc);
+        if (matches.length === limit) {
+          hasMore = index < page.docs.length - 1 || hasMore;
+          break;
+        }
+      }
+      if (matches.length === limit || !hasMore) break;
+    }
     res.json({
-      sessions: docs.filter(doc => doc.data().memorySaved !== false).map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      sessions: matches.map(doc => ({...doc.data(), id: doc.id,
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() ?? null,
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() ?? null,
       })),
       hasMore,
-      nextCursor: hasMore ? docs[docs.length - 1]?.id ?? null : null,
+      nextCursor: hasMore ? scanAfter?.id ?? null : null,
     });
   } catch (e: any) {
     console.error("[sessions] GET /sessions error:", e);
@@ -266,6 +339,9 @@ router.patch("/sessions/:id", async (req, res) => {
         return { code: 409, body: { message: "This session is running. Wait for it to finish before accepting the answer." } };
       }
       if (status === "complete" && session.status !== "complete") {
+        if (session.pauseReason === "output_incomplete" || session.outputIncomplete || session.courtroomOutcome?.reason === "output_incomplete") {
+          return {code: 409, body: {message: "This output was interrupted and has not been approved. Retry the incomplete stage before accepting an answer."}};
+        }
         if (!["paused_credit_cap", "incomplete"].includes(session.status) ||
             typeof session.finalAnswer !== "string" || !session.finalAnswer.trim()) {
           return { code: 409, body: { message: "This session has no paused answer to accept. Reload it before continuing." } };

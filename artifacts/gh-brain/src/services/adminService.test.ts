@@ -12,3 +12,14 @@ it("sends IQ updates using the backend's score contract",async()=>{
   expect(options.method).toBe("PATCH");
   expect(JSON.parse(options.body as string)).toEqual({score:91});
 });
+
+it("invalidates customer configuration and quotes only after a successful limit save",async()=>{
+  const {setAdminLimit}=await import("./adminService");
+  const {refreshConfiguration}=await import("@/lib/queryClient");
+  vi.mocked(refreshConfiguration).mockClear();
+  vi.stubGlobal("fetch",vi.fn().mockResolvedValueOnce(new Response("{}",{status:200})).mockResolvedValueOnce(new Response('{"error":"Invalid limit"}',{status:400})));
+  await setAdminLimit("maxLitigants",2);
+  expect(refreshConfiguration).toHaveBeenCalledTimes(1);
+  await expect(setAdminLimit("maxLitigants",20)).rejects.toThrow("Invalid limit");
+  expect(refreshConfiguration).toHaveBeenCalledTimes(1);
+});

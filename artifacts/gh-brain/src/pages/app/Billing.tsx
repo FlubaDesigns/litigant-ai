@@ -1,3 +1,4 @@
+import { BillingHistoryError, formatPaymentAmount } from "@/lib/billingHistoryView";
 import { CREDITS_PER_DOLLAR, AUTO_REFILL_CONSENT_VERSION } from "@workspace/api-zod/billing";
 import { PAID_ACCESS_NOTE, accountAccess } from "@workspace/api-zod/session";
 import { useBillingDefaults, useCreditPacks } from "@/hooks/useConfiguration";
@@ -74,10 +75,6 @@ function formatTimestamp(ts: number) {
   });
 }
 
-function formatCurrency(cents: number | null): string {
-  if (cents === null) return "";
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function CreditBalanceCard({ balance, plan, warningThreshold }: { balance: number; plan: string; warningThreshold: number }) {
   const isLow = warningThreshold > 0 && balance < warningThreshold;
@@ -100,7 +97,7 @@ function CreditBalanceCard({ balance, plan, warningThreshold }: { balance: numbe
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-1">
-              Credit Balance
+              Available Credits
             </p>
             <div className="flex items-end gap-2">
               <motion.span
@@ -136,6 +133,7 @@ function CreditBalanceCard({ balance, plan, warningThreshold }: { balance: numbe
           </div>
         </div>
 
+        <p className="text-xs text-muted-foreground mb-3">Active conversations temporarily reserve their allowance. Unused credits return when settlement finishes.</p>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs border-border/60 text-muted-foreground">
             {limits.label}
@@ -143,7 +141,7 @@ function CreditBalanceCard({ balance, plan, warningThreshold }: { balance: numbe
           {isCritical && (
             <span className="text-xs text-red-400 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              Critical — top up now
+              No credits currently available
             </span>
           )}
           {!isCritical && isLow && (
@@ -227,7 +225,7 @@ function ProductCard({
           </div>
           <div className="text-right shrink-0 ml-3">
             <div className="text-lg font-bold tabular-nums">
-              {formatCurrency(price?.unit_amount ?? null)}
+              {formatPaymentAmount(price?.unit_amount ?? null, price?.currency ?? null)}
             </div>
           </div>
         </div>
@@ -264,7 +262,7 @@ function ProductCard({
 function TransactionRow({ tx }: { tx: CreditTransaction }) {
   const Icon = TX_ICONS[tx.type] ?? CreditCard;
   const color = TX_COLORS[tx.type] ?? "text-muted-foreground";
-  const label = TX_LABELS[tx.type] ?? tx.type;
+  const label = tx.source === "brain_reservation" ? "Session reservation" : TX_LABELS[tx.type] ?? tx.type;
   const isCredit = tx.amount > 0;
 
   return (
@@ -316,7 +314,7 @@ function PaymentRow({ payment }: { payment: PaymentHistoryItem }) {
       </div>
       <div className="text-right shrink-0">
         <div className="text-sm font-mono font-semibold tabular-nums text-green-400">
-          {formatCurrency(payment.amount)}
+          {formatPaymentAmount(payment.amount, payment.currency)}
         </div>
         <div className="text-xs text-muted-foreground capitalize">{payment.status}</div>
       </div>
@@ -333,7 +331,14 @@ export default function BillingPage() {
   const {data:products = [], isPending:loadingProducts, isError:productsError, refetch:refreshProducts} = useCreditPacks();
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [txNextCursor, setTxNextCursor] = useState<string | null>(null);
+  const [txError, setTxError] = useState("");
+  const txRequest = useRef(0);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [paymentNextCursor, setPaymentNextCursor] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentsLoaded, setPaymentsLoaded] = useState(false);
+  const [loadingMorePayments, setLoadingMorePayments] = useState(false);
+  const paymentRequest = useRef(0);
   const [historyTab, setHistoryTab] = useState<HistoryTab>("credits");
 
   // Credit controls state (auto top-up + warning threshold)
@@ -377,20 +382,54 @@ export default function BillingPage() {
 
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
-    setLoadingTx(true);
-    const result = await getTransactions();
-    setTransactions(result.items);
-    setTxNextCursor(result.nextCursor);
-    setLoadingTx(false);
+    const request = ++txRequest.current;
+    setLoadingTx(true); setLoadingMoreTx(false); setTxError("");
+    try {
+      const result = await getTransactions();
+      if (request !== txRequest.current) return;
+      setTransactions(result.items); setTxNextCursor(result.nextCursor);
+    } catch (error) { if (request === txRequest.current) setTxError(error instanceof Error ? error.message : "Could not load credit history."); }
+    finally { if (request === txRequest.current) setLoadingTx(false); }
   }, [user]);
 
   const fetchPaymentHistory = useCallback(async () => {
     if (!user) return;
-    setLoadingPayments(true);
-    const data = await getPaymentHistory();
-    setPaymentHistory(data);
-    setLoadingPayments(false);
+    const request = ++paymentRequest.current;
+    setLoadingPayments(true); setLoadingMorePayments(false);
+    setPaymentError("");
+    try {
+      const result = await getPaymentHistory();
+      if (request !== paymentRequest.current) return;
+      setPaymentHistory(result.data);
+      setPaymentNextCursor(result.nextCursor);
+    } catch (error) {
+      if (request === paymentRequest.current) setPaymentError(error instanceof Error ? error.message : "Could not load payments.");
+    } finally {
+      if (request === paymentRequest.current) { setLoadingPayments(false); setPaymentsLoaded(true); }
+    }
   }, [user]);
+
+  const handleLoadMorePayments = async () => {
+    if (!paymentNextCursor || loadingMorePayments || loadingPayments) return;
+    const request = ++paymentRequest.current;
+    setLoadingMorePayments(true); setPaymentError("");
+    try {
+      const result = await getPaymentHistory(paymentNextCursor);
+      if (request !== paymentRequest.current) return;
+      setPaymentHistory(current => [...current, ...result.data.filter(item => !current.some(saved => saved.id === item.id))]);
+      setPaymentNextCursor(result.nextCursor);
+    } catch (error) {
+      if (request === paymentRequest.current) setPaymentError(error instanceof Error ? error.message : "Could not load older payments.");
+    } finally { if (request === paymentRequest.current) setLoadingMorePayments(false); }
+  };
+
+  useEffect(() => {
+    ++paymentRequest.current; ++txRequest.current;
+    setTransactions([]); setTxNextCursor(null); setTxError("");
+    setPaymentsLoaded(false); setPaymentHistory([]); setPaymentNextCursor(null); setPaymentError("");
+    setLoadingPayments(false); setLoadingMorePayments(false);
+    return () => { ++paymentRequest.current; ++txRequest.current; };
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!liveDefaults) return;
@@ -411,10 +450,10 @@ export default function BillingPage() {
 
   // Lazy-load payment history when tab is first opened
   useEffect(() => {
-    if (historyTab === "payments" && user && paymentHistory.length === 0) {
+    if (historyTab === "payments" && user && !paymentsLoaded) {
       fetchPaymentHistory();
     }
-  }, [historyTab, user, paymentHistory.length, fetchPaymentHistory]);
+  }, [historyTab, user, paymentsLoaded, fetchPaymentHistory]);
 
   // Sync credit controls from user profile when it loads
   useEffect(() => {
@@ -427,12 +466,16 @@ export default function BillingPage() {
   }, [userProfile]);
 
   async function handleLoadMoreTx() {
-    if (!txNextCursor) return;
-    setLoadingMoreTx(true);
-    const result = await getTransactions(txNextCursor);
-    setTransactions((prev) => [...prev, ...result.items]);
-    setTxNextCursor(result.nextCursor);
-    setLoadingMoreTx(false);
+    if (!txNextCursor || loadingMoreTx || loadingTx) return;
+    const request = ++txRequest.current;
+    setLoadingMoreTx(true); setTxError("");
+    try {
+      const result = await getTransactions(txNextCursor);
+      if (request !== txRequest.current) return;
+      setTransactions(previous => [...previous, ...result.items.filter(item => !previous.some(saved => saved.transactionId === item.transactionId))]);
+      setTxNextCursor(result.nextCursor);
+    } catch (error) { if (request === txRequest.current) setTxError(error instanceof Error ? error.message : "Could not load older credit history."); }
+    finally { if (request === txRequest.current) setLoadingMoreTx(false); }
   }
 
   async function handleToggleAutoRefill() {
@@ -590,9 +633,9 @@ export default function BillingPage() {
           >
             <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-yellow-300">Low credit balance</p>
+              <p className="text-sm font-semibold text-yellow-300">Low available balance</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                You have {balance.toLocaleString()} credits remaining — below your warning threshold of {warningThreshold.toLocaleString()}.
+                You have {balance.toLocaleString()} credits available, below your warning threshold of {warningThreshold.toLocaleString()}.
               </p>
             </div>
           </motion.div>
@@ -857,6 +900,7 @@ export default function BillingPage() {
                     exit={{ opacity: 0 }}
                     className="rounded-xl border border-border/60 bg-card/40 p-1"
                   >
+                    <BillingHistoryError error={txError} onRetry={() => void fetchTransactions()} />
                     {loadingTx ? (
                       <div className="space-y-3 p-4">
                         {[...Array(4)].map((_, i) => (
@@ -870,7 +914,7 @@ export default function BillingPage() {
                           </div>
                         ))}
                       </div>
-                    ) : transactions.length === 0 ? (
+                    ) : transactions.length === 0 && !txError ? (
                       <div className="text-center py-10 text-muted-foreground">
                         <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">No credit transactions yet</p>
@@ -918,6 +962,7 @@ export default function BillingPage() {
                     exit={{ opacity: 0 }}
                     className="rounded-xl border border-border/60 bg-card/40 p-1"
                   >
+                    <BillingHistoryError error={paymentError} onRetry={() => void fetchPaymentHistory()} />
                     {loadingPayments ? (
                       <div className="space-y-3 p-4">
                         {[...Array(3)].map((_, i) => (
@@ -931,7 +976,7 @@ export default function BillingPage() {
                           </div>
                         ))}
                       </div>
-                    ) : paymentHistory.length === 0 ? (
+                    ) : paymentHistory.length === 0 && !paymentError ? (
                       <div className="text-center py-10 text-muted-foreground">
                         <Receipt className="w-8 h-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">No payments yet</p>
@@ -942,6 +987,7 @@ export default function BillingPage() {
                         {paymentHistory.map((p) => (
                           <PaymentRow key={p.id} payment={p} />
                         ))}
+                        {paymentNextCursor && <div className="py-3 flex justify-center"><Button variant="ghost" size="sm" disabled={loadingMorePayments || loadingPayments} onClick={() => void handleLoadMorePayments()}>{loadingMorePayments ? "Loading…" : "Load older payments"}</Button></div>}
                       </div>
                     )}
                   </motion.div>

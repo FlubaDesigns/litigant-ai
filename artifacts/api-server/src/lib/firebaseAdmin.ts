@@ -41,7 +41,7 @@ export function isFirebaseConfigured(): boolean {
 
 export async function verifyIdToken(
   idToken: string,
-  options: { allowUnclaimedGuest?: boolean; allowExpiredGuest?: boolean } = {}
+  options: { allowUnclaimedGuest?: boolean; allowExpiredGuest?: boolean; allowAccountDeletion?: boolean } = {}
 ): Promise<{ uid: string; email?: string; name?: string; admin?: boolean; emailVerified?: boolean; anonymous?: boolean; guest?: boolean } | null> {
   if (!isFirebaseConfigured()) return null;
   try {
@@ -51,8 +51,9 @@ export async function verifyIdToken(
     const decoded = await getAuth().verifyIdToken(idToken, true);
     const anonymous = decoded.firebase.sign_in_provider === "anonymous";
     let guest = false;
+    const db = getFirestore();
+    if (!options.allowAccountDeletion && (await db.collection("account_deletions").doc(decoded.uid).get()).exists) return null;
     if (anonymous || decoded.guestTrial === true) {
-      const db = getFirestore();
       const profile = (await db.collection("users").doc(decoded.uid).get()).data();
       if (profile?.guestInvitationId) {
         const invitation = (await db.collection("guest_invitations").doc(profile.guestInvitationId).get()).data();

@@ -1,4 +1,5 @@
-import { PAID_ACCESS_NOTE, storedSessionRecord } from "@workspace/api-zod/session";
+import { mergeModelProvenance } from "../lib/modelProvenance.js";
+import { PAID_ACCESS_NOTE, storedSessionRecord, sessionCompleteNotificationsEnabled } from "@workspace/api-zod/session";
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
@@ -7,28 +8,14 @@ import { claimSessionRun, writeSessionRun, releaseSessionRun, SessionRunError, t
 /**
  * Brain route — POST /run-brain
  *
- * This file owns the credit lifecycle for every AI session:
+ * Reserve the complete execution allowance in an atomic, lease-backed credit run.
+ * Save each result and its settlement obligation together, then refund unused
+ * allowance atomically with the ledger and displayed financial state. Failed or
+ * cancelled work receives the existing full-refund policy. An interrupted worker
+ * leaves recoverable state; no provider calls or top-ups occur in credit recovery.
  *
- *   1. Pre-run reservation  (reserveCredits)
- *      Estimates cost → atomically deducts from balance → writes a
- *      credit_transactions ledger entry (type="usage", source="brain_reservation").
- *      Rejected with HTTP 402 if balance is insufficient.
- *
- *   2. AI run  (runBrainSession from brainEngine.ts)
- *      Streams SSE to the client. Token counts are accumulated in the result.
- *
- *   3. Post-run settlement  (reconcileCredits)
- *      Calculates the ACTUAL cost from real token counts using the live
- *      price snapshot accepted before the run (sessionPricing.ts).
- *      - actual < estimated → refund the difference (type="refund", source="brain_reconcile")
- *      - actual > estimated → charge the overage (a second reserveCredits call)
- *      - run failed         → full refund of the reservation (source="brain_failure_refund")
- *
- * ## Guest mode
- *   Admin invitations use authenticated temporary accounts and the same ledger.
- *
- * Session balance changes share creditLedger.ts with payments and signup grants.
- * See docs/credits.md §5 for the full lifecycle diagram.
+ * Monetary purchases remain in creditLedger; run settlement is in
+ * creditRunSettlement. See docs/billing-recovery.md for the lifecycle and rollout.
  */
 import { Router } from "express";
 import crypto from "crypto";
@@ -39,7 +26,8 @@ import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/fire
 import { FieldValue } from "firebase-admin/firestore";
 
 
-import { checkAndTriggerAutoRefill, reserveCredits, reconcileCredits } from "../lib/creditLedger.js";
+import { reserveCreditRun, prepareCreditRunSettlement, persistCreditRunFailure, applyCreditRunSettlement, recoverCreditRuns, getSettledCreditBalance, type CreditRunState } from "../lib/creditRunSettlement.js";
+import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
 import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
 import {
   sendTrackedEmail,
@@ -169,6 +157,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   // via clientSessionId, but ownership is verified against the caller's uid
   // AFTER the auth section below resolves uid (see "Resume ownership check").
   let sessionId: string = crypto.randomUUID();
+  const creditRunId = crypto.randomUUID();
+  let creditReserved = false;
+  let billingState: CreditRunState = { chargedCredits: 0, targetCharge: 0, reservedCredits: 0, settlementStatus: "settled" };
   let fullAccess = false;
 
   let effectiveConfig: CourtConfig = {
@@ -226,6 +217,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       return;
     }
 
+    try { await recoverCreditRuns(uid); }
+    catch { res.status(503).json({message:"Your previous credit settlement is still pending. Please retry."}); return; }
+
     // ── Resume ownership check ────────────────────────────────────────────────
     // If the client supplied an existing session ID for a genuine resume/rebuttal
     // continuation, verify the caller actually owns that session before using it.
@@ -264,7 +258,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         };
         if (relayContext) relayContext = {
           ...relayContext,
-          originalTranscript: String(parent.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
+          originalTranscript: Array.isArray(parent.transcriptLines) ? parent.transcriptLines : String(parent.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
           relayRound: Number(parent.relayCount ?? 0) + 1,
         };
       } catch {
@@ -282,9 +276,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       ...(previousSession ? { maxCredits: config.maxCredits } : {}) };
   }
   if (previousSession) {
-    continueFromTranscript = String(previousSession.transcript ?? "").split("\n\n---\n\n").filter(Boolean);
-    resumeWithFixedPipeline = previousSession.status === "paused_credit_cap"
-      && continueFromTranscript.some(line => line.startsWith("**Moderator (Summary):**"));
+    continueFromTranscript = Array.isArray(previousSession.transcriptLines) ? previousSession.transcriptLines : String(previousSession.transcript ?? "").split("\n\n---\n\n").filter(Boolean);
+    const lastSummary = continueFromTranscript!.reduce((last, line, i) => line.startsWith("**Moderator (Summary):**") ? i : last, -1);
+    const lastDebate = continueFromTranscript!.reduce((last, line, i) => /^\*\*(?:Litigant|Conscience|Moderator \(Round)/.test(line) ? i : last, -1);
+    resumeWithFixedPipeline = previousSession.status === "paused_credit_cap" && lastSummary >= 0 && lastSummary > lastDebate;
   }
 
   if (uid && !isAdminRun) {
@@ -330,9 +325,13 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
       if (await getCourtesyCreditEligibility(uid)) courtesyLimit = prepared.limits?.overdraftLimit ?? 0;
       effectiveConfig.maxCredits = Math.min(effectiveConfig.maxCredits!, balance + courtesyLimit);
-      // Guest invitations have a hard allowance: reserve the whole execution
-      // budget so simultaneous sessions cannot spend the same trial credits.
+      // All account runs reserve their complete execution allowance atomically.
+      // Estimates are not independent permission to spend the same balance twice.
       if (account?.guestInvitationId) estimatedCost = effectiveConfig.maxCredits;
+      if (estimatedCost > effectiveConfig.maxCredits) {
+        res.status(402).json({message:`Insufficient credits. This session requires approximately ${estimatedCost} credits.`,overdraftLimit:courtesyLimit});
+        return;
+      }
       // Keep the saved config and execution budget aligned.
       prepared.config.maxCredits = Number(previousSession?.creditsUsed ?? 0) + effectiveConfig.maxCredits;
       if (estimatedCost <= 0) {
@@ -340,10 +339,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         return;
       }
 
-      // Optimistic credit reservation: deduct estimatedCost upfront.
-      // Every balance change (reservation, refund, failure refund) is ledgered atomically.
+      // Atomically reserve the whole allowed cap, with a durable run lifecycle.
+      // The estimate is only the minimum start check, never overlapping authority.
       try {
-        const reserved = await reserveCredits(uid, estimatedCost, sessionId, "brain_reservation", courtesyLimit);
+        const reserved = await reserveCreditRun(uid, effectiveConfig.maxCredits!, sessionId, creditRunId, courtesyLimit, Number(previousSession?.creditsUsed ?? 0));
         if (!reserved) {
           res.status(402).json({
             message: `Insufficient credits. This session requires approximately ${estimatedCost} credits.`,
@@ -351,6 +350,8 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           });
           return;
         }
+        creditReserved = true;
+        billingState = { chargedCredits: effectiveConfig.maxCredits!, targetCharge: 0, reservedCredits: effectiveConfig.maxCredits!, settlementStatus: "pending" };
       } catch (err) {
         console.error("[brain] Credit reservation failed:", err);
         res.status(503).json({ message: "Credit service temporarily unavailable. Please try again." });
@@ -382,7 +383,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     abortCtrl.abort();
   }, SESSION_TIMEOUT_MS);
 
-  let runSucceeded = false;
   let actualCost = 0;
   let resultSaved = false;
 
@@ -400,6 +400,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       templateId,
       sessionId,
       continueFromTranscript,
+      continueFromArtifact: previousSession?.artifacts,
       rebuttalContext,
       relayContext,
       caseFile,
@@ -409,15 +410,18 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       abortSignal: abortCtrl.signal,
     });
 
-    runSucceeded = true;
     actualCost = result.creditsUsed;
+    const provenance = result.modelProvenance
+      ? mergeModelProvenance(result.modelProvenance, previousSession?.modelProvenance)
+      : { model: result.model || "No completed model call", provider: result.provider ?? null, modelProvenance: null };
     const relayCount = Math.max(result.relayCount ?? 0, sourceSession?.relayCount ?? 0);
     const rebuttalRound = rebuttalContext?.rebuttalRound ?? sourceSession?.rebuttalRound ?? 0;
     // One status is used for both the stored session and its completion event.
-    const status = result.pauseReason === "credit_cap" ? "paused_credit_cap"
-      : result.pauseReason === "iteration_limit" ? "incomplete"
-      : result.courtroomOutcome?.reason === "not_enough" ? "relay_needed"
-      : result.convergenceFailure ? "incomplete" : "complete";
+    const status = result.cancelled ? (timedOut ? "error" : "cancelled")
+      : result.pauseReason === "credit_cap" ? "paused_credit_cap"
+      : result.relayQuestion || result.courtroomOutcome?.reason === "not_enough" ? "relay_needed"
+      : result.pauseReason === "iteration_limit" || result.pauseReason === "output_incomplete" ? "incomplete"
+      : result.convergenceFailure || result.courtroomOutcome?.reason !== "approved" ? "incomplete" : "complete";
 
     // ── Post-run: credit settlement + persist session ──────────────────────
     //
@@ -433,67 +437,13 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
         : question.slice(0, 80);
 
-      // ── Step 1: Credit settlement ─────────────────────────────────────────
-      // Runs unconditionally. If this fails, the reservation made before the
-      // run expires naturally via the failure-refund path in the finally block.
-      if (!isAdminRun) {
-        try {
-          actualCost = Math.min(effectiveConfig.maxCredits!, result.creditsUsed);
-
-          // Reconcile: actual < estimated → refund the difference
-          const refund = Math.max(0, estimatedCost - actualCost);
-          if (refund > 0) {
-            await reconcileCredits(uid, refund, result.sessionId, "brain_reconcile");
-          }
-
-          // Reconcile: actual > estimated → charge the overage.
-          // The estimate converges to real cost over time via calibration but a
-          // gap can remain, so this is not a rare path.
-          if (actualCost > estimatedCost) {
-            const overage = actualCost - estimatedCost;
-            const overageCollected = await reserveCredits(uid, overage, result.sessionId, "brain_overage", courtesyLimit)
-              .catch(() => false);
-            if (!overageCollected) {
-              actualCost = estimatedCost; // Charge/report only the amount actually collected.
-              // Balance insufficient — absorb the uncollected overage.
-              // Write a zero-debit ledger entry so the shortfall appears in the audit trail.
-              console.warn(`[brain] overage uncollected uid=${uid} sessionId=${result.sessionId} overage=${overage}`);
-              db.collection("credit_transactions").add({
-                userId: uid,
-                type: "usage_shortfall",
-                amount: 0,
-                balanceAfter: null,
-                source: "brain_overage_uncollected",
-                sessionId: result.sessionId,
-                overage,
-                createdAt: FieldValue.serverTimestamp(),
-              }).catch((e) => console.error("[brain] failed to record overage shortfall:", e));
-            }
-          }
-        } catch (e) {
-          console.error("[brain] Credit settlement failed:", e);
-          // Run succeeded but settlement crashed — refund the full reservation
-          // immediately so the user's balance is not permanently stranded.
-          // A durable audit entry is written so an admin can investigate the gap.
-          actualCost = 0;
-          await reconcileCredits(uid, estimatedCost, result.sessionId, "brain_failure_refund")
-            .catch((e2) => console.error("[brain] Settlement-failure refund also failed uid=%s:", uid, e2));
-          db?.collection("credit_transactions").add({
-            userId: uid,
-            type:   "settlement_failure",
-            amount: 0,
-            balanceAfter: null,
-            source: "brain_settlement_crashed",
-            sessionId: result.sessionId,
-            estimatedCost,
-            createdAt: FieldValue.serverTimestamp(),
-          }).catch((e2) => console.error("[brain] Failed to record settlement failure:", e2));
-        }
-      }
+      // The requested final charge is staged with the saved result. Until the
+      // balance transaction commits, the difference is explicitly a held reserve.
+      actualCost = result.cancelled ? 0 : Math.min(effectiveConfig.maxCredits!, result.creditsUsed);
 
       // ── Step 2: Session document persistence ─────────────────────────────
-      // A completion event is sent only after persistence. Failure here causes
-      // an error event and a refund of the remaining collected charge.
+      // A completion event is sent only after durable result persistence. A failed
+      // staging transaction leaves a recoverable full-refund reservation.
       try {
         const pricedCalls = annotateCalls(result.tokenUsage.calls ?? [], prepared.rates);
         const savedResult = storedSessionRecord({
@@ -507,16 +457,18 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           inputTokens: Number(previousSession?.inputTokens ?? 0) + result.tokenUsage.inputTokens,
           outputTokens: Number(previousSession?.outputTokens ?? 0) + result.tokenUsage.outputTokens,
           costUSD: Number(previousSession?.costUSD ?? 0) + pricedCalls.reduce((sum, c) => sum + c.costUSD!, 0),
-          model: result.model || "gpt-5",
+          ...provenance,
           question,
           templateId: templateId ?? null,
           pauseReason: result.pauseReason ?? null,
+          outputIncomplete: result.outputIncomplete ?? null,
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
           fixedStageTokens: result.fixedStageTokens,
           status,
           finalAnswer: result.finalAnswer,
           debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
+          transcriptLines: Array.isArray(result.transcript) ? result.transcript : [],
           transcript: Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript ?? "",
           caveats: result.caveats,
           artifacts: result.artifacts,
@@ -541,11 +493,24 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           createdAt: previousSession?.createdAt ?? FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         }, fullAccess);
-        if (runLease) await writeSessionRun(db, runLease, savedResult);
-        else await sessionRef.set(savedResult, { merge: true });
+        if (creditReserved) {
+          billingState = await prepareCreditRunSettlement(uid, creditRunId, actualCost, savedResult, runLease);
+          resultSaved = true;
+          // Both attempts are idempotent. A persistent outage leaves the result
+          // and refund obligation durable for the next authenticated recovery.
+          try { billingState = await applyCreditRunSettlement(uid, creditRunId); }
+          catch {
+            try { billingState = await applyCreditRunSettlement(uid, creditRunId); }
+            catch (error) { console.error("[brain] Settlement pending", { sessionId, error }); }
+          }
+        } else {
+          if (runLease) await writeSessionRun(db, runLease, savedResult);
+          else await sessionRef.set(savedResult, { merge: true });
+          resultSaved = true;
+        }
       } catch (e) {
         console.error("[brain] Session persistence failed:", e);
-        throw new Error("The result could not be saved. Your session was not marked complete. Please contact support.");
+        throw new Error("Could not confirm the saved result. Check History before retrying; credit reconciliation may still be pending.");
       }
 
       // ── Step 4: Post-session notifications ───────────────────────────────
@@ -557,7 +522,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         await db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
           .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
 
-        await checkAndTriggerAutoRefill(uid, newBalance, result.sessionId);
+        if (!result.cancelled && billingState.settlementStatus === "settled") await checkAndTriggerAutoRefill(uid, newBalance, result.sessionId);
         newBalance = (await db.collection("users").doc(uid).get()).data()?.creditBalance ?? newBalance;
 
         if (isResendConfigured()) {
@@ -565,16 +530,18 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           const emailThreshold = billingDefaults.emailCreditWarningThreshold;
 
           const notifications: Promise<boolean>[] = [];
-          if (emailThreshold > 0 && newBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
-            key => sendLowCreditsEmail(sessionUid, newBalance, emailThreshold, key),
+          const settledBalance = await getSettledCreditBalance(uid);
+          if (settledBalance !== null && emailThreshold > 0 && settledBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
+            key => sendLowCreditsEmail(sessionUid, settledBalance!, emailThreshold, key),
             {sentField: "lowCreditEmailSentAt", cooldownMs: 86400_000}));
-          if (fullAccess && status === "complete" && userData.notifySessionComplete === true && result.sessionId) {
+          const notificationProfile = (await db.collection("users").doc(uid).get()).data() ?? {};
+          if (fullAccess && status === "complete" && sessionCompleteNotificationsEnabled(notificationProfile) && result.sessionId) {
             notifications.push(sendTrackedEmail(sessionUid, "sessionComplete",
               key => sendSessionCompleteEmail(sessionUid, result.sessionId, sessionTitle, actualCost, key), {eventId: result.sessionId}));
           }
-          if (fullAccess && status === "complete" && result.sessionId) notifications.push(sendTrackedEmail(sessionUid, "firstSession",
+          if (fullAccess && status === "complete" && sessionCompleteNotificationsEnabled(notificationProfile) && result.sessionId) notifications.push(sendTrackedEmail(sessionUid, "firstSession",
             key => sendFirstSessionEmail(sessionUid, result.sessionId, sessionTitle, key), {sentField: "firstSessionEmailSent"}));
-          if (newBalance <= 0) notifications.push(sendTrackedEmail(sessionUid, "zeroCredits",
+          if (settledBalance !== null && settledBalance <= 0) notifications.push(sendTrackedEmail(sessionUid, "zeroCredits",
             key => sendZeroCreditsEmail(sessionUid, key), {sentField: "zeroCreditsEmailSentAt", cooldownMs: 86400_000}));
           const outcomes = await Promise.allSettled(notifications);
           outcomes.forEach(outcome => {
@@ -617,20 +584,23 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     }
     const transcript = Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript;
     if (!res.writableEnded && !res.destroyed) res.write(`data: ${JSON.stringify({
-      ...result, transcript, status, relayCount, rebuttalRound, caseFile: caseFile ?? [],
+      ...result, ...provenance, transcript, status, relayCount, rebuttalRound, caseFile: caseFile ?? [],
       config: prepared.config,
       debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
       creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
+      creditsDebited: Number(previousSession?.creditsUsed ?? 0) + billingState.chargedCredits,
+      creditsReserved: billingState.reservedCredits,
+      settlementStatus: billingState.settlementStatus,
       type: result.pauseReason === "credit_cap" ? "paused_post_moderator" : "done",
       transcriptLines: result.transcript, debateTranscriptLines: result.transcript,
-      needsRelay: result.courtroomOutcome?.reason === "not_enough",
+      needsRelay: !!result.relayQuestion,
     })}\n\n`);
   } catch (err: any) {
     console.error("[brain] Unhandled session error:", err);
     // Keep health and error logs on the same session record. A failed resume
     // must retain its saved answer/status and respect the existing run lease.
     // User cancellation is not a service failure; hard timeouts are.
-    if (db && uid && !resultSaved && (!abortCtrl.signal.aborted || timedOut)) {
+    if (db && uid && !resultSaved) {
       try {
         const failure = {
           callUsage: [...(previousSession?.callUsage ?? []), ...runCalls],
@@ -639,19 +609,28 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           inputTokens: Number(previousSession?.inputTokens ?? 0) + runCalls.reduce((sum, c) => sum + c.inputTokens, 0),
           outputTokens: Number(previousSession?.outputTokens ?? 0) + runCalls.reduce((sum, c) => sum + c.outputTokens, 0),
           lastRunErrorAt: FieldValue.serverTimestamp(),
-          lastRunErrorMessage: timedOut ? "Session timed out." : "Session failed before completion.",
+          lastRunErrorMessage: timedOut ? "Session timed out." : abortCtrl.signal.aborted ? "Session cancelled." : "Session failed before completion.",
+          creditsUsed: Number(previousSession?.creditsUsed ?? 0),
+          creditsDebited: Number(previousSession?.creditsUsed ?? 0) + billingState.chargedCredits,
+          creditsReserved: billingState.chargedCredits,
+          settlementStatus: billingState.settlementStatus,
+          ...(creditReserved ? { billingRunId: creditRunId } : {}),
           updatedAt: FieldValue.serverTimestamp(),
         };
-        if (runLease) {
-          await writeSessionRun(db, runLease, failure);
-        } else {
-          await db.collection("sessions").doc(sessionId).create(storedSessionRecord({
-            ...failure, userId: uid, title: question.slice(0, 80), question,
-            config: prepared.config, templateId: templateId ?? null,
-            status: "error", creditsUsed: 0, shared: false,
-            createdAt: FieldValue.serverTimestamp(),
-          }, fullAccess));
-        }
+        const failureRecord = previousSession ? failure : storedSessionRecord({
+          ...failure, userId: uid, title: question.slice(0, 80), question,
+          config: prepared.config, templateId: templateId ?? null,
+          status: abortCtrl.signal.aborted && !timedOut ? "cancelled" : "error", shared: false,
+          createdAt: FieldValue.serverTimestamp(),
+        }, fullAccess);
+        if (creditReserved) {
+          billingState = await persistCreditRunFailure(uid, creditRunId, failureRecord, runLease);
+          resultSaved = billingState.resultStored === true;
+          try { billingState = await applyCreditRunSettlement(uid, creditRunId); }
+          catch (error) { console.error("[brain] Refund pending; durable obligation retained", {sessionId,error}); }
+        } else if (runLease) await writeSessionRun(db, runLease, failureRecord);
+        else await db.collection("sessions").doc(sessionId).set(failureRecord);
+
       } catch {
         console.error("[brain] Could not persist session failure", { sessionId });
       }
@@ -662,10 +641,8 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       );
     }
   } finally {
-    // If run failed and credits were reserved, refund the full reservation as a ledger entry
-    if (!resultSaved && !isAdminRun && uid && db) {
-      await reconcileCredits(uid, runSucceeded ? actualCost : estimatedCost, sessionId, "brain_failure_refund").catch(error => console.error("[brain] Refund requires reconciliation", {uid, sessionId, estimatedCost, error}));
-    }
+    // Failed staging retains an active lease-backed reservation even if every
+    // immediate refund write failed. Recovery releases it after the hard run window.
 
     clearTimeout(sessionTimer);
     if (!res.writableEnded) res.end();

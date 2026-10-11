@@ -1,3 +1,4 @@
+import { ADMIN_LIMIT_RANGES } from "@workspace/api-zod/limits";
 import { accountAccess } from "@workspace/api-zod/session";
 import { TemplateEditModal } from "./TemplateEditModal";
 import { AiBillingTab, KNOWN_PROVIDERS } from "./AiBillingTab";
@@ -1713,13 +1714,12 @@ const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; m
   overdraftLimit: {
     label: "Courtesy ceiling",
     description: "Paying members only. Repay before next run.",
-    min: 0, max: 5000,
+    ...ADMIN_LIMIT_RANGES.overdraftLimit,
   },
   maxLitigants: {
     label: "Maximum litigants",
     description: "AI debaters per session.",
-    min: 2,
-    max: 20,
+    ...ADMIN_LIMIT_RANGES.maxLitigants,
   },
 };
 
@@ -1727,7 +1727,7 @@ function LimitsTab() {
   const qc = useQueryClient();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
-  const { data: limits, isLoading, isError, refetch } = useQuery({
+  const { data: settings, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-limits"],
     queryFn: getAdminLimits,
   });
@@ -1742,6 +1742,7 @@ function LimitsTab() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const limits = settings?.limits;
   if (isLoading) return <TabSkeleton />;
   if (isError || !limits) return <div role="alert" className="lgt-card lgt-card--compact space-y-3"><p>Could not load limits.</p><Button variant="outline" onClick={() => refetch()}>Retry</Button></div>;
 
@@ -1755,9 +1756,10 @@ function LimitsTab() {
           </Button>
         </div>
 
+        {settings?.notices?.map(notice => <p key={notice} role="alert" className="text-sm text-amber-500">{notice}</p>)}
         <div className="row layout__split-2">
           {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
-            const current = limits[name];
+            const current = settings?.storedLimits?.[name as keyof typeof limits] ?? limits[name as keyof typeof limits];
             return (
               <article key={name} aria-label={meta.label} className="lgt-card lgt-card--compact space-y-2">
                 <div className="flex-1 space-y-0.5 min-w-0">

@@ -1,3 +1,4 @@
+import { billingRecoveryDatabase } from "./billingRecoveryDatabase.js";
 import {getBillingDefaults} from "../lib/billingDefaultsConfig.js";
 /**
  * Credit ledger unit tests.
@@ -122,92 +123,8 @@ import app from "../app-firebase.js";
  * serialisable isolation guarantee.
  */
 function createMockDb(initialStore: Record<string, any> = {}) {
-  const store: Record<string, any> = { ...initialStore };
-  // Auto-incrementing counter for anonymous doc IDs
-  let autoId = 0;
-  // Promise mutex — each runTransaction call chains on this so transactions
-  // execute strictly one-at-a-time, matching Firestore's serial isolation.
-  let txLock: Promise<void> = Promise.resolve();
-
-  const makeDocRef = (collName: string, docId: string) => {
-    const key = `${collName}/${docId}`;
-    return {
-      _key: key,
-      id: docId,
-      _get() {
-        return { exists: key in store, data: () => store[key] ?? null, id: docId };
-      },
-      async get()             { return this._get(); },
-      async set(data: any, opts?: any) {
-        if (opts?.merge) {
-          store[key] = { ...(store[key] ?? {}), ...data };
-        } else {
-          store[key] = data;
-        }
-      },
-      async update(data: any) { store[key] = { ...(store[key] ?? {}), ...data }; },
-      collection: (sub: string) => makeCollection(`${collName}/${docId}/${sub}`),
-    };
-  };
-
-  const makeCollection = (name: string) => ({
-    async get() { return { docs: Object.keys(store).filter(key => key.startsWith(name+"/") && !key.slice(name.length+1).includes("/")).map(key => ({id:key.split("/").pop(),data:()=>store[key]})) }; },
-    doc: (id?: string) => makeDocRef(name, id ?? `auto_${++autoId}`),
-    async add(data: any) {
-      const id = `auto_${++autoId}`;
-      store[`${name}/${id}`] = data;
-      return { id };
-    },
-    where: (field: string, op: string, value: unknown) => {
-      const filters: Array<[string, unknown]> = [[field, value]];
-      const query = {
-        where: (key: string, _op: string, expected: unknown) => { filters.push([key, expected]); return query; },
-        orderBy: () => query,
-        limit: () => query,
-        get: async () => ({docs: Object.entries(store).filter(([key, data]) => key.startsWith(`${name}/`) &&
-          filters.every(([key, value]) => data[key] === value)).map(([key, data]) => ({id:key.split('/').at(-1),data:()=>data}))}),
-      };
-      return query;
-    },
-  });
-
-  return {
-    _store: store,
-    collection: (name: string) => makeCollection(name),
-    runTransaction: <T>(fn: (txn: any) => Promise<T>): Promise<T> => {
-      const run = txLock.then(async (): Promise<T> => {
-        // Buffer writes — commit only after fn resolves (atomic semantics)
-        const pending: Array<{ key: string; data: any; op: "set" | "update"; mergeOpt?: boolean }> = [];
-
-        const txn = {
-          get: async (ref: any) => {
-            if (pending.length) throw new Error("Firestore transactions require all reads before writes");
-            return ref._get();
-          },
-          set: (ref: any, data: any, opts?: any) =>
-            pending.push({ key: ref._key, data, op: "set", mergeOpt: opts?.merge }),
-          update: (ref: any, data: any) =>
-            pending.push({ key: ref._key, data, op: "update" }),
-        };
-
-        const result = await fn(txn);
-
-        for (const { key, data, op, mergeOpt } of pending) {
-          if (op === "set") {
-            store[key] = mergeOpt ? { ...(store[key] ?? {}), ...data } : data;
-          } else {
-            store[key] = { ...(store[key] ?? {}), ...data };
-          }
-        }
-
-        return result;
-      });
-
-      // Advance the lock to the current run — next transaction waits for this one.
-      txLock = run.then(() => undefined, () => undefined);
-      return run;
-    },
-  };
+  const db = billingRecoveryDatabase(initialStore);
+  return {...db, _store: db.store};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -219,7 +136,7 @@ describe("addCredits()", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = createMockDb();
+    mockDb = createMockDb(Object.fromEntries(["user-1", "user-2", "user-3", "user-4", "user-5", "new-user-1", "new-user-2", "new-user-3", "existing-bonus-user", "new-bonus-user"].map(uid => [`users/${uid}`, { plan: "free", creditBalance: 0 }])));
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
   });
 
@@ -349,20 +266,20 @@ describe("grantSignupBonus()", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDb = createMockDb();
+    mockDb = createMockDb(Object.fromEntries(["user-1", "user-2", "user-3", "user-4", "user-5", "new-user-1", "new-user-2", "new-user-3", "existing-bonus-user", "new-bonus-user"].map(uid => [`users/${uid}`, { plan: "free", creditBalance: 0 }])));
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
   });
 
   it("grants the configured 100-credit signup bonus without changing prior grants", async () => {
-    await grantSignupBonus("existing-bonus-user");
+    await grantSignupBonus("existing-bonus-user", {emailVerified:true});
     vi.mocked(getBillingDefaults).mockResolvedValueOnce({signupBonusCredits:100} as any);
-    expect(await grantSignupBonus("new-bonus-user")).toMatchObject({amount:100,skipped:false});
+    expect(await grantSignupBonus("new-bonus-user", {emailVerified:true})).toMatchObject({amount:100,skipped:false});
     expect(mockDb._store["users/new-bonus-user"].creditBalance).toBe(100);
     expect(mockDb._store["users/existing-bonus-user"].creditBalance).toBe(500);
   });
 
   it("grants 500 credits on the first call and records a ledger entry", async () => {
-    const result = await grantSignupBonus("new-user-1");
+    const result = await grantSignupBonus("new-user-1", {emailVerified:true});
 
     expect(result.skipped).toBe(false);
     expect(result.amount).toBe(500);
@@ -373,8 +290,8 @@ describe("grantSignupBonus()", () => {
   });
 
   it("second call for the same UID is skipped (bonus granted only once)", async () => {
-    await grantSignupBonus("new-user-2");
-    const second = await grantSignupBonus("new-user-2");
+    await grantSignupBonus("new-user-2", {emailVerified:true});
+    const second = await grantSignupBonus("new-user-2", {emailVerified:true});
 
     expect(second.skipped).toBe(true);
     // Balance must remain at 500, not 1000
@@ -384,8 +301,8 @@ describe("grantSignupBonus()", () => {
   it("is idempotent even under concurrent calls", async () => {
     // Fire both calls simultaneously
     const [r1, r2] = await Promise.all([
-      grantSignupBonus("new-user-3"),
-      grantSignupBonus("new-user-3"),
+      grantSignupBonus("new-user-3", {emailVerified:true}),
+      grantSignupBonus("new-user-3", {emailVerified:true}),
     ]);
 
     const grantedCount = [r1, r2].filter(r => !r.skipped).length;
@@ -438,6 +355,7 @@ function makeBrainMock({
       creditsUsed,
       model:           "gpt-4o",
       confidence:      85,
+      courtroomOutcome: {reason:"approved",confidenceAtExit:85,round:1},
       finalAnswer:     "Test answer",
       debateNotes:     null,
       transcript:      [],
@@ -598,10 +516,10 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     const refundEntry = ledgerDocs.find(d => d.source === "brain_reconcile");
     expect(refundEntry).toBeDefined();
     expect(refundEntry.type).toBe("refund");
-    expect(refundEntry.amount).toBe(100);
+    expect(refundEntry.amount).toBe(400);
   });
 
-  it("writes no refund ledger entry when actual cost equals estimated", async () => {
+  it("refunds unused full-cap allowance even when actual equals estimate", async () => {
     // estimated = actual = 200 → refund = 0, no reconcile write
     const mockDb = createRouteMockDb(FAKE_UID, 500);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
@@ -618,7 +536,7 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
       .map(k => mockDb._store[k]);
     const refundEntry = ledgerDocs.find(d => d.source === "brain_reconcile");
     // No refund — delta is zero
-    expect(refundEntry).toBeUndefined();
+    expect(refundEntry.amount).toBe(300);
     // Net balance: 500 − 200 = 300
     expect(mockDb._store[`users/${FAKE_UID}`].creditBalance).toBe(300);
   });
@@ -648,10 +566,10 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     const failureRefund = ledgerDocs.find(d => d.source === "brain_failure_refund");
     expect(failureRefund).toBeDefined();
     expect(failureRefund.type).toBe("refund");
-    expect(failureRefund.amount).toBe(200);
+    expect(failureRefund.amount).toBe(500);
   });
 
-  it("charges an overage ledger entry when actual cost exceeds estimated", async () => {
+  it("collects above-estimate usage from the already reserved allowance", async () => {
     // estimated = 200, actual = 300 → overage = 100
     const mockDb = createRouteMockDb(FAKE_UID, 600);
     vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
@@ -669,48 +587,18 @@ describe("reconcileCredits() — via POST /api/run-brain", () => {
     const ledgerDocs = Object.keys(mockDb._store)
       .filter(k => k.startsWith("credit_transactions/"))
       .map(k => mockDb._store[k]);
-    const overageEntry = ledgerDocs.find(d => d.source === "brain_overage");
-    expect(overageEntry).toBeDefined();
-    expect(overageEntry.type).toBe("usage");
-    expect(overageEntry.amount).toBe(-100);
+    expect(ledgerDocs.find(d => d.source === "brain_overage")).toBeUndefined();
+    expect(ledgerDocs.reduce((sum, entry) => sum + entry.amount, 0)).toBe(-300);
   });
 
-  it("records a shortfall if another completed run consumes funds before settlement", async () => {
-    const mockDb = createRouteMockDb(FAKE_UID, 350);
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    const finish = makeBrainMock({creditsUsed:350});
-    vi.mocked(runBrainSession).mockImplementation(async opts => {
-      mockDb._store[`users/${FAKE_UID}`].creditBalance = 0;
-      return finish(opts);
-    });
-
-    const res = await request(app)
-      .post("/api/run-brain")
-      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
-      .send(BRAIN_BODY);
-
-    // The session itself must complete (not 402) — the result was already delivered
-    expect(res.status).toBe(200);
-
-    // Balance after reservation was 0; the uncollectable overage must NOT push it below 0
-    const finalBalance = mockDb._store[`users/${FAKE_UID}`].creditBalance;
-    expect(finalBalance).toBeGreaterThanOrEqual(0);
-
-    // A usage_shortfall ledger entry must be present in credit_transactions
-    const ledgerDocs = Object.values(mockDb._store).filter(
-      (v: any) => v && v.type === "usage_shortfall"
-    );
-    expect(ledgerDocs).toHaveLength(1);
-
-    const shortfall = ledgerDocs[0] as any;
-    // The shortfall entry records the uncollected overage amount for audit purposes
-    expect(shortfall.overage).toBe(150);
-    // source identifies this as an uncollected overage (not a normal reservation)
-    expect(shortfall.source).toBe("brain_overage_uncollected");
-    // amount must be 0 — no balance was deducted on this path
-    expect(shortfall.amount).toBe(0);
-    // userId ties the entry back to the user
-    expect(shortfall.userId).toBe(FAKE_UID);
+  it("absorbs usage above the authorized cap without additional debt", async () => {
+    const db = createRouteMockDb(FAKE_UID, 350);
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed:700}));
+    const res=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);
+    expect(res.status).toBe(200);expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(0);
+    const session=Object.values(db._store).find((data:any)=>data.memorySaved===true) as any;
+    expect(session.creditsUsed).toBe(350);
   });
 });
 
@@ -771,7 +659,7 @@ describe("settlement crash — refund transaction fails", () => {
       d => d.type === "usage" && d.source === "brain_reservation"
     );
     expect(reservationEntry).toBeDefined();
-    expect(reservationEntry.amount).toBe(-200);
+    expect(reservationEntry.amount).toBe(-500);
     expect(reservationEntry.userId).toBe(FAKE_UID);
   });
 
@@ -819,34 +707,17 @@ describe("settlement crash — refund transaction fails", () => {
     const refundEntry = ledgerDocs.find(d => d.source === "brain_failure_refund");
     expect(refundEntry).toBeDefined();
     expect(refundEntry.type).toBe("refund");
-    expect(refundEntry.amount).toBe(200); // full reservation returned
+    expect(refundEntry.amount).toBe(500); // full allowance returned
     expect(refundEntry.userId).toBe(FAKE_UID);
   });
 
-  it("writes a settlement_failure audit entry so admins can investigate the gap", async () => {
-    const mockDb = createRouteMockDb(FAKE_UID, 500);
-    vi.mocked(getFirestoreDb).mockReturnValue(mockDb as any);
-    const transaction = mockDb.runTransaction.bind(mockDb);
-    let calls = 0;
-    mockDb.runTransaction = async (fn: any) => {
-      if (++calls === 2) throw new Error("Refund transaction failed");
-      return transaction(fn);
-    };
+  it("retains the reservation and refunded settlement state for audit", async () => {
+    const db=createRouteMockDb(FAKE_UID,500);vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    let once=true;db.failTransactionsWhen(writes=>{if(once&&writes.some(w=>w.data.resultStored)){once=false;return true;}return false;});
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
-
-    await request(app)
-      .post("/api/run-brain")
-      .set("Authorization", `Bearer ${FAKE_TOKEN}`)
-      .send(BRAIN_BODY);
-
-    const allDocs = Object.values(mockDb._store);
-    const auditEntry = allDocs.find((d: any) => d?.type === "settlement_failure");
-    expect(auditEntry).toBeDefined();
-    expect((auditEntry as any).source).toBe("brain_settlement_crashed");
-    expect((auditEntry as any).estimatedCost).toBe(200);
-    expect((auditEntry as any).userId).toBe(FAKE_UID);
-    // amount is 0 — no additional balance change; the refund is the separate entry above
-    expect((auditEntry as any).amount).toBe(0);
+    await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);
+    const run=Object.entries(db._store).find(([key])=>key.startsWith("credit_runs/"))![1] as any;
+    expect(run).toMatchObject({userId:FAKE_UID,reservedCredits:500,chargedCredits:0,state:"settled"});
   });
 
   it("does not double-charge: balance after crash equals balance before the run", async () => {
@@ -932,12 +803,8 @@ describe("saved session continuity", () => {
   });
   it("refunds the remaining net charge and emits error if saving the result fails", async()=>{
     const db=createRouteMockDb(FAKE_UID,500); db._store[`users/${FAKE_UID}`].plan="pro";
-    const collection=db.collection.bind(db);
-    db.collection=(name:string)=>{
-      const col=collection(name);
-      if(name!=="sessions") return col;
-      return {...col,doc:(id?:string)=>({...col.doc(id),set:async()=>{throw new Error("Store unavailable");}})};
-    };
+    let failOnce=true;
+    db.failTransactionsWhen(writes=>{if(failOnce && writes.some(w=>w.data.resultStored)){failOnce=false;return true;}return false;});
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed:100}));
     const res=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);

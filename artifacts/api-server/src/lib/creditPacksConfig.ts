@@ -83,7 +83,9 @@ export async function getActiveCreditPacks(): Promise<CreditPack[]> {
   const ids = [...order, ...Object.keys(all).filter((id) => !order.includes(id))];
   return ids
     .map((id) => all[id])
-    .filter((pack): pack is CreditPack => !!pack && pack.active);
+    .filter((pack): pack is CreditPack => !!pack && pack.active)
+    .map(pack => ({ ...pack, prices: pack.prices.filter(price => price.active) }))
+    .filter(pack => pack.prices.length > 0);
 }
 
 /** Resolve checkout prices from the same live catalogue used for display. */

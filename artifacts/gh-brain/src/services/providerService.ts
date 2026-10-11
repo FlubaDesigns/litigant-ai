@@ -1,3 +1,4 @@
+import { PlatformLimitsSchema } from "@workspace/api-zod/limits";
 import type { ProviderName } from "@/data/templates";
 
 import { API_BASE } from "@/lib/apiUrl";
@@ -12,10 +13,11 @@ export async function getLimits(): Promise<PlatformLimits> {
   if (!res.ok) throw new Error("Unable to load platform limits");
   const data = await res.json();
   const limits = data.limits;
-  if (!limits || !Number.isInteger(limits.maxLitigants) || !Number.isInteger(limits.overdraftLimit)) {
+  const parsed = PlatformLimitsSchema.safeParse(limits);
+  if (!parsed.success) {
     throw new Error("Invalid platform limits response");
   }
-  return {maxLitigants:limits.maxLitigants, overdraftLimit:limits.overdraftLimit};
+  return parsed.data;
 }
 
 export interface ModelCreditInfo {

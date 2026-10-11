@@ -1,8 +1,11 @@
 import { useGuestInvitation } from "@/hooks/useGuestInvitation";
 import { GuestTrialNotice } from "./GuestTrialNotice";
-import { Redirect } from "wouter";
+import { Redirect, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import { AccountDeletionRecovery } from "./AccountDeletionRecovery";
 import { AccountSetupNotice } from "./AccountSetupNotice";
+
+import { authPath, safeNext } from "@/lib/authUtils";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,9 +18,12 @@ export function ProtectedRoute({
   requireVerified = true,
   requireAdmin = false,
 }: ProtectedRouteProps) {
-  const { user, loading, setupError, isAdmin, firebaseReady } = useAuth();
+  const { user, loading, setupError, accountDeletionPending, isAdmin, firebaseReady } = useAuth();
 
   const trial = useGuestInvitation();
+  const [pathname] = useLocation();
+  const search = useSearch();
+  const next = safeNext(pathname + (search ? `?${search}` : "") + window.location.hash);
 
   // When Firebase is not configured, allow all access in guest mode
   if (!firebaseReady) {
@@ -40,16 +46,18 @@ export function ProtectedRoute({
     );
   }
 
+  if (user && accountDeletionPending) return <AccountDeletionRecovery />;
+
   if (setupError) return <AccountSetupNotice />;
 
   if (!user) {
-    return <Redirect to={`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`} />;
+    return <Redirect to={authPath("/sign-in", next)} />;
   }
 
   if (trial.isGuest && trial.ended) return <GuestTrialNotice />;
-  if (trial.isGuest && ["/billing", "/settings"].includes(window.location.pathname)) return <Redirect to="/register" />;
+  if (trial.isGuest && ["/billing", "/settings"].includes(window.location.pathname)) return <Redirect to={authPath("/register", next)} />;
   if (requireVerified && !trial.isGuest && !user.emailVerified && !import.meta.env.DEV) {
-    return <Redirect to="/verify-email" />;
+    return <Redirect to={authPath("/verify-email", next)} />;
   }
 
   if (requireAdmin && !isAdmin) {

@@ -1,3 +1,5 @@
+import { mergeModelProvenance, type ModelProvenance } from "./modelProvenance.js";
+import { MAX_LITIGANTS } from "@workspace/api-zod/limits";
 import { AiDisabledError, ProviderFailureError, SessionProviderError, providerFailureKind } from "./providerErrors.js";
 import type { CallUsage } from "./sessionPricing.js";
 import { type EngineConfig as CourtConfig, CourtConfigSchema, ANSWER_STYLES, parseReviewScore, REVIEW_SCORE_INSTRUCTION, CONFIDENCE_NOTE } from "@workspace/api-zod/session";
@@ -35,6 +37,9 @@ export interface TokenUsage {
 }
 
 function getRoles(config: CourtConfig): RoleDefinition[] {
+  if (!Number.isInteger(config.litigantCount) || config.litigantCount < 1 || config.litigantCount > MAX_LITIGANTS) {
+    throw new Error(`Litigant count must be between 1 and ${MAX_LITIGANTS}`);
+  }
   const roles: RoleDefinition[] = [
     {
       name: "Advocate",
@@ -126,7 +131,7 @@ export function estimateCreditCost(config: CourtConfig): number {
   });
 }
 
-export type PauseReason = "credit_cap" | "iteration_limit";
+export type PauseReason = "credit_cap" | "iteration_limit" | "output_incomplete";
 
 export interface RebuttalContext {
   challenge: string;
@@ -142,6 +147,7 @@ export interface CourtroomOutcome {
     | "not_enough"         // Auditor: missing determinative fact; relay to user
     | "convergence_failure"// 3 artifact cycles without APPROVED
     | "credit_cap"         // credit cap hit before full pipeline
+    | "output_incomplete"  // provider stopped before a stage completed
     | "iteration_limit"    // max debate rounds without target confidence
     | "aborted";           // user stopped
   confidenceAtExit: number;
@@ -188,6 +194,8 @@ export interface BrainRunOptions {
   sessionId?: string;
   /** When continuing a paused session, pass the accumulated transcript lines. */
   continueFromTranscript?: string[];
+  /** Owned saved draft, retained if a continuation stops before rebuilding it. */
+  continueFromArtifact?: string;
   /** When the user challenges a verdict — triggers a rebuttal run. */
   rebuttalContext?: RebuttalContext;
   /** Pre-briefing documents or URLs attached before the session run. */
@@ -228,6 +236,7 @@ export interface BrainRunResult {
   turns: TurnRecord[];
   provider: ProviderName;
   model: string;
+  modelProvenance: ModelProvenance;
   tokenUsage: TokenUsage;
   /** Which conscience canon version governed this session (e.g. "v2.0-canon"). */
   conscienceVersion: string;
@@ -248,6 +257,10 @@ export interface BrainRunResult {
    * will be asked for clarification.
    */
   convergenceFailure?: boolean;
+  /** A provider stopped before a complete stage could be reviewed or delivered. */
+  outputIncomplete?: { role: string; reason: string };
+  /** User cancellation preserves paid partial work without claiming approval. */
+  cancelled?: boolean;
   /**
    * Which pipeline branch the session took after the debate.
    * "artifact"    → Architect→Builder→Auditor (standard path)
@@ -264,7 +277,7 @@ export interface BrainRunResult {
    */
   endOfJobTap?: "worth_it" | "not_worth_it" | null;
   /**
-   * When Auditor (no-artifact) returned NOT_ENOUGH, this contains the
+   * When review requires user input (NOT_ENOUGH or convergence failure), this contains the
    * specific missing information the user must supply before the court
    * can complete its answer.
    */
@@ -275,27 +288,16 @@ function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error("Session aborted by client");
 }
 
-async function resolveProvider(config: CourtConfig, forcedProvider?: string, enabled?: string[]): Promise<AIProvider> {
+async function resolveProvider(config: CourtConfig, forcedProvider?: string, enabled?: string[], fallbackModels?: Record<string, string>): Promise<AIProvider> {
   const configured = enabled ?? await getConfiguredProvidersAsync();
-
-  const requested = forcedProvider ?? (config.provider as string | undefined);
-  if (requested && configured.includes(requested)) {
-    return createProviderAsync(requested, config.model);
-  }
-
-  for (const fallback of ["openai", "gemini", "grok", "anthropic"]) {
-    if (configured.includes(fallback)) {
-      return createProviderAsync(fallback, fallback === requested ? config.model : undefined);
-    }
-  }
-
-  if (configured.length > 0) {
-    return createProviderAsync(configured[0]!, config.model);
-  }
-
-  throw new Error(
-    "No AI provider configured. Add an API key in Admin → API Keys, or set OPENAI_API_KEY, ANTHROPIC_API_KEY, XAI_API_KEY, or GEMINI_API_KEY."
-  );
+  const requested = forcedProvider ?? config.provider;
+  if (requested && !configured.includes(requested)) throw new Error(`Provider ${requested} is disabled or unavailable.`);
+  const provider = requested ?? configured[0];
+  if (!provider) throw new Error("No enabled AI provider is available. Check Admin → AI Studio and API Keys.");
+  // A carried-over failover provider must use that provider's currently enabled model,
+  // never the original provider's model or an unvalidated hardcoded default.
+  const model = provider === config.provider ? config.model : fallbackModels?.[provider];
+  return createProviderAsync(provider, model ?? fallbackModels?.[provider]);
 }
 
 /**
@@ -332,6 +334,47 @@ async function resolveSeatProvider(
 
 /** Thrown by streamRole when the AI provider itself errors (not an abort). */
 class CreditCapError extends Error {}
+
+/** Preserve paid partial output without treating a cutoff as provider failover. */
+class IncompleteOutputError extends Error {
+  constructor(readonly role: string, readonly output: string, readonly reason: string) {
+    super(`The ${role} output is incomplete (${reason}).`);
+  }
+}
+
+/**
+ * Recover owned debate entries. Older records join transcript entries with the
+ * same Markdown separator a model may use inside its answer; reconnect those
+ * fragments until the next role envelope. New records preserve exact arrays.
+ */
+function priorDebateTurns(lines: string[], roles: RoleDefinition[]): TurnRecord[] {
+  const names = new Set(roles.map(role => role.name));
+  const envelopes = new Set([...names, "Orchestrator", "Moderator", "Architect", "Builder", "Auditor", "Verdict", "User"]);
+  const recovered: TurnRecord[] = [];
+  let current: TurnRecord | undefined;
+  for (const line of lines) {
+    const match = line.match(/^\*\*([^\n]+?) \(Round (\d+)\):\*\*(?:[ \t]*\r?\n|[ \t]+)([\s\S]*)$/);
+    if (match) {
+      // A prior seat may now be disabled by a lower administrator role limit.
+      // Its envelope still ends the preceding seat's history; its reasoning
+      // must never be concatenated into an active independent seat's argument.
+      const round = Number(match[2]);
+      current = names.has(match[1]) && Number.isSafeInteger(round) && round > 0
+        ? { role: match[1], round, content: match[3] } : undefined;
+      if (current) recovered.push(current);
+    } else {
+      const envelopeRole = line.match(/^\*\*([^\n]+?):\*\*/)?.[1]?.replace(/\s+\([^()\n]*\)$/, "");
+      if (envelopeRole && envelopes.has(envelopeRole)) {
+        // Known seats, summaries, and user evidence must not become own history.
+        // Ordinary bold headings such as **Caveat:** remain inside the argument.
+        current = undefined;
+      } else if (current) {
+        current.content += `\n\n---\n\n${line}`;
+      }
+    }
+  }
+  return recovered;
+}
 
 /** Stream a role's response, using real provider token counts when available */
 async function streamRole(
@@ -372,10 +415,15 @@ async function streamRole(
     usage.calls?.push(call);
     onCallUsage?.(call);
   }
-  throwIfAborted(signal);
-  if (failure instanceof Error && failure.message === "Session aborted by client") throw failure;
+  if (signal?.aborted || (failure instanceof Error && failure.message === "Session aborted by client")) {
+    throw new IncompleteOutputError(seat ?? "Court", output, "aborted");
+  }
   if (failure instanceof AiDisabledError) throw failure;
   if (failure) throw new ProviderFailureError(providerFailureKind(failure));
+  const completion = provider.getLastCompletion?.();
+  if (completion && completion.status !== "complete") {
+    throw new IncompleteOutputError(seat ?? "Court", output, completion.finishReason ?? "missing_completion_signal");
+  }
   if (!output.trim()) throw new ProviderFailureError("empty_response");
 
   return output;
@@ -389,9 +437,20 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const estimatedCredits = opts.estimatedCredits ?? estimateCreditCost(config);
 
   const configured = opts.enabledProviders ?? await getConfiguredProvidersAsync();
-  let globalProvider = await resolveProvider(config, opts.forcedProvider, configured);
+  let globalProvider = await resolveProvider(config, opts.forcedProvider, configured, opts.fallbackModels);
   const providerName = globalProvider.name;
-  const modelName = globalProvider.model ?? config.model ?? "gpt-5";
+  const modelName = globalProvider.model ?? config.model ?? "unknown";
+  const completedModels = new Map<string, {provider: string; model: string}>();
+  const attemptedModels = new Map<string, {provider: string; model: string}>();
+  const identity = (provider: AIProvider) => ({provider:provider.name, model:provider.model ?? "unknown"});
+  const remember = (target: typeof completedModels, provider: AIProvider) => {
+    const value = identity(provider);
+    target.set(JSON.stringify([value.provider, value.model]), value);
+  };
+  const resultProvenance = () => mergeModelProvenance({
+    configured:{provider:config.provider ?? providerName, model:config.model ?? modelName},
+    completed:[...completedModels.values()], attempted:[...attemptedModels.values()],
+  });
 
   // Per-seat providers — fall back to global provider when seat not configured
   let orchProvider   = await resolveSeatProvider("orchestrator", config, globalProvider, configured);
@@ -447,8 +506,12 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       throwIfAborted(abortSignal);
       checkCallBudget(candidate, messages, maxTokens);
       try {
-        return await streamRole(candidate, messages, maxTokens, onChunk, usage, abortSignal, seat, opts.onCallUsage);
+        remember(attemptedModels, candidate);
+        const output = await streamRole(candidate, messages, maxTokens, onChunk, usage, abortSignal, seat, opts.onCallUsage);
+        remember(completedModels, candidate);
+        return output;
       } catch (error) {
+        if (error instanceof IncompleteOutputError) throw error;
         throwIfAborted(abortSignal);
         if (!(error instanceof ProviderFailureError)) throw error;
         const failedName = candidate.name;
@@ -462,7 +525,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
           if (failedProviders.has(archProvider.name)) archProvider = candidate;
           if (failedProviders.has(buildProvider.name)) buildProvider = candidate;
           if (failedProviders.has(auditProvider.name)) auditProvider = candidate;
-          sendSSE(res, {type:"provider_failover",provider:candidate.name});
+          sendSSE(res, {type:"provider_failover",provider:candidate.name,model:candidate.model});
         }
       }
     }
@@ -474,7 +537,12 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // Pre-populate transcript when continuing a paused session
   const transcript: string[] = [...(continueFromTranscript ?? opts.relayContext?.originalTranscript ?? [])];
   if (opts.relayContext) transcript.push(`**User (follow-up ${opts.relayContext.relayRound}):** ${opts.relayContext.missingInfo}`);
+  // Old turns are context only. Return new turns so persistence never duplicates them.
+  const priorTurns = priorDebateTurns(continueFromTranscript ?? [], roles);
   const turns: TurnRecord[] = [];
+  let latestCompleteArtifact = opts.continueFromArtifact ?? "";
+  let pendingRelayQuestion = "";
+  let currentArtifactPath: "artifact" | "no-artifact" = config.outputPreferenceMode === "answer-only" ? "no-artifact" : "artifact";
   let confidence = 0;
   let actualRound = 0;
   const debateNotesList: string[] = [];
@@ -520,7 +588,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // ── Orchestrator — skipped when continuing a paused session ──────────────────
   if (!continueFromTranscript?.length) {
     throwIfAborted(abortSignal);
-    sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: providerName });
+    sendSSE(res, { type: "role_start", role: "Orchestrator", roleIndex: -1, round: 0, provider: orchProvider.name });
 
     const orchMessages: ChatMessage[] = [
       {
@@ -555,7 +623,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       const result: BrainRunResult = {
         sessionId, confidence: 0, creditsUsed: currentCharge(), finalAnswer: relayQuestion,
         debateNotes: "", transcript, caveats: "Waiting for your answers before the court continues.",
-        artifacts: "", turns, provider: globalProvider.name, model: globalProvider.model ?? modelName,
+        artifacts: "", turns, ...resultProvenance(),
         tokenUsage: usage, conscienceVersion, fixedStageTokens: { input: 0, output: 0 },
         artifactPath: "no-artifact", courtroomOutcome: { reason: "not_enough", confidenceAtExit: 0, round: 0 },
         relayCount: opts.relayContext?.relayRound ?? 0, relayQuestion,
@@ -572,7 +640,21 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   let creditCapHit = false;
 
   if (!opts.resumeWithFixedPipeline) {
-    for (let round = 1; round <= config.maxIterations; round++) {
+    const lastPriorRound = priorTurns.reduce((max, turn) => Math.max(max, turn.round), 0);
+    // A saved Moderator marks a completed deliberation. Continuing that result
+    // adds rounds; a cap pause before Moderator instead finishes the original
+    // rounds and skips already completed seats, avoiding paid repeat work.
+    const savedLines = continueFromTranscript ?? [];
+    const lastSummaryIndex = savedLines.reduce((last, line, index) => line.startsWith("**Moderator (Summary):**") ? index : last, -1);
+    const lastDebateIndex = savedLines.reduce((last, line, index) => priorDebateTurns([line], roles).length > 0 ? index : last, -1);
+    const deliberationFinished = lastSummaryIndex > lastDebateIndex;
+    const previouslyFinishedRound = priorDebateTurns(savedLines.slice(0, lastSummaryIndex + 1), roles)
+      .reduce((max, turn) => Math.max(max, turn.round), 0);
+    const firstRound = lastPriorRound === 0 ? 1
+      : deliberationFinished ? lastPriorRound + 1 : lastPriorRound;
+    const finalRound = (deliberationFinished ? lastPriorRound : previouslyFinishedRound) + config.maxIterations;
+    actualRound = lastPriorRound;
+    for (let round = firstRound; round <= finalRound; round++) {
       throwIfAborted(abortSignal);
       sendSSE(res, { type: "round_start", round });
 
@@ -582,6 +664,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         throwIfAborted(abortSignal);
 
         const role = roles[i];
+        if (!deliberationFinished && priorTurns.some(turn => turn.role === role.name && turn.round === round)) continue;
         const litProvider = await resolveSeatProvider("litigant", config, globalProvider, configured, i);
         sendSSE(res, { type: "role_start", role: role.name, roleIndex: i, round, provider: litProvider.name });
 
@@ -589,7 +672,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         // it can build on its own reasoning across rounds but cannot hear
         // what the other seats argued. This keeps input tokens flat (no
         // transcript compounding) while still letting positions evolve.
-        const myPriorTurns = turns
+        const myPriorTurns = [...priorTurns, ...turns]
           .filter((t) => t.role === role.name)
           .map((t) => `Round ${t.round}: ${t.content}`)
           .join("\n\n");
@@ -603,7 +686,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
             role: "user",
             content: (() => {
               const isIndependent = config.aiReasoning === "independent";
-              if (round === 1 && i === 0) return `Begin your examination of the question.`;
+              if (round === 1 && i === 0 && !myPriorTurns) return `Begin your examination of the question.`;
               if (isIndependent) {
                 const ownHistory = myPriorTurns
                   ? `Your previous arguments:\n\n${myPriorTurns}\n\nNow give your round ${round} argument as ${role.persona}. Build on your own reasoning — you have not heard the other seats.`
@@ -667,7 +750,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   let moderatorSummary: string;
 
   if (opts.resumeWithFixedPipeline) {
-    const modEntry = transcript.find((l) => l.startsWith("**Moderator (Summary):**"));
+    const modEntry = [...transcript].reverse().find((l) => l.startsWith("**Moderator (Summary):**"));
     moderatorSummary = modEntry
       ? modEntry.replace(/^\*\*Moderator \(Summary\):\*\*\s*/, "")
       : transcript.join("\n\n"); // fallback: treat full transcript as context
@@ -739,8 +822,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         caveats: "⚠️ Partial analysis — the credit cap was reached before the full verdict pipeline ran. Raise your cap and continue to get the complete structured answer.",
         artifacts: "",
         turns,
-        provider: providerName,
-        model: modelName,
+        ...resultProvenance(),
         tokenUsage: usage,
         conscienceVersion,
         pauseReason: "credit_cap",
@@ -763,6 +845,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // Follow-up answers can complete a Pro document. The route has already
   // applied the user's authoritative artifact permissions to outputConfig.
   const artifactPath: "artifact" | "no-artifact" = artifactNeeded ? "artifact" : "no-artifact";
+  currentArtifactPath = artifactPath;
 
   // ── No-artifact path: Auditor reviews Moderator synthesis directly ────────
   let noArtifactApproved = false;
@@ -808,19 +891,8 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       noArtifactRelayQuestion = missingMatch
         ? missingMatch[1].trim()
         : "The court requires additional information to complete its answer. Please provide more detail.";
+      pendingRelayQuestion = noArtifactRelayQuestion;
     }
-  }
-
-  // ── Emit courtroom_outcome SSE (no-artifact path) ─────────────────────────
-  // For the artifact path this is emitted after the convergence loop below.
-  if (artifactPath === "no-artifact") {
-    const outcomeReason = noArtifactApproved ? "approved" : "not_enough";
-    const courtroomOutcomePayload: CourtroomOutcome = {
-      reason: outcomeReason,
-      confidenceAtExit: confidence,
-      round: actualRound,
-    };
-    sendSSE(res, { type: "courtroom_outcome", courtroomOutcome: courtroomOutcomePayload, artifactPath });
   }
 
   // ── Artifact path: Architect — design the artifact blueprint ─────────────
@@ -830,6 +902,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   let finalArtifact = "";
   let auditorOutput = "";
   let convergenceFailure = false;
+  let convergenceQuestion = "";
 
   if (artifactPath === "artifact") {
     const architectMessages: ChatMessage[] = [
@@ -882,6 +955,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         (chunk) => sendSSE(res, { type: "content", role: buildLabel, content: chunk }),
       );
 
+      latestCompleteArtifact = builtArtifact;
       transcript.push(`**${cycle === 1 ? "Builder (Artifact)" : buildLabel}:** ${builtArtifact}`);
       turns.push({ role: buildLabel, round: 99, content: builtArtifact });
       sendSSE(res, { type: "role_end", role: buildLabel, fullContent: builtArtifact, cycle });
@@ -929,6 +1003,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
           (chunk) => sendSSE(res, { type: "content", role: "Builder (Correction)", content: chunk }),
         );
 
+        latestCompleteArtifact = builtArtifact;
         transcript.push(`**Builder (Correction, Cycle ${cycle}):** ${builtArtifact}`);
         turns.push({ role: "Builder (Correction)", round: 99, content: builtArtifact });
         sendSSE(res, { type: "role_end", role: "Builder (Correction)", fullContent: builtArtifact, cycle });
@@ -941,16 +1016,16 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
       const isLastCycle = cycle === MAX_BUILD_CYCLES;
       const auditorUserPrompt =
-        `Architect's blueprint:\n\n${currentBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. Add or correct the Caveats section if needed. ${REVIEW_SCORE_INSTRUCTION}` +
+        `Architect's blueprint:\n\n${currentBlueprint}\n\nBuilder's artifact:\n\n${builtArtifact}\n\nModerator's deliberation summary (for fact-checking):\n\n${moderatorSummary}\n\nReview the artifact. Check completeness, accuracy, and alignment with the blueprint. If substantive caveats or corrections are missing, issue RETURNED with exact revision notes so the Builder can fix the source document. ${REVIEW_SCORE_INSTRUCTION}` +
         (isLastCycle
           ? "\n\nThis is the final review cycle (cycle 3 of 3). If you issue RETURNED, include a ## Convergence Diagnosis section explaining what specific information or clarification from the user would resolve the remaining gaps — this will be surfaced to the user directly."
           : "") +
         `\n\nOutput format:\n1. Start with your release decision on its own line: APPROVED or RETURNED\n2. If RETURNED, follow with a ## Revision Notes section (specific issues for the next cycle)` +
         (isLastCycle ? ", then a ## Convergence Diagnosis section (what user input would unblock convergence)" : "") +
-        `\n3. Then output the complete artifact text — output the artifact as-is on APPROVED, or your lightly corrected version on RETURNED`;
+        `\n3. Do not reproduce, shorten, or rewrite the artifact. APPROVED releases the exact Builder document supplied above. Return review metadata only, including the review score. Any required document change requires RETURNED.`;
 
       const auditorMessages: ChatMessage[] = [
-        { role: "system", content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}` },
+        { role: "system", content: `${seatBriefs.auditor}\n\n${baseContext}${conscienceClause}\n\nARTIFACT RELEASE CONTRACT: For this Mode A review, output review metadata only. Never reproduce or modify the document in your response. APPROVED releases the exact Builder artifact; any required document edit must be RETURNED to the Builder, including caveat corrections. This output contract supersedes any earlier instruction to copy the artifact.` },
         { role: "user",   content: auditorUserPrompt },
       ];
 
@@ -968,8 +1043,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       confidence = parseReviewScore(auditorOutput);
 
       if (auditDecision === "APPROVED") {
-        const artifactMatch = auditorOutput.match(/APPROVED[^\n]*\n+([\s\S]+)/i);
-        finalArtifact = artifactMatch ? artifactMatch[1].trim() : builtArtifact;
+        // The reviewed Builder source is the artifact. Review prose is never a
+        // replacement document, even if a saved legacy brief copies it back.
+        finalArtifact = builtArtifact;
         break;
       }
 
@@ -977,7 +1053,13 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
       if (isLastCycle) {
         convergenceFailure = true;
-        sendSSE(res, { type: "convergence_failure", sessionId, cycle });
+        const diagnosis = auditorOutput.match(/##\s+Convergence Diagnosis(?:[^\n]*)\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim();
+        const revisionNotes = auditorOutput.match(/##\s+Revision Notes\s*\n([\s\S]*?)(?=\n##\s|$)/i)?.[1]?.trim();
+        convergenceQuestion = diagnosis || (revisionNotes
+          ? `The draft remains unapproved because:\n\n${revisionNotes}\n\nWhat information or clarification can you provide to address these issues? If you do not know, say so and the court can state the remaining limitations.`
+          : "The draft remains unapproved after three reviews. What additional evidence or clarification can you provide for the unresolved parts of the document? You can also say what is unknown or unavailable.");
+        pendingRelayQuestion = convergenceQuestion;
+        sendSSE(res, { type: "convergence_failure", sessionId, cycle, relayQuestion: convergenceQuestion });
         break;
       }
 
@@ -1006,14 +1088,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       sendSSE(res, { type: "role_end", role: "Architect (Blueprint)", fullContent: currentBlueprint, cycle });
     }
 
-    // Emit courtroom_outcome for the artifact path
-    const artifactOutcomeReason: CourtroomOutcome["reason"] = convergenceFailure ? "convergence_failure" : "approved";
-    const artifactCourtroomOutcome: CourtroomOutcome = {
-      reason: artifactOutcomeReason,
-      confidenceAtExit: confidence,
-      round: actualRound,
-    };
-    sendSSE(res, { type: "courtroom_outcome", courtroomOutcome: artifactCourtroomOutcome, artifactPath });
+
   }
 
   // ── Build final courtroomOutcome object ──────────────────────────────────────
@@ -1041,7 +1116,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       // NOT_ENOUGH: Orchestrator relays the missing-information question to the user
       : `The court has determined it cannot fully answer the question without additional information from the user.\n\nModerator's synthesis so far:\n\n${moderatorSummary}\n\nAuditor's missing information flag:\n\n${noArtifactRelayQuestion}\n\nInform the user clearly that the court needs this specific information before it can deliver a complete answer. Ask the question precisely. Explain why this information is determinative.`
     // Artifact path: standard verdict delivery
-    : `The court has completed its work. Here is the Moderator's summary:\n\n${moderatorSummary}\n\nReview status: ${convergenceFailure ? "NOT APPROVED — explain the unresolved defects; do not claim approval" : "APPROVED"}. Here is the latest artifact:\n\n${finalArtifact}\n\nDeliver the verdict to the user: lead with a direct answer, summarise the key reasons in 2-3 sentences, present the artifact, and close with your standard save prompt asking if they would like to keep a copy in their files.`;
+    : `The court has completed its work. Here is the Moderator's summary:\n\n${moderatorSummary}\n\nReview status: ${convergenceFailure ? "NOT APPROVED — explain the unresolved defects; do not claim approval" : "APPROVED"}. Here is the latest artifact:\n\n${finalArtifact}\n\n${convergenceFailure ? `Unresolved review diagnosis and question for the user:\n${convergenceQuestion}\n\nState that the draft is unapproved and ask this question precisely before suggesting another run.` : "Deliver the verdict to the user: lead with a direct answer and summarise the key reasons in 2-3 sentences."} The complete document is delivered separately from your answer. Do not reproduce, shorten, or rewrite the artifact in the verdict.`;
 
   const orchestratorCloseMessages: ChatMessage[] = [
     {
@@ -1059,8 +1134,10 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     (chunk) => sendSSE(res, { type: "content", role: "Verdict", content: chunk }),
   );
 
-  // Extract caveats from auditor output or final answer
-  const caveatMatch = auditorOutput.match(/##\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i)
+  // Read document caveats from the preserved Builder source; the Auditor's
+  // response now contains only review metadata.
+  const caveatMatch = finalArtifact.match(/##\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i)
+    ?? auditorOutput.match(/##\s+Caveats?\s*\n([\s\S]*?)(?=\n##\s|$)/i)
     ?? finalAnswer.match(/##\s+(?:Sources &|Caveats?)\s*(?:Caveats?)?\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const caveats = caveatMatch
     ? caveatMatch[1].trim()
@@ -1085,8 +1162,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   // The relay question surfaces to the frontend when NOT_ENOUGH.
   const relayQuestion = artifactPath === "no-artifact" && !noArtifactApproved
     ? noArtifactRelayQuestion
-    : undefined;
+    : convergenceFailure ? convergenceQuestion : undefined;
 
+  sendSSE(res, { type: "courtroom_outcome", courtroomOutcome, artifactPath });
   sendSSE(res, { type: "role_end", role: "Verdict", fullContent: finalAnswer });
   if (!opts.deferCompletion) sendSSE(res, {
     type: "done",
@@ -1099,8 +1177,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     transcriptLines: transcript,
     caveats: `${caveats}\n\n${CONFIDENCE_NOTE}`,
     artifacts: deliveredArtifact,
-    provider: providerName,
-    model: modelName,
+    ...resultProvenance(),
     tokenUsage: usage,
     conscienceVersion,
     artifactPath,
@@ -1122,8 +1199,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     caveats: `${caveats}\n\n${CONFIDENCE_NOTE}`,
     artifacts: deliveredArtifact,
     turns,
-    provider: providerName,
-    model: modelName,
+    ...resultProvenance(),
     tokenUsage: usage,
     conscienceVersion,
     pauseReason,
@@ -1139,13 +1215,42 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     },
   };
   } catch (error) {
+    if (error instanceof IncompleteOutputError || abortSignal?.aborted) {
+      const cancelled = abortSignal?.aborted === true || (error instanceof IncompleteOutputError && error.reason === "aborted");
+      const role = error instanceof IncompleteOutputError ? error.role : "Court";
+      const partialOutput = error instanceof IncompleteOutputError ? error.output : "";
+      const reason = error instanceof IncompleteOutputError ? error.reason : "aborted";
+      if (partialOutput) {
+        transcript.push(`**${role} (Incomplete):** ${partialOutput}`);
+        turns.push({ role: `${role} (Incomplete)`, round: actualRound, content: partialOutput });
+      }
+      const notice = cancelled
+        ? "Session stopped. The saved work is partial and has not received final approval."
+        : `The ${role} response ended before completion (${reason}). The saved work is partial and has not received final approval. Review the draft and adjust the scope before continuing.`;
+      const result: BrainRunResult = {
+        sessionId, confidence: 0, creditsUsed: Math.min(chargeLimit, currentCharge()),
+        finalAnswer: notice, debateNotes: debateNotesList.join("\n\n---\n\n"), transcript,
+        caveats: `${notice}\n\n${CONFIDENCE_NOTE}`, artifacts: latestCompleteArtifact, turns,
+        ...resultProvenance(),
+        tokenUsage: usage, conscienceVersion,
+        ...(cancelled ? { cancelled: true } : { pauseReason: "output_incomplete", outputIncomplete: { role, reason } }),
+        fixedStageTokens: { input: usage.inputTokens - usageAfterDebate.inputTokens, output: usage.outputTokens - usageAfterDebate.outputTokens },
+        artifactPath: currentArtifactPath,
+        courtroomOutcome: { reason: cancelled ? "aborted" : "output_incomplete", confidenceAtExit: 0, round: actualRound },
+        relayCount: opts.relayContext?.relayRound ?? 0,
+        ...(pendingRelayQuestion ? { relayQuestion: pendingRelayQuestion } : {}),
+      };
+      sendSSE(res, { type: "courtroom_outcome", courtroomOutcome: result.courtroomOutcome, artifactPath: result.artifactPath });
+      if (!opts.deferCompletion) sendSSE(res, { ...result, type: "done" });
+      return result;
+    }
     if (!(error instanceof CreditCapError)) throw error;
     const partial = [...turns].reverse().find(t => t.role === "Moderator")?.content ?? turns.at(-1)?.content ?? "No AI stage ran because the remaining credit cap was too small. Increase the cap to continue.";
     const result: BrainRunResult = {
       sessionId, confidence: 0, creditsUsed: Math.min(chargeLimit, currentCharge()),
       finalAnswer: partial, debateNotes: debateNotesList.join("\n\n---\n\n"), transcript,
       caveats: "Partial work only — stopped before the next paid stage to respect your credit cap. No final approval. " + CONFIDENCE_NOTE,
-      artifacts: "", turns, provider: globalProvider.name, model: globalProvider.model ?? modelName,
+      artifacts: latestCompleteArtifact, turns, ...resultProvenance(),
       tokenUsage: usage, conscienceVersion, pauseReason: "credit_cap",
       fixedStageTokens: { input: usage.inputTokens - usageAfterDebate.inputTokens, output: usage.outputTokens - usageAfterDebate.outputTokens },
       artifactPath: "artifact", courtroomOutcome: {reason:"credit_cap", confidenceAtExit:0, round:actualRound}, relayCount:opts.relayContext?.relayRound ?? 0,

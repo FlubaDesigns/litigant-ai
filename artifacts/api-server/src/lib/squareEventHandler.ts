@@ -1,4 +1,4 @@
-import { recordRefillPayment } from "./autoRefill.js";
+import { recordRefillPayment, validateRefillPayment } from "./autoRefill.js";
 import { CREDITS_PER_DOLLAR } from "./creditPacks.js";
 import crypto from "crypto";
 import { addCredits } from "./creditLedger.js";
@@ -69,7 +69,11 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
     case "payment.updated": {
       const payment = event.data.object["payment"];
       if (!payment) return;
-      // Only process when payment reaches COMPLETED status
+      if (payment.status === "FAILED" || payment.status === "CANCELED") {
+        const owner = payment.note?.match(/LITIGANT:userId=([^,]+)/)?.[1];
+        if (owner) await recordRefillPayment(owner, payment);
+        return;
+      }
       if (payment.status !== "COMPLETED") return;
 
       // Resolve the provider order first: even a missing/malformed note must
@@ -130,6 +134,8 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         }
       }
 
+      await validateRefillPayment(userId, payment);
+
       // Deduplication key is the payment ID, not the event ID.
       // Square can emit multiple distinct events for one payment (e.g. on retries);
       // keying on event_id would grant credits again for each distinct event delivery.
@@ -137,6 +143,8 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
       const result = await addCredits(userId, creditAmount, "purchase", {
         source: "square_checkout",
         paymentId: payment.id as string,
+        paidAmountMinor: Number(payment.amount_money?.amount),
+        paidCurrency: payment.amount_money?.currency,
         idempotencyKey: `payment_${payment.id as string}`,
         ...(snapshot ? { checkoutOrderId: snapshot.orderId } : {}),
       });

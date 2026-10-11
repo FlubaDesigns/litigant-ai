@@ -5,6 +5,7 @@
  * User B supplying user A's sessionId in a resume request must receive HTTP 403
  * before any credits are reserved or AI calls are made.
  */
+import { billingRecoveryDatabase } from "./billingRecoveryDatabase.js";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
@@ -96,58 +97,10 @@ import { runBrainSession } from "../lib/brainEngine.js";
 
 /** Minimal in-memory Firestore that handles the collections the brain route uses. */
 function createMockDb(sessions: Record<string, any> = {}) {
-  const store: Record<string, any> = Object.fromEntries(["owner", "user-A", "user-B"].map(uid => [`users/${uid}`, {plan:"pro"}]));
-
-  // Pre-populate session documents
-  for (const [id, data] of Object.entries(sessions)) {
-    store[`sessions/${id}`] = data;
-  }
-
-  const makeDocRef = (collName: string, docId: string) => {
-    const key = `${collName}/${docId}`;
-    return {
-      _key: key,
-      _get() {
-        return { exists: key in store, data: () => store[key] ?? null, id: docId };
-      },
-      async get()           { return this._get(); },
-      async set(data: any)  { store[key] = data; },
-      async update(data: any) { store[key] = { ...store[key], ...data }; },
-      async create(data: any) { store[key] = data; },
-      // Support sub-collections (e.g. sessionRef.collection("session_turns"))
-      collection: (_sub: string) => ({
-        add: async (data: any) => {
-          const subId = `${key}_sub_${Date.now()}`;
-          store[subId] = data;
-          return { id: subId };
-        },
-        doc: (_id?: string) => ({
-          set: async () => {},
-          update: async () => {},
-          get: async () => ({ exists: false, data: () => null }),
-        }),
-      }),
-    };
-  };
-
-  return {
-    collection: (name: string) => ({
-      doc: (id?: string) => makeDocRef(name, id ?? `auto_${Math.random()}`),
-      add: async (data: any) => {
-        const id = `auto_${Date.now()}`;
-        store[`${name}/${id}`] = data;
-        return { id };
-      },
-    }),
-    runTransaction: async (fn: (txn: any) => Promise<any>) => {
-      const txn = {
-        get:    async (ref: any) => ref._get(),
-        set:    (ref: any, data: any) => { store[ref._key] = data; },
-        update: (ref: any, data: any) => { store[ref._key] = { ...store[ref._key], ...data }; },
-      };
-      return fn(txn);
-    },
-  };
+  return billingRecoveryDatabase({
+    ...Object.fromEntries(["owner", "user-A", "user-B"].map(uid => [`users/${uid}`, {plan:"pro",creditBalance:1000}])),
+    ...Object.fromEntries(Object.entries(sessions).map(([id,data])=>[`sessions/${id}`,data])),
+  });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

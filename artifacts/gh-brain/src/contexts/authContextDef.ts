@@ -1,3 +1,4 @@
+import type { AccountDeletionResult } from "@/services/sessionService";
 import { createContext } from "react";
 import type { User } from "firebase/auth";
 import type { UserProfile } from "@/services/firestoreService";
@@ -7,6 +8,10 @@ export interface AuthContextValue {
   userProfile: UserProfile | null;
   loading: boolean;
   setupError: string | null;
+  accountDeletionPending?: boolean;
+  beginAccountDeletion?: () => void;
+  accountDeletionResult?: AccountDeletionResult | null;
+  setAccountDeletionResult?: (result: AccountDeletionResult) => void;
   retryAccountSetup: () => Promise<void>;
   isAdmin: boolean;
   firebaseReady: boolean;

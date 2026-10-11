@@ -45,3 +45,23 @@ describe("guest authorization expires across all authenticated routes",()=>{
     setup(false,Date.now()-1,{guestInvitationId:null});expect(await verifyIdToken("token")).toMatchObject({guest:false,anonymous:false});
   });
 });
+
+
+describe("deletion state restricts verified Auth without changing privileges", () => {
+  beforeEach(() => {
+    vi.mocked(getApps).mockReturnValue([{}] as any);
+    vi.mocked(getAuth).mockReturnValue({verifyIdToken:vi.fn(async()=>({uid:"u",firebase:{sign_in_provider:"password"},email_verified:true}))} as any);
+    vi.mocked(getFirestore).mockReturnValue({collection:(name:string)=>({doc:()=>({get:async()=>({exists:name==="account_deletions",data:()=>({})})})})} as any);
+  });
+  it("rejects ordinary authenticated routes during pending deletion", async () => {
+    expect(await verifyIdToken("token")).toBeNull();
+  });
+  it("lets only the explicit owner teardown/provision recovery option proceed", async () => {
+    expect(await verifyIdToken("token", {allowAccountDeletion:true})).toMatchObject({uid:"u",admin:false});
+    expect(vi.mocked(getAuth)().verifyIdToken).toHaveBeenCalledWith("token",true);
+  });
+  it("still rejects revoked or deleted Auth tokens for recovery", async () => {
+    vi.mocked(getAuth).mockReturnValue({verifyIdToken:vi.fn(async()=>{throw new Error("revoked");})} as any);
+    expect(await verifyIdToken("token", {allowAccountDeletion:true})).toBeNull();
+  });
+});

@@ -274,6 +274,95 @@ function cloudToken() { const token = run('gcloud', ['auth', 'print-access-token
 async function cloud(url, label, method = 'GET', body) { return request(url, { label, token: cloudToken(), method, body }); }
 const SERVICE_URL = 'https://us-central1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/litigant-ai/services/api';
 async function serviceSnapshot() { return assertServiceReady(await cloud(SERVICE_URL, 'Cloud Run api/us-central1/litigant-ai')); }
+
+// One additive index only. Never deploy the index catalog or mutate Firestore rules/data.
+export const PAYMENT_INDEX_PARENT = 'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions';
+export const PAYMENT_INDEX = Object.freeze({ queryScope: 'COLLECTION', fields: Object.freeze([
+  Object.freeze({ fieldPath: 'userId', order: 'ASCENDING' }),
+  Object.freeze({ fieldPath: 'type', order: 'ASCENDING' }),
+  Object.freeze({ fieldPath: 'createdAt', order: 'DESCENDING' }),
+]) });
+const HISTORY_INDEX = { queryScope: 'COLLECTION', fields: [PAYMENT_INDEX.fields[0], PAYMENT_INDEX.fields[2]] };
+function indexDefinition(index) {
+  const { name, state, ...definition } = index;
+  return definition;
+}
+function matchesIndex(index, expected) {
+  if (index.queryScope !== expected.queryScope || (index.apiScope && index.apiScope !== 'ANY_API')) return false;
+  if (index.unique === true || index.multikey === true || index.searchIndexOptions || (index.shardCount && index.shardCount !== 0) || (index.density && index.density !== 'SPARSE_ALL')) return false;
+  const fields = structuredClone(index.fields ?? []);
+  if (fields.at(-1)?.fieldPath === '__name__') {
+    if (fields.at(-1).order !== 'DESCENDING' || Object.keys(fields.at(-1)).length !== 2) return false;
+    fields.pop();
+  }
+  return JSON.stringify(sorted(fields)) === JSON.stringify(sorted(expected.fields));
+}
+export function inspectPaymentIndexes(indexes) {
+  assert(Array.isArray(indexes), 'index list required');
+  const names = new Set();
+  for (const index of indexes) {
+    assert(typeof index.name === 'string' && index.name.startsWith(`${PAYMENT_INDEX_PARENT}/indexes/`) && /^[A-Za-z0-9_-]+$/.test(index.name.slice(`${PAYMENT_INDEX_PARENT}/indexes/`.length)), 'unexpected index resource');
+    assert(!names.has(index.name), 'duplicate index resource'); names.add(index.name);
+  }
+  const history = indexes.filter(index => matchesIndex(index, HISTORY_INDEX));
+  assert(history.some(index => index.state === 'READY'), 'existing unfiltered payment-history index must remain READY');
+  const matches = indexes.filter(index => matchesIndex(index, PAYMENT_INDEX));
+  assert(matches.length <= 1, 'ambiguous payment-history index');
+  if (matches[0]) assert(['READY', 'CREATING'].includes(matches[0].state), 'payment-history index needs repair; no production release');
+  return matches[0] ?? null;
+}
+function assertIndexesPreserved(before, after) {
+  for (const index of before) {
+    const current = after.find(item => item.name === index.name);
+    assert(current, 'an existing Firestore index disappeared; release stopped');
+    assert.deepEqual(indexDefinition(current), indexDefinition(index), 'an existing Firestore index changed; release stopped');
+  }
+}
+export async function paymentIndexes(read = cloud) {
+  const indexes = []; let pageToken = '';
+  for (let page = 0; page < 100; page++) {
+    const data = await read(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes?pageSize=100${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, 'read payment-history indexes');
+    assert(Array.isArray(data.indexes ?? []), 'invalid Firestore index response');
+    indexes.push(...(data.indexes ?? []));
+    if (!data.nextPageToken) return indexes;
+    assert(typeof data.nextPageToken === 'string' && data.nextPageToken !== pageToken, 'invalid Firestore index pagination');
+    pageToken = data.nextPageToken;
+  }
+  fail('Firestore index pagination exceeded bound');
+}
+export async function paymentHistoryIndexGate(context, descriptor, { list = paymentIndexes, create = () => cloud(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact payment-history index', 'POST', PAYMENT_INDEX), recheck, pause = sleep, polls = 120, delayMs = 10000 } = {}) {
+  if (descriptor.action === 'inspect') assert.equal(descriptor.sourceCommit, context.controllerSha, 'inspection source mismatch');
+  validateDescriptor(descriptor.action === 'inspect' ? { ...descriptor, sourceCommit: null } : descriptor, context.controllerSha);
+  assert(Number.isSafeInteger(polls) && polls > 0 && polls <= 120, 'invalid index wait bound');
+  const before = await list();
+  let index = inspectPaymentIndexes(before);
+  if (descriptor.action === 'inspect') {
+    console.log(`Read-only index plan: credit_transactions userId ASC, type ASC, createdAt DESC is ${index?.state ?? 'MISSING'}; existing history index preserved.`);
+    return { state: index?.state ?? 'MISSING', created: false };
+  }
+  assert(typeof recheck === 'function', 'release evidence recheck required');
+  let created = false;
+  if (!index) {
+    await recheck();
+    console.log('Release stage: creating only the approved additive payment-history index; API and Hosting unchanged.');
+    const operation = await create();
+    assert(operation && !operation.error, 'payment-history index creation failed');
+    created = true;
+  }
+  for (let attempt = 0; attempt < polls; attempt++) {
+    const current = await list();
+    assertIndexesPreserved(before, current);
+    index = inspectPaymentIndexes(current);
+    if (index?.state === 'READY') {
+      await recheck();
+      console.log(`Payment-history index READY: ${index.name}; all existing indexes preserved.`);
+      return { state: 'READY', created, name: index.name };
+    }
+    if (attempt + 1 < polls) await pause(delayMs);
+  }
+  fail('Payment-history index is not READY yet; API and Hosting unchanged. Recheck the existing build before retrying; do not delete or recreate it.');
+}
+
 async function permissions(url, names, label) {
   const answer = await cloud(url, `${label}:testIamPermissions`, 'POST', { permissions: names });
   const missing = names.filter(name => !(answer.permissions ?? []).includes(name));
@@ -292,6 +381,7 @@ async function preflight(context) {
   assert(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.gserviceaccount\.com$/.test(account), 'invalid existing runtime service account');
   await permissions(`https://iam.googleapis.com/v1/projects/-/serviceAccounts/${encodeURIComponent(account)}:testIamPermissions`, ['iam.serviceAccounts.actAs'], 'existing runtime service account');
   await permissions('https://artifactregistry.googleapis.com/v1/projects/litigant-ai/locations/us/repositories/gcr.io:testIamPermissions', ['artifactregistry.repositories.get', 'artifactregistry.repositories.downloadArtifacts', 'artifactregistry.repositories.uploadArtifacts'], 'existing LAI image repository');
+  await permissions('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions', ['datastore.indexes.list', 'datastore.indexes.create'], 'LAI exact payment-history index');
   await writeFile(tempPath(context, 'runtime.json'), JSON.stringify({ fingerprint: runtimeFingerprint(service), resourceVersion: service.metadata.resourceVersion, sourceCommit: context.controllerSha }), { mode: 0o600 });
   console.log('Read-only cloud preflight passed: existing project, Firebase site, ready API, 100% latest-revision traffic and deploy permissions.');
   return service;
@@ -323,6 +413,7 @@ async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
   if (descriptor.action === 'inspect') {
+    await paymentHistoryIndexGate(context, descriptor);
     console.log(`Inspection complete. Approve this exact cloud-preflight run ${context.runId}, attempt ${context.attempt}, SHA ${context.controllerSha} in the private Engine before a descriptor-only deployment commit.`);
     return;
   }
@@ -330,6 +421,8 @@ async function release() {
   assert.equal(built.marker.sourceCommit, descriptor.sourceCommit); assert.equal(built.marker.controllerCommit, context.controllerSha);
   let expectedResourceVersion = before.metadata.resourceVersion;
   const recheck = async () => { await verifyCiAndEvidence(context, descriptor); await sameRuntime(before, expectedResourceVersion); };
+  await recheck();
+  await paymentHistoryIndexGate(context, descriptor, { recheck });
   await recheck();
   run('gcloud', ['auth', 'configure-docker', 'gcr.io', '--quiet']);
   const tag = `gcr.io/litigant-ai/api:lai-${descriptor.sourceCommit}-${context.runId}-${context.attempt}`;
@@ -340,6 +433,7 @@ async function release() {
   console.log('Release stage: image published; production API and Hosting unchanged.');
   const image = assertAllowedImage(run('docker', ['inspect', '--format={{index .RepoDigests 0}}', tag]));
   await recheck();
+  assert.equal(inspectPaymentIndexes(await paymentIndexes())?.state, 'READY', 'payment-history index is no longer READY; API unchanged');
   const deployedAt = new Date().toISOString();
   console.log('Release stage: API update attempted; Hosting unchanged.');
   run('gcloud', ['run', 'services', 'update', 'api', '--project=litigant-ai', '--region=us-central1', `--image=${image}`, `--update-env-vars=DEPLOY_GIT_SHA=${descriptor.sourceCommit},DEPLOY_TIMESTAMP=${deployedAt}`, '--quiet', '--format=none']);
@@ -364,6 +458,7 @@ async function release() {
   await retryRead(() => verifyHosting(built.marker, sourceRoot));
   await sameRuntime(before, expectedResourceVersion);
   await verifyCiAndEvidence(context, descriptor);
+  assert.equal(inspectPaymentIndexes(await paymentIndexes())?.state, 'READY', 'payment-history index is no longer READY at final verification');
   console.log(`LAI release verified on all three origins; source ${descriptor.sourceCommit}, controller ${context.controllerSha}.`);
 }
 async function main() {

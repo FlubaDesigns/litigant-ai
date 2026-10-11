@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import { safeNext } from "@/lib/authUtils";
+import { authPath, safeNext } from "@/lib/authUtils";
 
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,10 +18,10 @@ const signInSchema = z.object({
 });
 
 export default function SignInPage() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { signIn, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const next = safeNext(new URLSearchParams(window.location.search).get("next"));
+  const next = safeNext(new URLSearchParams(useSearch()).get("next"));
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -92,7 +92,7 @@ export default function SignInPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="password">Passkey</Label>
-                <Link href="/forgot-password" className="text-xs text-primary hover:text-primary-glow transition-all">
+                <Link href={authPath("/forgot-password", next)} className="text-xs text-primary hover:text-primary-glow transition-all">
                   Forgot passkey?
                 </Link>
               </div>
@@ -146,7 +146,7 @@ export default function SignInPage() {
 
         <p className="text-center mt-8 text-sm text-muted-foreground">
           No clearance yet?{" "}
-          <Link href="/register" className="text-primary hover:text-primary-glow transition-all font-medium">
+          <Link href={authPath("/register", next)} className="text-primary hover:text-primary-glow transition-all font-medium">
             Request Access
           </Link>
         </p>

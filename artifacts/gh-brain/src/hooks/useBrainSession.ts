@@ -1,6 +1,6 @@
-import { CourtConfigSchema, restoreCourtConfig } from "@workspace/api-zod/session";
+import { CourtConfigSchema, restoreCourtConfig, canCreateArtifacts } from "@workspace/api-zod/session";
 import { useReducer, useRef, useCallback, useEffect } from "react";
-import { runBrainSession, updateSession, type SavedSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
+import { runBrainSession, updateSession, getSession, type SavedSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
 export type { CaseFileItem, CourtroomOutcome, RelayContext };
 import type { Template, CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
@@ -23,6 +23,7 @@ export type SessionPhase =
   | "running"
   | "paused"
   | "complete"
+  | "cancelled"
   | "relay_needed"
   | "error";
 
@@ -61,6 +62,10 @@ export interface SessionState {
   activeAttempt: number;
   confidence: number;
   creditsUsed: number;
+  settlementStatus: "pending" | "settled" | null;
+  creditsReserved: number;
+  creditsDebited: number;
+  stopPersistence: "pending" | "saved" | "unconfirmed" | "not_saved" | null;
   estimatedCredits: number;
   currentRound: number;
   finalAnswer: string;
@@ -127,6 +132,9 @@ type Action =
         rebuttalRound?: number;
         confidence: number;
         creditsUsed: number;
+        settlementStatus?: "pending" | "settled";
+        creditsReserved?: number;
+        creditsDebited?: number;
         finalAnswer: string;
         debateNotes: string;
         transcript: string;
@@ -143,6 +151,9 @@ type Action =
         endOfJobTap?: "worth_it" | "not_worth_it" | null;
       };
     }
+  | { type: "RECOVERY_FAILED"; previous: SessionState; message: string }
+  | { type: "STOP_LOCAL"; savedMemory: boolean }
+  | { type: "STOP_UNCONFIRMED" }
   | { type: "ERROR"; message: string }
   | { type: "PROVIDER_FAILOVER"; provider: string }
   | { type: "COURTROOM_OUTCOME"; courtroomOutcome: CourtroomOutcome; artifactPath: "artifact" | "no-artifact" }
@@ -160,7 +171,7 @@ type Action =
     };
 
 function phaseForStatus(status: SavedSession["status"]): SessionPhase {
-  return status === "complete" ? "complete" : status === "relay_needed" ? "relay_needed"
+  return status === "cancelled" ? "cancelled" : status === "complete" ? "complete" : status === "relay_needed" ? "relay_needed"
     : status === "incomplete" || status === "paused_credit_cap" ? "paused" : "error";
 }
 
@@ -185,6 +196,10 @@ function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
     activeAttempt: 1,
     confidence: 0,
     creditsUsed: 0,
+    settlementStatus: null,
+    creditsReserved: 0,
+    creditsDebited: 0,
+    stopPersistence: null,
     estimatedCredits: 0,
     currentRound: 0,
     finalAnswer: "",
@@ -385,6 +400,10 @@ function reducer(state: SessionState, action: Action): SessionState {
         activeRole: null,
         confidence: p.confidence,
         creditsUsed: p.creditsUsed,
+        settlementStatus: p.settlementStatus ?? null,
+        creditsReserved: p.creditsReserved ?? 0,
+        creditsDebited: p.creditsDebited ?? p.creditsUsed,
+        stopPersistence: p.status === "cancelled" ? "saved" : null,
         finalAnswer: p.finalAnswer,
         caseFile: p.caseFile ?? state.caseFile,
         rebuttalRound: p.rebuttalRound ?? state.rebuttalRound,
@@ -393,7 +412,7 @@ function reducer(state: SessionState, action: Action): SessionState {
         caveats: p.caveats,
         artifacts: p.artifacts,
         sessionId: p.sessionId,
-        pauseReason: phase === "paused" ? (p.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit") : null,
+        pauseReason: phase === "paused" ? (p.pauseReason ?? (p.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit")) : null,
         pauseTranscript: p.pauseTranscript ?? null,
         artifactPath: p.artifactPath ?? state.artifactPath,
         courtroomOutcome: p.courtroomOutcome ?? state.courtroomOutcome,
@@ -401,7 +420,8 @@ function reducer(state: SessionState, action: Action): SessionState {
         relayQuestion: p.relayQuestion ?? null,
         needsRelay: p.status === "relay_needed",
         endOfJobTap: p.endOfJobTap ?? null,
-        activityLog: [...state.activityLog, `[Orchestrator] final delivery — ${p.confidence}% confidence`],
+        activityLog: [...state.activityLog, `[System] ${p.status} — ${p.confidence}/100 AI review`],
+        runtimeFeed: state.runtimeFeed.map(item => ({...item, isComplete: true})),
       };
     }
 
@@ -415,6 +435,20 @@ function reducer(state: SessionState, action: Action): SessionState {
     case "ACCEPT_FAILED":
       return state.sessionId === action.sessionId
         ? { ...state, acceptingAnswer: false, acceptanceError: action.message } : state;
+
+    case "RECOVERY_FAILED":
+      return {...action.previous, activeRole: null, errorMessage: action.message,
+        runtimeFeed: [...action.previous.runtimeFeed, ...(state.runtimeFeed === action.previous.runtimeFeed ? [] : state.runtimeFeed)].map(item => ({...item,isComplete:true}))};
+    case "STOP_LOCAL": {
+      const transcript = state.runtimeFeed.filter(item => item.content).map(item => `**${item.role} (Round ${item.round}):**\n${item.content}`).join("\n\n---\n\n");
+      return {...state, phase: "cancelled", activeRole: null,
+        stopPersistence: action.savedMemory ? "pending" : "not_saved",
+        transcript: [state.transcript, transcript].filter(Boolean).join("\n\n---\n\n"),
+        runtimeFeed: state.runtimeFeed.map(item => ({...item, isComplete: true})),
+        activityLog: [...state.activityLog, "[System] Stop requested. Partial output is not an approved result."]};
+    }
+    case "STOP_UNCONFIRMED":
+      return state.phase === "cancelled" ? {...state, stopPersistence: "unconfirmed"} : state;
 
     case "ERROR":
       return { ...state, phase: "error", activeRole: null, failoverProvider: null, errorMessage: action.message,
@@ -507,6 +541,10 @@ function reducer(state: SessionState, action: Action): SessionState {
         sessionId: saved.id,
         confidence: saved.confidence ?? 0,
         creditsUsed: saved.creditsUsed ?? 0,
+        settlementStatus: saved.settlementStatus ?? null,
+        creditsReserved: saved.creditsReserved ?? 0,
+        creditsDebited: saved.creditsDebited ?? saved.creditsUsed ?? 0,
+        stopPersistence: saved.status === "cancelled" ? "saved" : null,
         finalAnswer: saved.finalAnswer ?? "",
         debateNotes: saved.debateNotes ?? "",
         transcript: saved.transcript ?? "",
@@ -519,8 +557,8 @@ function reducer(state: SessionState, action: Action): SessionState {
         relayQuestion: saved.relayQuestion ?? null,
         needsRelay: phase === "relay_needed",
         rebuttalRound: saved.rebuttalRound ?? 0,
-        pauseReason: phase === "paused" ? (saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit") : null,
-        pauseTranscript: (saved.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
+        pauseReason: phase === "paused" ? (saved.pauseReason ?? (saved.courtroomOutcome?.reason === "output_incomplete" ? "output_incomplete" : saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit")) : null,
+        pauseTranscript: saved.transcriptLines ?? (saved.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
         errorMessage: phase === "error" ? "This session did not complete." : null,
         courtHappened: true,
       };
@@ -543,12 +581,16 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   }, [initialConfig, state.canLoadDefaults]);
   const abortRef = useRef<AbortController | null>(null);
   const acceptingRef = useRef(false);
-  const { user } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
+  const stoppedVersion = useRef(0);
+  const runningSessionId = useRef<string | null>(null);
+  useEffect(() => () => { ++stoppedVersion.current; abortRef.current?.abort(); }, []);
 
   const handleSSEEvent = useCallback((event: SSEEvent) => {
     if (event.config) dispatch({ type: "SET_CONFIG", config: event.config });
     switch (event.type) {
       case "start":
+        runningSessionId.current = event.sessionId ?? null;
         dispatch({ type: "SESSION_STARTED", sessionId: event.sessionId!, estimatedCredits: event.estimatedCredits ?? 0 });
         break;
       case "role_start":
@@ -585,6 +627,9 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
             rebuttalRound: event.rebuttalRound,
             confidence: event.confidence!,
             creditsUsed: event.creditsUsed!,
+            settlementStatus: event.settlementStatus,
+            creditsReserved: event.creditsReserved,
+            creditsDebited: event.creditsDebited,
             finalAnswer: event.finalAnswer!,
             debateNotes: event.debateNotes || "",
             transcript: event.transcript || "",
@@ -613,19 +658,27 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
 
   const run = useCallback(async (questionOverride?: string, opts?: { overdraft?: boolean; configOverride?: Partial<CourtConfig> }) => {
     const effectiveQuestion = questionOverride ?? state.question;
-    if (!effectiveQuestion.trim()) return;
+    if (!effectiveQuestion.trim() || (abortRef.current && !abortRef.current.signal.aborted)) return;
+    runningSessionId.current = null;
 
     if (questionOverride && questionOverride !== state.question) {
       dispatch({ type: "SET_QUESTION", question: questionOverride });
     }
 
     dispatch({ type: "SET_PHASE", phase: "running" });
-    abortRef.current = new AbortController();
+    ++stoppedVersion.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
+    } catch {
+      if (!controller.signal.aborted) dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." });
+      if (abortRef.current === controller) abortRef.current = null;
+      return;
+    }
+    if (controller.signal.aborted) return;
 
     let effectiveConfig = opts?.configOverride
       ? { ...state.config, ...opts.configOverride }
@@ -641,18 +694,46 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     };
 
     try {
-      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+      await runBrainSession(request, event => { if (!controller.signal.aborted) handleSSEEvent(event); }, controller.signal);
     } catch (err: any) {
-      if (err?.name !== "AbortError") {
+      if (!controller.signal.aborted && err?.name !== "AbortError") {
         dispatch({ type: "ERROR", message: err?.message || "Session failed" });
       }
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }, [state.question, state.config, state.template, state.caseFile, state.failoverProvider, user, handleSSEEvent]);
 
   const stop = useCallback(() => {
-    abortRef.current?.abort();
-    dispatch({ type: "SET_PHASE", phase: "complete" });
-  }, []);
+    if (!abortRef.current || abortRef.current.signal.aborted) return;
+    abortRef.current.abort();
+    const version = ++stoppedVersion.current;
+    const savedMemory = canCreateArtifacts(userProfile?.plan, isAdmin);
+    const sessionId = runningSessionId.current;
+    dispatch({type: "STOP_LOCAL", savedMemory});
+    if (!savedMemory) return;
+    if (!sessionId || !user) { dispatch({type: "STOP_UNCONFIRMED"}); return; }
+    void (async () => {
+      try {
+        const token = await user.getIdToken();
+        // Allow the provider abort and server persistence to finish. A timeout
+        // never claims cancellation was saved or that a refund was posted.
+        const deadline = Date.now() + 30_000;
+        while (version === stoppedVersion.current && Date.now() < deadline) {
+          try {
+            const saved = await getSession(sessionId, token);
+            if (version !== stoppedVersion.current) return;
+            if (!saved.activeRun && ["cancelled", "complete", "error"].includes(saved.status)) {
+              dispatch({type: "RESTORE_SESSION", session: saved});
+              return;
+            }
+          } catch { /* New sessions may not exist until partial persistence. */ }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch { /* Sign-in or network failure: retain local partial text. */ }
+      if (version === stoppedVersion.current) dispatch({type: "STOP_UNCONFIRMED"});
+    })();
+  }, [user, userProfile?.plan, isAdmin]);
 
   const pause = useCallback(() => {
     abortRef.current?.abort();
@@ -660,6 +741,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
   }, []);
 
   const reset = useCallback(() => {
+    ++stoppedVersion.current;
     abortRef.current?.abort();
     dispatch({ type: "RESET", config: defaultConfigRef.current });
   }, []);
@@ -669,7 +751,7 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
 
   const acceptPartial = useCallback(async () => {
     const s = stateRef.current;
-    if (!s.sessionId || s.phase !== "paused" || acceptingRef.current) return;
+    if (!s.sessionId || s.phase !== "paused" || s.pauseReason === "output_incomplete" || acceptingRef.current) return;
     acceptingRef.current = true;
     dispatch({ type: "ACCEPT_START", sessionId: s.sessionId });
     try {
@@ -688,15 +770,23 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
 
   const continueSessionFn = useCallback(async (newMaxCredits?: number) => {
     const s = stateRef.current;
-    if (!s.sessionId || acceptingRef.current) return;
+    if (!s.sessionId || acceptingRef.current || (abortRef.current && !abortRef.current.signal.aborted)) return;
+    runningSessionId.current = s.sessionId;
 
     dispatch({ type: "SET_PHASE", phase: "running" });
-    abortRef.current = new AbortController();
+    ++stoppedVersion.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
+    } catch {
+      if (!controller.signal.aborted) dispatch({ type: "RECOVERY_FAILED", previous: s, message: "Sign-in expired. Please sign in again." });
+      if (abortRef.current === controller) abortRef.current = null;
+      return;
+    }
+    if (controller.signal.aborted) return;
 
     const isCreditCapPause = s.pauseReason === "credit_cap";
 
@@ -719,15 +809,23 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     dispatch({ type: "SET_PHASE", phase: "running" });
 
     try {
-      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+      await runBrainSession(request, event => {
+        if (controller.signal.aborted) return;
+        if (event.type === "error") dispatch({type: "RECOVERY_FAILED", previous: s, message: event.message ?? "The attempt failed. Check History before retrying."});
+        else handleSSEEvent(event);
+      }, controller.signal);
     } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        dispatch({ type: "ERROR", message: err?.message || "Continuation failed" });
+      if (!controller.signal.aborted && err?.name !== "AbortError") {
+        dispatch({ type: "RECOVERY_FAILED", previous: s, message: err?.message || "Continuation failed" });
       }
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }, [user, handleSSEEvent]);
 
   const loadSession = useCallback((session: SavedSession) => {
+    ++stoppedVersion.current;
+    abortRef.current?.abort();
     dispatch({ type: "RESTORE_SESSION", session });
   }, []);
 
@@ -745,7 +843,8 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
 
   const submitRebuttal = useCallback(async (challenge: string) => {
     const s = stateRef.current;
-    if (!s.finalAnswer || !s.sessionId) return;
+    if (!s.finalAnswer || !s.sessionId || (abortRef.current && !abortRef.current.signal.aborted)) return;
+    runningSessionId.current = null;
 
     const newRound = s.rebuttalRound + 1;
 
@@ -758,12 +857,19 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     });
 
     dispatch({ type: "SET_PHASE", phase: "running" });
-    abortRef.current = new AbortController();
+    ++stoppedVersion.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
+    } catch {
+      if (!controller.signal.aborted) dispatch({ type: "RECOVERY_FAILED", previous: s, message: "Sign-in expired. Please sign in again." });
+      if (abortRef.current === controller) abortRef.current = null;
+      return;
+    }
+    if (controller.signal.aborted) return;
 
     const rebuttalCtx: RebuttalContext = {
       challenge,
@@ -782,17 +888,24 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     };
 
     try {
-      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+      await runBrainSession(request, event => {
+        if (controller.signal.aborted) return;
+        if (event.type === "error") dispatch({type: "RECOVERY_FAILED", previous: s, message: event.message ?? "The attempt failed. Check History before retrying."});
+        else handleSSEEvent(event);
+      }, controller.signal);
     } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        dispatch({ type: "ERROR", message: err?.message || "Rebuttal failed" });
+      if (!controller.signal.aborted && err?.name !== "AbortError") {
+        dispatch({ type: "RECOVERY_FAILED", previous: s, message: err?.message || "Rebuttal failed" });
       }
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }, [user, handleSSEEvent]);
 
   const submitRelay = useCallback(async (missingInfo: string) => {
     const s = stateRef.current;
-    if (!s.sessionId) return;
+    if (!s.sessionId || !missingInfo.trim() || (abortRef.current && !abortRef.current.signal.aborted)) return;
+    runningSessionId.current = null;
 
     const relayRound = s.relayCount + 1;
 
@@ -804,12 +917,19 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     });
 
     dispatch({ type: "SET_PHASE", phase: "running" });
-    abortRef.current = new AbortController();
+    ++stoppedVersion.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     let idToken: string | undefined;
     try {
       idToken = (await user?.getIdToken()) ?? undefined;
-    } catch { dispatch({ type: "ERROR", message: "Sign-in expired. Please sign in again." }); return; }
+    } catch {
+      if (!controller.signal.aborted) dispatch({ type: "RECOVERY_FAILED", previous: s, message: "Sign-in expired. Please sign in again." });
+      if (abortRef.current === controller) abortRef.current = null;
+      return;
+    }
+    if (controller.signal.aborted) return;
 
     const relayCtx: RelayContext = {
       missingInfo,
@@ -828,11 +948,17 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     };
 
     try {
-      await runBrainSession(request, handleSSEEvent, abortRef.current.signal);
+      await runBrainSession(request, event => {
+        if (controller.signal.aborted) return;
+        if (event.type === "error") dispatch({type: "RECOVERY_FAILED", previous: s, message: event.message ?? "The attempt failed. Check History before retrying."});
+        else handleSSEEvent(event);
+      }, controller.signal);
     } catch (err: any) {
-      if (err?.name !== "AbortError") {
-        dispatch({ type: "ERROR", message: err?.message || "Relay failed" });
+      if (!controller.signal.aborted && err?.name !== "AbortError") {
+        dispatch({ type: "RECOVERY_FAILED", previous: s, message: err?.message || "Relay failed" });
       }
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }, [user, handleSSEEvent]);
 

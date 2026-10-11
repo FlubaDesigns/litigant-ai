@@ -1,7 +1,7 @@
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { useLimits } from "@/hooks/useLimits";
-import { CourtConfigSchema, applyArtifactAccess, RESPONSE_VIEWS, DOCUMENT_TYPES, DOWNLOAD_FORMATS, ANSWER_STYLES, OUTPUT_MODES } from "@workspace/api-zod/session";
+import { CourtConfigSchema, applyLitigantLimit, applyArtifactAccess, RESPONSE_VIEWS, DOCUMENT_TYPES, DOWNLOAD_FORMATS, ANSWER_STYLES, OUTPUT_MODES } from "@workspace/api-zod/session";
 import { useSessionQuote } from "@/hooks/useSessionQuote";
 import { useState, useRef, useEffect } from "react";
 import { HelpCircle, DollarSign, GraduationCap } from "lucide-react";
@@ -75,6 +75,15 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
   useEffect(() => { latestConfigRef.current = config; }, [config]);
 
   useEffect(() => {
+    if (!open || !limits) return;
+    const bounded = applyLitigantLimit(config, limits.maxLitigants);
+    if (bounded !== config) {
+      latestConfigRef.current = bounded;
+      onChange(bounded);
+    }
+  }, [open, limits, config, onChange]);
+
+  useEffect(() => {
     if (open) {
       hasChanges.current = false;
       setSaveState("idle");
@@ -117,7 +126,8 @@ export function ConfigPanel({ open, quoteEnabled = true, onClose, config, onChan
   }
 
   function handleChange(partial: Partial<CourtConfig>) {
-    latestConfigRef.current = CourtConfigSchema.parse({ ...latestConfigRef.current, ...partial });
+    const next = CourtConfigSchema.parse({ ...latestConfigRef.current, ...partial });
+    latestConfigRef.current = limits ? applyLitigantLimit(next, limits.maxLitigants) : next;
     hasChanges.current = true;
     onChange(latestConfigRef.current);
     if (saveTimer.current) clearTimeout(saveTimer.current);

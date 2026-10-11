@@ -1,6 +1,6 @@
 import { AiDisabledError } from "./providerErrors.js";
 import { getAdminLimits } from "./adminLimitsConfig.js";
-import { CourtConfigSchema, resolveModelByIntelligence, type CourtConfig, type SeatAssignment } from "@workspace/api-zod/session";
+import { CourtConfigSchema, applyLitigantLimit, resolveModelByIntelligence, type CourtConfig, type SeatAssignment } from "@workspace/api-zod/session";
 import { getProviderCatalog } from "./providerCatalog.js";
 import { CREDIT_VALUE_USD, estimateSessionCredits, creditsForTokens, tokenCostUSD, type ModelPrice } from "./creditEngine.js";
 
@@ -32,9 +32,9 @@ export function priceCalls(calls: CallUsage[], rates: Record<string, PriceRate>)
 
 /** One accepted config and immutable price snapshot for quote, cap and settlement. */
 export async function prepareSession(input: unknown, pipelineOnly = false) {
-  const config = CourtConfigSchema.parse(input);
+  const parsed = CourtConfigSchema.parse(input);
   const limits = await getAdminLimits();
-  config.litigantCount = Math.min(config.litigantCount, limits.maxLitigants!);
+  const config = applyLitigantLimit(parsed, limits.maxLitigants!);
   const catalog = await getProviderCatalog();
   if (catalog.aiEnabled === false) throw new AiDisabledError();
   if (config.provider && !catalog.providers.some(p => p.name === config.provider)) throw new Error(`Provider ${config.provider} is disabled or unavailable.`);

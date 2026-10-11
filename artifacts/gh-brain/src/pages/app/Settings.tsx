@@ -1,5 +1,5 @@
 import { ConfigPanel } from "@/pages/app/session/ConfigPanel";
-import { CourtConfigSchema, restoreCourtConfig, type CourtConfig } from "@workspace/api-zod/session";
+import { CourtConfigSchema, restoreCourtConfig, sessionCompleteNotificationsEnabled, type CourtConfig } from "@workspace/api-zod/session";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
@@ -28,8 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateUserProfile, getUserProfile, USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
-import { getAllSessions, deleteAccount } from "@/services/sessionService";
+import { updateUserProfile, updateSessionCompleteNotification, getUserProfile, USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
+import { exportAccountData, deleteAccount, AccountDeletionError } from "@/services/sessionService";
 import {
   updateProfile,
   updateEmail,
@@ -379,27 +379,32 @@ function PreferencesTab({ user }: { user: User }) {
   </Section>;
 }
 
-function NotificationsTab({ user }: { user: User }) {
-  const [notifications, setNotifications] = useState({
-    sessionComplete: true,
-    weeklyDigest: false,
-    productUpdates: true,
-  });
+export function NotificationsTab({ user }: { user: User }) {
+  const [sessionComplete, setSessionComplete] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    setLoaded(false); setLoadError(false);
     getUserProfile(user.uid).then((profile) => {
-      if (profile?.notifications) {
-        setNotifications((n) => ({ ...n, ...profile.notifications }));
+      if (!profile) throw new Error("Profile unavailable");
+      if (active) {
+        setSessionComplete(sessionCompleteNotificationsEnabled(profile));
+        setLoaded(true);
       }
-    }).catch(() => {});
-  }, [user.uid]);
+    }).catch(() => { if (active) setLoadError(true); });
+    return () => { active = false; };
+  }, [user.uid, loadAttempt]);
 
   async function handleSave() {
+    if (!loaded || saving) return;
     setSaving(true);
     try {
-      await updateUserProfile(user.uid, { notifications });
+      await updateSessionCompleteNotification(user.uid, sessionComplete);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       toast.success("Notification preferences saved.");
@@ -410,48 +415,37 @@ function NotificationsTab({ user }: { user: User }) {
     }
   }
 
-  const prefs = [
-    {
-      key: "sessionComplete" as const,
-      label: "Session complete",
-      description: "Notify when a Brain Session finishes processing.",
-    },
-    {
-      key: "weeklyDigest" as const,
-      label: "Weekly digest",
-      description: "Summary of your session activity each week.",
-    },
-    {
-      key: "productUpdates" as const,
-      label: "Product updates",
-      description: "New features, templates, and major improvements.",
-    },
-  ];
-
   return (
     <div className="space-y-6 max-w-md">
       <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
-        Email notifications will be sent to <strong>{user.email}</strong>. Your preferences are saved and applied to all transactional emails from Litigant AI.
+        Email notifications will be sent to <strong className="break-all">{user.email}</strong>. The Session complete preference controls completion emails. Security and billing messages are sent when required.
       </div>
 
-      <div className="space-y-4">
-        {prefs.map(({ key, label, description }) => (
-          <div key={key} className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium">{label}</p>
-              <p className="text-xs text-muted-foreground">{description}</p>
-            </div>
-            <Switch
-              checked={notifications[key]}
-              onCheckedChange={(v) => setNotifications((n) => ({ ...n, [key]: v }))}
-            />
-          </div>
-        ))}
+      {loadError && <p role="alert">Could not load preferences. <button onClick={() => setLoadAttempt(n => n + 1)}>Retry</button></p>}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <Label htmlFor="session-complete-notifications">Session complete</Label>
+          <p id="session-complete-description" className="text-xs text-muted-foreground">Notify when a Brain Session finishes processing.</p>
+        </div>
+        <Switch
+          id="session-complete-notifications"
+          aria-describedby="session-complete-description"
+          disabled={!loaded || saving}
+          checked={sessionComplete}
+          onCheckedChange={setSessionComplete}
+          className="shrink-0"
+        />
+      </div>
+      <div className="rounded-lg border border-border/50 p-3 text-sm space-y-2">
+        <p className="font-medium">Weekly digest and product updates</p>
+        <p className="text-xs text-muted-foreground">
+          These emails are not available yet. Any previously saved preferences are unchanged.
+        </p>
       </div>
 
       <Button
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || !loaded}
         className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
       >
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
@@ -470,36 +464,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
     setExportLoading(true);
     try {
       const idToken = await user.getIdToken();
-      const [allSessions, profile] = await Promise.all([
-        getAllSessions(idToken),
-        getUserProfile(user.uid),
-      ]);
-
-      const exportData = {
-        exportedAt: new Date().toISOString(),
-        user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          createdAt: profile?.createdAt,
-          plan: profile?.plan,
-          creditBalance: profile?.creditBalance,
-        },
-        settings: profile?.defaultSettings,
-        notifications: profile?.notifications,
-        sessions: allSessions.map((s) => ({
-          id: s.id,
-          title: s.title,
-          question: s.question,
-          templateId: s.templateId,
-          status: s.status,
-          confidence: s.confidence,
-          creditsUsed: s.creditsUsed,
-          starred: s.starred,
-          createdAt: s.createdAt,
-          updatedAt: s.updatedAt,
-        })),
-      };
+      const exportData = await exportAccountData(idToken);
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -518,7 +483,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
 
   return (
     <div className="space-y-8">
-      <Section title="Export your data" description="Download all your sessions and account data as a JSON file.">
+      <Section title="Export your data" description="Download your account preferences and all saved content available to your plan as JSON. Free conversations have no saved memory.">
         <Button
           onClick={handleExportData}
           disabled={exportLoading}
@@ -592,7 +557,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { user, logOut, firebaseReady } = useAuth();
+  const { user, logOut, firebaseReady, beginAccountDeletion, setAccountDeletionResult } = useAuth();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<TabId>("profile");
   const [deleting, setDeleting] = useState(false);
@@ -601,27 +566,20 @@ export default function SettingsPage() {
     if (!user) return;
     setDeleting(true);
     try {
-      // The backend DELETE /account endpoint handles everything in a single call:
-      //   1. Deletes all Firestore data (sessions, turns, transactions, profile, etc.)
-      //   2. Deletes the Firebase Auth user via the Admin SDK (no recent-login required)
-      //
-      // We sign out locally afterwards to clear the client session regardless of whether
-      // the server-side Auth deletion succeeded — a signed-out orphaned Auth account
-      // has no Firestore data and cannot re-provision credits (signup bonus is idempotent).
       const idToken = await user.getIdToken();
+      beginAccountDeletion?.();
       await deleteAccount(idToken);
 
-      // Clear the local session — the Auth user was deleted server-side so the
-      // idToken is now invalid. signOut() clears Firebase's local state cleanly.
-      await logOut().catch(() => {});
+      await logOut().catch(() => { toast.error("Account deleted, but local sign-out failed. Try signing out again."); });
 
       toast.success("Account deleted.");
       setLocation("/");
     } catch (err: any) {
+      if (err instanceof AccountDeletionError) setAccountDeletionResult?.(err.result);
       setDeleting(false);
       toast.error(
-        "Account deletion failed — your data has not been removed. Please try again or contact support.",
-        { description: (err as any)?.message }
+        "Account deletion is not complete.",
+        { description: err instanceof AccountDeletionError ? err.message : "The result could not be confirmed. Some data may already have been removed. Retry or contact support." }
       );
     }
   }
