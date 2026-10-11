@@ -699,3 +699,23 @@ test('index catalog rejects another project instead of hiding its result during 
   const { paymentIndexes } = await import('./lai-release.mjs');
   await assert.rejects(paymentIndexes(async () => ({ indexes: [{ ...indexFixture(), name:'projects/other/databases/(default)/collectionGroups/credit_transactions/indexes/wrong' }] })), /unexpected index catalog/);
 });
+
+test('explicit diagnostic catalog read remains same-project read-only and target-filtered', async () => {
+  const { paymentIndexes } = await import('./lai-release.mjs'); const calls = [];
+  const other = { ...indexFixture(), name: 'projects/litigant-ai/databases/(default)/collectionGroups/sessions/indexes/other' };
+  const indexes = await paymentIndexes(async (...args) => { calls.push(args); return { indexes: [other, indexFixture()] }; }, true);
+  assert.deepEqual(indexes, [indexFixture()]);
+  assert.deepEqual(calls, [['https://firestore.googleapis.com/v1/projects/litigant-ai/databases/(default)/collectionGroups/-/indexes', 'read payment-history indexes']]);
+  await assert.rejects(paymentIndexes(async () => ({}), 'other-project'), /invalid index read scope/);
+});
+test('payment-index diagnostic exposes bounded schema and match results without arbitrary metadata values', async () => {
+  const { paymentIndexMetadata } = await import('./lai-release.mjs');
+  const standard = indexFixture(); standard.apiScope = 'ANY_API'; standard.density = 'SPARSE_ALL';
+  const variant = indexFixture(true); variant.fields.push({ fieldPath: 'private-value', order: 'private-value', custom: 'private-value' }); variant.private = 'private-value';
+  const output = paymentIndexMetadata([standard, variant]);
+  assert.equal(output.indexes[0].matchesHistory, true); assert.equal(output.indexes[0].state, 'READY');
+  assert.equal(output.indexes[0].apiScope, 'ANY_API'); assert.equal(output.indexes[0].density, 'SPARSE_ALL');
+  assert.equal(output.indexes[1].matchesTarget, false); assert(!JSON.stringify(output).includes('private-value'));
+  const bounded = paymentIndexMetadata(Array.from({ length: 101 }, () => ({ ...standard, fields: Array.from({ length: 21 }, () => standard.fields[0]) })));
+  assert.equal(bounded.count, 101); assert.equal(bounded.truncated, true); assert.equal(bounded.indexes.length, 100); assert.equal(bounded.indexes[0].fields.length, 20);
+});

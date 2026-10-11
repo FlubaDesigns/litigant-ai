@@ -333,11 +333,12 @@ function assertIndexesPreserved(before, after) {
 }
 const INDEX_CATALOG_PARENT = 'projects/litigant-ai/databases/(default)/collectionGroups/-';
 let paymentIndexReadParent = PAYMENT_INDEX_PARENT;
-export async function paymentIndexes(read = cloud) {
+export async function paymentIndexes(read = cloud, useCatalog = false) {
+  assert.equal(typeof useCatalog, 'boolean', 'invalid index read scope');
   const indexes = []; let pageToken = '';
   // Match Firebase's official listIndexes implementation when a deployment's
   // Firestore API requires the database-wide metadata catalog. POST stays exact.
-  let parent = read === cloud ? paymentIndexReadParent : PAYMENT_INDEX_PARENT;
+  let parent = useCatalog ? INDEX_CATALOG_PARENT : read === cloud ? paymentIndexReadParent : PAYMENT_INDEX_PARENT;
   for (let page = 0; page < 100; page++) {
     // Firestore currently accepts only its default page size (0). Keep returned
     // page tokens and the bounded loop without sending an unsupported pageSize.
@@ -362,6 +363,27 @@ export async function paymentIndexes(read = cloud) {
     pageToken = data.nextPageToken;
   }
   fail('Firestore index pagination exceeded bound');
+}
+export function paymentIndexMetadata(indexes) {
+  const enumValue = value => value === undefined ? '<absent>' : typeof value === 'string' && /^[A-Z_]{1,80}$/.test(value) ? value : '<unrecognized>';
+  const knownFields = new Set(['userId', 'type', 'createdAt', '__name__']);
+  return {
+    count: indexes.length,
+    truncated: indexes.length > 100,
+    indexes: indexes.slice(0, 100).map(index => ({
+      state: enumValue(index.state), queryScope: enumValue(index.queryScope),
+      apiScope: enumValue(index.apiScope), density: enumValue(index.density),
+      unique: index.unique === true, multikey: index.multikey === true,
+      searchIndex: Boolean(index.searchIndexOptions), nonzeroShards: Boolean(index.shardCount),
+      fieldCount: Array.isArray(index.fields) ? index.fields.length : null,
+      fields: (Array.isArray(index.fields) ? index.fields : []).slice(0, 20).map(field => ({
+        fieldPath: knownFields.has(field.fieldPath) ? field.fieldPath : '<other-field>',
+        order: enumValue(field.order), arrayConfig: enumValue(field.arrayConfig),
+        extraProperties: Object.keys(field).filter(key => !['fieldPath', 'order', 'arrayConfig'].includes(key)).length,
+      })),
+      matchesHistory: matchesIndex(index, HISTORY_INDEX), matchesTarget: matchesIndex(index, PAYMENT_INDEX),
+    })),
+  };
 }
 export async function paymentHistoryIndexGate(context, descriptor, { list = paymentIndexes, create = () => cloud(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes`, 'create exact payment-history index', 'POST', PAYMENT_INDEX), recheck, pause = sleep, polls = 120, delayMs = 10000 } = {}) {
   if (descriptor.action === 'inspect') assert.equal(descriptor.sourceCommit, context.controllerSha, 'inspection source mismatch');
@@ -446,7 +468,11 @@ async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
   if (descriptor.action === 'inspect') {
-    await paymentHistoryIndexGate(context, descriptor);
+    const indexes = await paymentIndexes();
+    console.log(`Read-only payment-index collection metadata: ${JSON.stringify(paymentIndexMetadata(indexes))}`);
+    const catalog = await paymentIndexes(cloud, true);
+    console.log(`Read-only payment-index catalog metadata: ${JSON.stringify(paymentIndexMetadata(catalog))}`);
+    await paymentHistoryIndexGate(context, descriptor, { list: async () => indexes });
     console.log(`Inspection complete. Approve this exact cloud-preflight run ${context.runId}, attempt ${context.attempt}, SHA ${context.controllerSha} in the private Engine before a descriptor-only deployment commit.`);
     return;
   }
