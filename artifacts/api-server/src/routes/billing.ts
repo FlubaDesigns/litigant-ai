@@ -11,6 +11,7 @@ import {
   setAutoRefillPreference,
   getCourtesyCreditEligibility,
 } from "../lib/creditLedger.js";
+import { createPackCheckout } from "../lib/checkoutSnapshot.js";
 import { CREDITS_PER_DOLLAR } from "../lib/creditPacks.js";
 import { getActiveCreditPacks, findCreditPackByPriceId } from "../lib/creditPacksConfig.js";
 
@@ -228,17 +229,7 @@ router.post("/billing/checkout", async (req, res) => {
     `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
 
   try {
-    const idempotencyKey = crypto.randomUUID();
-    const note = `LITIGANT:userId=${user.uid},creditAmount=${creditAmount},pack=${product.id}`;
-
-    const link = await createPaymentLink({
-      name: `${product.name} — ${creditAmount} Credits`,
-      amountCents: price.unit_amount,
-      note,
-      redirectUrl: `${origin}/billing?success=true`,
-      buyerEmail: user.email,
-      idempotencyKey,
-    });
+    const link = await createPackCheckout(user, product, price, `${origin}/billing?success=true`);
 
     return res.json({ url: link.url });
   } catch (err: any) {

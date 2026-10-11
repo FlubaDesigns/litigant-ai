@@ -199,7 +199,7 @@ describe("handleSquareEvent", () => {
       } as any,
     });
 
-    await handleSquareEvent(makePaymentEvent() as any); // note says 1000, pack says 500
+    await expect(handleSquareEvent(makePaymentEvent() as any)).rejects.toThrow(/reconciliation required/);
 
     expect(addCredits).not.toHaveBeenCalled();
   });
@@ -217,7 +217,7 @@ describe("handleSquareEvent", () => {
     });
 
     const event = makePaymentEvent({ amount_money: { amount: 500, currency: "USD" } });
-    await handleSquareEvent(event as any);
+    await expect(handleSquareEvent(event as any)).rejects.toThrow(/reconciliation required/);
 
     expect(addCredits).not.toHaveBeenCalled();
   });
@@ -229,7 +229,7 @@ describe("handleSquareEvent", () => {
     const event = makePaymentEvent({
       note: "LITIGANT:userId=user-1,creditAmount=1000,pack=unknown_pack",
     });
-    await handleSquareEvent(event as any);
+    await expect(handleSquareEvent(event as any)).rejects.toThrow(/reconciliation required/);
 
     expect(addCredits).not.toHaveBeenCalled();
   });

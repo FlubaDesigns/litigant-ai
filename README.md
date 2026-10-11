@@ -77,20 +77,20 @@ Copy `.env.example` to `.env.local` in each artifact that needs it and fill in:
 
 ---
 
-## Deploy
+## Release and deploy
 
-**Frontend → Firebase Hosting**
-```bash
-cd artifacts/gh-brain && pnpm build
-firebase deploy --only hosting
-```
+Pushes to `main` run source, test, typecheck, browser, and build checks only.
+They do not deploy or change production accounts or data. The required source
+release gate is the `check-release` job in
+[`.github/workflows/deploy-cloudrun.yml`](.github/workflows/deploy-cloudrun.yml).
 
-**API → Cloud Run** (triggered automatically by GitHub Actions on push to `main`)
-```bash
-node scripts/deploy-cloudrun.mjs
-```
+Production API and Firebase Hosting releases go through the isolated Litigant AI
+workflow in Authorization Engine. That workflow pins the exact reviewed Main
+commit SHA and requires its successful source release gate before deployment.
 
-GitHub Actions workflow: `.github/workflows/deploy-cloudrun.yml`
+The legacy `scripts/deploy-cloudrun.mjs` script is not the approved release path
+and must not be run for this release. Do not bypass the isolated workflow with
+direct Cloud Run or Firebase deployment commands.
 
 ---
 

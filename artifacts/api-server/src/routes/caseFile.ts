@@ -8,7 +8,8 @@
  *   - fetch-url: resolves hostname DNS before connecting and rejects private/reserved
  *     IP ranges (SSRF protection). Redirects are not followed. Response is streamed
  *     with a 2 MB hard ceiling so large responses cannot exhaust container memory.
- *   - upload: 10 MB multer limit; content is extracted and truncated server-side.
+ *   - upload: authentication precedes parsing; one file, no text fields, 10 MB limit.
+ *     Content is extracted and truncated server-side.
  */
 import { Router, type Request, type Response, type NextFunction } from "express";
 import multer, { MulterError } from "multer";
@@ -33,7 +34,30 @@ async function requireAuth(req: Request, res: Response): Promise<string | null> 
   return decoded.uid;
 }
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  // The client sends only a single "file" part. Reject unused text fields and
+  // extra files rather than spending memory parsing them.
+  limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
+});
+const parseUpload = upload.single("file");
+
+async function authenticateUpload(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (await requireAuth(req, res)) next();
+}
+
+function parseAuthenticatedUpload(req: Request, res: Response, next: NextFunction): void {
+  parseUpload(req, res, (err: unknown) => {
+    if (!err) {
+      next();
+      return;
+    }
+    const message = err instanceof MulterError && err.code === "LIMIT_FILE_SIZE"
+      ? "File exceeds the 10 MB limit"
+      : "Invalid file upload";
+    res.status(400).json({ message });
+  });
+}
 
 // ── SSRF protection helpers ───────────────────────────────────────────────────
 
@@ -193,10 +217,7 @@ router.post("/case-file/fetch-url", async (req, res) => {
 
 // ── POST /case-file/upload ────────────────────────────────────────────────────
 
-router.post("/case-file/upload", upload.single("file"), async (req, res) => {
-  const uid = await requireAuth(req, res);
-  if (!uid) return;
-
+router.post("/case-file/upload", authenticateUpload, parseAuthenticatedUpload, async (req, res) => {
   const file = req.file;
   if (!file) {
     res.status(400).json({ message: "No file uploaded" });
@@ -254,12 +275,8 @@ router.post("/case-file/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-// Catch multer errors (e.g. file too large) and return a clean 400
-router.use("/case-file/upload", (err: any, _req: Request, res: Response, _next: NextFunction) => {
-  if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
-    res.status(400).json({ message: "File exceeds the 10 MB limit" });
-    return;
-  }
+// Unexpected errors (including authentication failures) never expose internals.
+router.use("/case-file/upload", (_err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ message: "Upload failed" });
 });
 

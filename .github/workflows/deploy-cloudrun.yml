@@ -1,185 +1,59 @@
-name: Deploy
+name: LAI release checks
 
+# Production changes are released only by the isolated Authorization Engine
+# workflow, which pins an exact Main commit and requires this successful gate.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: production-deploy-${{ github.ref }}
+  group: lai-release-checks-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Cloud Run + Firebase Hosting
-    runs-on: ubuntu-24.04-arm
-
-    permissions:
-      contents: read
-      actions: write # Cancel superseded releases, including pre-concurrency runs.
-      # Required for Workload Identity Federation — GitHub mints an OIDC token
-      # that GCP verifies in exchange for a short-lived access token.
-      # No service-account JSON key is ever stored or transmitted.
-      id-token: write
-
+  check-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Check source and archives for credentials
+      - name: Check source, archives and release boundaries
         run: |
           python3 scripts/test_source_safety.py
           python3 scripts/source_safety.py
-
-      - name: Cancel superseded deployment attempts
-        uses: actions/github-script@v7
+          python3 scripts/test_release_boundary.py
+      - uses: actions/setup-node@v4
         with:
-          script: |
-            const repo = context.repo;
-            const current = await github.rest.actions.getWorkflowRun({...repo, run_id: context.runId});
-            const runs = await github.rest.actions.listWorkflowRuns({...repo, workflow_id: current.data.workflow_id, branch: 'main', per_page: 100});
-            for (const run of runs.data.workflow_runs) {
-              if (run.run_number < current.data.run_number && run.status !== 'completed') {
-                try {
-                  await github.rest.actions.cancelWorkflowRun({...repo, run_id: run.id});
-                  core.info(`Cancelled superseded deployment ${run.id}.`);
-                } catch (error) {
-                  if (error.status !== 409) throw error;
-                }
-              }
-            }
-
-      - name: Authenticate to Google Cloud (keyless)
-        id: auth
-        uses: google-github-actions/auth@v2
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: litigant-ai
-
-      - name: Diagnose existing API catalogue failure
-        run: |
-          if ! curl --fail --silent https://api-781960492360.us-central1.run.app/api/templates >/dev/null; then
-            gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="api" AND severity>=ERROR' --project litigant-ai --freshness=20m --limit=8 --format=json > /tmp/api-errors.json || echo "[]" > /tmp/api-errors.json
-            python3 - <<'PYLOG'
-          import json,re
-          for entry in json.load(open('/tmp/api-errors.json')):
-              message=entry.get('textPayload',entry.get('jsonPayload',{}).get('message',''))
-              line=next((l for l in str(message).splitlines() if 'Error' in l or 'PERMISSION' in l or 'UNAUTHENTICATED' in l), '')
-              if line: print(re.sub(r'[A-Za-z0-9_+/=-]{30,}', '[redacted]', line)[:350])
-          PYLOG
-          fi
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      # ── Cloud Run: update env vars ──────────────────────────────────────────
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      # ── Backend tests: must pass before any deployment step ───────────────────
-      - name: Install workspace dependencies
+          version: "10"
+      - name: Install locked workspace dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Validate deployment configuration
-        run: node --input-type=module -e 'import {readFileSync} from "node:fs"; for (const file of ["firebase.json", "firestore.indexes.json", ".firebaserc"]) JSON.parse(readFileSync(file, "utf8"));'
-
-      - name: Verify keyless Firebase access
-        working-directory: artifacts/api-server
-        run: |
-          node --input-type=module <<'NODE'
-          import {initializeApp} from 'firebase-admin/app';
-          import {getFirestore} from 'firebase-admin/firestore';
-          import {getAuth} from 'firebase-admin/auth';
-          initializeApp({projectId:'litigant-ai'});
-          await getFirestore().collection('templates').limit(1).get();
-          await getAuth().listUsers(1);
-          // Owner-approved starting courtesy ceiling. Subsequent admin edits remain authoritative.
-          await getFirestore().runTransaction(async tx => {
-            const marker = getFirestore().doc('config_migrations/courtesy_ceiling_25_20261005');
-            if ((await tx.get(marker)).exists) return;
-            tx.set(getFirestore().doc('config/adminLimits'), {overdraftLimit:25}, {merge:true});
-            tx.set(marker, {appliedAt:new Date().toISOString()});
-          });
-          console.log('Keyless identity can read Firestore and Firebase Auth.');
-          // Idempotent mitigation for the credential formerly committed in the e2e test.
-          const marker=getFirestore().doc('security_migrations/exposed_e2e_session_2026');
-          if (!(await marker.get()).exists) {
-            let action='already_invalid';
-            try {
-              const uid='Hvi6tlxqa7N275p09qgScOYnuvv2';
-              const account=await getAuth().getUser(uid);
-              const exposedAuthTime=1784224659 * 1000;
-              if (!account.disabled && Date.parse(account.tokensValidAfterTime || '1970-01-01') <= exposedAuthTime) {
-                await getAuth().revokeRefreshTokens(uid);
-                action='revoked';
-              }
-            } catch(error) {
-              if (error.code !== 'auth/user-not-found') throw error;
-              action='account_absent';
-            }
-            await marker.set({action,checkedAt:new Date().toISOString()});
-            console.log(`Exposed test session mitigation: ${action}.`);
-          } else {
-            console.log('Exposed test session mitigation already completed.');
-          }
-          NODE
-
-      - name: Enable invitation guest authentication
-        run: |
-          python3 - <<'PYCODE'
-          import json, subprocess, urllib.request
-          token = subprocess.check_output(['gcloud', 'auth', 'print-access-token'], text=True).strip()
-          url = 'https://identitytoolkit.googleapis.com/admin/v2/projects/litigant-ai/config'
-          headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
-          with urllib.request.urlopen(urllib.request.Request(url, headers=headers)) as response:
-              config = json.load(response)
-          if not config.get('signIn', {}).get('anonymous', {}).get('enabled', False):
-              body = json.dumps({'signIn': {'anonymous': {'enabled': True}}}).encode()
-              request = urllib.request.Request(url + '?updateMask=signIn.anonymous.enabled', data=body, headers=headers, method='PATCH')
-              with urllib.request.urlopen(request) as response:
-                  assert json.load(response)['signIn']['anonymous']['enabled']
-          print('Invitation guest authentication enabled.')
-          PYCODE
-
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
-
       - name: Typecheck all packages
         run: pnpm run typecheck
-
       - name: Run frontend tests
         run: pnpm --filter @workspace/gh-brain run test
-
-      - name: Install browser for integration tests
+      - name: Install browser for local integration tests
         run: pnpm --filter @workspace/gh-brain exec playwright install --with-deps chromium
-
-      - name: Run browser tests
+      - name: Run browser tests against the local app
         working-directory: artifacts/gh-brain
         run: pnpm exec playwright test
-
-      - name: Upload browser failure report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-test-results
-          path: artifacts/gh-brain/test-results
-          if-no-files-found: ignore
-
+      - name: Build API
+        run: pnpm --filter @workspace/api-server run build
       - name: Build frontend
+        working-directory: artifacts/gh-brain
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -190,128 +64,4 @@ jobs:
           VITE_API_URL: "/api-server/api"
           NODE_ENV: production
           BASE_PATH: "/"
-        working-directory: artifacts/gh-brain
         run: pnpm run build
-
-      # ── Backend container: build from source and push to GCR ───────────────
-      # GitHub-hosted runners have Docker pre-installed.
-      # The image is tagged with the exact commit SHA so deploy-cloudrun.mjs
-      # can reference it — no stale/hardcoded image tags.
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker gcr.io --quiet
-
-      - name: Enable x86 container execution on the ARM runner
-        uses: docker/setup-qemu-action@v4
-        with:
-          platforms: amd64
-
-      - name: Build API container
-        run: |
-          docker build --platform linux/amd64 \
-            --file artifacts/api-server/Dockerfile \
-            --tag gcr.io/litigant-ai/api:${{ github.sha }} \
-            --label "git.sha=${{ github.sha }}" \
-            .
-
-      - name: Verify container startup
-        run: |
-          docker run --platform linux/amd64 -d --name api-smoke -p 127.0.0.1:8080:8080 -e PORT=8080 gcr.io/litigant-ai/api:${{ github.sha }}
-          trap 'docker rm -f api-smoke >/dev/null 2>&1' EXIT
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent http://127.0.0.1:8080/api/health; then
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs api-smoke
-          exit 1
-
-      - name: Push API container to GCR
-        run: docker push gcr.io/litigant-ai/api:${{ github.sha }}
-
-      - name: Deploy Cloud Run env vars
-        env:
-          GIT_SHA: ${{ github.sha }}
-          # Firebase / GCP
-          RUNTIME_SERVICE_ACCOUNT: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-          # AI providers
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-          # App secrets
-          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          # Payments / email / monitoring
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
-          SQUARE_LOCATION_ID: ${{ secrets.SQUARE_LOCATION_ID }}
-          SQUARE_WEBHOOK_SIGNATURE_KEY: ${{ secrets.SQUARE_WEBHOOK_SIGNATURE_KEY }}
-          SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          VITE_FIREBASE_PROJECT_ID: litigant-ai
-        run: node scripts/deploy-cloudrun.mjs
-
-      # ── Provenance check: confirm deployed revision matches this commit ─────
-      - name: Verify Cloud Run deployment matches source commit
-        # Block frontend deployment unless the backend serves this exact commit.
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
-          VERSION_URL: "https://api-781960492360.us-central1.run.app/api/version"
-        run: |
-          echo "Waiting for Cloud Run to serve commit ${EXPECTED_SHA}..."
-          for i in $(seq 1 12); do
-            DEPLOYED_SHA=$(curl -sf "${VERSION_URL}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || echo "")
-            echo "  Attempt ${i}/12 — deployed sha: '${DEPLOYED_SHA}'"
-            if [ "${DEPLOYED_SHA}" = "${EXPECTED_SHA}" ]; then
-              echo "✅ Provenance verified: deployed sha matches ${EXPECTED_SHA}"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "⚠️  Provenance check inconclusive (may be first deploy with /version endpoint)."
-          echo "   Expected : ${EXPECTED_SHA}"
-          echo "   Deployed : ${DEPLOYED_SHA}"
-          exit 1
-
-      - name: Verify public admin bootstrap is disabled
-        run: |
-          STATUS=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-            --header 'Content-Type: application/json' --data '{}' \
-            https://api-781960492360.us-central1.run.app/api/admin/set-claim)
-          test "$STATUS" = '503' || { echo "Admin bootstrap must be disabled (received $STATUS)"; exit 1; }
-
-      # ── Firebase Hosting: build frontend and deploy ────────────────────────
-      - name: Deploy to Firebase Hosting
-        working-directory: .
-        run: |
-          # gcloud auth (set up by the WIF step above) provides Application
-          # Default Credentials that the Firebase CLI reads automatically.
-          pnpm exec firebase deploy --only hosting,firestore:rules,firestore:indexes \
-            --project litigant-ai \
-            --non-interactive
-
-      - name: Verify live admin monitoring queries
-        working-directory: artifacts/api-server
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-        run: |
-          node scripts/verify-admin-monitoring.mjs
-          node scripts/verify-guest-invitations.mjs
-
-      - name: Verify hosted frontend and API rewrite
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
-        run: |
-          for attempt in $(seq 1 6); do
-            curl --fail --silent --show-error https://litigant-ai.web.app/ -o /tmp/hosted-index.html
-            HOSTED_SHA=$(curl --fail --silent https://litigant-ai.web.app/api-server/api/version | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null) || HOSTED_SHA=""
-            if cmp -s artifacts/gh-brain/dist/public/index.html /tmp/hosted-index.html && [ "$HOSTED_SHA" = "$EXPECTED_SHA" ]; then
-              curl --fail --silent https://litigant-ai.web.app/api-server/api/templates -o /tmp/templates.json
-              python3 -c "import json; data=json.load(open('/tmp/templates.json')); assert data and all('defaultConfig' in t and 'inputFields' in t for t in data)"
-              echo "Hosted frontend, templates and API match this commit."
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "Hosted content does not match the built revision."
-          exit 1

@@ -204,12 +204,10 @@ describe("POST /api/square/webhook — route-level", () => {
     // This test specifically guards against a regression where json() consumes
     // the body before the signature check can read it (req.rawBody would then
     // be undefined / empty, causing a false-negative HMAC mismatch).
-    const payload = makePaymentEvent({ note: "LITIGANT:userId=user-2,creditAmount=500" });
+    const payload = makePaymentEvent({ note: "LITIGANT:userId=user-2,creditAmount=1000,pack=starter_pack" });
     const body    = JSON.stringify(payload);
     const sig     = makeSignature(body);
     const app     = buildApp();
-
-    vi.mocked(getAllCreditPacks).mockResolvedValue({});   // no packId in note → pack check skipped
 
     const res = await supertest(app)
       .post("/api/square/webhook")
@@ -284,7 +282,7 @@ describe("POST /api/square/webhook — route-level", () => {
 
   // ── Tamper: creditAmount in note doesn't match pack catalogue ────────────────
 
-  it("returns 200 but does NOT call addCredits when creditAmount in note mismatches the pack catalogue", async () => {
+  it("returns retryable 500 without calling addCredits when creditAmount in note mismatches the pack catalogue", async () => {
     // The note claims 9999 credits but the catalogue says starter_pack = 1000.
     // The handler must reject the grant to prevent a forged note from inflating balances.
     const tamperedNote = "LITIGANT:userId=user-1,creditAmount=9999,pack=starter_pack";
@@ -311,13 +309,13 @@ describe("POST /api/square/webhook — route-level", () => {
       .set("x-square-hmacsha256-signature", sig)
       .send(body);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(addCredits).not.toHaveBeenCalled();
   });
 
   // ── Tamper: paid amount doesn't match the pack's listed price ─────────────────
 
-  it("returns 200 but does NOT call addCredits when paid amount mismatches the pack price", async () => {
+  it("returns retryable 500 without calling addCredits when paid amount mismatches the pack price", async () => {
     // The note is correct (1000 credits, starter_pack) but the payment shows
     // only 1¢ was actually charged — a forged checkout lowering the price.
     const body = JSON.stringify(
@@ -346,13 +344,13 @@ describe("POST /api/square/webhook — route-level", () => {
       .set("x-square-hmacsha256-signature", sig)
       .send(body);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(addCredits).not.toHaveBeenCalled();
   });
 
   // ── Tamper: unknown packId in note ────────────────────────────────────────────
 
-  it("returns 200 but does NOT call addCredits when packId is not in the catalogue", async () => {
+  it("returns retryable 500 without calling addCredits when packId is not in the catalogue", async () => {
     // The note references a packId ("platinum_pack") that doesn't exist in the
     // catalogue — could be a forged note trying to bypass validation.
     const body = JSON.stringify(
@@ -381,7 +379,7 @@ describe("POST /api/square/webhook — route-level", () => {
       .set("x-square-hmacsha256-signature", sig)
       .send(body);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(addCredits).not.toHaveBeenCalled();
   });
 

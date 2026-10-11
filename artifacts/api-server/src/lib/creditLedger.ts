@@ -106,6 +106,8 @@ export async function addCredits(
     paymentId?: string;
     idempotencyKey?: string;
     refundTransactionId?: string;
+    /** Verified immutable Square checkout; claimed atomically with the credit grant. */
+    checkoutOrderId?: string;
   } = {}
 ): Promise<{ newBalance: number; skipped?: boolean } | null> {
   if (typeof amount !== "number" || !Number.isSafeInteger(amount)) {
@@ -133,6 +135,21 @@ export async function addCredits(
         return { newBalance: 0, skipped: true };
       }
 
+    }
+
+    let checkoutRef: FirebaseFirestore.DocumentReference | undefined;
+    if (opts.checkoutOrderId) {
+      if (type !== "purchase" || opts.source !== "square_checkout" || !opts.paymentId) {
+        throw new Error("Checkout fulfillment requires a verified purchase");
+      }
+      checkoutRef = db.collection("checkout_fulfillments").doc(opts.checkoutOrderId);
+      const fulfilled = (await tx.get(checkoutRef)).data();
+      if (fulfilled) {
+        if (fulfilled.paymentId === opts.paymentId && fulfilled.uid === uid && fulfilled.amount === amount) {
+          return { newBalance: 0, skipped: true };
+        }
+        throw new Error("Checkout order was already fulfilled by a different payment");
+      }
     }
 
     // Refund the collected charge, accounting for automatic reconciliation and
@@ -178,6 +195,10 @@ export async function addCredits(
         amount,
         processedAt: FieldValue.serverTimestamp(),
       });
+    }
+
+    if (checkoutRef) {
+      tx.create(checkoutRef, { paymentId: opts.paymentId, uid, amount, processedAt: FieldValue.serverTimestamp() });
     }
 
     tx.set(

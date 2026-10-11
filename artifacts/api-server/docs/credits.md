@@ -339,3 +339,58 @@ Users can opt into automatic credit top-ups. Stored in `users/{uid}.autoRefill`:
 ```
 
 `checkAndTriggerAutoRefill()` in `creditLedger.ts` is called after any balance deduction. If the new balance is below the threshold and auto-refill is enabled, it generates a Stripe Checkout URL and writes it to `users/{uid}.autoRefillCheckoutUrl`. The frontend polls this field and redirects the user to complete the purchase.
+
+## 12. Immutable credit-pack checkout terms
+
+New fixed-pack checkouts capture their server-resolved price ID, pack ID, USD
+amount, credit quantity, buyer UID and existing Pro benefit. The provider note
+contains a random checkout identifier. After Square returns its payment-link and
+order IDs, the backend uses Firestore `create()` to save the complete immutable
+terms in `checkout_snapshots/{squareOrderId}` before returning the payable URL.
+A storage failure returns an error without exposing that URL. A provider link
+might then exist without a delivered URL; it must not be treated as a completed
+purchase or used to manufacture a snapshot.
+
+On a signed, completed payment, fulfillment loads the snapshot by Square order ID
+and requires an exact match for the payment note (including buyer, credits, pack
+and checkout identifier), order, location, paid cents and currency. It does not
+read the current pack catalogue. Editing, deactivating or deleting a pack cannot
+change accepted checkout terms. Missing/corrupt snapshots and unavailable storage
+return HTTP 500 so Square can retry; they never fall back to current prices.
+
+`addCredits()` remains the balance/benefit authority. Its existing
+`payment_events/payment_{paymentId}` deduplication is retained. A new
+`checkout_fulfillments/{squareOrderId}` claim is created in the same transaction
+as the payment dedup record, credit balance, Pro activation and ledger entry.
+This prevents concurrent deliveries or another payment ID from consuming one
+checkout twice. Snapshots are never updated during fulfillment. Both new
+collections are server-only under the existing Firestore catch-all deny rule;
+no client access, new index or schema backfill is needed.
+
+The snapshot path accepts the existing administrator-supported pack range of
+1–1,000,000 credits, replacing the mismatched 100,000-credit legacy guard only
+for verified snapshots. It introduces no new pack prices, credits or benefits.
+Manual custom top-ups and automatic top-ups retain their existing flow.
+
+### Compatibility and rollout
+
+- Already-issued links have no snapshot. If their signed payment can still be
+  validated against complete current pack terms (including currency), delivery
+  continues, even for an inactive pack. The legacy ±5-cent tolerance is retained;
+  new snapshots require exact cents.
+- If legacy terms changed, the pack disappeared, metadata is missing, or its old
+  safety ceiling is exceeded, return a retryable error with a reconciliation
+  message. Never acknowledge a completed payment silently or guess historical
+  price/credit data from today's settings. Logs and Square failed webhook
+  deliveries need operator attention before Square's retry window ends. Recovery
+  needs verified historical checkout/order evidence and an explicitly authorized
+  reconciliation; this change does not backfill or grant legacy credits blindly.
+- Deploy checkout creation and fulfillment together. Do not leave an older
+  revision processing new snapshot-tagged payments during a staggered rollout:
+  old fulfillment still consults the mutable catalogue. Keep the new handler
+  available for outstanding snapshot checkouts when rolling back other features.
+- Preserve both server-only collections and payment dedup/ledger records. Do not
+  add TTL deletion: old payment links and delayed/retried events can remain valid.
+- Verification is entirely offline with mocked Square and Firestore, including
+  signed HTTP webhook requests. It does not constitute a live Square charge,
+  production Firestore verification or deployment approval.
