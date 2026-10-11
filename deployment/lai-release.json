@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "action": "inspect",
+  "sourceCommit": null,
+  "project": "litigant-ai",
+  "region": "us-central1",
+  "service": "api",
+  "hostingSite": "litigant-ai",
+  "approval": null
+}

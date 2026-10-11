@@ -1,7 +1,7 @@
 name: LAI release checks
 
-# Production changes are released only by the isolated Authorization Engine
-# workflow, which pins an exact Main commit and requires this successful gate.
+# Production changes require a descriptor-only commit transporting the private
+# Authorization Engine approval of an exact, successful LAI inspection run.
 on:
   push:
     branches: [main]
@@ -11,12 +11,11 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: lai-release-checks-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   check-release:
+    concurrency:
+      group: lai-release-checks-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -26,14 +25,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - name: Check source, archives and release boundaries
         run: |
           python3 scripts/test_source_safety.py
           python3 scripts/source_safety.py
           python3 scripts/test_release_boundary.py
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
+          node --test scripts/test_lai_release.mjs
       - uses: pnpm/action-setup@v4
         with:
           version: "10"
@@ -65,3 +65,54 @@ jobs:
           NODE_ENV: production
           BASE_PATH: "/"
         run: pnpm run build
+
+  cloud-preflight:
+    # No PR, workflow_dispatch, environment, other repository or non-Main OIDC context.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'FlubaDesigns/litigant-ai'
+    needs: check-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: lai-production-release
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10"
+      - name: Validate exact source, CI and approval
+        id: plan
+        run: node scripts/lai-release.mjs plan
+      - uses: actions/checkout@v4
+        if: steps.plan.outputs.action == 'deploy'
+        with:
+          ref: ${{ steps.plan.outputs.source }}
+          path: release-source
+          persist-credentials: false
+      - name: Install immutable source dependencies
+        if: steps.plan.outputs.action == 'deploy'
+        working-directory: release-source
+        run: pnpm install --frozen-lockfile
+      - name: Build frontend and probe isolated API container before authentication
+        if: steps.plan.outputs.action == 'deploy'
+        run: node scripts/lai-release.mjs prepare
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          project_id: litigant-ai
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Verify existing LAI cloud access
+        run: node scripts/lai-release.mjs release
