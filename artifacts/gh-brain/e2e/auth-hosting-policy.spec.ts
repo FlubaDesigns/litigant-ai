@@ -55,7 +55,7 @@ for (const origin of ["https://litigant-ai.com", "https://www.litigant-ai.com", 
     expect(await page.evaluate(() => (window as any).inlineScriptRan)).toBeUndefined();
     await expect.poll(() => page.evaluate(() => (window as any).policyViolations)).toEqual(expect.arrayContaining([
       expect.objectContaining({ directive: "script-src-elem", blocked: "inline" }),
-      expect.objectContaining({ directive: "script-src-elem", blocked: "https://untrusted.example" }),
+      expect.objectContaining({ directive: "script-src-elem", blocked: "https://untrusted.example/script.js" }),
       expect.objectContaining({ directive: "frame-src", blocked: "https://untrusted.example" }),
       expect.objectContaining({ directive: "frame-src", blocked: "https://another-project.firebaseapp.com" }),
     ]));

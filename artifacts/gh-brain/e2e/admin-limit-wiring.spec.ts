@@ -1,5 +1,13 @@
 import {test,expect} from "./fixtures";
 
+// Limits renders billing defaults alongside the limit controls in both scenarios.
+test.beforeEach(async ({page}) => {
+  await page.route("**/api-server/api/admin/billing-defaults", route => route.fulfill({json:{
+    autoRefillAmounts:[10,20],defaultAutoRefillAmount:20,defaultThresholdCredits:100,
+    defaultWarningThresholdCredits:200,signupBonusCredits:500,emailCreditWarningThreshold:100,
+  }}));
+});
+
 test("saved admin limits reload, bound session options, and refresh an open configuration",async({page})=>{
   let maximum=10;
   const errors:string[]=[]; page.on("pageerror",error=>errors.push(error.message));
@@ -10,9 +18,9 @@ test("saved admin limits reload, bound session options, and refresh an open conf
       return route.fulfill({json:{success:true,name:"maxLitigants",value:maximum}});
     }
     if(path.endsWith("/limits"))return route.fulfill({json:{limits:{maxLitigants:maximum,overdraftLimit:25}}});
-    if(path.endsWith("/admin/billing-defaults"))return route.fulfill({json:{autoRefillAmounts:[10,20],defaultAutoRefillAmount:20,defaultThresholdCredits:100,defaultWarningThresholdCredits:200,signupBonusCredits:500,emailCreditWarningThreshold:100}});
     return route.fallback();
   });
+  await page.clock.install();
   await page.goto("/admin?tab=limits&e2e=1");
   const input=page.getByRole("spinbutton",{name:"Maximum litigants",exact:true});
   await expect(input).toHaveValue("10");
@@ -23,13 +31,13 @@ test("saved admin limits reload, bound session options, and refresh an open conf
   await page.reload();
   await expect(input).toHaveValue("2");
   await page.goto("/session?e2e=1");
-  await page.getByRole("button",{name:/Configure court/}).click();
+  await page.getByRole("button",{name:"⚙ Configure",exact:true}).click();
+  await expect(page.getByRole("dialog",{name:"Configuration",exact:true})).toBeVisible();
   const selector=page.getByRole("combobox",{name:"Litigants",exact:true});
   await expect(selector).toContainText("2");
   await selector.click();
   await expect(page.getByRole("option")).toHaveCount(2);
   await page.getByRole("option",{name:"2",exact:true}).click();
-  await page.clock.install();
   maximum=7;
   await page.clock.fastForward(31000);
   await selector.click();
@@ -43,8 +51,10 @@ test("saved admin limits reload, bound session options, and refresh an open conf
 });
 
 test("legacy above-engine settings remain visible with an explicit effective-limit warning",async({page})=>{
+  const errors:string[]=[]; page.on("pageerror",error=>errors.push(error.message));
   await page.route("**/api-server/api/limits",route=>route.fulfill({json:{limits:{maxLitigants:10,overdraftLimit:25},storedLimits:{maxLitigants:20,overdraftLimit:25},notices:["Saved maximum litigants is 20; this engine supports 10. Sessions use 10 until you save a supported limit. The saved value has not been changed."]}}));
   await page.goto("/admin?tab=limits&e2e=1");
   await expect(page.getByRole("spinbutton",{name:"Maximum litigants",exact:true})).toHaveValue("20");
   await expect(page.getByRole("alert").filter({hasText:"saved value has not been changed"})).toBeVisible();
+  expect(errors).toEqual([]);
 });
