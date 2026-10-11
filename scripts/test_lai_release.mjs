@@ -666,3 +666,34 @@ test('index listing fails closed on malformed lists, repeating pages or excessiv
   await assert.rejects(paymentIndexes(async () => ({ nextPageToken: `page${++calls}` })), /pagination exceeded/);
   assert.equal(calls, 100);
 });
+
+test('invalid-argument list fallback uses only the official read-only catalog and filters other collections', async () => {
+  const { paymentIndexes } = await import('./lai-release.mjs'); const calls = [];
+  const other = { ...indexFixture(), name: 'projects/litigant-ai/databases/(default)/collectionGroups/sessions/indexes/other' };
+  const result = await paymentIndexes(async (...args) => {
+    calls.push(args);
+    if (calls.length === 1) throw Object.assign(new Error('invalid collection group'), { httpStatus: 400, apiStatus: 'INVALID_ARGUMENT', safeDetail: 'Collection group must be -' });
+    if (calls.length === 2) return { indexes: [other, indexFixture()], nextPageToken: 'next/+?' };
+    return { indexes: [indexFixture(true)] };
+  });
+  assert.deepEqual(result, [indexFixture(), indexFixture(true)]);
+  assert.equal(calls[0][0], `https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes?pageSize=100`);
+  assert.equal(calls[1][0], 'https://firestore.googleapis.com/v1/projects/litigant-ai/databases/(default)/collectionGroups/-/indexes?pageSize=100');
+  assert.equal(calls[2][0], `${calls[1][0]}&pageToken=next%2F%2B%3F`);
+  assert(calls.every(args => args.length === 2)); // No POST or other mutating method.
+});
+test('list fallback never bypasses permissions or retries an unrelated failure', async () => {
+  const { paymentIndexes } = await import('./lai-release.mjs');
+  for (const [httpStatus, apiStatus] of [[401,'UNAUTHENTICATED'], [403,'PERMISSION_DENIED'], [400,'FAILED_PRECONDITION'], [429,'RESOURCE_EXHAUSTED'], [500,'INTERNAL']]) {
+    let reads = 0;
+    await assert.rejects(paymentIndexes(async () => { reads++; throw Object.assign(new Error('stop'), { httpStatus, apiStatus }); }), /stop/);
+    assert.equal(reads, 1);
+  }
+  let reads = 0;
+  await assert.rejects(paymentIndexes(async () => { reads++; throw Object.assign(new Error('invalid'), { httpStatus:400, apiStatus:'INVALID_ARGUMENT' }); }), /invalid/);
+  assert.equal(reads, 2);
+});
+test('index catalog rejects another project instead of hiding its result during selection', async () => {
+  const { paymentIndexes } = await import('./lai-release.mjs');
+  await assert.rejects(paymentIndexes(async () => ({ indexes: [{ ...indexFixture(), name:'projects/other/databases/(default)/collectionGroups/credit_transactions/indexes/wrong' }] })), /unexpected index catalog/);
+});

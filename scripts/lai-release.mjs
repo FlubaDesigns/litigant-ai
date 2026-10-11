@@ -166,7 +166,20 @@ export async function retryRead(operation, { attempts = 12, delayMs = 10000, pau
 }
 async function request(url, { label, token, method = 'GET', body, raw = false } = {}) {
   const response = await fetch(url, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}), Accept: 'application/json', 'X-GitHub-Api-Version': '2022-11-28' }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30000), redirect: 'error' });
-  if (!response.ok) fail(`${method} ${label ?? new URL(url).hostname}: HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(`${method} ${label ?? new URL(url).hostname}: HTTP ${response.status}`);
+    error.httpStatus = response.status;
+    // This fixed, metadata-only GET sends no user data. Capture only Google's
+    // INVALID_ARGUMENT diagnostic; never log authorization headers or other bodies.
+    if (method === 'GET' && label === 'read payment-history indexes' && response.status === 400) {
+      const failure = await response.json().catch(() => null);
+      if (failure?.error?.status === 'INVALID_ARGUMENT' && typeof failure.error.message === 'string') {
+        error.apiStatus = 'INVALID_ARGUMENT';
+        error.safeDetail = failure.error.message.replace(/[^\x20-\x7e]/g, ' ').slice(0, 400);
+      }
+    }
+    throw error;
+  }
   return raw ? Buffer.from(await response.arrayBuffer()) : response.json();
 }
 function envContext() {
@@ -318,13 +331,31 @@ function assertIndexesPreserved(before, after) {
     assert.deepEqual(indexDefinition(current), indexDefinition(index), 'an existing Firestore index changed; release stopped');
   }
 }
+const INDEX_CATALOG_PARENT = 'projects/litigant-ai/databases/(default)/collectionGroups/-';
+let paymentIndexReadParent = PAYMENT_INDEX_PARENT;
 export async function paymentIndexes(read = cloud) {
   const indexes = []; let pageToken = '';
+  // Match Firebase's official listIndexes implementation when a deployment's
+  // Firestore API requires the database-wide metadata catalog. POST stays exact.
+  let parent = read === cloud ? paymentIndexReadParent : PAYMENT_INDEX_PARENT;
   for (let page = 0; page < 100; page++) {
-    const data = await read(`https://firestore.googleapis.com/v1/${PAYMENT_INDEX_PARENT}/indexes?pageSize=100${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, 'read payment-history indexes');
+    const readPage = () => read(`https://firestore.googleapis.com/v1/${parent}/indexes?pageSize=100${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, 'read payment-history indexes');
+    let data;
+    try { data = await readPage(); }
+    catch (error) {
+      if (page !== 0 || parent !== PAYMENT_INDEX_PARENT || error.httpStatus !== 400 || error.apiStatus !== 'INVALID_ARGUMENT') throw error;
+      console.log(`Firestore specific-collection list INVALID_ARGUMENT: ${error.safeDetail ?? 'No message returned'}. Checking the official read-only index catalog.`);
+      parent = INDEX_CATALOG_PARENT;
+      data = await readPage();
+      if (read === cloud) paymentIndexReadParent = parent;
+    }
     assert(Array.isArray(data.indexes ?? []), 'invalid Firestore index response');
     indexes.push(...(data.indexes ?? []));
-    if (!data.nextPageToken) return indexes;
+    if (!data.nextPageToken) {
+      const prefix = 'projects/litigant-ai/databases/(default)/collectionGroups/';
+      for (const index of indexes) assert(typeof index?.name === 'string' && index.name.startsWith(prefix) && /^[^/]+\/indexes\/[A-Za-z0-9_-]+$/.test(index.name.slice(prefix.length)), 'unexpected index catalog resource');
+      return indexes.filter(index => index.name.startsWith(`${PAYMENT_INDEX_PARENT}/indexes/`));
+    }
     assert(typeof data.nextPageToken === 'string' && data.nextPageToken !== pageToken, 'invalid Firestore index pagination');
     pageToken = data.nextPageToken;
   }
