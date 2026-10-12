@@ -104,7 +104,9 @@ export async function prepareMigration(service, read) {
   const runtimeMember='serviceAccount:'+service.spec.template.spec.serviceAccountName;
   scopedPolicy({bindings:[]},runtimeMember); // validate before any mutation
   await requirePermissions(read,PROJECT+':testIamPermissions',
-    ['resourcemanager.projects.getIamPolicy','resourcemanager.projects.setIamPolicy','run.services.getIamPolicy','run.services.setIamPolicy'], 'Cortex full credential access');
+    ['resourcemanager.projects.getIamPolicy','resourcemanager.projects.setIamPolicy'], 'Cortex full credential access');
+  await requirePermissions(read,SERVICE+':testIamPermissions',
+    ['run.services.getIamPolicy','run.services.setIamPolicy'], 'Cortex API visibility');
   const projectPolicy=await read(PROJECT+':getIamPolicy','read project credential policy','POST',{options:{requestedPolicyVersion:3}});
   const servicePolicy=await read(SERVICE+':getIamPolicy?options.requestedPolicyVersion=3','read runtime visibility policy');
   assert(projectPolicy.etag&&servicePolicy.etag,'Concurrent policy protection required');
