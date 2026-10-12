@@ -258,19 +258,17 @@ for (const width of [360, 412]) {
   });
 }
 
-test("API key cards open the editor immediately on desktop and mobile", async ({page}) => {
-  for (const width of [1280,360]) {
-    await page.setViewportSize({width,height:800});
-    await page.goto("/admin?tab=api-keys&e2e=1");
-    const edit=page.getByRole("button",{name:"Replace OpenAI API key"});
-    await edit.click();
-    const panel=page.getByRole("dialog");
-    await expect(panel).toBeVisible();
-    await expect(panel.getByLabel("New API key")).toBeVisible();
-    await expect(panel.getByRole("button",{name:"Save Key",exact:true})).toBeDisabled();
-    await expect.poll(async () => (await panel.getByRole("button",{name:"Save Key",exact:true}).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(width===360 ? 44 : 36);
-    await panel.getByRole("button",{name:"Cancel",exact:true}).click();
-  }
+test("provider settings direct desktop and mobile users to the central Cortex", async ({page}) => {
+ for (const width of [1280,360]) {
+  await page.setViewportSize({width,height:800});
+  await page.goto('/admin?tab=api-keys&e2e=1');
+  const link=page.getByRole('link',{name:'Open Fluba Cortex',exact:true});
+  await expect(link).toHaveAttribute('href','https://flubadesigns.com/admin/cortex');
+  await expect(link).toHaveAttribute('rel','noopener noreferrer');
+  await expect(page.getByLabel('New API key')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Save Key',exact:true})).toHaveCount(0);
+  expect(await page.locator('.admin-page').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+ }
 });
 
 test("checklist shows outstanding and recurring tasks and keeps completion after reload", async ({page}) => {
@@ -567,67 +565,18 @@ for (const width of [360, 412]) test(`pricing explains unavailable models with c
 });
 
 
-test.describe("touch API key management", () => {
-  test.use({hasTouch:true, viewport:{width:360,height:800}});
-  test("add, replace, retry and reload use one key form and safe provider links", async ({page}) => {
-    const links = [
-      ["OpenAI","https://platform.openai.com/api-keys"],
-      ["Anthropic (Claude)","https://platform.claude.com/settings/keys"],
-      ["xAI Grok","https://console.x.ai/team/default/api-keys"],
-      ["Google Gemini","https://aistudio.google.com/apikey"],
-    ];
-    let keys:any[]=[{id:"openai",label:"OpenAI",maskedKey:"stored••••1111",source:"env"}], reads=0, fail=false;
-    const writes:any[]=[];
-    await page.route("**/api-server/api/admin/api-keys**",async route=>{
-      if(route.request().method()==="GET") {reads++; return route.fulfill({json:{providers:keys}});}
-      const body=route.request().postDataJSON();
-      writes.push({id:new URL(route.request().url()).pathname.split("/").pop(),...body});
-      if(fail)return route.fulfill({status:500,json:{error:"Unable to save key. Try again."}});
-      const id=writes.at(-1).id;
-      keys=[...keys.filter(k=>k.id!==id),{id,label:body.label,maskedKey:"stored••••2222",source:"firestore"}];
-      return route.fulfill({json:{success:true}});
-    });
-    await page.goto("/admin?tab=api-keys&e2e=1");
-    for(const [label,href] of links) {
-      const link=page.getByRole("link",{name:`Get ${label} API key`,exact:true});
-      await expect(link).toHaveAttribute("href",href);
-      await expect(link).toHaveAttribute("target","_blank");
-      expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
-    }
-    const card=page.getByRole("region",{name:"OpenAI API key",exact:true});
-    expect((await card.boundingBox())!.height).toBeLessThan(230);
-    await page.getByRole("button",{name:"Replace OpenAI API key"}).tap();
-    let panel=page.getByRole("dialog"),field=panel.getByLabel("New API key");
-    await expect(field).toBeVisible();
-    await expect(field).toHaveAttribute("type","password");
-    await expect(field).toHaveValue("");
-    await field.fill("fictional-replacement-for-test");
-    fail=true;
-    await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
-    await expect(panel.getByRole("alert")).toHaveText("Unable to save key. Try again.");
-    await expect(field).toHaveValue("fictional-replacement-for-test");
-    fail=false;
-    await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
-    await expect(panel).toHaveCount(0);
-    await expect(card).toContainText("stored••••2222");
-    expect(writes.at(-1)).toMatchObject({id:"openai",key:"fictional-replacement-for-test",label:"OpenAI"});
-    await page.reload();await expect(card).toContainText("stored••••2222");
-    for(const [id,label] of [["anthropic","Anthropic (Claude)"],["grok","xAI Grok"],["gemini","Google Gemini"]]) {
-      await page.getByRole("button",{name:`Add ${label} API key`}).tap();
-      panel=page.getByRole("dialog");field=panel.getByLabel("New API key");
-      await expect(field).toHaveValue("");
-      await field.fill(`fictional-${id}-for-test`);
-      await panel.getByRole("button",{name:"Save Key",exact:true}).tap();
-      await expect(panel).toHaveCount(0);
-      expect(writes.at(-1)).toMatchObject({id,key:`fictional-${id}-for-test`,label});
-      await page.reload();
-      await page.getByRole("button",{name:`Replace ${label} API key`}).tap();
-      await expect(page.getByRole("dialog").getByLabel("New API key")).toHaveValue("");
-      await page.getByRole("button",{name:"Cancel",exact:true}).tap();
-    }
-    await page.clock.install();const before=reads;await page.clock.fastForward(90000);expect(reads).toBe(before);
-    expect(await page.locator(".admin-page").evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
-  });
+test.describe("touch central key management", () => {
+ test.use({hasTouch:true,viewport:{width:360,height:800}});
+ test("reload never reintroduces a local key editor or mutation",async({page})=>{
+  const mutations:string[]=[];
+  page.on('request',request=>{if(request.url().includes('/admin/api-keys')&&request.method()!=='GET')mutations.push(request.method());});
+  await page.goto('/admin?tab=api-keys&e2e=1');
+  await expect(page.getByRole('link',{name:'Open Fluba Cortex',exact:true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('link',{name:'Open Fluba Cortex',exact:true})).toBeVisible();
+  await expect(page.getByLabel('New API key')).toHaveCount(0);
+  expect(mutations).toEqual([]);
+ });
 });
 
 test("AI Studio shows discovered models awaiting pricing only after an on-demand refresh",async({page})=>{
