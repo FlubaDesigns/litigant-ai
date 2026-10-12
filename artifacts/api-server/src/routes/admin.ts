@@ -381,7 +381,7 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
     }
 
     // Send suspension email (fire-and-forget, non-fatal)
-    if (banned && isResendConfigured()) {
+    if (banned && (await isResendConfigured())) {
       sendAccountSuspendedEmail(req.params["uid"]!, reason)
         .catch((e) => console.error("[admin] Account-suspended email failed (non-fatal):", e));
     }
@@ -1315,42 +1315,9 @@ router.get("/admin/api-keys", requireAdmin, async (_req, res) => {
   }
 });
 
-/** PUT /admin/api-keys/:providerId — save or update a provider's API key */
-router.put("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
-  const { providerId } = req.params as { providerId: string };
-  const { key, label, baseUrl } = req.body as {
-    key?: string;
-    label?: string;
-    baseUrl?: string;
-  };
-
-  if (!key || typeof key !== "string" || key.trim().length < 8) {
-    return res.status(400).json({ error: "key must be a non-empty string (min 8 chars)" });
-  }
-  if (!label || typeof label !== "string" || label.trim().length === 0) {
-    return res.status(400).json({ error: "label is required" });
-  }
-
-  const sanitizedId = providerId.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
-
-  try {
-    await saveApiKey(sanitizedId, key.trim(), label.trim(), baseUrl?.trim() || undefined);
-    return res.json({ success: true, providerId: sanitizedId });
-  } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
-  }
-});
-
-/** DELETE /admin/api-keys/:providerId — remove Firestore override (env var fallback still applies) */
-router.delete("/admin/api-keys/:providerId", requireAdmin, async (req, res) => {
-  const { providerId } = req.params as { providerId: string };
-  try {
-    await deleteApiKey(providerId);
-    return res.json({ success: true, providerId, note: "env var fallback still applies if set" });
-  } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
-  }
-});
+/** Credentials are administered only through the central Cortex. */
+router.put("/admin/api-keys/:providerId", requireAdmin, (_req,res) => res.status(409).json({error:"Manage provider keys in Fluba Cortex.",url:"https://flubadesigns.com/admin/cortex"}));
+router.delete("/admin/api-keys/:providerId", requireAdmin, (_req,res) => res.status(409).json({error:"Manage provider keys in Fluba Cortex.",url:"https://flubadesigns.com/admin/cortex"}));
 
 // ── Seat Briefs ───────────────────────────────────────────────────────────────
 

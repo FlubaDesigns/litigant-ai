@@ -525,7 +525,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         if (!result.cancelled && billingState.settlementStatus === "settled") await checkAndTriggerAutoRefill(uid, newBalance, result.sessionId);
         newBalance = (await db.collection("users").doc(uid).get()).data()?.creditBalance ?? newBalance;
 
-        if (isResendConfigured()) {
+        if ((await isResendConfigured())) {
           const billingDefaults = await getBillingDefaults();
           const emailThreshold = billingDefaults.emailCreditWarningThreshold;
 

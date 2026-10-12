@@ -504,6 +504,7 @@ async function preflight(context) {
   await permissions('https://artifactregistry.googleapis.com/v1/projects/litigant-ai/locations/us/repositories/gcr.io:testIamPermissions', ['artifactregistry.repositories.get', 'artifactregistry.repositories.downloadArtifacts', 'artifactregistry.repositories.uploadArtifacts'], 'existing LAI image repository');
   await permissions('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions', ['datastore.indexes.list', 'datastore.indexes.create'], 'LAI exact payment-history index');
   await writeFile(tempPath(context, 'runtime.json'), JSON.stringify({ fingerprint: runtimeFingerprint(service), resourceVersion: service.metadata.resourceVersion, sourceCommit: context.controllerSha }), { mode: 0o600 });
+  console.log('LAI_RUNTIME_IDENTITY '+JSON.stringify({projectId:'litigant-ai',service:'api',serviceAccount:account}));
   console.log('Read-only cloud preflight passed: existing project, Firebase site, ready API, 100% latest-revision traffic and deploy permissions.');
   return service;
 }

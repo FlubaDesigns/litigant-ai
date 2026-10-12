@@ -13,10 +13,10 @@ export class GeminiProvider implements AIProvider {
 
   constructor(model = "gemini-2.5-pro", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
-    const apiKey = credentials?.key ?? process.env["GEMINI_API_KEY"];
-    if (!apiKey) throw new Error("Gemini not configured — set GEMINI_API_KEY or add key in Admin → API Keys");
+    const apiKey = credentials?.key;
+    if (!apiKey) throw new Error("Gemini not configured — check the Fluba Cortex connection");
     this.client = new OpenAI({
-      baseURL: credentials?.baseUrl ?? PROVIDER_BASE_URLS.gemini,
+      baseURL: PROVIDER_BASE_URLS.gemini,
       apiKey,
     });
   }

@@ -253,7 +253,7 @@ router.post("/auth/send-verification", verifyByIpLimiter, async (req, res) => {
   const decoded = await verifyIdToken(authHeader.slice(7));
   if (!decoded) return res.status(401).json({ error: "Unauthorized" });
 
-  if (!isResendConfigured()) {
+  if (!(await isResendConfigured())) {
     return res.status(503).json({ error: "Email service not configured" });
   }
 
@@ -278,7 +278,7 @@ router.post("/auth/send-password-reset", resetByEmailLimiter, resetByIpLimiter, 
     return res.status(400).json({ error: "email is required" });
   }
 
-  if (!isResendConfigured()) {
+  if (!(await isResendConfigured())) {
     return res.status(503).json({ error: "Email service not configured" });
   }
 

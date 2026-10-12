@@ -13,10 +13,10 @@ export class GrokProvider implements AIProvider {
 
   constructor(model = DEFAULT_MODELS.grok, credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
-    const apiKey = credentials?.key ?? process.env["XAI_API_KEY"];
-    if (!apiKey) throw new Error("Grok not configured — set XAI_API_KEY or add key in Admin → API Keys");
+    const apiKey = credentials?.key;
+    if (!apiKey) throw new Error("Grok not configured — check the Fluba Cortex connection");
     this.client = new OpenAI({
-      baseURL: credentials?.baseUrl ?? PROVIDER_BASE_URLS.grok,
+      baseURL: PROVIDER_BASE_URLS.grok,
       apiKey,
     });
   }
