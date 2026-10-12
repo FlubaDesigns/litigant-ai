@@ -111,6 +111,22 @@ test('revoked pre-existing Cortex grant stops before credential or runtime mutat
   assert.equal(f.updated,false);
   assert.ok(!f.calls.some(c=>/:(setIamPolicy|addVersion)$|\?secretId=/.test(c.url)));
 });
+test('preflight reports all missing policy and credential grants together without mutations or values',async()=>{
+  const f=fixture({denyPolicyWrites:true}),read=f.args.read;
+  f.args.read=async(url,label,method,body)=>{
+    const result=await read(url,label,method,body);
+    if(url.endsWith(':testIamPermissions'))result.permissions=result.permissions.filter(p=>p!=='secretmanager.versions.access');
+    return result;
+  };
+  await assert.rejects(migrateCredentials(f.args),error=>{
+    assert.match(error.message,/resourcemanager.projects.setIamPolicy/);
+    assert.match(error.message,/run.services.setIamPolicy/);
+    for(const name of NAMES) {assert.ok(error.message.includes(name));assert.ok(!error.message.includes(value(name)));}
+    return true;
+  });
+  assert.equal(f.updated,false);
+  assert.ok(!f.calls.some(c=>/:(setIamPolicy|addVersion|access)$|\?secretId=/.test(c.url)));
+});
 test('concurrent source change stops before runtime switch',async()=>{
   const f=fixture({drift:true});await assert.rejects(migrateCredentials(f.args),/Main changed/);assert.equal(f.updated,false);
 });

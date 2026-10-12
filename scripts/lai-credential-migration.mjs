@@ -76,11 +76,13 @@ export function verifyBindings(service, versions) {
     assert(ref?.name===name && ref.key===versions[name],'Pinned runtime binding mismatch for '+name);
   }
 }
-async function requirePermissions(read,url,permissions,label) {
+async function requirePermissions(read,url,permissions,label,gaps) {
   const actual=await read(url,label,'POST',{permissions});
   const granted=new Set(actual.permissions||[]);
   const missing=permissions.filter(permission=>!granted.has(permission));
+  if(missing.length&&gaps) {gaps.push(label+': '+missing.join(', '));return false;}
   assert(missing.length===0,label+' missing permissions: '+missing.join(', '));
+  return true;
 }
 async function optional(read,url,label) {
   try {return await read(url,label);} catch(error) {if(error.httpStatus===404)return null;throw error;}
@@ -115,16 +117,17 @@ export async function prepareMigration(service, read) {
   assert(projectPolicy.etag&&servicePolicy.etag,'Concurrent policy protection required');
   const updateProjectPolicy=!hasCortexRole(projectPolicy,'roles/secretmanager.admin');
   const updateServicePolicy=!hasCortexRole(servicePolicy,'roles/run.viewer');
+  const permissionGaps=[];
   if(updateProjectPolicy) await requirePermissions(read,PROJECT+':testIamPermissions',
-    ['resourcemanager.projects.setIamPolicy'], 'Cortex full credential access');
+    ['resourcemanager.projects.setIamPolicy'], 'Cortex full credential access',permissionGaps);
   if(updateServicePolicy) await requirePermissions(read,SERVICE+':testIamPermissions',
-    ['run.services.setIamPolicy'], 'Cortex API visibility');
+    ['run.services.setIamPolicy'], 'Cortex API visibility',permissionGaps);
   const entries=[];
   for(const name of NAMES) {
     const resource=ROOT+'/'+name;
     const metadata=await optional(read,resource,'read named credential metadata');
     if(metadata) {
-      await requirePermissions(read,resource+':testIamPermissions',REQUIRED,'existing credential '+name);
+      if(!await requirePermissions(read,resource+':testIamPermissions',REQUIRED,'existing credential '+name,permissionGaps))continue;
       const policy=await read(resource+':getIamPolicy?options.requestedPolicyVersion=3','read named credential policy');
       const latest=await optional(read,resource+'/versions/latest','read credential version metadata');
       let version=null;
@@ -135,11 +138,12 @@ export async function prepareMigration(service, read) {
       }
       entries.push({name,policy,version,exists:true});
     } else {
-      await requirePermissions(read,'https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions',
-        ['secretmanager.secrets.create',...REQUIRED],'new credential '+name);
+      if(!await requirePermissions(read,'https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions',
+        ['secretmanager.secrets.create',...REQUIRED],'new credential '+name,permissionGaps))continue;
       entries.push({name,policy:null,version:null,exists:false});
     }
   }
+  assert(permissionGaps.length===0,'Credential migration missing permissions: '+permissionGaps.join('; '));
   return {values,runtimeMember,entries,projectPolicy,servicePolicy,updateProjectPolicy,updateServicePolicy};
 }
 export async function migrateCredentials({before,read,assertCurrent,readRuntime,updateRuntime,fingerprint,assertReady,verifyHealth}) {
