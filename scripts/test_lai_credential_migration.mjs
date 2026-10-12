@@ -9,14 +9,18 @@ const project='https://cloudresourcemanager.googleapis.com/v1/projects/litigant-
 const run='https://run.googleapis.com/v2/projects/litigant-ai/locations/us-central1/services/api';
 function policy(){return {version:3,etag:'fixture-etag',bindings:[{role:'roles/viewer',members:['user:fixture@example.invalid'],condition:{title:'preserve',expression:'false'}}],auditConfigs:[{service:'allServices',auditLogConfigs:[{logType:'ADMIN_READ'}]}]};}
 function snapshot(){return {apiVersion:'serving.knative.dev/v1',kind:'Service',metadata:{name:'api',namespace:'litigant-ai',resourceVersion:'1'},spec:{template:{metadata:{name:'api-old'},spec:{serviceAccountName:'fixture@litigant-ai.iam.gserviceaccount.com',containers:[{image:'fixture-image',env:[...NAMES.map(name=>({name,value:value(name)})),{name:'ADMIN_MASTER_SECRET',value:''},{name:'OTHER_CONFIG',value:'preserve'},{name:'DEPLOY_GIT_SHA',value:'fixture-source'}]}]}},traffic:[{latestRevision:true,percent:100}]},status:{url:'https://fixture.run.app'}};}
-function fixture({deny=false,drift=false,corrupt=false}={}){
+function fixture({deny=false,drift=false,corrupt=false,pregranted=false,denyPolicyWrites=false}={}){
   const before=snapshot(),calls=[],secrets=new Map(),policies=new Map([[project,policy()],[run,policy()]]);
+  if(pregranted) {
+    policies.set(project,accessPolicy(policy(),'roles/secretmanager.admin'));
+    policies.set(run,accessPolicy(policy(),'roles/run.viewer'));
+  }
   secrets.set('SQUARE_ACCESS_TOKEN',{version:'1',value:value('SQUARE_ACCESS_TOKEN')});
   policies.set(root+'/SQUARE_ACCESS_TOKEN',policy());
   let live=structuredClone(before),updated=false,healthy=false,guards=0;
   async function read(url,label,method='GET',body){
     calls.push({url,method,body});
-    if(url.endsWith(':testIamPermissions'))return {permissions:deny?[]:body.permissions};
+    if(url.endsWith(':testIamPermissions'))return {permissions:deny?[]:body.permissions.filter(permission=>!denyPolicyWrites||!['resourcemanager.projects.setIamPolicy','run.services.setIamPolicy'].includes(permission))};
     const base=url.split(':getIamPolicy')[0].split(':setIamPolicy')[0];
     if(url.includes(':getIamPolicy'))return structuredClone(policies.get(base)||policy());
     if(url.endsWith(':setIamPolicy')){policies.set(base,structuredClone(body.policy));return body.policy;}
@@ -79,6 +83,49 @@ test('migration preserves values and app, reuses matching version and grants all
 test('missing permissions cause zero cloud mutations',async()=>{
   const f=fixture({deny:true});await assert.rejects(migrateCredentials(f.args),/missing permissions/);
   assert.equal(f.updated,false);assert.ok(!f.calls.some(c=>/:(setIamPolicy|addVersion)$|\?secretId=/.test(c.url)));
+});
+test('existing Cortex grants allow migration without project or service policy write permission',async()=>{
+  const f=fixture({pregranted:true,denyPolicyWrites:true});
+  const result=await migrateCredentials(f.args);
+  assert.equal(result.valuesPreserved,true);assert.equal(f.healthy,true);
+  assert.ok(!f.calls.some(c=>[project+':setIamPolicy',run+':setIamPolicy'].includes(c.url)));
+  assert.ok(!f.calls.some(c=>c.url.endsWith(':testIamPermissions')&&c.body.permissions.some(p=>['resourcemanager.projects.setIamPolicy','run.services.setIamPolicy'].includes(p))));
+});
+test('missing or conditional Cortex grants still require policy write permission before any mutation',async()=>{
+  for(const resource of [project,run]) for(const mode of ['missing','conditional','wrong-principal']) {
+    const f=fixture({pregranted:true,denyPolicyWrites:true});
+    const grant=f.policies.get(resource).bindings[1];
+    if(mode==='missing')f.policies.get(resource).bindings.pop();
+    if(mode==='conditional')grant.condition={title:'limited',expression:'false'};
+    if(mode==='wrong-principal')grant.members=['user:fixture@example.invalid'];
+    await assert.rejects(migrateCredentials(f.args),/missing permissions/);
+    assert.equal(f.updated,false);
+    assert.ok(!f.calls.some(c=>/:(setIamPolicy|addVersion)$|\?secretId=/.test(c.url)));
+  }
+});
+test('revoked pre-existing Cortex grant stops before credential or runtime mutation',async()=>{
+  const f=fixture({pregranted:true,denyPolicyWrites:true});
+  const assertCurrent=f.args.assertCurrent;
+  f.args.assertCurrent=async()=>{await assertCurrent();f.policies.get(project).bindings.pop();};
+  await assert.rejects(migrateCredentials(f.args),/policy verification failed/);
+  assert.equal(f.updated,false);
+  assert.ok(!f.calls.some(c=>/:(setIamPolicy|addVersion)$|\?secretId=/.test(c.url)));
+});
+test('preflight reports all missing policy and credential grants together without mutations or values',async()=>{
+  const f=fixture({denyPolicyWrites:true}),read=f.args.read;
+  f.args.read=async(url,label,method,body)=>{
+    const result=await read(url,label,method,body);
+    if(url.endsWith(':testIamPermissions'))result.permissions=result.permissions.filter(p=>p!=='secretmanager.versions.access');
+    return result;
+  };
+  await assert.rejects(migrateCredentials(f.args),error=>{
+    assert.match(error.message,/resourcemanager.projects.setIamPolicy/);
+    assert.match(error.message,/run.services.setIamPolicy/);
+    for(const name of NAMES) {assert.ok(error.message.includes(name));assert.ok(!error.message.includes(value(name)));}
+    return true;
+  });
+  assert.equal(f.updated,false);
+  assert.ok(!f.calls.some(c=>/:(setIamPolicy|addVersion|access)$|\?secretId=/.test(c.url)));
 });
 test('concurrent source change stops before runtime switch',async()=>{
   const f=fixture({drift:true});await assert.rejects(migrateCredentials(f.args),/Main changed/);assert.equal(f.updated,false);
