@@ -2,6 +2,7 @@
  * No private Engine implementation or credentials belong in this public repository.
  */
 import assert from 'node:assert/strict';
+import { migrateCredentials, prepareMigration, migrationValues } from './lai-credential-migration.mjs';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -39,7 +40,7 @@ export function validateDescriptor(d, controllerSha) {
   exactKeys(d, ['schemaVersion', 'action', 'sourceCommit', 'project', 'region', 'service', 'hostingSite', 'approval'], 'descriptor');
   assert.equal(d.schemaVersion, 1); assert.equal(d.project, 'litigant-ai');
   assert.equal(d.region, 'us-central1'); assert.equal(d.service, 'api'); assert.equal(d.hostingSite, 'litigant-ai');
-  assert(['inspect', 'deploy'].includes(d.action), 'unsupported action');
+  assert(['inspect', 'deploy', 'migrate-credentials'].includes(d.action), 'unsupported action');
   if (d.action === 'inspect') {
     assert.equal(d.sourceCommit, null, 'inspect resolves only the controller SHA');
     assert.equal(d.approval, null, 'inspect cannot carry deployment approval');
@@ -221,7 +222,7 @@ async function verifyCiAndEvidence(context, descriptor) {
   const current = await github(`actions/runs/${context.runId}`);
   validRun(current, context.controllerSha); assert.equal(current.run_attempt, context.attempt, 'controller attempt changed');
   validateCheckJob(await allJobs(context.runId, context.attempt), context.controllerSha, context.attempt);
-  if (descriptor.action === 'deploy') {
+  if (descriptor.action !== 'inspect') {
     const commit = await github(`commits/${context.controllerSha}?per_page=100`);
     validateDeploymentCommit(commit, commit.files, descriptor.sourceCommit);
     const inspected = await contentAt(DESCRIPTOR, descriptor.sourceCommit);
@@ -534,12 +535,39 @@ async function release() {
   const before = await preflight(context);
   if (descriptor.action === 'inspect') {
     console.log('LAI_CREDENTIAL_WIRING ' + JSON.stringify(await inspectCredentialWiring(before)));
+    let migrationPending=true;
+    try { migrationValues(before); } catch { migrationPending=false; }
+    if(migrationPending) {
+      await prepareMigration(before,cloud);
+      console.log('LAI_CREDENTIAL_ACCESS_PREFLIGHT '+JSON.stringify({ready:true,scope:'all-project-credentials',mutation:false}));
+    }
     const indexes = await paymentIndexes();
     console.log(`Read-only payment-index collection metadata: ${JSON.stringify(paymentIndexMetadata(indexes))}`);
     const catalog = await paymentIndexes(cloud, true);
     console.log(`Read-only payment-index catalog metadata: ${JSON.stringify(paymentIndexMetadata(catalog))}`);
     await paymentHistoryIndexGate(context, descriptor, { list: async () => indexes });
     console.log(`Inspection complete. Approve this exact cloud-preflight run ${context.runId}, attempt ${context.attempt}, SHA ${context.controllerSha} in the private Engine before a descriptor-only deployment commit.`);
+    return;
+  }
+  if (descriptor.action === 'migrate-credentials') {
+    const result=await migrateCredentials({before,read:cloud,
+      assertCurrent:()=>verifyCiAndEvidence(context,descriptor),readRuntime:serviceSnapshot,
+      updateRuntime:async replacement=>{
+        await cloud(SERVICE_URL,'replace approved runtime credential bindings','PUT',replacement);
+        await retryRead(async()=>{
+          const current=await serviceSnapshot();
+          assert(current.status.latestReadyRevisionName!==before.status.latestReadyRevisionName,'Credential revision is not ready yet');
+          assert(String(current.status.observedGeneration)===String(current.metadata.generation),'Runtime update not reconciled yet');
+        });
+      },
+      fingerprint:runtimeFingerprint,assertReady:assertServiceReady,
+      verifyHealth:async url=>{
+        const source=before.spec.template.spec.containers[0].env.find(entry=>entry.name==='DEPLOY_GIT_SHA')?.value;
+        assert(SHA.test(source),'Existing application provenance required');
+        await retryRead(()=>verifyApi(url,source));
+      },
+    });
+    console.log('LAI_CREDENTIAL_MIGRATION '+JSON.stringify(result));
     return;
   }
   const built = JSON.parse(await readFile(tempPath(context, 'build.json'), 'utf8'));
