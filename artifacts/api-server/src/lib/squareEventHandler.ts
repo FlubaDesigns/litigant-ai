@@ -158,7 +158,7 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         logger.info(`[SquareEvent] Granted ${creditAmount} credits to ${userId}`);
 
         // Send payment receipt — only on a genuine, non-duplicate completed payment
-        if (isResendConfigured()) {
+        if ((await isResendConfigured())) {
           const amountPaidCents = (payment.amount_money?.amount as number | undefined) ?? 0;
           const newBalance = result?.newBalance ?? 0;
           sendPaymentReceiptEmail(userId, creditAmount, amountPaidCents, newBalance)

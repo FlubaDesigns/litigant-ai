@@ -21,7 +21,7 @@ const finish=(opts:any,extra:object={})=>({sessionId:opts.sessionId,model:"fixtu
 const events=(text:string)=>text.split("\n\n").filter(s=>s.startsWith("data: ")).map(s=>JSON.parse(s.slice(6)));
 let db:ReturnType<typeof billingRecoveryDatabase>;
 const runRecord=()=>Object.entries(db.store).find(([key])=>key.startsWith("credit_runs/"))!;
-beforeEach(()=>{vi.clearAllMocks();vi.mocked(isResendConfigured).mockReturnValue(false);vi.stubGlobal("fetch",vi.fn(()=>{throw new Error("External calls forbidden");}));db=billingRecoveryDatabase({"users/u":{plan:"pro",creditBalance:500}});vi.mocked(getFirestoreDb).mockReturnValue(db as any);vi.mocked(verifyIdToken).mockResolvedValue({uid:"u",emailVerified:true} as any);vi.mocked(runBrainSession).mockImplementation(async opts=>finish(opts));});
+beforeEach(()=>{vi.clearAllMocks();vi.mocked(isResendConfigured).mockResolvedValue(false);vi.stubGlobal("fetch",vi.fn(()=>{throw new Error("External calls forbidden");}));db=billingRecoveryDatabase({"users/u":{plan:"pro",creditBalance:500}});vi.mocked(getFirestoreDb).mockReturnValue(db as any);vi.mocked(verifyIdToken).mockResolvedValue({uid:"u",emailVerified:true} as any);vi.mocked(runBrainSession).mockImplementation(async opts=>finish(opts));});
 describe("production brain route billing recovery",()=>{
  it("independent concurrent routes never hand out overlapping execution caps",async()=>{
   let entered!:()=>void,release!:()=>void;
@@ -93,28 +93,28 @@ describe("production brain route billing recovery",()=>{
 
 describe("notifications respect preferences and settled balances",()=>{
  it("nested completion opt-out overrides legacy true for both completion templates",async()=>{
-  vi.mocked(isResendConfigured).mockReturnValue(true);db.store["users/u"].notifySessionComplete=true;db.store["users/u"].notifications={sessionComplete:false};
+  vi.mocked(isResendConfigured).mockResolvedValue(true);db.store["users/u"].notifySessionComplete=true;db.store["users/u"].notifications={sessionComplete:false};
   await call();expect(sendFirstSessionEmail).not.toHaveBeenCalled();expect(sendSessionCompleteEmail).not.toHaveBeenCalled();
  });
  it("an opt-out while the run is executing takes effect before delivery",async()=>{
-  vi.mocked(isResendConfigured).mockReturnValue(true);db.store["users/u"].notifications={sessionComplete:true};
+  vi.mocked(isResendConfigured).mockResolvedValue(true);db.store["users/u"].notifications={sessionComplete:true};
   vi.mocked(runBrainSession).mockImplementation(async opts=>{db.store["users/u"].notifications.sessionComplete=false;return finish(opts);});
   await call();expect(sendFirstSessionEmail).not.toHaveBeenCalled();expect(sendSessionCompleteEmail).not.toHaveBeenCalled();
  });
  it("does not send shortage prompts while any other conversation holds credits",async()=>{
-  vi.mocked(isResendConfigured).mockReturnValue(true);
+  vi.mocked(isResendConfigured).mockResolvedValue(true);
   vi.mocked(runBrainSession).mockImplementation(async opts=>{await reserveCreditRun("u",400,"other","other");return finish(opts,{creditsUsed:10});});
   await call({config:{...config,maxCredits:100}});expect(db.store["users/u"].creditBalance).toBe(90);
   expect(sendLowCreditsEmail).not.toHaveBeenCalled();expect(sendZeroCreditsEmail).not.toHaveBeenCalled();
  });
  it("still delivers opted-in saved completion email while its refund is pending",async()=>{
-  vi.mocked(isResendConfigured).mockReturnValue(true);db.store["users/u"].notifications={sessionComplete:true};
+  vi.mocked(isResendConfigured).mockResolvedValue(true);db.store["users/u"].notifications={sessionComplete:true};
   db.failTransactionsWhen(writes=>writes.some(w=>w.data.type==="refund"));await call();
   expect(sendSessionCompleteEmail).toHaveBeenCalledOnce();expect(sendFirstSessionEmail).toHaveBeenCalledOnce();
   expect(sendLowCreditsEmail).not.toHaveBeenCalled();expect(sendZeroCreditsEmail).not.toHaveBeenCalled();
  });
  it("does not send zero-balance prompts from its own unreturned reservation",async()=>{
-  vi.mocked(isResendConfigured).mockReturnValue(true);db.failTransactionsWhen(writes=>writes.some(w=>w.data.type==="refund"));
+  vi.mocked(isResendConfigured).mockResolvedValue(true);db.failTransactionsWhen(writes=>writes.some(w=>w.data.type==="refund"));
   await call();expect(sendLowCreditsEmail).not.toHaveBeenCalled();expect(sendZeroCreditsEmail).not.toHaveBeenCalled();
  });
 });

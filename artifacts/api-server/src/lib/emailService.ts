@@ -1,3 +1,4 @@
+import { readFlubaProviderKey } from "./flubaProviderKeys.js";
 import crypto from "node:crypto";
 import { Resend } from "resend";
 import { getAuth } from "firebase-admin/auth";
@@ -13,15 +14,10 @@ import {
   type EmailTemplateId,
 } from "./emailTemplateStore.js";
 
-let resend: Resend | null = null;
-
-function getResend(): Resend {
-  if (!resend) {
-    const key = process.env["RESEND_API_KEY"];
-    if (!key) throw new Error("RESEND_API_KEY is not set");
-    resend = new Resend(key);
-  }
-  return resend;
+async function getResend(): Promise<Resend> {
+  const key = await readFlubaProviderKey("RESEND_API_KEY");
+  if (!key) throw new Error("Resend is not configured in Fluba.");
+  return new Resend(key);
 }
 
 const FROM = "Litigant AI <noreply@send.litigant-ai.com>";
@@ -458,7 +454,7 @@ export async function sendVerificationEmail(uid: string): Promise<boolean> {
     name, bonusCredits: billing.signupBonusCredits,
   });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: verificationTemplate(link, intro, headline),
   });
@@ -473,7 +469,7 @@ export async function sendPasswordResetEmail(email: string): Promise<boolean> {
   try { name = (await getAuth().getUserByEmail(email)).displayName ?? name; } catch { /* ok */ }
   const { enabled, subject, headline, intro } = await resolveTemplate("passwordReset", { name });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: email, subject,
     html: passwordResetTemplate(link, intro, headline),
   });
@@ -488,7 +484,7 @@ export async function sendWelcomeEmail(uid: string, idempotencyKey?: string): Pr
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("welcome", { name });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: welcomeTemplate(intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -505,7 +501,7 @@ export async function sendLowCreditsEmail(uid: string, balance: number, threshol
     name, balance: balance.toLocaleString(), threshold: threshold.toLocaleString(),
   });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: lowCreditsTemplate(intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -522,7 +518,7 @@ export async function sendSessionCompleteEmail(
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("sessionComplete", { name });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: sessionCompleteTemplate(sessionId, title, creditsUsed, intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -541,7 +537,7 @@ export async function sendPaymentReceiptEmail(
     name, credits: creditsAdded.toLocaleString(),
   });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: paymentReceiptTemplate(creditsAdded, `$${(amountPaidCents / 100).toFixed(2)}`, newBalance, intro, headline),
   });
@@ -557,7 +553,7 @@ export async function sendAccountSuspendedEmail(uid: string, reason?: string): P
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("accountSuspended", { name });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email, subject,
     html: accountSuspendedTemplate(reason, intro, headline),
   });
@@ -574,7 +570,7 @@ export async function sendReengagementEmail(uid: string, creditBalance: number, 
     name, credits: creditBalance.toLocaleString(),
   });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email, subject,
     html: reengagementTemplate(creditBalance, intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -591,7 +587,7 @@ export async function sendFirstSessionEmail(
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("firstSession", { name });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: firstSessionTemplate(sessionId, title, intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -606,7 +602,7 @@ export async function sendZeroCreditsEmail(uid: string, idempotencyKey?: string)
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("zeroCredits", { name });
   if (!enabled) return false;
-  const { error } = await getResend().emails.send({
+  const { error } = await (await getResend()).emails.send({
     from: FROM, to: user.email!, subject,
     html: zeroCreditsTemplate(intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -702,6 +698,6 @@ export async function runReengagementCampaign(inactiveDays = 14): Promise<{sent:
   return stats;
 }
 
-export function isResendConfigured(): boolean {
-  return !!process.env["RESEND_API_KEY"];
+export async function isResendConfigured(): Promise<boolean> {
+  return !!(await readFlubaProviderKey("RESEND_API_KEY"));
 }

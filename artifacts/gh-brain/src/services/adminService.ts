@@ -540,7 +540,7 @@ export interface ProviderKeyInfo {
   label: string;
   maskedKey: string;
   baseUrl?: string;
-  source: "firestore" | "env";
+  source: "fluba";
   updatedAt?: string;
 }
 

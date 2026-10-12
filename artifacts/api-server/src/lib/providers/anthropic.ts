@@ -13,9 +13,9 @@ export class AnthropicProvider implements AIProvider {
 
   constructor(model = "claude-haiku-4-5", credentials?: { key: string; baseUrl?: string }) {
     this.model = model;
-    const apiKey = credentials?.key ?? process.env["ANTHROPIC_API_KEY"];
-    if (!apiKey) throw new Error("Anthropic not configured — set ANTHROPIC_API_KEY or add key in Admin → API Keys");
-    this.client = new Anthropic({ apiKey, baseURL: credentials?.baseUrl ?? PROVIDER_BASE_URLS.anthropic });
+    const apiKey = credentials?.key;
+    if (!apiKey) throw new Error("Anthropic not configured — check the Fluba Cortex connection");
+    this.client = new Anthropic({ apiKey, baseURL: PROVIDER_BASE_URLS.anthropic });
   }
 
   getLastUsage(): TokenUsageSnapshot | null {

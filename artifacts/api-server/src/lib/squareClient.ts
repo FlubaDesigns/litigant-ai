@@ -1,10 +1,11 @@
+import { readFlubaProviderKey } from "./flubaProviderKeys.js";
 const SQUARE_BASE_URL =
   process.env["SQUARE_ENVIRONMENT"] === "production"
     ? "https://connect.squareup.com"
     : "https://connect.squareupsandbox.com";
 
-export function isSquareConfigured(): boolean {
-  return !!(process.env["SQUARE_ACCESS_TOKEN"] && process.env["SQUARE_LOCATION_ID"]);
+export async function isSquareConfigured(): Promise<boolean> {
+  return !!(process.env["SQUARE_LOCATION_ID"] && await readFlubaProviderKey("SQUARE_ACCESS_TOKEN"));
 }
 
 export function getSquareLocationId(): string {
@@ -17,7 +18,7 @@ async function squareFetch<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = process.env["SQUARE_ACCESS_TOKEN"];
+  const token = await readFlubaProviderKey("SQUARE_ACCESS_TOKEN");
   if (!token) throw new Error("SQUARE_ACCESS_TOKEN not set");
 
   const res = await fetch(`${SQUARE_BASE_URL}${path}`, {

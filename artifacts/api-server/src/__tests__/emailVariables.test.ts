@@ -1,3 +1,4 @@
+vi.mock('../lib/flubaProviderKeys.js',()=>({readFlubaProviderKey:vi.fn(async()=> 'central-provider-test-fixture')}));
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const { send } = vi.hoisted(() => ({ send: vi.fn(async () => ({ error: null })) }));
 vi.mock("resend", () => ({ Resend: class { emails = { send }; } }));

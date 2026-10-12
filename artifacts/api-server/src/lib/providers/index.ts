@@ -15,20 +15,8 @@ import { GeminiProvider } from "./gemini.js";
 import { CustomProvider } from "./custom.js";
 import { getApiKey, getAllConfiguredProviders } from "../apiKeyStore.js";
 
-/** Synchronous provider creation using only env vars — for internal/test use */
-export function createProvider(name: ProviderName, model?: string): AIProvider {
-  const m = model ?? DEFAULT_MODELS[name];
-  switch (name) {
-    case "openai":    return new OpenAIProvider(m);
-    case "anthropic": return new AnthropicProvider(m);
-    case "grok":      return new GrokProvider(m);
-    case "gemini":    return new GeminiProvider(m);
-    default: throw new Error(`Use the configured catalog for provider ${name}`);
-  }
-}
-
 /**
- * Async provider creation — checks Firestore apiKeyStore first, then env vars.
+ * Async provider creation — reads the provider key from Fluba.
  * Supports both built-in and fully custom providers (OpenAI-compatible).
  */
 export async function createProviderAsync(
@@ -40,7 +28,7 @@ export async function createProviderAsync(
 
   if (!creds) {
     throw new Error(
-      `Provider "${id}" is not configured. Add its API key in Admin → API Keys.`
+      `Provider "${id}" is not configured. Check its connection in Fluba Cortex.`
     );
   }
 
@@ -69,18 +57,4 @@ export async function createProviderAsync(
 export async function getConfiguredProvidersAsync(): Promise<string[]> {
   const all = await getAllConfiguredProviders();
   return all.filter(p => Object.hasOwn(DEFAULT_MODELS, p.id) || !!p.baseUrl).map(p => p.id);
-}
-
-/** Synchronous env-var-only check (for startup health, no Firestore) */
-export function getConfiguredProviders(): ProviderName[] {
-  const configured: ProviderName[] = [];
-  const hasOpenAI =
-    !!process.env["OPENAI_API_KEY"] ||
-    (!!process.env["AI_INTEGRATIONS_OPENAI_BASE_URL"] &&
-      !!process.env["AI_INTEGRATIONS_OPENAI_API_KEY"]);
-  if (hasOpenAI)                       configured.push("openai");
-  if (process.env["ANTHROPIC_API_KEY"]) configured.push("anthropic");
-  if (process.env["XAI_API_KEY"])       configured.push("grok");
-  if (process.env["GEMINI_API_KEY"])    configured.push("gemini");
-  return configured;
 }

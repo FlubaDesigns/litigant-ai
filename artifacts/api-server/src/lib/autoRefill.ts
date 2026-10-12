@@ -20,7 +20,7 @@ export async function getAutoRefillStatus(uid:string) {
   const [account,user]=await Promise.all([db.collection("billing_accounts").doc(uid).get(),db.collection("users").doc(uid).get()]);
   const data=account.data()??{}, pref=user.data()?.autoRefill;
   const recent=data.recentCardPayment;
-  return {available:isSquareConfigured(), enabled:pref?.enabled===true && pref?.consentVersion===AUTO_REFILL_CONSENT_VERSION,
+  return {available:(await isSquareConfigured()), enabled:pref?.enabled===true && pref?.consentVersion===AUTO_REFILL_CONSENT_VERSION,
     card:data.cardId ? {brand:data.cardBrand,last4:data.cardLast4} : null,
     recentCard:recent && recent.authorizedAt>Date.now()-86400000 ? {brand:recent.brand,last4:recent.last4} : null,
     status:data.refillStatus??"idle", error:data.refillError??null};
@@ -75,7 +75,7 @@ export async function recordRefillPayment(uid:string, payment:SquarePayment) {
 
 /** Recover only the existing attempt. This read/status path NEVER creates a charge. */
 export async function reconcileAutoRefillAttempt(uid: string) {
-  if (!isSquareConfigured()) return;
+  if (!(await isSquareConfigured())) return;
   const db=database(), account=db.collection("billing_accounts").doc(uid);
   const attempt = await db.runTransaction(async tx => {
     const billing=(await tx.get(account)).data();
@@ -128,7 +128,7 @@ export async function setAutoRefillPreference(uid:string, opts:{enabled:boolean;
     });
     return;
   }
-  if(!isSquareConfigured()) throw new Error("Square is unavailable. Use manual checkout for now.");
+  if(!(await isSquareConfigured())) throw new Error("Square is unavailable. Use manual checkout for now.");
   if(current.guestInvitationId || current.banned) throw new Error("This account cannot enable automatic payments.");
   const previous=current.autoRefill;
   const sameConsent=previous?.enabled===true && previous.consentVersion===AUTO_REFILL_CONSENT_VERSION && previous.dollarAmount===opts.dollarAmount && previous.thresholdCredits===opts.thresholdCredits;
@@ -181,7 +181,7 @@ export async function removeAutoRefillCard(uid:string) {
 
 /** One authorized charge per completed run; concurrent runs share a durable attempt and Square idempotency key. */
 export async function checkAndTriggerAutoRefill(uid:string, _newBalance:number, sessionId:string) {
-  if(!isSquareConfigured()) return;
+  if(!(await isSquareConfigured())) return;
   const db=database(), user=db.collection("users").doc(uid), account=db.collection("billing_accounts").doc(uid);
   const proposedId=crypto.randomUUID(), now=Date.now();
   const attempt: {id:string;paymentId?:string;request:Record<string,unknown>} | null=await db.runTransaction(async tx=>{

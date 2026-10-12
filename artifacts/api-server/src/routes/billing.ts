@@ -204,7 +204,7 @@ router.post("/billing/checkout", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  if (!isSquareConfigured()) {
+  if (!(await isSquareConfigured())) {
     return res.status(503).json({ error: "Square not configured" });
   }
 
@@ -254,7 +254,7 @@ router.post("/billing/checkout/custom", async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  if (!isSquareConfigured()) {
+  if (!(await isSquareConfigured())) {
     return res.status(503).json({ error: "Square not configured" });
   }
 
