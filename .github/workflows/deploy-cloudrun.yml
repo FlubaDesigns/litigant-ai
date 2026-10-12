@@ -116,3 +116,11 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
       - name: Verify existing LAI cloud access
         run: node scripts/lai-release.mjs release
+      - name: Preserve verified runtime identity metadata for central key access
+        if: steps.plan.outputs.action == 'inspect'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lai-runtime-identity
+          path: ${{ runner.temp }}/lai-${{ github.run_id }}-${{ github.run_attempt }}-identity.json
+          if-no-files-found: error
+          retention-days: 7

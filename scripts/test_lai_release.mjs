@@ -15,6 +15,7 @@ import {
   validateCheckJob,
   validateHostingConfig,
   runtimeFingerprint,
+  runtimeIdentityEvidence,
   assertServiceReady,
   assertAllowedImage,
   validateEngineApproval,
@@ -815,4 +816,12 @@ test('credential inspection is bounded to metadata and preserves denied access a
   assert.equal(result.inventory,'available');assert.equal(result.projectAccess.status,'permission-denied');
   assert.deepEqual(result.credentials,[{name:'OPENAI_API_KEY',version:'4',state:'ENABLED',access:'available',cortexRoles:[]}]);
   assert.equal(calls.length,4);assert.ok(!JSON.stringify(result).includes('never-return'));
+});
+
+test('runtime identity evidence excludes container credentials and pins the inspected run', () => {
+  const service = { spec: { template: { spec: { serviceAccountName: 'runtime@litigant-ai.iam.gserviceaccount.com', containers: [{ env: [{ name: 'OPENAI_API_KEY', value: 'private-fixture' }] }] } } } };
+  const result = runtimeIdentityEvidence({ controllerSha: SOURCE, runId: '123456', attempt: 2 }, service);
+  assert.deepEqual(result, { schemaVersion: 1, projectId: 'litigant-ai', region: 'us-central1', service: 'api', serviceAccount: 'runtime@litigant-ai.iam.gserviceaccount.com', sourceCommit: SOURCE, runId: '123456', runAttempt: 2 });
+  assert(!JSON.stringify(result).includes('private-fixture'));
+  assert.throws(() => runtimeIdentityEvidence({ controllerSha: SOURCE, runId: '123456', attempt: 2 }, {}), /runtime identity/);
 });
