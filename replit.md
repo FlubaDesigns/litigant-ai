@@ -94,28 +94,21 @@ Outputs `downloads/litigant-ai-latest.zip` (source code, no node_modules/dist/lo
 
 ## Admin Setup
 
-### 1. Set ADMIN_MASTER_SECRET
+### 1. Grant an administrator claim
 
-Add `ADMIN_MASTER_SECRET=<your-secret>` to Replit secrets. This secret gates the `/admin/set-claim` endpoint.
+Admin setup uses the existing Google-authorized CLI. The invoking identity must
+already have permission to update Firebase Auth users in the selected project.
+With Application Default Credentials available:
 
-### 2. Promote a user to admin
-
-**Option A — via API (no CLI needed):**
 ```bash
-curl -X POST https://<your-domain>/api-server/api/admin/set-claim \
-  -H "Content-Type: application/json" \
-  -d '{"secret":"<ADMIN_MASTER_SECRET>","email":"you@example.com"}'
-```
-
-**Option B — via CLI script:**
-```bash
-FIREBASE_SERVICE_ACCOUNT='<json>' pnpm --filter @workspace/scripts \
+FIREBASE_PROJECT_ID=litigant-ai pnpm --filter @workspace/scripts \
   exec tsx src/set-admin-claim.ts you@example.com
 ```
 
-After either method, the user must **sign out and sign back in** for the `admin: true` claim to appear in their ID token. The `/admin` route in the app becomes visible in the nav once the claim is active.
+No separate admin password is needed. Existing administrator claims and normal
+sign-in are unchanged. Sign out and back in after granting a new claim.
 
-### 3. Required Firebase env vars
+### 2. Required Firebase env vars
 
 Set these in Replit Secrets:
 - `FIREBASE_SERVICE_ACCOUNT` — service account JSON (for API server)

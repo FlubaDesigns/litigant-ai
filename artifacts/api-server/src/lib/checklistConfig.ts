@@ -61,7 +61,7 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
   {
     id: "owner-secrets",
     section: "owner",
-    text: "Set all required secrets on the Cloud Run service (Firebase, Square, AI keys, Resend, ADMIN_MASTER_SECRET, APP_DOMAIN)",
+    text: "Set all required secrets on the Cloud Run service (Firebase, Square, AI keys, Resend, APP_DOMAIN)",
     note: "Secrets set in Replit are for local dev only — they are NOT on Cloud Run. Every secret below must also be added directly to the Cloud Run service.",
     steps: [
       "── Where to add them ──",
@@ -86,14 +86,13 @@ export const DEFAULT_CHECKLIST_ITEMS: ChecklistItemDef[] = [
       "15. RESEND_API_KEY = re_... (from resend.com → API Keys)",
       "── App config ──",
       "16. APP_DOMAIN = litigant-ai.com (used for email links and redirect URLs — no https://, no trailing slash)",
-      "17. ADMIN_MASTER_SECRET = (choose a strong random string, e.g. 40+ characters — this is the password for the one-time admin bootstrap script)",
       "── Note on PORT ──",
-      "18. Do NOT add PORT — Cloud Run manages this automatically and will reject it.",
+      "17. Do NOT add PORT — Cloud Run manages this automatically and will reject it.",
       "── Deploy & verify ──",
-      "19. Click 'Deploy' and wait for the new revision to go live (green checkmark).",
-      "20. Visit https://litigant-ai.com/api-server/api/health — should return: { status: 'ok' }",
-      "21. In Admin → System tab, check Provider Discovery — your AI providers should show green.",
-      "22. In Admin → Setup Checklist — check this item off once all vars are confirmed live.",
+      "18. Click 'Deploy' and wait for the new revision to go live (green checkmark).",
+      "19. Visit https://litigant-ai.com/api-server/api/health — should return: { status: 'ok' }",
+      "20. In Admin → System tab, check Provider Discovery — your AI providers should show green.",
+      "21. In Admin → Setup Checklist — check this item off once all vars are confirmed live.",
     ],
   },
   {

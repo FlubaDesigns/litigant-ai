@@ -4,7 +4,7 @@
 - [ProtectedRoute guest mode](protected-route-guest.md) — when `firebaseReady` is false (Firebase unconfigured), ProtectedRoute allows all access
 - [Brain engine SSE pattern](brain-engine-sse.md) — sequential multi-role calls, each role streams to SSE; roles vary by courtMode; gpt-5.4 with `max_completion_tokens`
 - [Seat briefs system](seat-briefs.md) — per-seat MD files in api-server/src/seats/; loaded by seatBriefs.ts with Firestore override + 5-min cache; admin routes GET/PATCH/DELETE /admin/seat-briefs/:seatId
-- [Admin bootstrap](admin-bootstrap.md) — POST /admin/set-claim is master-secret gated (no Bearer token); user must sign out/in after claim is set; ADMIN_MASTER_SECRET env var required
+- [Admin bootstrap](admin-bootstrap.md) — Google-authorized CLI grants admin claims; no password-based HTTP setup endpoint.
 - [Credit ledger invariant](credit-ledger.md) — all credit changes go through addCredits/reserveCredits/reconcileCredits; never raw FieldValue.increment()
 - [Signup bonus & personas](signup-config.md) — signup bonus = 500 credits ($1.67 actual Opus cost); 10 litigant personas wired in brainEngine.ts getRoles()
 - [Cloud Run deployment](cloud-run-deployment.md) — GitHub Actions auto-deploys on push to main; SA key rotation: never paste in chat/commit to repo; attach as file only

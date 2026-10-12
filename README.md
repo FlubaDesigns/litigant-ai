@@ -73,7 +73,6 @@ Copy `.env.example` to `.env.local` in each artifact that needs it and fill in:
 | `OPENAI_API_KEY` | api-server | OpenAI |
 | `GEMINI_API_KEY` | api-server | Google Gemini |
 | `XAI_API_KEY` | api-server | xAI / Grok |
-| `ADMIN_MASTER_SECRET` | api-server | Bootstrap admin claim |
 
 ---
 
@@ -151,10 +150,14 @@ Every AI session costs credits. Users start with **500 free credits** on signup.
 
 ## Admin
 
-Set the first admin via:
+Admin setup uses the existing Google-authorized CLI. The invoking identity must
+already have permission to update Firebase Auth users in the selected project.
+With Application Default Credentials available:
+
 ```bash
-curl -X POST https://<API>/api/admin/set-claim \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com","secret":"<ADMIN_MASTER_SECRET>"}'
+FIREBASE_PROJECT_ID=litigant-ai pnpm --filter @workspace/scripts \
+  exec tsx src/set-admin-claim.ts you@example.com
 ```
-User must sign out and back in for the claim to take effect.
+
+No separate admin password is needed. Existing administrator claims and normal
+sign-in are unchanged. Sign out and back in after granting a new claim.
