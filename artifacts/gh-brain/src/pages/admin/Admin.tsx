@@ -2782,19 +2782,25 @@ function AiStudioTab() {
   const scoreModelMut = useMutation({
     mutationFn: ({ modelId, score }: { modelId: string; score: number }) =>
       setModelQualityScore(modelId, score),
-    onSuccess: (_d, { modelId, score }) => {
+    onSuccess: async (_d, { modelId, score }) => {
+      // Keep editing locked until the saved catalog is visible. A second edit
+      // must not race the refresh from the first save.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-ai-studio"] }),
+        qc.invalidateQueries({ queryKey: ["admin-pricing"] }),
+      ]);
       toast.success(`${modelId} IQ score set to ${score}`);
-      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
-      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const multiplierMut = useMutation({
     mutationFn: ({ modelId, multiplier }: { modelId: string; multiplier: number }) => updateModelMultiplier(modelId, multiplier),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-ai-studio"] });
-      qc.invalidateQueries({ queryKey: ["admin-pricing"] });
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin-ai-studio"] }),
+        qc.invalidateQueries({ queryKey: ["admin-pricing"] }),
+      ]);
       toast.success("Markup saved");
     },
     onError: (e: Error) => toast.error(e.message),

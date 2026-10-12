@@ -354,13 +354,19 @@ for (const width of [360,412]) test(`AI Studio controls and pricing fit ${width}
   const models=[{...model,label:"GPT-5",pricing:{verifiedAt:"2026-10-05",sourceUrl:"https://developers.openai.com/api/docs/models/gpt-5"}},
     {...model,id:"gemini-2.5-pro",label:"Gemini 2.5 Pro",provider:"gemini",providerLabel:"Google Gemini"}];
   let disabledProviders:string[]=[];
+  let releaseScoreRefresh!:()=>void;
+  const scoreRefresh=new Promise<void>(resolve=>{releaseScoreRefresh=resolve;});
+  let scoreSaved=false, scoreRefreshStarted=false;
   await page.route("**/api-server/api/admin/**",async route=>{
     const path=new URL(route.request().url()).pathname;
-    if (path.endsWith("/ai-studio/models")) return route.fulfill({json:{models,providers:[{...studioProvider,enabled:!disabledProviders.includes("openai")},{...studioProvider,id:"gemini",label:"Google Gemini"}],disabledProviders,customProviders:[]}});
+    if (path.endsWith("/ai-studio/models")) {
+      if(scoreSaved) {scoreRefreshStarted=true;await scoreRefresh;}
+      return route.fulfill({json:{models,providers:[{...studioProvider,enabled:!disabledProviders.includes("openai")},{...studioProvider,id:"gemini",label:"Google Gemini"}],disabledProviders,customProviders:[]}});
+    }
     if (route.request().method()==="GET") return route.fallback();
     const body=route.request().postDataJSON();
     if(path.endsWith("/pricing/gpt-5")) {models[0].multiplier=body.multiplier;models[0].userInputPer1k=models[0].inputRatePer1k*body.multiplier;}
-    else if(path.endsWith("/model-scores/gpt-5")) models[0].qualityScore=body.score;
+    else if(path.endsWith("/model-scores/gpt-5")) {models[0].qualityScore=body.score;scoreSaved=true;}
     else if(path.endsWith("/ai-studio/models/gpt-5")) models[0].enabled=body.enabled;
     else if(path.endsWith("/ai-studio/providers/openai")) disabledProviders=body.enabled?[]:["openai"];
     else return route.fallback();
@@ -380,7 +386,12 @@ for (const width of [360,412]) test(`AI Studio controls and pricing fit ${width}
   expect(Math.abs(left!.width-right!.width)).toBeLessThan(1);
   await iq.fill("91"); await iq.press("Enter");
   await expect.poll(()=>models[0].qualityScore).toBe(91);
+  try {
+    await expect.poll(()=>scoreRefreshStarted).toBe(true);
+    await expect(markup).toBeDisabled();
+  } finally {releaseScoreRefresh();}
   await expect(iq).toBeEnabled();
+  await expect(iq).toHaveValue("91");
   await markup.fill("7"); await markup.press("Enter");
   await expect.poll(()=>models[0].multiplier).toBe(7);
   await expect(table).toContainText("$7.00");
