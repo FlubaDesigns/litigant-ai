@@ -779,3 +779,39 @@ test('two-index planning rejects ambiguous and repair-state history indexes', as
   assert.throws(() => inspectPaymentIndexSet([indexFixture(false, 'NEEDS_REPAIR')]), /needs repair/);
   assert.equal(inspectPaymentIndexSet([changed(indexFixture(), x => { x.queryScope = 'COLLECTION_GROUP'; })]).history, null);
 });
+
+test('credential diagnostics expose only selected binding metadata, never env values', async () => {
+  const {credentialBindingMetadata,cortexRoleMetadata}=await import('./lai-release.mjs');
+  const fixture=service();
+  fixture.spec.template.spec.containers[0].env=[{name:'OPENAI_API_KEY',value:'do-not-return-this-value'},
+    {name:'UNRELATED',value:'also-private'},
+    {name:'RESEND_API_KEY',valueFrom:{secretKeyRef:{name:'RESEND_API_KEY',key:'3'}}}];
+  assert.deepEqual(credentialBindingMetadata(fixture),[
+    {name:'OPENAI_API_KEY',source:'environment',configured:true},
+    {name:'RESEND_API_KEY',source:'secret-manager',configured:true,secret:'RESEND_API_KEY',version:'3'},
+  ]);
+  assert.deepEqual(cortexRoleMetadata({bindings:[
+    {role:'roles/secretmanager.viewer',members:['serviceAccount:299349451575-compute@developer.gserviceaccount.com']},
+    {role:'roles/owner',members:['user:unrelated@example.invalid']},
+  ]}),[{role:'roles/secretmanager.viewer',conditional:false}]);
+});
+test('credential inspection is bounded to metadata and preserves denied access as unknown', async () => {
+  const {inspectCredentialWiring}=await import('./lai-release.mjs');
+  const calls=[];
+  const result=await inspectCredentialWiring(service(),async(url,label,method='GET',body)=>{
+    calls.push({url,method});
+    assert.ok(!url.includes(':access')&&!url.includes(':setIamPolicy'));
+    if(url.includes('cloudresourcemanager')) {
+      assert.equal(method,'POST'); assert.deepEqual(body,{options:{requestedPolicyVersion:3}});
+      const error=new Error('must not log this');error.httpStatus=403;throw error;
+    }
+    assert.equal(method,'GET');
+    if(url.includes('pageSize='))return {secrets:[{name:'projects/781960492360/secrets/OPENAI_API_KEY'}, {name:'projects/781960492360/secrets/UNRELATED'}]};
+    if(url.includes('/versions/latest'))return {name:'projects/781960492360/secrets/OPENAI_API_KEY/versions/4',state:'ENABLED',payload:{data:'never-return'}};
+    if(url.includes(':getIamPolicy'))return {bindings:[]};
+    throw Error('Unexpected request');
+  });
+  assert.equal(result.inventory,'available');assert.equal(result.projectAccess.status,'permission-denied');
+  assert.deepEqual(result.credentials,[{name:'OPENAI_API_KEY',version:'4',state:'ENABLED',access:'available',cortexRoles:[]}]);
+  assert.equal(calls.length,4);assert.ok(!JSON.stringify(result).includes('never-return'));
+});

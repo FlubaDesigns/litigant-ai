@@ -288,6 +288,58 @@ async function cloud(url, label, method = 'GET', body) { return request(url, { l
 const SERVICE_URL = 'https://us-central1-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/litigant-ai/services/api';
 async function serviceSnapshot() { return assertServiceReady(await cloud(SERVICE_URL, 'Cloud Run api/us-central1/litigant-ai')); }
 
+// Read-only credential wiring diagnostics. Secret payloads and ordinary env values
+// never leave this process. The existing LAI WIF identity is used unchanged.
+const CREDENTIAL_NAMES = new Set(['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'XAI_API_KEY', 'GEMINI_API_KEY',
+  'RESEND_API_KEY', 'SQUARE_ACCESS_TOKEN', 'SQUARE_WEBHOOK_SIGNATURE_KEY', 'ADMIN_MASTER_SECRET',
+  'FIREBASE_SERVICE_ACCOUNT', 'FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_SERVICE_ACCOUNT_JSON_V2']);
+const CORTEX_MEMBER = 'serviceAccount:299349451575-compute@developer.gserviceaccount.com';
+export function credentialBindingMetadata(service) {
+  return (service.spec?.template?.spec?.containers?.[0]?.env ?? [])
+    .filter(entry => CREDENTIAL_NAMES.has(entry.name))
+    .map(entry => {
+      const binding = entry.valueFrom?.secretKeyRef;
+      return { name: entry.name, source: binding ? 'secret-manager' : 'environment',
+        configured: binding ? true : typeof entry.value === 'string' && entry.value.length > 0,
+        ...(binding ? { secret: binding.name, version: binding.key } : {}) };
+    });
+}
+export function cortexRoleMetadata(policy) {
+  return (policy.bindings ?? []).filter(binding => binding.members?.includes(CORTEX_MEMBER))
+    .map(binding => ({ role: binding.role, conditional: !!binding.condition }));
+}
+export async function inspectCredentialWiring(service, read = cloud) {
+  const report = { runtime: credentialBindingMetadata(service), projectAccess: null, credentials: [], inventory: 'unavailable' };
+  const safeRead = async (url, label, method = 'GET', body) => {
+    try { return { status: 'available', data: await read(url, label, method, body) }; }
+    catch (error) { return { status: error.httpStatus === 403 ? 'permission-denied' : 'unavailable', data: null }; }
+  };
+  const policy = await safeRead('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:getIamPolicy',
+    'LAI project access metadata', 'POST', { options: { requestedPolicyVersion: 3 } });
+  report.projectAccess = { status: policy.status, cortexRoles: policy.data ? cortexRoleMetadata(policy.data) : [] };
+  let pageToken = '';
+  for (let page = 0; page < 20; page++) {
+    const inventory = await safeRead('https://secretmanager.googleapis.com/v1/projects/litigant-ai/secrets?pageSize=100' +
+      (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''), 'LAI credential inventory metadata');
+    report.inventory = inventory.status;
+    if (!inventory.data) break;
+    for (const secret of inventory.data.secrets ?? []) {
+      const name = String(secret.name).split('/').pop();
+      if (!CREDENTIAL_NAMES.has(name)) continue;
+      const resource = 'https://secretmanager.googleapis.com/v1/projects/litigant-ai/secrets/' + name;
+      const version = await safeRead(resource + '/versions/latest', 'LAI credential version metadata');
+      const access = await safeRead(resource + ':getIamPolicy?options.requestedPolicyVersion=3', 'LAI credential access metadata');
+      report.credentials.push({ name, version: version.data ? String(version.data.name).split('/').pop() : null,
+        state: version.data?.state ?? version.status, access: access.status,
+        cortexRoles: access.data ? cortexRoleMetadata(access.data) : [] });
+    }
+    pageToken = inventory.data.nextPageToken ?? '';
+    if (!pageToken) break;
+    if (page === 19) report.inventory = 'incomplete';
+  }
+  return report;
+}
+
 // Two exact additive payment-history indexes. Never deploy the catalog or mutate rules/data.
 export const PAYMENT_INDEX_PARENT = 'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions';
 export const PAYMENT_INDEX = Object.freeze({ queryScope: 'COLLECTION', fields: Object.freeze([
@@ -481,6 +533,7 @@ async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
   if (descriptor.action === 'inspect') {
+    console.log('LAI_CREDENTIAL_WIRING ' + JSON.stringify(await inspectCredentialWiring(before)));
     const indexes = await paymentIndexes();
     console.log(`Read-only payment-index collection metadata: ${JSON.stringify(paymentIndexMetadata(indexes))}`);
     const catalog = await paymentIndexes(cloud, true);
