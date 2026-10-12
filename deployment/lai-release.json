@@ -1,23 +1,10 @@
 {
   "schemaVersion": 1,
-  "action": "deploy",
-  "sourceCommit": "6ead599097a6a13b072254330c4d019d13b9bd3d",
+  "action": "inspect",
+  "sourceCommit": null,
   "project": "litigant-ai",
   "region": "us-central1",
   "service": "api",
   "hostingSite": "litigant-ai",
-  "approval": {
-    "controlSha": "6ead599097a6a13b072254330c4d019d13b9bd3d",
-    "preflight": {
-      "runId": "38307303566",
-      "runAttempt": 2,
-      "headSha": "6ead599097a6a13b072254330c4d019d13b9bd3d"
-    },
-    "engine": {
-      "repository": "FlubaDesigns/fluba-designs",
-      "commitSha": "0249a6e8c7780e51ff8fb3d472e77c99c03c0ee6",
-      "runId": "38308953902",
-      "runAttempt": 1
-    }
-  }
+  "approval": null
 }
