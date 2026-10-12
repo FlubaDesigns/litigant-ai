@@ -489,6 +489,14 @@ async function permissions(url, names, label) {
   const missing = names.filter(name => !(answer.permissions ?? []).includes(name));
   assert(!missing.length, `POST ${label}:testIamPermissions HTTP 200; missing permissions: ${missing.join(', ')}`);
 }
+export function runtimeIdentityEvidence(context, service) {
+  const serviceAccount = service.spec?.template?.spec?.serviceAccountName;
+  assert(typeof serviceAccount === 'string' && /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.gserviceaccount\.com$/.test(serviceAccount), 'valid runtime identity required');
+  sha(context.controllerSha, 'runtime evidence source');
+  runPin({ runId: context.runId, runAttempt: context.attempt }, 'runtime evidence');
+  return { schemaVersion: 1, projectId: 'litigant-ai', region: 'us-central1', service: 'api',
+    serviceAccount, sourceCommit: context.controllerSha, runId: context.runId, runAttempt: context.attempt };
+}
 async function preflight(context) {
   const project = await cloud('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai', 'Cloud Resource Manager project');
   assert.equal(project.projectId, 'litigant-ai'); assert.equal(project.lifecycleState, 'ACTIVE');
@@ -535,6 +543,7 @@ async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
   if (descriptor.action === 'inspect') {
+    await writeFile(tempPath(context, 'identity.json'), JSON.stringify(runtimeIdentityEvidence(context, before)) + '\n', { mode: 0o600 });
     console.log('LAI_CREDENTIAL_WIRING ' + JSON.stringify(await inspectCredentialWiring(before)));
     let migrationPending=true;
     try { migrationValues(before); } catch { migrationPending=false; }
