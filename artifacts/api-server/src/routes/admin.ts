@@ -4,9 +4,7 @@ import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { TemplateInputFieldsSchema } from "@workspace/api-zod/templates";
 import { getTemplates } from "../lib/templateStore.js";
 import { Router } from "express";
-import crypto from "crypto";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
-import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { addCredits, InvalidRefundError } from "../lib/creditLedger.js";
 import { FieldValue, FieldPath } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
@@ -67,17 +65,6 @@ import {
 import { InvitationInput, createInvitation, invitationView } from "../lib/guestInvitations.js";
 
 const router = Router();
-
-// ── Bootstrap rate limiter ────────────────────────────────────────────────────
-// Applied to /admin/set-claim which is gated by master secret rather than
-// Bearer token. Rate-limiting prevents brute-force against the secret and
-// limits the damage from any credential exposure.
-const setClaimLimiter = makeRateLimiter({
-  keyFn: (req) => `set-claim:${req.ip ?? "unknown"}`,
-  limit: 5,
-  windowMs: 60 * 60 * 1000, // 5 attempts per hour per IP
-  message: "Too many admin setup requests. Please try again later.",
-});
 
 // ── Admin auth middleware ─────────────────────────────────────────────────────
 
@@ -153,73 +140,8 @@ router.delete("/admin/guest-invitations/:id", requireAdmin, async (req, res) => 
   } catch { return res.status(503).json({error: "Could not revoke invitation."}); }
 });
 
-// ── Bootstrap: set admin claim (master-secret gated, no token required) ───────
-
-/**
- * POST /admin/set-claim
- * Body: { secret: string, email?: string, uid?: string }
- * No Bearer token required — authenticated by ADMIN_MASTER_SECRET env var.
- * Sets admin: true custom claim on the target Firebase Auth user.
- * User must sign out and back in for the claim to appear in their ID token.
- */
-router.post("/admin/set-claim", setClaimLimiter, async (req, res) => {
-  const masterSecret = process.env["ADMIN_MASTER_SECRET"];
-  if (!masterSecret) {
-    return res.status(503).json({
-      error: "ADMIN_MASTER_SECRET is not set. Configure this env var on the server first.",
-    });
-  }
-  if (!isFirebaseConfigured()) {
-    return res.status(503).json({ error: "Firebase not configured" });
-  }
-
-  const { secret, email, uid } = req.body as {
-    secret?: string;
-    email?: string;
-    uid?: string;
-  };
-
-  // Timing-safe comparison — prevents timing-oracle attacks on the master secret.
-  // Consistent with squareEventHandler.ts which uses timingSafeEqual for the same reason.
-  const secretBuf = Buffer.from(secret ?? "");
-  const masterBuf = Buffer.from(masterSecret);
-  const valid =
-    secretBuf.length === masterBuf.length &&
-    crypto.timingSafeEqual(secretBuf, masterBuf);
-  if (!valid) {
-    return res.status(403).json({ error: "Invalid master secret" });
-  }
-  if (!email && !uid) {
-    return res.status(400).json({ error: "email or uid required" });
-  }
-
-  try {
-    const authAdmin = getAuth();
-    const user = email
-      ? await authAdmin.getUserByEmail(email)
-      : await authAdmin.getUser(uid!);
-
-    const existing = user.customClaims ?? {};
-    if (existing["admin"] === true) {
-      return res.json({
-        success: true,
-        uid: user.uid,
-        email: user.email,
-        message: "User already has admin: true — no change made.",
-      });
-    }
-
-    await authAdmin.setCustomUserClaims(user.uid, { ...existing, admin: true });
-    return res.json({
-      success: true,
-      uid: user.uid,
-      email: user.email,
-      message: "admin: true set. User must sign out and sign back in for the claim to appear.",
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
-  }
-});
+// Administrator setup uses scripts/src/set-admin-claim.ts with Google IAM.
+// There is no public password-based claim-grant endpoint.
 
 // ── System stats ──────────────────────────────────────────────────────────────
 

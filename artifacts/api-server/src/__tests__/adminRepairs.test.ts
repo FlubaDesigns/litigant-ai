@@ -163,3 +163,23 @@ it("honors a zero signup bonus without blocking account provisioning", async () 
   expect(await grantSignupBonus("u", {emailVerified:true})).toEqual({skipped: true, amount: 0});
   expect(store["users/u"].creditBalance).toBe(100);
 });
+
+
+it("retires password-based admin grants even when an old environment secret remains", async () => {
+  const previous = process.env.ADMIN_MASTER_SECRET;
+  process.env.ADMIN_MASTER_SECRET = "retired-fixture-not-a-live-secret";
+  try {
+    for (const token of [undefined, "fixture"]) {
+      const call = request(app).post("/admin/set-claim");
+      if (token) call.set("Authorization", `Bearer ${token}`);
+      const result = await call.send({email: "user@example.invalid", secret: process.env.ADMIN_MASTER_SECRET});
+      expect(result.status).toBe(404);
+      expect(result.text).not.toContain(process.env.ADMIN_MASTER_SECRET);
+    }
+    expect((await request(app).get("/admin/users")).status).toBe(401);
+    expect((await read("users")).status).toBe(200);
+  } finally {
+    if (previous === undefined) delete process.env.ADMIN_MASTER_SECRET;
+    else process.env.ADMIN_MASTER_SECRET = previous;
+  }
+});

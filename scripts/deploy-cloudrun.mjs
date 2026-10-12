@@ -94,7 +94,6 @@ ${envEntry("APP_DOMAIN", "litigant-ai.com")}
 ${envEntry("FIREBASE_PROJECT_ID", required.project)}
 ${envEntry("FIREBASE_USE_ADC", "true")}
 ${envEntry("ANTHROPIC_API_KEY", required.anthropic)}
-${envEntry("ADMIN_MASTER_SECRET", "")}
 ${envEntry("OPENAI_API_KEY", process.env.OPENAI_API_KEY ?? "")}
 ${envEntry("GEMINI_API_KEY", process.env.GEMINI_API_KEY ?? "")}
 ${envEntry("XAI_API_KEY", process.env.XAI_API_KEY ?? "")}
