@@ -1,13 +1,11 @@
 import { canCreateArtifacts } from "@workspace/api-zod/session";
 /**
- * Credit Ledger — the ONLY layer allowed to mutate a user's creditBalance.
+ * Purchase and adjustment ledger; session holds and settlement live in creditRunSettlement.
  *
  * ## Invariant
- *   Every change to users/{uid}.creditBalance MUST go through addCredits().
- *   Brain session reservations and refunds (creditRunSettlement.ts) are exceptions: they write their own atomic transactions
- *   for performance (avoiding a function call per stream chunk), but they
- *   follow the same pattern — balance update + ledger entry in one Firestore
- *   transaction.
+ *   Purchases and manual adjustments go through addCredits(); session reservations and refunds go through creditRunSettlement.
+ *   Both lifecycles atomically update the balance and ledger; session operations
+ *   also maintain the durable run record used for recovery.
  *
  * ## Transaction types (CreditTxType)
  *   purchase           — Square one-time credit pack checkout
@@ -76,7 +74,7 @@ function toIsoString(v: unknown): string {
 /**
  * Add (or deduct, with a negative amount) credits to a user's balance.
  *
- * This is the single authoritative function for modifying creditBalance.
+ * This is the authoritative function for purchases and manual credit adjustments.
  * Every call atomically:
  *   1. (Optional) checks and writes the idempotency key.
  *   2. Reads the current balance.
@@ -400,93 +398,4 @@ export async function syncPaidProAccess(uid: string): Promise<void> {
       if (current.exists && !deletion.exists) tx.update(ref, { plan: "pro", updatedAt: FieldValue.serverTimestamp() });
     });
   }
-}
-
-export async function reserveCredits(
-  uid: string,
-  amount: number,
-  sessionId: string,
-  source = "brain_reservation",
-  overdraftLimit = 0
-): Promise<boolean> {
-  const db = getFirestoreDb();
-  if (!db) throw new Error("Firestore not configured");
-
-  return db.runTransaction(async (txn) => {
-    const userRef = db.collection("users").doc(uid);
-    const userDoc = await txn.get(userRef);
-    if ((await txn.get(db.collection("account_deletions").doc(uid))).exists) return false;
-    const balance = (userDoc.data()?.creditBalance as number) ?? 0;
-    // Recheck under the balance transaction so simultaneous new runs cannot extend debt.
-    if (source === "brain_reservation" && balance < 0) return false;
-    const permittedDebt = canCreateArtifacts(userDoc.data()?.plan) ? overdraftLimit : 0;
-    if (balance - amount < -permittedDebt) return false;
-
-    const newBalance = balance - amount;
-
-    // Update balance
-    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
-
-    // Immutable ledger entry — source distinguishes initial reservations from overage charges
-    const txRef = db.collection("credit_transactions").doc();
-    txn.set(txRef, {
-      userId: uid,
-      type: "usage",
-      amount: -amount,
-      balanceAfter: newBalance,
-      source,
-      sessionId,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
-    return true;
-  });
-}
-
-/**
- * Atomically returns credits to a user's balance and writes a ledger entry.
- *
- * Used in two scenarios:
- *   "brain_reconcile"      — post-session, refund the difference between
- *                            the upfront estimate and the actual cost.
- *   "brain_failure_refund" — session failed before completing; refund the
- *                            full reservation so the user loses nothing.
- *
- * Errors are caught and logged but not re-thrown — the session result has
- * already been streamed to the client, so a reconcile failure is non-fatal.
- *
- * @param uid          - Firebase UID of the user.
- * @param refundAmount - Credits to return (always positive).
- * @param sessionId    - Links the ledger entry to the session document.
- * @param source       - Distinguishes reconcile vs failure refund in the ledger.
- */
-export async function reconcileCredits(
-  uid: string,
-  refundAmount: number,
-  sessionId: string,
-  source: "brain_reconcile" | "brain_failure_refund"
-): Promise<void> {
-  const db = getFirestoreDb();
-  if (!db) return;
-
-  await db.runTransaction(async (txn) => {
-    const userRef = db.collection("users").doc(uid);
-    const userDoc = await txn.get(userRef);
-    const balance = (userDoc.data()?.creditBalance as number) ?? 0;
-    const newBalance = balance + refundAmount;
-
-    txn.update(userRef, { creditBalance: newBalance, updatedAt: FieldValue.serverTimestamp() });
-
-    // Immutable ledger entry for the refund
-    const txRef = db.collection("credit_transactions").doc();
-    txn.set(txRef, {
-      userId: uid,
-      type: "refund",
-      amount: refundAmount,
-      balanceAfter: newBalance,
-      source,
-      sessionId,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-  });
 }

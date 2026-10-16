@@ -1,3 +1,4 @@
+import { ConfigurationUnavailableError } from "../lib/configurationError.js";
 import { evaluateSeatReview } from "@workspace/api-zod/evaluation";
 import { AdjustmentConflictError } from "../lib/creditLedger.js";
 import { InvalidBillingDefaultsError } from "../lib/billingDefaultsConfig.js";
@@ -54,9 +55,7 @@ import {
   CREDIT_PACK_BOUNDS,
 } from "../lib/creditPacksConfig.js";
 import {
-  CANON_V2_FALLBACK_TEXT,
-  CANON_V2_FALLBACK_VERSION,
-  invalidateConscienceCache,
+  getConscienceConfiguration,
 } from "../lib/conscienceConfig.js";
 import {
   SEAT_IDS,
@@ -1143,39 +1142,24 @@ router.delete("/admin/credit-packs/:id", requireAdmin, async (req, res) => {
 
 /**
  * GET /admin/conscience
- * Returns the current conscience clause stored in Firestore, or the Canon v2
- * fallback if the document doesn't exist yet.
+ * Returns the saved conscience clause or an actionable configuration error.
  */
 router.get("/admin/conscience", requireAdmin, async (_req, res) => {
   const db = getFirestoreDb();
   if (!db) return res.status(503).json({ error: "Firebase not configured" });
 
   try {
-    const doc = await db.collection("system_config").doc("conscience").get();
-
-    if (!doc.exists) {
-      return res.json({
-        exists: false,
-        version: CANON_V2_FALLBACK_VERSION,
-        text: CANON_V2_FALLBACK_TEXT,
-        updatedAt: null,
-        updatedBy: null,
-        note: "No Firestore document found — Canon v2 fallback is in use.",
-      });
-    }
-
-    return res.json({ exists: true, ...serializeDoc(doc) });
+    const {document, clause} = await getConscienceConfiguration();
+    return res.json({ exists: true, ...serializeDoc(document), ...clause });
   } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
+    return res.status(err instanceof ConfigurationUnavailableError ? 503 : 500).json({ error: safeError(err) });
   }
 });
 
 /**
  * PATCH /admin/conscience
  * Body: { text: string, version?: string }
- * Writes a new conscience clause to Firestore and invalidates the local cache.
- * All new sessions on this instance will pick up the new text immediately;
- * other Cloud Run instances will pick it up within 5 minutes (TTL window).
+ * Writes the authoritative instructions; every new run reads them before charging.
  */
 router.patch("/admin/conscience", requireAdmin, async (req: any, res) => {
   const db = getFirestoreDb();
@@ -1197,13 +1181,10 @@ router.patch("/admin/conscience", requireAdmin, async (req: any, res) => {
       updatedBy: req.adminUid as string,
     });
 
-    // Invalidate this instance's cache immediately
-    invalidateConscienceCache();
-
     return res.json({
       success: true,
       version: newVersion,
-      note: "This instance cache cleared. Other Cloud Run instances update within 5 minutes.",
+      note: "All new runs read the saved instructions before reserving credits.",
     });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });

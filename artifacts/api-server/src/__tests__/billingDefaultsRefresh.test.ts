@@ -16,7 +16,7 @@ describe("public billing configuration refresh", () => {
   });
   it("does not present factory defaults as a successful refresh when storage fails", async () => {
     get.mockRejectedValueOnce(new Error("temporarily unavailable"));
-    await expect(getBillingDefaults()).rejects.toThrow(/unavailable/);
+    await expect(getBillingDefaults()).rejects.toThrow("Billing settings could not be loaded");
     get.mockResolvedValueOnce({exists:false,data:() => undefined});
     expect((await getBillingDefaults()).signupBonusCredits).toBe(500);
   });

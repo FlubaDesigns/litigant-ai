@@ -1,3 +1,4 @@
+vi.mock("../lib/firebaseAdmin.js",()=>({getFirestoreDb:()=>({collection:()=>({doc:()=>({get:async()=>({data:()=>({aiEnabled:true})})})})})}));
 import {describe,it,expect,vi} from "vitest";
 const mocks=vi.hoisted(()=>({openai:vi.fn(),anthropic:vi.fn()}));
 vi.mock("openai",()=>({default:class {chat={completions:{create:mocks.openai}}}}));

@@ -1,9 +1,10 @@
+import { reserveCreditRun } from "../lib/creditRunSettlement.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timestamp } from "firebase-admin/firestore";
 import { claimInvitation, convertInvitation, invitationActive, InvitationInput } from "../lib/guestInvitations.js";
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: vi.fn(), isFirebaseConfigured: () => true}));
 import {getFirestoreDb} from "../lib/firebaseAdmin.js";
-import {addCredits, reserveCredits} from "../lib/creditLedger.js";
+import {addCredits} from "../lib/creditLedger.js";
 import {canCreateArtifacts} from "@workspace/api-zod/session";
 
 function database() {
@@ -38,10 +39,10 @@ describe("individual guest invitations",()=>{
     seed("A",100);seed("B",500,"pro");await redeem("A","person-a");await redeem("B","person-b");
     expect(rows.get("users/person-a")).toMatchObject({creditBalance:100,plan:"free"});
     expect(rows.get("users/person-b")).toMatchObject({creditBalance:500,plan:"pro"});
-    await reserveCredits("person-a",50,"conversation");await redeem("A","person-a");
+    await reserveCreditRun("person-a",50,"conversation","run-1");await redeem("A","person-a");
     expect(rows.get("users/person-a").creditBalance).toBe(50);
     expect(rows.get("users/person-b").creditBalance).toBe(500);
-    expect(await reserveCredits("person-a",51,"too-much")).toBe(false);
+    expect(await reserveCreditRun("person-a",51,"too-much","run-2")).toBe(false);
     expect(canCreateArtifacts(rows.get("users/person-a").plan)).toBe(false);
     expect(canCreateArtifacts(rows.get("users/person-b").plan)).toBe(true);
   });
@@ -65,7 +66,7 @@ describe("individual guest invitations",()=>{
     expect(rows.has("users/person-a")).toBe(false);
   });
   it("retains ownership of work when signup happens before expiry, even after all credits are spent",async()=>{
-    seed("A",100,"pro");await redeem("A","person-a");await reserveCredits("person-a",100,"conversation");
+    seed("A",100,"pro");await redeem("A","person-a");await reserveCreditRun("person-a",100,"conversation","run-1");
     rows.set("sessions/conversation",{userId:"person-a",artifacts:"Saved document",caseFile:[{content:"Evidence"}]});
     await convertInvitation(db,"person-a","person@example.test","Person A");
     expect(rows.get("users/person-a")).toMatchObject({guestInvitationId:null,plan:"free",creditBalance:0,email:"person@example.test"});

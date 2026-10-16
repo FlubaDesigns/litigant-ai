@@ -1,36 +1,7 @@
----
-name: Cloud Run deployment
-description: How to deploy the api-server to Cloud Run with a new Docker image.
----
+# Retired deployment instructions
 
-**Preferred deploy method: GitHub Actions**
-Push to `main` on GitHub → triggers `.github/workflows/deploy-cloudrun.yml` → auto-deploys env vars to Cloud Run. All 13 secrets are stored in GitHub Secrets (pushed via GitHub Secrets API).
-
-**Manual deploy (env-var-only change, no code change):** just run `node scripts/deploy-cloudrun.mjs` directly — no Docker rebuild needed. The script reads all secrets from Replit env vars. Requires valid `FIREBASE_SERVICE_ACCOUNT_JSON` in Replit Secrets.
-
-**Full deploy flow (code change requires new Docker image):**
-
-```bash
-# Step 1 — Bundle TypeScript → firebase-functions/lib/server.mjs
-node artifacts/api-server/build-functions.mjs
-
-# Step 2 — Build + push Docker image (use a fresh timestamp each time)
-IMAGE_TAG="deploy-$(date +%s)"
-gcloud builds submit firebase-functions/ \
-  --tag "gcr.io/$VITE_FIREBASE_PROJECT_ID/api:${IMAGE_TAG}" \
-  --project "$VITE_FIREBASE_PROJECT_ID" \
-  --timeout=300
-
-# Step 3 — Update tag in scripts/deploy-cloudrun.mjs, then:
-node scripts/deploy-cloudrun.mjs
-```
-
-**CRITICAL — Timestamped image tag:** Always use a fresh `deploy-<timestamp>` tag. Cloud Run will NOT create a new revision if the image reference is identical.
-
-**Routes entry point:** `app-firebase.ts` imports `./routes/index-firebase.ts` (NOT `index.ts`). New routes must be in both or they won't reach Cloud Run.
-
-**Current image:** `gcr.io/litigant-ai/api:deploy-1784007865` (July 14, 2026)
-
-**SA key rotation:** Never share SA JSON in chat or commit to repo — GitHub secret scanning will detect it and Google auto-disables the key within minutes. Always attach as a file and push to GitHub Secrets via API. `attached_assets/` is gitignored to prevent accidental commits.
-
-**Why:** Firebase Functions buildpack ignores npm start/Procfile entirely; we build a standalone Express server and deploy it as a plain Docker container on Cloud Run.
+Use the current README.md “Release and deploy” section. The only production
+release path is the exact-source Authorization Engine approval transported by
+`.github/workflows/deploy-cloudrun.yml` and `scripts/lai-release.mjs`.
+Build through `artifacts/api-server/build.mjs` and its canonical Dockerfile.
+The old direct deployment and Firebase Functions build commands are disabled.

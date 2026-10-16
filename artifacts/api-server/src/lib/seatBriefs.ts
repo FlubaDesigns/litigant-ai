@@ -1,9 +1,10 @@
+import { ConfigurationUnavailableError } from "./configurationError.js";
 /**
  * seatBriefs.ts
  *
  * Loads the per-seat role brief for each courtroom seat from:
  *   1. Firestore `system_config/seat_briefs` (admin-editable at runtime)
- *   2. Falls back to the bundled markdown files in `../seats/*.md`
+ *   2. Uses `../seats/*.md` as the declared defaults when no override exists
  *
  * Firestore document shape — system_config/seat_briefs:
  *   orchestrator: string  — full markdown brief
@@ -37,36 +38,38 @@ export const SEAT_IDS: SeatId[] = [
   "litigant",
 ];
 
-// ── File fallbacks — read once at startup ─────────────────────────────────────
-function loadFileFallback(seatId: SeatId): string {
+// ── Bundled defaults — required files; never invent a replacement role ─────────────────────────────────────
+function loadFileDefault(seatId: SeatId): string {
   try {
-    return readFileSync(join(SEATS_DIR, `${seatId}.md`), "utf8").trim();
+    const text = readFileSync(join(SEATS_DIR, `${seatId}.md`), "utf8").trim();
+    if (!text) throw new Error("Empty seat instructions");
+    return text;
   } catch {
-    return `You are the ${seatId}. Perform your role faithfully.`;
+    throw new ConfigurationUnavailableError(`Bundled ${seatId} instructions`);
   }
 }
 
-const FILE_FALLBACKS: Record<SeatId, string> = {
-  orchestrator: loadFileFallback("orchestrator"),
-  moderator:    loadFileFallback("moderator"),
-  architect:    loadFileFallback("architect"),
-  builder:      loadFileFallback("builder"),
-  auditor:      loadFileFallback("auditor"),
-  litigant:     loadFileFallback("litigant"),
-};
+function fileDefaults(): Record<SeatId, string> {
+  return Object.fromEntries(SEAT_IDS.map(id => [id, loadFileDefault(id)])) as Record<SeatId, string>;
+}
 
 /** One persisted snapshot for both the editor and the execution engine. */
 export async function getSeatBriefsConfig() {
   const db = getFirestoreDb();
-  const doc = db ? await db.collection("system_config").doc("seat_briefs").get() : null;
+  if (!db) throw new ConfigurationUnavailableError("Saved seat instructions");
+  const doc = await db.collection("system_config").doc("seat_briefs").get();
+  const defaults = fileDefaults();
   const data = doc?.exists ? (doc.data() ?? {}) : {};
   const overrides: Partial<Record<SeatId, string>> = {};
   for (const id of SEAT_IDS) {
-    if (typeof data[id] === "string" && data[id].trim()) overrides[id] = data[id];
+    if (Object.hasOwn(data, id)) {
+      if (typeof data[id] !== "string" || !data[id].trim()) throw new ConfigurationUnavailableError(`Saved ${id} instructions`);
+      overrides[id] = data[id];
+    }
   }
   return {
-    active: { ...FILE_FALLBACKS, ...overrides },
-    defaults: { ...FILE_FALLBACKS },
+    active: { ...defaults, ...overrides },
+    defaults: { ...defaults },
     overrides,
     seatIds: SEAT_IDS,
   };

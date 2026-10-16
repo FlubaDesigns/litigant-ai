@@ -1,3 +1,7 @@
+vi.mock("../lib/runInstructions.js", () => ({getRunInstructions: async () => ({
+  conscience: {text:"Offline test instructions",version:"test"},
+  seats: {orchestrator:"Test",moderator:"Test",architect:"Test",builder:"Test",auditor:"Test",litigant:"Test"},
+})}));
 import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import express from "express";

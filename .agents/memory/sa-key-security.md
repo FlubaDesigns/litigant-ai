@@ -23,4 +23,4 @@ Never paste SA JSON in chat and never commit it to the repo. Google automaticall
 Key ID `795ab1b205970bcae2ef73b1b42c96c1b8a58ff8` — pushed to GitHub Secrets and deployed to Cloud Run July 14, 2026.
 
 ## Replit FIREBASE_SERVICE_ACCOUNT_JSON
-The Replit secret may lag behind the GitHub Secrets value. Since GitHub Actions now handles all deploys, Replit's copy is only needed for running `node scripts/deploy-cloudrun.mjs` manually.
+Production deployment uses the keyless Authorization Engine release path documented in README.md. The old manual deployment command is disabled.

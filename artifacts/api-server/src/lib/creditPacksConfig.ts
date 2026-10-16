@@ -1,3 +1,4 @@
+import { ConfigurationUnavailableError } from "./configurationError.js";
 /**
  * Canonical credit-pack catalogue: shared defaults overlaid with saved admin packs.
  * Public pages, admin, checkout and payment validation all read this catalogue.
@@ -57,7 +58,7 @@ export async function getAllCreditPacks(): Promise<Record<string, CreditPack>> {
   if (_cache !== null && now < _cacheExpiry) return _cache;
 
   const db = getFirestoreDb();
-  if (!db) return staticPacksAsMap();
+  if (!db) throw new ConfigurationUnavailableError("Credit pack catalog");
 
   try {
     const doc = await db.collection("config").doc("creditPacks").get();

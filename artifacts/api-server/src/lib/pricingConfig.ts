@@ -1,3 +1,4 @@
+import { ConfigurationUnavailableError } from "./configurationError.js";
 /** Persisted multiplier overrides. Resolution and all display projections live in providerCatalog.ts. */
 import { z } from "zod";
 import { getFirestoreDb } from "./firebaseAdmin.js";
@@ -13,7 +14,7 @@ interface PricingDoc {
 /** Read overrides for each new catalog; active runs retain their accepted snapshot. */
 export async function getMultiplierOverrides(): Promise<Record<string, number>> {
   const db = getFirestoreDb();
-  if (!db) return {};
+  if (!db) throw new ConfigurationUnavailableError("Saved pricing");
   const doc = await db.collection("config").doc("pricing").get();
   return { ...((doc.data() as PricingDoc | undefined)?.multipliers ?? {}) };
 }

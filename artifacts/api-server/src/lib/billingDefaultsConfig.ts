@@ -1,3 +1,4 @@
+import { ConfigurationUnavailableError, loadConfiguration } from "./configurationError.js";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -15,63 +16,17 @@ const STATIC_DEFAULTS: BillingDefaults = {
 
 export async function getBillingDefaults(): Promise<BillingDefaults> {
   const db = getFirestoreDb();
-  if (!db) return STATIC_DEFAULTS;
+  if (!db) throw new ConfigurationUnavailableError("Billing settings");
 
-  const doc = await db.collection("config").doc("billingDefaults").get();
-  const data = doc.exists ? (doc.data() as Record<string, unknown>) : {};
-
-  const isPositiveInt = (v: unknown): v is number =>
-    typeof v === "number" && Number.isInteger(v) && v >= 0;
-
-  const autoRefillAmounts =
-    Array.isArray(data.autoRefillAmounts) &&
-    data.autoRefillAmounts.length > 0 &&
-    (data.autoRefillAmounts as unknown[]).every(
-      (a) => typeof a === "number" && Number.isInteger(a) && a >= 1 && a <= 500
-    )
-      ? (data.autoRefillAmounts as number[])
-      : STATIC_DEFAULTS.autoRefillAmounts;
-
-  const defaultAutoRefillAmount =
-    isPositiveInt(data.defaultAutoRefillAmount) &&
-    data.defaultAutoRefillAmount >= 1 &&
-    data.defaultAutoRefillAmount <= 500
-      ? data.defaultAutoRefillAmount
-      : STATIC_DEFAULTS.defaultAutoRefillAmount;
-
-  const defaultThresholdCredits =
-    isPositiveInt(data.defaultThresholdCredits) &&
-    data.defaultThresholdCredits <= 100_000
-      ? data.defaultThresholdCredits
-      : STATIC_DEFAULTS.defaultThresholdCredits;
-
-  const defaultWarningThresholdCredits =
-    isPositiveInt(data.defaultWarningThresholdCredits) &&
-    data.defaultWarningThresholdCredits <= 100_000
-      ? data.defaultWarningThresholdCredits
-      : STATIC_DEFAULTS.defaultWarningThresholdCredits;
-
-  const signupBonusCredits =
-    isPositiveInt(data.signupBonusCredits) &&
-    data.signupBonusCredits <= 100_000
-      ? data.signupBonusCredits
-      : STATIC_DEFAULTS.signupBonusCredits;
-
-  const emailCreditWarningThreshold =
-    isPositiveInt(data.emailCreditWarningThreshold) &&
-    data.emailCreditWarningThreshold <= 100_000
-      ? data.emailCreditWarningThreshold
-      : STATIC_DEFAULTS.emailCreditWarningThreshold;
-
-  const merged: BillingDefaults = {
-    autoRefillAmounts,
-    defaultAutoRefillAmount,
-    defaultThresholdCredits,
-    defaultWarningThresholdCredits,
-    signupBonusCredits,
-    emailCreditWarningThreshold,
-  };
-  return merged;
+  return loadConfiguration("Billing settings", async () => {
+    const doc = await db.collection("config").doc("billingDefaults").get();
+    const data = doc.exists ? (doc.data() as Record<string, unknown>) : {};
+    // An absent override uses the declared default; an invalid saved value is an error.
+    const values = Object.fromEntries(Object.entries(STATIC_DEFAULTS).map(([key,value]) =>
+      [key, Object.hasOwn(data,key) ? data[key] : value])) as unknown as BillingDefaults;
+    validateBillingDefaults(values);
+    return values;
+  });
 }
 
 export class InvalidBillingDefaultsError extends Error {}
