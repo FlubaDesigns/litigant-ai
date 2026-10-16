@@ -32,6 +32,7 @@ try {
     }],
   });
   await cp(path.join(artifactDir, "src/seats"), path.join(distDir, "seats"), {recursive: true});
+  await cp(path.join(artifactDir, "src/lib/documentWorker.mjs"), path.join(distDir, "documentWorker.mjs"));
 } catch (error) {
   console.error(error);
   process.exit(1);

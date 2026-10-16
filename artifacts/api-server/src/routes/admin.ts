@@ -1,3 +1,5 @@
+import { evaluateSeatReview } from "@workspace/api-zod/evaluation";
+import { AdjustmentConflictError } from "../lib/creditLedger.js";
 import { InvalidBillingDefaultsError } from "../lib/billingDefaultsConfig.js";
 import { DEFAULT_LIMITS, LIMIT_RANGES, getAdminLimitSettings } from "../lib/adminLimitsConfig.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
@@ -178,7 +180,7 @@ router.get("/admin/stats", requireAdmin, async (_req, res) => {
 
 router.get("/admin/system-health", requireAdmin, async (_req, res) => {
   const db = getFirestoreDb();
-  if (!db) return res.json({ status: "unavailable", reason: "Firebase not configured" });
+  if (!db) return res.status(503).json({ status: "unavailable", reason: "Firebase not configured" });
 
   try {
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -211,7 +213,7 @@ router.get("/admin/system-health", requireAdmin, async (_req, res) => {
     }
 
     return res.json({
-      status: errorCount7d === null ? "degraded" : "ok",
+      status: errorCount7d === null || sessionCount7d === null || errorCount7d > 0 ? "degraded" : "ok",
       serverTime: new Date().toISOString(),
       collections: {
         users: userCount.data().count,
@@ -319,7 +321,11 @@ router.get("/admin/users/:uid", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => {
-  const { amount, reason } = req.body as { amount?: number; reason?: string };
+  const { amount, reason, requestId } = req.body as { amount?: number; reason?: string; requestId?: string };
+  if (typeof requestId !== "string" || !/^[a-zA-Z0-9-]{16,100}$/.test(requestId) ||
+      (reason !== undefined && (typeof reason !== "string" || reason.length > 500))) {
+    return res.status(400).json({error: "A valid adjustment request ID and reason are required. Reload the adjustment form."});
+  }
   if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount === 0) {
     return res.status(400).json({ error: "amount (number) is required" });
   }
@@ -327,11 +333,12 @@ router.post("/admin/users/:uid/credits", requireAdmin, async (req: any, res) => 
   try {
     const result = await addCredits(req.params["uid"]!, amount, "admin_adjustment", {
       source: reason ?? `admin_adjustment_by_${req.adminUid as string}`,
+      idempotencyKey: `admin_adjustment_${req.adminUid}_${requestId}`,
     });
     if (!result) return res.status(503).json({ error: "Firebase not configured" });
-    return res.json({ success: true, newBalance: result.newBalance });
+    return res.json({ success: true, newBalance: result.newBalance, skipped: result.skipped === true });
   } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
+    return res.status(err instanceof AdjustmentConflictError ? 409 : 500).json({ error: err instanceof AdjustmentConflictError ? err.message : safeError(err) });
   }
 });
 
@@ -1635,6 +1642,26 @@ router.patch("/admin/model-scores/:modelId", requireAdmin, async (req: any, res)
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }
+});
+
+router.post("/admin/seat-evaluations", requireAdmin, async (req: any, res) => {
+  let evaluation;
+  try { evaluation = evaluateSeatReview(req.body); }
+  catch { return res.status(400).json({error:"Complete every rubric criterion with evidence and a response source."}); }
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({error:"Evaluation storage is unavailable"});
+  try {
+    const ref = await db.collection("seat_evaluations").add({...evaluation, reviewerUid:req.adminUid, createdAt:FieldValue.serverTimestamp()});
+    return res.status(201).json({id:ref.id, score:evaluation.score, passed:evaluation.passed, calibrated:false});
+  } catch { return res.status(503).json({error:"Evaluation could not be saved"}); }
+});
+router.get("/admin/seat-evaluations", requireAdmin, async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({error:"Evaluation storage is unavailable"});
+  try {
+    const snap = await db.collection("seat_evaluations").orderBy("createdAt","desc").limit(50).get();
+    return res.json({reviews:snap.docs.map(doc => { const r=doc.data(); return {id:doc.id, model:r.model,seatId:r.seatId,score:r.score,passed:r.passed,rubricVersion:r.rubricVersion,source:r.source,response:r.response,pass:r.pass,fail:r.fail}; }), calibrated:false});
+  } catch { return res.status(503).json({error:"Evaluations could not be loaded"}); }
 });
 
 export default router;

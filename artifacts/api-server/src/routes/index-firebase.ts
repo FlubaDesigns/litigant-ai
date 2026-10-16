@@ -12,6 +12,7 @@ import providersRouter from "./providers";
 import billingRouter from "./billing";
 import webhookRouter from "./webhook";
 import caseFileRouter from "./caseFile";
+import feedbackRouter from "./feedback";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(providersRouter);
 router.use(billingRouter);
 router.use(webhookRouter);
 router.use(caseFileRouter);
+router.use(feedbackRouter);
 
 export default router;

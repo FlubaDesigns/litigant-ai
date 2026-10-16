@@ -1,3 +1,4 @@
+import { SeatEvaluationPanel } from "./SeatEvaluationPanel";
 import { ADMIN_LIMIT_RANGES } from "@workspace/api-zod/limits";
 import { accountAccess } from "@workspace/api-zod/session";
 import { TemplateEditModal } from "./TemplateEditModal";
@@ -775,9 +776,11 @@ function CreditAdjustModal({
 }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
+  const [requestId] = useState(() => crypto.randomUUID());
+  const [submitted, setSubmitted] = useState(false);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => adjustUserCredits(user.id, Number(amount), reason || "admin_adjustment"),
+    mutationFn: () => { setSubmitted(true); return adjustUserCredits(user.id, Number(amount), reason || "admin_adjustment", requestId); },
     onSuccess: (data) => {
       toast.success(`Credits adjusted. New balance: ${data.newBalance}`);
       onSuccess();
@@ -786,7 +789,7 @@ function CreditAdjustModal({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const isValid = amount !== "" && !isNaN(Number(amount)) && Number(amount) !== 0;
+  const isValid = amount !== "" && Number.isSafeInteger(Number(amount)) && Number(amount) !== 0;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -804,6 +807,7 @@ function CreditAdjustModal({
             <Input
               type="number"
               value={amount}
+              disabled={submitted}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="e.g. 50 or -10"
               className="font-mono"
@@ -813,12 +817,15 @@ function CreditAdjustModal({
             <label className="text-sm font-medium">Reason (optional)</label>
             <Input
               value={reason}
+              maxLength={500}
+              disabled={submitted}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. customer service adjustment"
             />
           </div>
         </div>
         <DialogFooter>
+          {submitted && <p className="text-sm text-muted-foreground">Retry keeps the same request. Check the ledger before opening a new adjustment.</p>}
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => mutate()} disabled={!isValid || isPending}>
             {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -1711,6 +1718,9 @@ function CreditPackDialog({
 // ─── Limits Tab ───────────────────────────────────────────────────────────────
 
 const LIMIT_DESCRIPTIONS: Record<string, { label: string; description: string; min: number; max: number }> = {
+  feedbackPerHour: { label: "Feedback per hour", description: "Maximum submissions per signed-in account.", ...ADMIN_LIMIT_RANGES.feedbackPerHour },
+  caseFilesPerHour: { label: "Documents per hour", description: "Combined upload and URL requests per signed-in account.", ...ADMIN_LIMIT_RANGES.caseFilesPerHour },
+  extractionTimeoutSeconds: { label: "Document processing timeout", description: "Seconds before a document worker is stopped.", ...ADMIN_LIMIT_RANGES.extractionTimeoutSeconds },
   overdraftLimit: {
     label: "Courtesy ceiling",
     description: "Paying members only. Repay before next run.",
@@ -2482,8 +2492,8 @@ function AiStudioProviderSection({
             </div>
             {expanded && <div id={`model-${m.id}`} className="studio-details space-y-3">
               <div className="row layout__split-2 layout--keep-columns">
-                <label className="text-xs text-muted-foreground">IQ score
-                  <Input key={`score-${m.qualityScore}`} aria-label={`${m.label} IQ score`} type="number" min={0} max={100} defaultValue={m.qualityScore ?? 50} disabled={busy}
+                <label className="text-xs text-muted-foreground">Selection score
+                  <Input key={`score-${m.qualityScore}`} aria-label={`${m.label} Selection score`} type="number" min={0} max={100} defaultValue={m.qualityScore ?? 50} disabled={busy}
                     onBlur={e => { const v = Number(e.target.value); if (e.target.value.trim() && Number.isFinite(v) && v >= 0 && v <= 100) { if (v !== (m.qualityScore ?? 50)) onSetScore(m.id, v); e.target.value = String(m.qualityScore ?? 50); } else e.target.value = String(m.qualityScore ?? 50); }}
                     onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }} />
                 </label>
@@ -2670,7 +2680,7 @@ function AiStudioTab() {
         qc.invalidateQueries({ queryKey: ["admin-ai-studio"] }),
         qc.invalidateQueries({ queryKey: ["admin-pricing"] }),
       ]);
-      toast.success(`${modelId} IQ score set to ${score}`);
+      toast.success(`${modelId} Selection score set to ${score}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -2706,6 +2716,8 @@ function AiStudioTab() {
 
   return (
     <div className="space-y-6">
+      <SeatEvaluationPanel />
+      <p className="text-sm text-muted-foreground">Selection scores are configurable routing preferences, not measured IQ or answer-accuracy probabilities.</p>
       <section aria-label="AI master power" className="lgt-card lgt-card--compact flex items-center justify-between gap-4">
         <div className="min-w-0">
           <label htmlFor="ai-master-power" className="text-lg font-semibold cursor-pointer">All AI — {aiEnabled ? "ON" : "OFF"}</label>

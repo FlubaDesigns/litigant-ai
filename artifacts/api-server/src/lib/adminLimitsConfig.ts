@@ -14,7 +14,8 @@ export async function getAdminLimitSettings(): Promise<PlatformLimitSettings> {
   try {
     const doc = await db.collection("config").doc("adminLimits").get();
     const saved = doc.exists ? doc.data() ?? {} : {};
-    const raw = {maxLitigants:saved.maxLitigants ?? DEFAULT_LIMITS.maxLitigants,
+    const raw = {...Object.fromEntries(Object.entries(DEFAULT_LIMITS).map(([key, value]) => [key, saved[key] ?? value])),
+      maxLitigants:saved.maxLitigants ?? DEFAULT_LIMITS.maxLitigants,
       overdraftLimit:saved.overdraftLimit ?? DEFAULT_LIMITS.overdraftLimit};
     const legacy = Number.isInteger(raw.maxLitigants) && raw.maxLitigants > MAX_LITIGANTS && raw.maxLitigants <= 20;
     const limits = PlatformLimitsSchema.parse({...raw, ...(legacy ? {maxLitigants:MAX_LITIGANTS} : {})});

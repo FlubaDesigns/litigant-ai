@@ -12,6 +12,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 import { FieldValue } from "firebase-admin/firestore";
+import { createHash } from "node:crypto";
 
 interface WindowEntry {
   count: number;
@@ -100,17 +101,23 @@ export interface RateLimiterOptions {
 /**
  * Returns an Express middleware that enforces the given rate limit.
  *
- * Firestore is tried first. If unavailable, the in-memory fallback is used
- * and a warning is logged so the gap is visible in ops logs.
+ * A configured shared store fails closed. Only local development without
+ * Firebase uses the single-instance memory fallback.
  */
 export function makeRateLimiter(options: RateLimiterOptions) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const key = `rl:${options.keyFn(req)}`;
+    const key = `rl:${createHash("sha256").update(options.keyFn(req)).digest("hex")}`;
 
     let result: RateLimitResult;
     try {
       result = await checkFirestore(key, options.limit, options.windowMs);
     } catch {
+      // Never multiply an account's allowance across production instances when
+      // the shared counter is unavailable. Local tests without Firebase may fall back.
+      if (process.env.NODE_ENV === "production" || getFirestoreDb()) {
+        res.status(503).json({ error: "Request limits are temporarily unavailable. Please try again." });
+        return;
+      }
       console.warn(
         `[RateLimiter] Firestore unavailable for key "${key}" — using in-memory fallback`
       );

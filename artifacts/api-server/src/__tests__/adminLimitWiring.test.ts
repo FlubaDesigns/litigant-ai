@@ -1,3 +1,4 @@
+import {DEFAULT_PLATFORM_LIMITS} from "@workspace/api-zod/limits";
 import {beforeEach, expect, it, vi} from "vitest";
 import express from "express";
 import request from "supertest";
@@ -29,7 +30,7 @@ const save=(value:number)=>request(app).put("/admin/limits/maxLitigants").set("A
 it("keeps the existing ten-seat setting and shares one hard ceiling",async()=>{
   expect(MAX_LITIGANTS).toBe(10);
   expect(ADMIN_LIMIT_RANGES.maxLitigants.max).toBe(MAX_LITIGANTS);
-  expect((await request(app).get("/limits")).body).toEqual({limits:{maxLitigants:10,overdraftLimit:25}});
+  expect((await request(app).get("/limits")).body).toEqual({limits:{...DEFAULT_PLATFORM_LIMITS,maxLitigants:10,overdraftLimit:25}});
   expect(CourtConfigSchema.safeParse({litigantCount:10}).success).toBe(true);
   expect(CourtConfigSchema.safeParse({litigantCount:11}).success).toBe(false);
   expect(docs["config/adminLimits"].maxLitigants).toBe(10);
@@ -63,7 +64,7 @@ it("warns about legacy 11–20 settings, bounds execution, and never silently re
   expect((await prepareSession({litigantCount:10})).config.litigantCount).toBe(10);
   expect(docs["config/adminLimits"].maxLitigants).toBe(20);
   expect((await save(8)).status).toBe(200);
-  expect((await request(app).get("/limits")).body).toEqual({limits:{maxLitigants:8,overdraftLimit:25}});
+  expect((await request(app).get("/limits")).body).toEqual({limits:{...DEFAULT_PLATFORM_LIMITS,maxLitigants:8,overdraftLimit:25}});
 });
 it("limits editable UI configs with the same runtime cap and trims inactive seat assignments",()=>{
   const seat={provider:"openai"};

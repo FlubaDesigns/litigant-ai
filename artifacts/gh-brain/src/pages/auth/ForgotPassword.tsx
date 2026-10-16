@@ -32,9 +32,9 @@ export default function ForgotPasswordPage() {
     try {
       await resetPassword(values.email);
       setIsSubmitted(true);
-      toast.success("Recovery protocol initiated.");
+      toast.success("Password reset requested.");
     } catch (error: any) {
-      toast.error(error.message || "Failed to initiate recovery protocol.");
+      toast.error(error.message || "Could not request a password reset.");
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
           </div>
           <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Recover Access</h1>
           <p className="text-muted-foreground text-center">
-            Initiate passkey reset protocol.
+            Enter your email to receive a password reset link.
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Operator Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"

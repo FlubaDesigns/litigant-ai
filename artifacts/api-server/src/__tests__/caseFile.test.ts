@@ -1,3 +1,4 @@
+import { DEFAULT_PLATFORM_LIMITS } from "@workspace/api-zod/limits";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import express from "express";
 import request from "supertest";
@@ -5,6 +6,8 @@ import dns from "node:dns/promises";
 import https from "node:https";
 import {EventEmitter} from "node:events";
 vi.mock("../lib/firebaseAdmin.js", () => ({verifyIdToken:vi.fn(async()=>({uid:"test-user"}))}));
+vi.mock("../lib/adminLimitsConfig.js", () => ({getAdminLimits: async () => DEFAULT_PLATFORM_LIMITS}));
+vi.mock("../lib/rateLimiter.js", () => ({makeRateLimiter: () => (_req:any,_res:any,next:any) => next()}));
 import router from "../routes/caseFile.js";
 const app=express();app.use(express.json(),router);
 function pdfFixture() {

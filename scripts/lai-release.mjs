@@ -2,6 +2,7 @@
  * No private Engine implementation or credentials belong in this public repository.
  */
 import assert from 'node:assert/strict';
+import {inspectFeedbackRules, deployFeedbackRules} from './lai-feedback-rules.mjs';
 import { migrateCredentials, prepareMigration, migrationValues } from './lai-credential-migration.mjs';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, appendFile, mkdir } from 'node:fs/promises';
@@ -272,7 +273,7 @@ async function prepare() {
   try {
     let healthy = false;
     for (let attempt = 0; attempt < 30; attempt++) {
-      const probe = spawnSync('docker', ['exec', container, 'node', '-e', `Promise.all([fetch('http://127.0.0.1:8080/api/health').then(r=>r.json()),fetch('http://127.0.0.1:8080/api/version').then(r=>r.json())]).then(([h,v])=>{if(h.status!=='ok'||v.sha!=='${descriptor.sourceCommit}')process.exit(1)}).catch(()=>process.exit(1))`], { stdio: 'pipe', timeout: 5000 });
+      const probe = spawnSync('docker', ['exec', container, 'node', '-e', `Promise.all([fetch('http://127.0.0.1:8080/api/live').then(r=>r.json()),fetch('http://127.0.0.1:8080/api/version').then(r=>r.json())]).then(([h,v])=>{if(h.status!=='ok'||v.sha!=='${descriptor.sourceCommit}')process.exit(1)}).catch(()=>process.exit(1))`], { stdio: 'pipe', timeout: 5000 });
       if (probe.status === 0) { healthy = true; break; } await sleep(2000);
     }
     assert(healthy, 'isolated Docker health/version probe failed');
@@ -341,7 +342,7 @@ export async function inspectCredentialWiring(service, read = cloud) {
   return report;
 }
 
-// Two exact additive payment-history indexes. Never deploy the catalog or mutate rules/data.
+// Two exact additive payment-history indexes. Never deploy the catalog or mutate data.
 export const PAYMENT_INDEX_PARENT = 'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions';
 export const PAYMENT_INDEX = Object.freeze({ queryScope: 'COLLECTION', fields: Object.freeze([
   Object.freeze({ fieldPath: 'userId', order: 'ASCENDING' }),
@@ -542,6 +543,12 @@ async function verifyHosting(marker, sourceRoot) {
 async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
+  if (descriptor.action !== 'migrate-credentials') {
+    await permissions('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions', ['firebaserules.releases.get', 'firebaserules.releases.update', 'firebaserules.rulesets.get', 'firebaserules.rulesets.create'], 'LAI feedback rules');
+    const rulesRoot = descriptor.action === 'inspect' ? '.' : 'release-source';
+    await inspectFeedbackRules(cloud, await readFile(path.join(rulesRoot, 'firestore.rules'), 'utf8'));
+    console.log('Read-only rules preflight passed: exact feedback-only tightening, no rules drift.');
+  }
   if (descriptor.action === 'inspect') {
     await writeFile(tempPath(context, 'identity.json'), JSON.stringify(runtimeIdentityEvidence(context, before)) + '\n', { mode: 0o600 });
     console.log('LAI_CREDENTIAL_WIRING ' + JSON.stringify(await inspectCredentialWiring(before)));
@@ -619,6 +626,8 @@ async function release() {
   await sameRuntime(before, expectedResourceVersion);
   await verifyCiAndEvidence(context, descriptor);
   await retryRead(() => verifyHosting(built.marker, sourceRoot));
+  console.log('Release stage: applying reviewed feedback rules after API and frontend verification.');
+  await deployFeedbackRules({read: cloud, write: cloud, content: await readFile(path.join(sourceRoot, 'firestore.rules'), 'utf8'), assertCurrent: recheck});
   await sameRuntime(before, expectedResourceVersion);
   await verifyCiAndEvidence(context, descriptor);
   assert.equal(inspectPaymentIndexes(await paymentIndexes())?.state, 'READY', 'payment-history index is no longer READY at final verification');

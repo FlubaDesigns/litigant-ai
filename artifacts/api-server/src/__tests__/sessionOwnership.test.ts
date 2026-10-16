@@ -368,7 +368,7 @@ describe("system health metrics", () => {
     vi.mocked(getFirestoreDb).mockReturnValue(healthDb() as any);
     const response=await health();
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({status:"ok",collections:{sessions:3},last24h:{newSessions:1},last7d:{errorSessions:1,activeSessions:2,errorRate:"50.0",feedbackEntries:0}});
+    expect(response.body).toMatchObject({status:"degraded",collections:{sessions:3},last24h:{newSessions:1},last7d:{errorSessions:1,activeSessions:2,errorRate:"50.0",feedbackEntries:0}});
     const logs=await request(app).get("/api/admin/error-logs").set("Authorization","Bearer test-token");
     expect(logs.body.failedSessions.map((row:any)=>row.id)).toContain("resumed");
   });

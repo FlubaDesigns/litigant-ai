@@ -23,3 +23,12 @@ it("invalidates customer configuration and quotes only after a successful limit 
   await expect(setAdminLimit("maxLitigants",20)).rejects.toThrow("Invalid limit");
   expect(refreshConfiguration).toHaveBeenCalledTimes(1);
 });
+
+
+it("retains the supplied adjustment request ID on retries",async()=>{
+ const fetchMock=vi.fn(async()=>new Response('{"newBalance":125}',{status:200}));vi.stubGlobal("fetch",fetchMock);
+ const {adjustUserCredits}=await import("./adminService");
+ await adjustUserCredits("u",25,"Case 123","request-123456789");
+ await adjustUserCredits("u",25,"Case 123","request-123456789");
+ expect(fetchMock.mock.calls.map(call=>JSON.parse((call as unknown as [string,RequestInit])[1].body as string).requestId)).toEqual(["request-123456789","request-123456789"]);
+});

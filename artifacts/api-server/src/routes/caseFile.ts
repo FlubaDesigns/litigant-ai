@@ -17,6 +17,9 @@ import dns from "dns/promises";
 import http from "node:http";
 import https from "node:https";
 import { verifyIdToken } from "../lib/firebaseAdmin.js";
+import { getAdminLimits } from "../lib/adminLimitsConfig.js";
+import { makeRateLimiter } from "../lib/rateLimiter.js";
+import { extractDocument, DocumentExtractionError } from "../lib/extractDocument.js";
 
 const router = Router();
 
@@ -43,7 +46,14 @@ const upload = multer({
 const parseUpload = upload.single("file");
 
 async function authenticateUpload(req: Request, res: Response, next: NextFunction): Promise<void> {
-  if (await requireAuth(req, res)) next();
+  const uid = await requireAuth(req, res);
+  if (!uid) return;
+  try {
+    const limits = await getAdminLimits();
+    res.locals.extractionTimeoutMs = limits.extractionTimeoutSeconds * 1000;
+    await makeRateLimiter({keyFn: () => `case-file:${uid}`, limit: limits.caseFilesPerHour,
+      windowMs: 3600000, message: "Document request limit reached. Please try again later."})(req, res, next);
+  } catch { res.status(503).json({message: "Document processing limits are unavailable. Please try again."}); }
 }
 
 function parseAuthenticatedUpload(req: Request, res: Response, next: NextFunction): void {
@@ -128,12 +138,10 @@ function truncate(text: string, maxChars = 12000): string {
 
 const MAX_FETCH_BYTES = 2 * 1024 * 1024; // 2 MB streaming ceiling
 
-router.post("/case-file/fetch-url", async (req, res) => {
-  const uid = await requireAuth(req, res);
-  if (!uid) return;
+router.post("/case-file/fetch-url", authenticateUpload, async (req, res) => {
 
   const { url } = req.body as { url?: string };
-  if (!url?.trim()) {
+  if (typeof url !== "string" || !url.trim() || url.length > 4096) {
     res.status(400).json({ message: "url is required" });
     return;
   }
@@ -218,6 +226,9 @@ router.post("/case-file/fetch-url", async (req, res) => {
 // ── POST /case-file/upload ────────────────────────────────────────────────────
 
 router.post("/case-file/upload", authenticateUpload, parseAuthenticatedUpload, async (req, res) => {
+  const abort = new AbortController();
+  const cancel = () => abort.abort();
+  res.once("close", cancel);
   const file = req.file;
   if (!file) {
     res.status(400).json({ message: "No file uploaded" });
@@ -247,15 +258,8 @@ router.post("/case-file/upload", authenticateUpload, parseAuthenticatedUpload, a
   }
 
   try {
-    if (claimedPdf) {
-      const { PDFParse } = await import("pdf-parse");
-      const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
-      try { content = (await parser.getText()).text; }
-      finally { await parser.destroy(); }
-    } else if (claimedDocx) {
-      const mammoth = await import("mammoth");
-      const result = await mammoth.extractRawText({ buffer: file.buffer });
-      content = result.value;
+    if (claimedPdf || claimedDocx) {
+      content = await extractDocument(file.buffer, claimedPdf ? "pdf" : "docx", res.locals.extractionTimeoutMs, abort.signal);
     } else if (mime === "application/json" || name.endsWith(".json")) {
       const raw = file.buffer.toString("utf8");
       try {
@@ -268,11 +272,11 @@ router.post("/case-file/upload", authenticateUpload, parseAuthenticatedUpload, a
       content = file.buffer.toString("utf8");
     }
 
-    res.json({ name, content: truncate(content) });
+    if (!res.destroyed) res.json({ name, content: truncate(content) });
   } catch (err: any) {
     console.error("[case-file/upload] extraction error:", err?.message);
-    res.status(422).json({ message: "Could not extract text from file" });
-  }
+    if (!res.destroyed) res.status(err instanceof DocumentExtractionError ? err.status : 422).json({ message: err instanceof DocumentExtractionError ? err.message : "Could not extract text from file" });
+  } finally { res.removeListener("close", cancel); }
 });
 
 // Unexpected errors (including authentication failures) never expose internals.

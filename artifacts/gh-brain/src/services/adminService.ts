@@ -125,11 +125,12 @@ export async function setUserTestModel(
 export async function adjustUserCredits(
   uid: string,
   amount: number,
-  reason: string
+  reason: string,
+  requestId: string
 ): Promise<{ newBalance: number }> {
   const res = await adminFetch(`/admin/users/${uid}/credits`, {
     method: "POST",
-    body: JSON.stringify({ amount, reason }),
+    body: JSON.stringify({ amount, reason, requestId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

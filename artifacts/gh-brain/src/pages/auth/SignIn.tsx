@@ -67,16 +67,16 @@ export default function SignInPage() {
               <span className="text-brand-green">LITIGANT-</span><span className="text-brand-amber">AI</span>
             </span>
           </Link>
-          <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Initiate Session</h1>
+          <h1 className="text-4xl font-semibold font-serif tracking-tight mb-3">Sign in</h1>
           <p className="text-muted-foreground text-center">
-            Authenticate to access the adversarial reasoning engine.
+            Sign in to continue your conversations.
           </p>
         </div>
 
         <div className="bg-card border border-border p-8 rounded-lg shadow-2xl">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Operator Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -91,9 +91,9 @@ export default function SignInPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="password">Passkey</Label>
+                <Label htmlFor="password">Password</Label>
                 <Link href={authPath("/forgot-password", next)} className="text-xs text-primary hover:text-primary-glow transition-all">
-                  Forgot passkey?
+                  Forgot password?
                 </Link>
               </div>
               <Input
@@ -119,7 +119,7 @@ export default function SignInPage() {
                 </>
               ) : (
                 <>
-                  Authorize Access
+                  Sign in
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </>
               )}
@@ -140,14 +140,14 @@ export default function SignInPage() {
             disabled={isLoading}
           >
             <FcGoogle className="mr-2 w-5 h-5" />
-            Authenticate with Google
+            Continue with Google
           </Button>
         </div>
 
         <p className="text-center mt-8 text-sm text-muted-foreground">
-          No clearance yet?{" "}
+          New here?{" "}
           <Link href={authPath("/register", next)} className="text-primary hover:text-primary-glow transition-all font-medium">
-            Request Access
+            Create an account
           </Link>
         </p>
       </div></div>

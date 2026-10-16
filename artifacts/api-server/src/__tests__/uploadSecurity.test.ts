@@ -1,3 +1,4 @@
+import { DEFAULT_PLATFORM_LIMITS } from "@workspace/api-zod/limits";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -12,6 +13,8 @@ vi.mock("../lib/firebaseAdmin.js", () => ({
 }));
 vi.mock("@sentry/node", () => ({ init: vi.fn(), setupExpressErrorHandler: vi.fn() }));
 import { verifyIdToken } from "../lib/firebaseAdmin.js";
+vi.mock("../lib/adminLimitsConfig.js", () => ({getAdminLimits: async () => DEFAULT_PLATFORM_LIMITS}));
+vi.mock("../lib/rateLimiter.js", () => ({makeRateLimiter: () => (_req:any,_res:any,next:any) => next()}));
 import router from "../routes/caseFile.js";
 
 const auth = vi.mocked(verifyIdToken);
