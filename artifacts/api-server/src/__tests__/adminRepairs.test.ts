@@ -1,5 +1,6 @@
 import {beforeEach, expect, it, vi} from "vitest";
 import express from "express";
+import {LITMUS_TESTS} from "@workspace/api-zod/evaluation";
 import request from "supertest";
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: vi.fn(), isFirebaseConfigured: () => true, verifyIdToken: async () => ({uid: "owner", admin: true})}));
 import {getFirestoreDb} from "../lib/firebaseAdmin.js";
@@ -26,6 +27,7 @@ beforeEach(() => {
   }
   function collection(name: string, filters: any[] = [], order: any = "__name__", direction = "asc", after?: any, size = Infinity): any {
     const query = {
+      add: async (data: any) => {const ref=doc(`${name}/generated-${++counter}`);await ref.set(data);return ref;},
       doc: (id = `generated-${++counter}`) => doc(`${name}/${id}`),
       where: (field: string, op: string, value: any) => collection(name, [...filters, [field, op, value]], order, direction, after, size),
       orderBy: (field: any, dir = "asc") => collection(name, filters, typeof field === "string" ? field : "__name__", dir, after, size),
@@ -182,4 +184,27 @@ it("retires password-based admin grants even when an old environment secret rema
     if (previous === undefined) delete process.env.ADMIN_MASTER_SECRET;
     else process.env.ADMIN_MASTER_SECRET = previous;
   }
+});
+
+it("applies a retried manual adjustment once and returns the original balance",async()=>{
+ const body={amount:25,reason:"Case 123",requestId:"adjustment-test-123456"};
+ const adjust=(data=body)=>request(app).post("/admin/users/u/credits").set("Authorization","Bearer test").send(data);
+ const results=await Promise.all([adjust(),adjust()]);
+ expect(results.map(r=>r.status)).toEqual([200,200]);
+ expect(results[0].body.newBalance).toBe(125);expect(results[1].body.newBalance).toBe(125);
+ expect(store["users/u"].creditBalance).toBe(125);
+ expect(Object.entries(store).filter(([key,data])=>key.startsWith("credit_transactions/")&&data.type==="admin_adjustment")).toHaveLength(1);
+ expect((await adjust({...body,amount:50})).status).toBe(409);
+ expect(store["users/u"].creditBalance).toBe(125);
+});
+
+it("requires admin authentication and evidence before persisting an uncalibrated review",async()=>{
+ const body={seatId:"builder",model:"fixture-model",source:"fixture-session",response:"Actual response fixture",pass:LITMUS_TESTS.builder.passCriteria.map(()=>({met:true,evidence:"checked"})),fail:LITMUS_TESTS.builder.failCriteria.map(()=>({met:false,evidence:"not present"}))};
+ expect((await request(app).post("/admin/seat-evaluations").send(body)).status).toBe(401);
+ const submit=(data:any)=>request(app).post("/admin/seat-evaluations").set("Authorization","Bearer fixture").send(data);
+ expect((await submit({...body,score:100})).status).toBe(400);
+ expect((await submit({...body,pass:[]})).status).toBe(400);
+ const result=await submit(body);expect(result.status).toBe(201);
+ expect(store[`seat_evaluations/${result.body.id}`]).toMatchObject({...body,reviewerUid:"owner",calibrated:false,score:100});
+ const saved=await read("seat-evaluations");expect(saved.status).toBe(200);expect(saved.body.reviews).toHaveLength(1);
 });

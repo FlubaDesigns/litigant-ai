@@ -53,7 +53,9 @@ for (const width of [320, 390, 1280]) {
     await page.goBack();
     await expect(page.getByRole("heading", { name: "Sign in to verify your email" })).toBeVisible();
     await page.goForward();
-    await expect(page.getByRole("heading", { name: "Initiate Session" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Password", {exact: true})).toHaveAttribute("type", "password");
+    await expect(page.getByRole("link", {name: "Forgot password?"})).toBeVisible();
     await page.goto("/verify-email?next=%2F%5Cevil.example");
     await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", "/sign-in?next=%2Fsession");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

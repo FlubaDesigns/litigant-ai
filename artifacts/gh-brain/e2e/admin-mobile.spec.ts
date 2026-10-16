@@ -377,7 +377,7 @@ for (const width of [360,412]) test(`AI Studio controls and pricing fit ${width}
   const table=page.locator(".studio-rates");
   await expect(table).toBeVisible();
   await expect(table).toHaveCSS("display","table");
-  const iq=page.getByRole("spinbutton",{name:"GPT-5 IQ score"});
+  const iq=page.getByRole("spinbutton",{name:"GPT-5 Selection score"});
   const markup=page.getByRole("spinbutton",{name:"GPT-5 multiplier"});
   const left=await iq.boundingBox(),right=await markup.boundingBox();
   expect(Math.abs(left!.y-right!.y)).toBeLessThan(1);

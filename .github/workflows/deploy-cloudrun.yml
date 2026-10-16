@@ -33,12 +33,18 @@ jobs:
           python3 scripts/test_source_safety.py
           python3 scripts/source_safety.py
           python3 scripts/test_release_boundary.py
-          node --test scripts/test_lai_release.mjs scripts/test_lai_credential_migration.mjs
+          node --test scripts/test_lai_release.mjs scripts/test_lai_credential_migration.mjs scripts/test_lai_feedback_rules.mjs
       - uses: pnpm/action-setup@v4
         with:
           version: "10"
       - name: Install locked workspace dependencies
         run: pnpm install --frozen-lockfile
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Test feedback rules in an isolated demo emulator
+        run: pnpm exec firebase emulators:exec --only firestore --project demo-litigant-readiness --config firebase.readiness-tests.json "node scripts/test_feedback_rules.mjs"
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
       - name: Typecheck all packages

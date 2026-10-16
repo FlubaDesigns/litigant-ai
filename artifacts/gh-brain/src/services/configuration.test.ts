@@ -1,3 +1,4 @@
+import {DEFAULT_PLATFORM_LIMITS} from "@workspace/api-zod/limits";
 import {afterEach, describe, expect, it, vi} from "vitest";
 vi.mock("@/lib/firebase", () => ({auth:null}));
 import {getBillingDefaults, getProducts} from "./billingService";
@@ -31,7 +32,7 @@ describe("configuration readers do not invent fallback offers", () => {
     vi.stubGlobal("fetch",vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({limits:{maxLitigants:7,overdraftLimit:12}})))
       .mockResolvedValueOnce(new Response("{}")));
-    expect(await getLimits()).toEqual({maxLitigants:7,overdraftLimit:12});
+    expect(await getLimits()).toEqual({...DEFAULT_PLATFORM_LIMITS,maxLitigants:7,overdraftLimit:12});
     await expect(getLimits()).rejects.toThrow("Invalid platform limits response");
   });
 });

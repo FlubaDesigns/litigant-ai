@@ -359,7 +359,7 @@ export default function SessionPage() {
       setFeedbackGiven(rating);
       if (rating === "good" || rating === "bad") applyFeedbackGrades(rating, "answer");
       toast.success("Feedback recorded.");
-    } catch { toast.error("Failed to save feedback."); }
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to save feedback."); }
   }
 
   function handleSeatClick(seatId: string, litIndex?: number) {

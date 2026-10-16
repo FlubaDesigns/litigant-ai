@@ -1,11 +1,28 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
+import { getFirestoreDb } from "../lib/firebaseAdmin.js";
 
 const router: IRouter = Router();
 
-router.get("/health", (_req, res) => {
+router.get("/live", (_req, res) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
   res.json(data);
+});
+
+// A dependency failure must not pass readiness. Do not expose credentials,
+// document contents, provider responses, or internal error details publicly.
+router.get("/health", async (_req, res) => {
+  const db = getFirestoreDb();
+  if (!db) return res.status(503).json({status: "unavailable", scope: "database-readiness"});
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      db.collection("config").doc("featureFlags").get(),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Readiness timeout")), 3000); }),
+    ]);
+    return res.json({status: "ok", scope: "database-readiness"});
+  } catch { return res.status(503).json({status: "unavailable", scope: "database-readiness"}); }
+  finally { clearTimeout(timer); }
 });
 
 /**

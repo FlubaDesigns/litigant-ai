@@ -70,13 +70,10 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Feedback: any signed-in user (or guest, where userId is null) may
-    // create a feedback entry; nobody can read, update, or delete via the
-    // client SDK. submitFeedback() in feedbackService.ts relies on create
-    // succeeding — without this block all feedback submissions silently fail.
+    // Feedback is written by the authenticated server API only.
     match /feedback/{feedbackId} {
-      allow create: if request.resource.data.userId == null
-                    || (request.auth != null && request.auth.uid == request.resource.data.userId);
+      // All submissions go through the authenticated, validated, rate-limited API.
+      allow create: if false;
       allow read, update, delete: if false;
     }
 

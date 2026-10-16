@@ -45,6 +45,8 @@ export type CreditTxType =
   | "refund"             // post-session reconciliation or failure (positive amount)
   | "admin_adjustment";  // manual admin grant or deduction
 
+export class AdjustmentConflictError extends Error {}
+
 /** Shape of a document in the credit_transactions Firestore collection. */
 export interface CreditTransaction {
   transactionId?: string;
@@ -140,6 +142,13 @@ export async function addCredits(
       dedupRef = db.collection("payment_events").doc(opts.idempotencyKey);
       const dedupSnap = await tx.get(dedupRef);
       if (dedupSnap.exists) {
+        if (type === "admin_adjustment") {
+          const prior = dedupSnap.data()!;
+          if (prior.eventType !== type || prior.uid !== uid || prior.amount !== amount || prior.source !== opts.source) {
+            throw new AdjustmentConflictError("This adjustment request was already used with different details. Review the ledger before starting another adjustment.");
+          }
+          return { newBalance: prior.balanceAfter, skipped: true };
+        }
         // Already processed — safe to return without any balance mutation
         return { newBalance: 0, skipped: true };
       }
@@ -212,6 +221,7 @@ export async function addCredits(
         eventType:   type,
         uid,
         amount,
+        ...(type === "admin_adjustment" ? {source: opts.source ?? "", balanceAfter: newBalance} : {}),
         processedAt: FieldValue.serverTimestamp(),
       });
     }
