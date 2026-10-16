@@ -825,3 +825,14 @@ test('runtime identity evidence excludes container credentials and pins the insp
   assert(!JSON.stringify(result).includes('private-fixture'));
   assert.throws(() => runtimeIdentityEvidence({ controllerSha: SOURCE, runId: '123456', attempt: 2 }, {}), /runtime identity/);
 });
+
+
+test('saved Canon must exist before any approved application release', async () => {
+  const {validateSavedCanon} = await import('./lai-release.mjs');
+  const valid = {fields:{text:{stringValue:'Owner-approved instructions'},version:{stringValue:'v1'}}};
+  assert.doesNotThrow(() => validateSavedCanon(valid));
+  for (const invalid of [null, {}, {fields:{}}, {fields:{text:{stringValue:' '},version:{stringValue:'v1'}}},
+    {fields:{text:{stringValue:'Saved'},version:{stringValue:''}}}, {fields:{text:{integerValue:'1'},version:{stringValue:'v1'}}}]) {
+    assert.throws(() => validateSavedCanon(invalid), /Saved Canon/);
+  }
+});

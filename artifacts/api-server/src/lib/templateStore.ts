@@ -1,10 +1,12 @@
+import { ConfigurationUnavailableError } from "./configurationError.js";
 import { TEMPLATES, normalizeTemplate, type Template } from "@workspace/api-zod/templates";
 import { getFirestoreDb } from "./firebaseAdmin.js";
 
 export async function getTemplates(includeInactive = false): Promise<Template[]> {
   const catalog = new Map(TEMPLATES.map(t => [t.id, t]));
   const db = getFirestoreDb();
-  if (db) {
+  if (!db) throw new ConfigurationUnavailableError("Template catalog");
+  {
     try {
     const snap = await db.collection("templates").get();
     for (const doc of snap.docs) {

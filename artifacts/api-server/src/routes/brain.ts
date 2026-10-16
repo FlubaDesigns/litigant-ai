@@ -1,3 +1,5 @@
+import { getRunInstructions, type RunInstructions } from "../lib/runInstructions.js";
+import { ConfigurationUnavailableError } from "../lib/configurationError.js";
 import { mergeModelProvenance } from "../lib/modelProvenance.js";
 import { PAID_ACCESS_NOTE, storedSessionRecord, sessionCompleteNotificationsEnabled } from "@workspace/api-zod/session";
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
@@ -173,6 +175,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
   let prepared: Awaited<ReturnType<typeof prepareSession>>;
   let estimatedCost = 0;
+  let instructions: RunInstructions;
   let courtesyLimit = 0;
   let previousSession: Record<string, any> | null = null;
   const runCalls: CallUsage[] = [];
@@ -289,6 +292,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     effectiveConfig = applyArtifactAccess(effectiveConfig, fullAccess);
   }
   try {
+    instructions = await getRunInstructions(effectiveConfig.conscience !== false);
     prepared = await prepareSession(effectiveConfig, resumeWithFixedPipeline === true);
     effectiveConfig = prepared.config;
     const previousCharge = Number(previousSession?.creditsUsed ?? 0);
@@ -304,7 +308,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       templateSystemPrompt = template.systemPrompt;
     }
   } catch (error) {
-    res.status(error instanceof LimitsUnavailableError ? 503 : 400).json({message: error instanceof Error ? error.message : "Invalid session configuration"});
+    res.status(error instanceof LimitsUnavailableError || error instanceof ConfigurationUnavailableError ? 503 : 400).json({message: error instanceof Error ? error.message : "Invalid session configuration"});
     return;
   }
   if (uid) {
@@ -390,6 +394,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     const result = await runBrainSession({
       question,
       config: effectiveConfig,
+      instructions,
       templateSystemPrompt,
       deferCompletion: true,
       priceCalls: calls => priceCalls(calls, prepared.rates),
@@ -662,6 +667,6 @@ router.post("/session-estimate", makeRateLimiter({ keyFn: req => `quote:${(req.i
   try {
     const quote = await prepareSession(parsed.data);
     return res.json({config:quote.config, estimatedCredits:quote.estimatedCredits, maxCredits:quote.config.maxCredits});
-  } catch (e) { return res.status(e instanceof LimitsUnavailableError ? 503 : 400).json({message:e instanceof Error ? e.message : "Estimate unavailable"}); }
+  } catch (e) { return res.status(e instanceof LimitsUnavailableError || e instanceof ConfigurationUnavailableError ? 503 : 400).json({message:e instanceof Error ? e.message : "Estimate unavailable"}); }
 });
 export default router;

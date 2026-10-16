@@ -540,10 +540,18 @@ async function verifyHosting(marker, sourceRoot) {
     await verifyApi(`${origin}/api-server`, marker.sourceCommit);
   }
 }
+export function validateSavedCanon(document) {
+  const fields = document?.fields;
+  assert(typeof fields?.text?.stringValue === 'string' && fields.text.stringValue.trim(), 'Saved Canon text is missing; configure it before releasing');
+  assert(typeof fields?.version?.stringValue === 'string' && fields.version.stringValue.trim(), 'Saved Canon version is missing; configure it before releasing');
+}
+
 async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
   if (descriptor.action !== 'migrate-credentials') {
+    validateSavedCanon(await cloud('https://firestore.googleapis.com/v1/projects/litigant-ai/databases/(default)/documents/system_config/conscience', 'read required saved Canon'));
+    console.log('Read-only Canon preflight passed: saved instructions and version are present.');
     await permissions('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions', ['firebaserules.releases.get', 'firebaserules.releases.update', 'firebaserules.rulesets.get', 'firebaserules.rulesets.create'], 'LAI feedback rules');
     const rulesRoot = descriptor.action === 'inspect' ? '.' : 'release-source';
     await inspectFeedbackRules(cloud, await readFile(path.join(rulesRoot, 'firestore.rules'), 'utf8'));

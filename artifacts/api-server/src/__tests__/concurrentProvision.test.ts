@@ -1,3 +1,7 @@
+vi.mock("../lib/runInstructions.js", () => ({getRunInstructions: async () => ({
+  conscience: {text:"Offline test instructions",version:"test"},
+  seats: {orchestrator:"Test",moderator:"Test",architect:"Test",builder:"Test",auditor:"Test",litigant:"Test"},
+})}));
 /**
  * Concurrent provisioning tests.
  *

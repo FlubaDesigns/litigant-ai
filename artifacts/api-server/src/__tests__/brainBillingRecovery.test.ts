@@ -21,7 +21,7 @@ const finish=(opts:any,extra:object={})=>({sessionId:opts.sessionId,model:"fixtu
 const events=(text:string)=>text.split("\n\n").filter(s=>s.startsWith("data: ")).map(s=>JSON.parse(s.slice(6)));
 let db:ReturnType<typeof billingRecoveryDatabase>;
 const runRecord=()=>Object.entries(db.store).find(([key])=>key.startsWith("credit_runs/"))!;
-beforeEach(()=>{vi.clearAllMocks();vi.mocked(isResendConfigured).mockResolvedValue(false);vi.stubGlobal("fetch",vi.fn(()=>{throw new Error("External calls forbidden");}));db=billingRecoveryDatabase({"users/u":{plan:"pro",creditBalance:500}});vi.mocked(getFirestoreDb).mockReturnValue(db as any);vi.mocked(verifyIdToken).mockResolvedValue({uid:"u",emailVerified:true} as any);vi.mocked(runBrainSession).mockImplementation(async opts=>finish(opts));});
+beforeEach(()=>{vi.clearAllMocks();vi.mocked(isResendConfigured).mockResolvedValue(false);vi.stubGlobal("fetch",vi.fn(()=>{throw new Error("External calls forbidden");}));db=billingRecoveryDatabase({"system_config/conscience":{text:"Saved test policy",version:"test-v1"},"users/u":{plan:"pro",creditBalance:500}});vi.mocked(getFirestoreDb).mockReturnValue(db as any);vi.mocked(verifyIdToken).mockResolvedValue({uid:"u",emailVerified:true} as any);vi.mocked(runBrainSession).mockImplementation(async opts=>finish(opts));});
 describe("production brain route billing recovery",()=>{
  it("independent concurrent routes never hand out overlapping execution caps",async()=>{
   let entered!:()=>void,release!:()=>void;
@@ -116,5 +116,22 @@ describe("notifications respect preferences and settled balances",()=>{
  it("does not send zero-balance prompts from its own unreturned reservation",async()=>{
   vi.mocked(isResendConfigured).mockResolvedValue(true);db.failTransactionsWhen(writes=>writes.some(w=>w.data.type==="refund"));
   await call();expect(sendLowCreditsEmail).not.toHaveBeenCalled();expect(sendZeroCreditsEmail).not.toHaveBeenCalled();
+ });
+});
+
+describe("instruction source failure before charging",()=>{
+ it.each([undefined, {}, {text:"",version:"v1"}, {text:"Saved",version:""}])("rejects missing or invalid Canon: %j",async saved=>{
+  if(saved===undefined) delete db.store["system_config/conscience"];
+  else db.store["system_config/conscience"]=saved;
+  const response=await call();
+  expect(response.status).toBe(503);
+  expect(response.body.message).toContain("Saved Canon instructions could not be loaded");
+  expect(db.store["users/u"].creditBalance).toBe(500);
+  expect(Object.keys(db.store).some(key=>key.startsWith("credit_runs/")||key.startsWith("credit_transactions/"))).toBe(false);
+  expect(runBrainSession).not.toHaveBeenCalled();
+ });
+ it("passes the accepted instruction snapshot to execution",async()=>{
+  await call();
+  expect(vi.mocked(runBrainSession).mock.calls[0][0].instructions?.conscience).toEqual({text:"Saved test policy",version:"test-v1"});
  });
 });

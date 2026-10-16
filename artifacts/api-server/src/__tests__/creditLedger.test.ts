@@ -1,3 +1,8 @@
+vi.mock("../lib/runInstructions.js", () => ({getRunInstructions: async () => ({
+  conscience: {text:"Offline test instructions",version:"test"},
+  seats: {orchestrator:"Test",moderator:"Test",architect:"Test",builder:"Test",auditor:"Test",litigant:"Test"},
+})}));
+import { reserveCreditRun } from "../lib/creditRunSettlement.js";
 import { billingRecoveryDatabase } from "./billingRecoveryDatabase.js";
 import {getBillingDefaults} from "../lib/billingDefaultsConfig.js";
 /**
@@ -7,11 +12,11 @@ import {getBillingDefaults} from "../lib/billingDefaultsConfig.js";
  *
  *   addCredits()       — idempotency key: first call grants, second is a no-op
  *   grantSignupBonus() — calling twice for the same UID grants the bonus once
- *   reserveCredits()   — rejects (HTTP 402) when balance < amount; succeeds otherwise
- *   reconcileCredits() — refunds the delta between estimated and actual cost
+ *   reserveCreditRun()   — rejects (HTTP 402) when balance < amount; succeeds otherwise
+ *   applyCreditRunSettlement() — refunds the delta between the reserved cap and actual cost
  *
  * addCredits / grantSignupBonus are imported and called directly with a mock
- * Firestore. reserveCredits / reconcileCredits are private to brain.ts and are
+ * Firestore. Session reservations and settlement use creditRunSettlement and are
  * exercised through the POST /api/run-brain route via supertest.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -103,7 +108,7 @@ vi.mock("pino-http", () => ({
 // Imports (after mocks)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, reserveCredits, getCourtesyCreditEligibility, syncPaidProAccess } from "../lib/creditLedger.js";
+import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, getCourtesyCreditEligibility, syncPaidProAccess } from "../lib/creditLedger.js";
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
 import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
@@ -385,10 +390,10 @@ function createRouteMockDb(uid: string, creditBalance: number) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite 3 — reserveCredits (via POST /api/run-brain)
+// Suite 3 — reserveCreditRun (via POST /api/run-brain)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("reserveCredits() — via POST /api/run-brain", () => {
+describe("reserveCreditRun() — via POST /api/run-brain", () => {
   let mockDb: ReturnType<typeof createMockDb>;
 
   beforeEach(() => {
@@ -484,10 +489,10 @@ describe("reserveCredits() — via POST /api/run-brain", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Suite 4 — reconcileCredits (via POST /api/run-brain)
+// Suite 4 — applyCreditRunSettlement (via POST /api/run-brain)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("reconcileCredits() — via POST /api/run-brain", () => {
+describe("applyCreditRunSettlement() — via POST /api/run-brain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
@@ -1045,19 +1050,19 @@ describe("courtesy credit ceiling and repeat borrowing",()=>{
   it("allows Pro debt up to the approved ceiling and refuses one credit more",async()=>{
     const db=createMockDb({"users/pro":{plan:"pro",creditBalance:10}});
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
-    expect(await reserveCredits("pro",35,"one","brain_reservation",25)).toBe(true);
+    expect(await reserveCreditRun("pro",35,"one","run-1",25)).toBe(true);
     expect(db._store["users/pro"].creditBalance).toBe(-25);
-    expect(await reserveCredits("pro",1,"one","brain_overage",25)).toBe(false);
+    expect(await reserveCreditRun("pro",1,"two","run-2",25)).toBe(false);
   });
   it("blocks another conversation while owing credits",async()=>{
     const db=createMockDb({"users/pro":{plan:"pro",creditBalance:-1}});
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
-    expect(await reserveCredits("pro",1,"new","brain_reservation",25)).toBe(false);
+    expect(await reserveCreditRun("pro",1,"new","run-new",25)).toBe(false);
   });
   it("does not lend to Free users even when an allowance is passed",async()=>{
     const db=createMockDb({"users/free":{plan:"free",creditBalance:10}});
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
-    expect(await reserveCredits("free",11,"one","brain_reservation",25)).toBe(false);
+    expect(await reserveCreditRun("free",11,"one","run-1",25)).toBe(false);
   });
 });
 

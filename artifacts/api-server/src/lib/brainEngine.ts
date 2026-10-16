@@ -11,8 +11,7 @@ import {
   calculateActualCredits,
   charsToTokens,
 } from "./creditEngine.js";
-import { getConscienceClause } from "./conscienceConfig.js";
-import { getAllSeatBriefs } from "./seatBriefs.js";
+import { getRunInstructions, type RunInstructions } from "./runInstructions.js";
 
 export type ResponseMode = "balanced" | "thorough" | "concise";
 export type OutputFormat = "report" | "memo" | "bullets" | "verdict";
@@ -179,6 +178,8 @@ export interface CaseFileItem {
 }
 
 export interface BrainRunOptions {
+  /** Server-owned snapshot; never accepted from the request body. */
+  instructions?: RunInstructions;
   /** Route owns terminal delivery after persistence and settlement. */
   deferCompletion?: boolean;
   priceCalls?: (calls: CallUsage[]) => number;
@@ -573,16 +574,9 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     ? `${templateSystemPrompt}\n\nThe question or task under examination: "${question}"${caseFileBlock}`
     : `You are participating in a structured multi-AI reasoning session.\n\nThe question under examination: "${question}"${caseFileBlock}`) + followUpBlock;
 
-  // Conscience gate — Canon v2 "Execution-Honest" truth mandate
-  // Loaded from Firestore system_config/conscience with 5-min TTL; falls back to Canon v2 hardcoded text.
-  const { text: conscienceText, version: conscienceVersion } =
-    config.conscience !== false
-      ? await getConscienceClause()
-      : { text: "", version: "disabled" };
-  const conscienceClause = conscienceText;
-
-  // ── Seat briefs — loaded from files with optional Firestore override ───────
-  const seatBriefs = await getAllSeatBriefs();
+  const instructions = opts.instructions ?? await getRunInstructions(config.conscience !== false);
+  const {text: conscienceClause, version: conscienceVersion} = instructions.conscience;
+  const seatBriefs = instructions.seats;
 
   try {
   // ── Orchestrator — skipped when continuing a paused session ──────────────────

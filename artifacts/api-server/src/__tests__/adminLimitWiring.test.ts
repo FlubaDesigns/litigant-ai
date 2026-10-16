@@ -1,3 +1,7 @@
+vi.mock("../lib/runInstructions.js", () => ({getRunInstructions: async () => ({
+  conscience: {text:"Offline test instructions",version:"test"},
+  seats: {orchestrator:"Test",moderator:"Test",architect:"Test",builder:"Test",auditor:"Test",litigant:"Test"},
+})}));
 import {DEFAULT_PLATFORM_LIMITS} from "@workspace/api-zod/limits";
 import {beforeEach, expect, it, vi} from "vitest";
 import express from "express";

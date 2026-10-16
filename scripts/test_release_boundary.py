@@ -1,13 +1,45 @@
 """Check that cloud credentials follow complete CI and the LAI-only controller."""
 import pathlib
+import os
 import re
+import shutil
 import subprocess
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class ReleaseBoundaryTests(unittest.TestCase):
+    def test_retired_commands_cannot_invoke_cloud_or_build_tools(self):
+        node = shutil.which('node')
+        self.assertIsNotNone(node)
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            marker = root / 'invoked'
+            for name in ['gcloud', 'docker', 'firebase', 'pnpm']:
+                command = root / name
+                command.write_text('#!/bin/sh\n: > "$INVOCATION_MARKER"\nexit 91\n')
+                command.chmod(0o755)
+            env = {**os.environ, 'PATH': directory, 'INVOCATION_MARKER': str(marker),
+                   'GIT_SHA': '1234567890abcdef1234567890abcdef12345678',
+                   'RUNTIME_SERVICE_ACCOUNT': 'offline@example.invalid',
+                   'VITE_FIREBASE_PROJECT_ID': 'demo-litigant-offline',
+                   'ANTHROPIC_API_KEY': 'offline-test-placeholder'}
+            for executable, filename in [
+                (node, 'scripts/deploy-cloudrun.mjs'),
+                (node, 'scripts/seed-conscience.mjs'),
+                ('/bin/bash', 'scripts/deploy-cloud-run.sh'),
+                (node, 'artifacts/api-server/build-cloudrun.mjs'),
+                (node, 'artifacts/api-server/build-functions.mjs'),
+            ]:
+                with self.subTest(command=filename):
+                    result = subprocess.run([executable, str(ROOT / filename)], cwd=directory,
+                                            env=env, capture_output=True, text=True, timeout=10)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn('retired', result.stderr.lower())
+                    self.assertFalse(marker.exists(), 'Retired command invoked an external tool')
+
     def test_source_gate_is_credential_free(self):
         workflow = (ROOT / '.github/workflows/deploy-cloudrun.yml').read_text()
         source, cloud = workflow.split('  cloud-preflight:', 1)

@@ -1,8 +1,10 @@
+import { ConfigurationUnavailableError } from "./configurationError.js";
 /** Credit math. Built-in definitions come from providers/types.ts; live prices
  * come from providerCatalog.ts and are snapshotted by sessionPricing.ts. */
 
 /** Fixed exchange rate: 1 credit costs the user $0.01 USD. Never changes. */
-export const CREDIT_VALUE_USD = 0.01;
+import { CREDIT_VALUE_USD } from "@workspace/api-zod/billing";
+export { CREDIT_VALUE_USD } from "@workspace/api-zod/billing";
 
 import { PROVIDER_MODELS, DEFAULT_MODELS, resolveModelPrice } from "./providers/types.js";
 
@@ -123,7 +125,7 @@ export interface SessionEstimateConfig {
 /**
  * Estimates total credit cost BEFORE a session runs.
  *
- * This is used for the upfront credit reservation (see brain.ts → reserveCredits).
+ * This is used for the upfront credit reservation (see brain.ts → reserveCreditRun).
  * The estimate is intentionally CONSERVATIVE (slightly high) so the reservation
  * will cover the actual cost in the common case, minimising reconciliation refunds
  * while still catching under-funded accounts before any AI call is made.
@@ -177,7 +179,7 @@ export async function getCalibratedFixedStageTokens(): Promise<{ input: number; 
   // is not configured (e.g. unit tests, local dev without credentials).
   const { getFirestoreDb } = await import("./firebaseAdmin.js");
   const db = getFirestoreDb();
-  if (!db) return FIXED_STAGE_PRIOR;
+  if (!db) throw new ConfigurationUnavailableError("Session estimate history");
 
   try {
     const snap = await db
@@ -201,7 +203,7 @@ export async function getCalibratedFixedStageTokens(): Promise<{ input: number; 
     _calExpiry = now + CALIBRATION_CACHE_TTL_MS;
     return avg;
   } catch {
-    return FIXED_STAGE_PRIOR;
+    throw new ConfigurationUnavailableError("Session estimate history");
   }
 }
 

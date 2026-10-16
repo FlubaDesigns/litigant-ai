@@ -87,9 +87,12 @@ Production API and Firebase Hosting releases go through the isolated Litigant AI
 workflow in Authorization Engine. That workflow pins the exact reviewed Main
 commit SHA and requires its successful source release gate before deployment.
 
-The legacy `scripts/deploy-cloudrun.mjs` script is not the approved release path
-and must not be run for this release. Do not bypass the isolated workflow with
-direct Cloud Run or Firebase deployment commands.
+The legacy direct deploy scripts and alternate builders now exit with an error.
+The only API builder is `artifacts/api-server/build.mjs`, invoked by
+`pnpm --filter @workspace/api-server run build`; its deployable image uses
+`artifacts/api-server/Dockerfile`. Firebase Functions packaging and checked-in
+bundles have been removed. Do not bypass the isolated workflow with direct
+Cloud Run or Firebase deployment commands.
 
 ---
 

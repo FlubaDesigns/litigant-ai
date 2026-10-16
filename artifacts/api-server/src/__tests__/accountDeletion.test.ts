@@ -1,3 +1,4 @@
+import { reserveCreditRun } from "../lib/creditRunSettlement.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
@@ -14,8 +15,7 @@ vi.mock("../lib/billingDefaultsConfig.js", () => ({ getBillingDefaults: async ()
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { getAuth } from "firebase-admin/auth";
 import { chargeSquareCard, disableSquareCard, getSquarePayment, saveSquareCard, createSquareCustomer } from "../lib/squareClient.js";
-import { grantSignupBonus, reserveCredits, addCredits } from "../lib/creditLedger.js";
-import { reserveCreditRun } from "../lib/creditRunSettlement.js";
+import { grantSignupBonus, addCredits } from "../lib/creditLedger.js";
 import { checkAndTriggerAutoRefill, setAutoRefillPreference, recordRefillPayment } from "../lib/autoRefill.js";
 import account from "../routes/account.js";
 import auth from "../routes/auth.js";
@@ -120,7 +120,7 @@ describe("truthful owner account deletion", () => {
     db.store["account_deletions/u"] = { phase: "preparing", appDataDeleted: false, leaseUntil: 0 };
     expect((await provision()).body).toMatchObject({ deletionPending: true, bonusGranted: false });
     expect((await grantSignupBonus("u", { emailVerified: true })).skipped).toBe(true);
-    expect(await reserveCredits("u", 10, "new")).toBe(false);
+    expect(await reserveCreditRun("u", 10, "new", "new-run")).toBe(false);
     expect(await reserveCreditRun("u", 10, "new", "run")).toBe(false);
     await checkAndTriggerAutoRefill("u", 0, "new");
     expect(chargeSquareCard).not.toHaveBeenCalled();
