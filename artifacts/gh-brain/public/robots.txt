@@ -22,7 +22,6 @@ User-agent: Bingbot
 User-agent: BingPreview
 User-agent: Applebot
 User-agent: Applebot-Extended
-Allow: /
 Disallow: /session
 Disallow: /history
 Disallow: /billing
@@ -32,6 +31,7 @@ Disallow: /api-server/
 Disallow: /api/
 Disallow: /sign-in
 Disallow: /register
+Allow: /
 
 Sitemap: https://litigant-ai.com/sitemap.xml
 Sitemap: https://litigant-ai.com/sitemap-tools.xml
