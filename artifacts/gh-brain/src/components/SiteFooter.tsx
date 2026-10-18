@@ -22,6 +22,7 @@ export function SiteFooter({ variant = "landing" }: { variant?: "landing" | "app
             AI outputs are not legal, financial, or medical advice. Use judgment.
           </p>
         </div>
+        <div className="row text-xs text-muted-foreground">Powered by <a href="https://flubadesigns.com/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center underline underline-offset-4 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Fluba Designs</a></div>
       </footer>
     );
   }
@@ -51,6 +52,8 @@ export function SiteFooter({ variant = "landing" }: { variant?: "landing" | "app
           AI outputs are not legal, financial, or medical advice. Always apply human judgment before acting on any output.
         </p>
       </div>
+
+      <div className="row text-xs text-muted-foreground">Powered by <a href="https://flubadesigns.com/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center underline underline-offset-4 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Fluba Designs</a></div>
 
     </footer>
   );
