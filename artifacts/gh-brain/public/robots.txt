@@ -1,113 +1,38 @@
-# Litigant AI — robots.txt
-# https://litigant-ai.com
-
-# ── Standard crawlers ─────────────────────────────────────────────────────────
+# Litigant AI: public search and AI discovery
+# All agents share the same public access and private-route exclusions.
+# Authentication continues to protect sessions and account data.
 User-agent: *
-Allow: /
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: Claude-Web
+User-agent: Googlebot
+User-agent: Google-Extended
+User-agent: PerplexityBot
+User-agent: Meta-ExternalAgent
+User-agent: Meta-ExternalFetcher
+User-agent: cohere-ai
+User-agent: CCBot
+User-agent: Amazonbot
+User-agent: Bingbot
+User-agent: BingPreview
+User-agent: Applebot
+User-agent: Applebot-Extended
 Disallow: /session
 Disallow: /history
 Disallow: /billing
 Disallow: /settings
 Disallow: /admin
 Disallow: /api-server/
-
-# ── OpenAI (ChatGPT, GPT-4, Operator) ────────────────────────────────────────
-User-agent: GPTBot
+Disallow: /api/
+Disallow: /sign-in
+Disallow: /register
 Allow: /
-Allow: /templates/
-Disallow: /session
-Disallow: /history
-Disallow: /billing
-Disallow: /settings
-Disallow: /admin
 
-User-agent: ChatGPT-User
-Allow: /
-Allow: /templates/
-Disallow: /session
-Disallow: /history
-Disallow: /billing
-Disallow: /settings
-Disallow: /admin
-
-User-agent: OAI-SearchBot
-Allow: /
-Allow: /templates/
-
-# ── Anthropic (Claude) ────────────────────────────────────────────────────────
-User-agent: ClaudeBot
-Allow: /
-Allow: /templates/
-
-User-agent: anthropic-ai
-Allow: /
-Allow: /templates/
-
-User-agent: Claude-Web
-Allow: /
-Allow: /templates/
-
-# ── Google (Gemini, AI Overviews) ─────────────────────────────────────────────
-User-agent: Googlebot
-Allow: /
-Allow: /templates/
-Disallow: /session
-Disallow: /history
-Disallow: /billing
-Disallow: /settings
-Disallow: /admin
-
-User-agent: Google-Extended
-Allow: /
-Allow: /templates/
-
-# ── Perplexity ────────────────────────────────────────────────────────────────
-User-agent: PerplexityBot
-Allow: /
-Allow: /templates/
-
-# ── Meta AI ───────────────────────────────────────────────────────────────────
-User-agent: Meta-ExternalAgent
-Allow: /
-Allow: /templates/
-
-User-agent: Meta-ExternalFetcher
-Allow: /
-Allow: /templates/
-
-# ── Cohere ────────────────────────────────────────────────────────────────────
-User-agent: cohere-ai
-Allow: /
-Allow: /templates/
-
-# ── Common Crawl (foundation data for many AI models) ────────────────────────
-User-agent: CCBot
-Allow: /
-Allow: /templates/
-
-# ── Amazon / Alexa ────────────────────────────────────────────────────────────
-User-agent: Amazonbot
-Allow: /
-Allow: /templates/
-
-# ── Bing / Copilot ────────────────────────────────────────────────────────────
-User-agent: Bingbot
-Allow: /
-Allow: /templates/
-
-User-agent: BingPreview
-Allow: /
-Allow: /templates/
-
-# ── Apple ─────────────────────────────────────────────────────────────────────
-User-agent: Applebot
-Allow: /
-Allow: /templates/
-
-User-agent: Applebot-Extended
-Allow: /
-Allow: /templates/
-
-# ── Sitemaps ──────────────────────────────────────────────────────────────────
 Sitemap: https://litigant-ai.com/sitemap.xml
 Sitemap: https://litigant-ai.com/sitemap-tools.xml
+# Public guide: https://litigant-ai.com/llms.txt
