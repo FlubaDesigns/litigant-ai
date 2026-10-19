@@ -2,6 +2,8 @@ import {test as base, expect} from "@playwright/test";
 import { TEMPLATES } from "../../../lib/api-zod/src/templates";
 export const test=base.extend({
   page: async ({page},use)=>{
+    // Public layout tests are isolated from the live business profile service.
+    await page.route('**/socialFooterApi?site=litigant-ai', route => route.fulfill({json:{site:'litigant-ai',links:[]}}));
     await page.route("**/api-server/api/**",async route=>{
       const path=new URL(route.request().url()).pathname;
       if(path.includes("/report/")){await route.fulfill({status:404,json:{message:"Not found"}});return;}
