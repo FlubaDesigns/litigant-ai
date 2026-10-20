@@ -231,8 +231,7 @@ router.post("/billing/checkout", async (req, res) => {
   }
 
   const origin =
-    (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
-    `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
+    `https://${process.env["APP_DOMAIN"] || "litigant-ai.com"}`;
 
   try {
     const link = await createPackCheckout(user, product, price, `${origin}/billing?success=true`);
@@ -268,8 +267,7 @@ router.post("/billing/checkout/custom", async (req, res) => {
   const creditAmount = roundedDollars * CREDITS_PER_DOLLAR;
 
   const origin =
-    (process.env["APP_DOMAIN"] ? `https://${process.env["APP_DOMAIN"]}` : null) ||
-    `https://${(process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0]}`;
+    `https://${process.env["APP_DOMAIN"] || "litigant-ai.com"}`;
 
   try {
     const idempotencyKey = crypto.randomUUID();

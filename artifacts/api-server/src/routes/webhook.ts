@@ -22,8 +22,7 @@ router.post("/square/webhook", async (req, res) => {
   const rawBody: string = (req as any).rawBody ?? "";
 
   const domain =
-    process.env["APP_DOMAIN"] ??
-    (process.env["REPLIT_DOMAINS"] as string | undefined)?.split(",")[0];
+    process.env["APP_DOMAIN"] || "litigant-ai.com";
   const notificationUrl = `https://${domain}/api-server/api/square/webhook`;
 
   const valid = verifySquareWebhook(rawBody, signature, notificationUrl);

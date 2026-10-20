@@ -40,9 +40,6 @@ const allowedOrigins = [
   "https://litigant-ai.web.app",
   "https://litigant-ai.firebaseapp.com",
   ...(process.env["APP_DOMAIN"] ? [`https://${process.env["APP_DOMAIN"]}`] : []),
-  ...(process.env["REPLIT_DOMAINS"]
-    ? process.env["REPLIT_DOMAINS"].split(",").map((d) => `https://${d.trim()}`)
-    : []),
 ];
 
 app.use(securityHeaders);
