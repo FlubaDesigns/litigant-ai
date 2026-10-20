@@ -33,7 +33,7 @@ jobs:
           python3 scripts/test_source_safety.py
           python3 scripts/source_safety.py
           python3 scripts/test_release_boundary.py
-          node --test scripts/test_lai_release.mjs scripts/test_lai_credential_migration.mjs scripts/test_lai_feedback_rules.mjs
+          node --test scripts/test_lai_release.mjs scripts/test_lai_credential_migration.mjs scripts/test_lai_feedback_rules.mjs scripts/test_workshop_access.mjs
       - uses: pnpm/action-setup@v4
         with:
           version: "10"
