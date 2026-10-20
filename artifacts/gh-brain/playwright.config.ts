@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 const BASE_URL =
   process.env.PLAYWRIGHT_BASE_URL ||
-  (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "http://127.0.0.1:3000");
+  "http://127.0.0.1:3000";
 
 const CHROMIUM_EXECUTABLE =
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||

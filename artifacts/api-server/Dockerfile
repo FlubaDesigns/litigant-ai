@@ -4,11 +4,9 @@ WORKDIR /workspace
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY artifacts/api-server/package.json artifacts/api-server/
 COPY lib/api-zod/package.json lib/api-zod/
-COPY lib/db/package.json lib/db/
 RUN pnpm install --frozen-lockfile --filter @workspace/api-server...
 COPY artifacts/api-server/ artifacts/api-server/
 COPY lib/api-zod/ lib/api-zod/
-COPY lib/db/ lib/db/
 RUN pnpm --filter @workspace/api-server run build
 
 FROM node:22-slim
