@@ -14,6 +14,9 @@ export async function authorizeWorkshop(config,env=globalThis){
  let state;
  try{const response=await env.fetch(PUBLIC+'?site='+encodeURIComponent(config.site)+'&view=workshop',{cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});if(!response.ok)return denied;state=await response.json();}catch{return denied;}
  if(!state?.available||state.site!==config.site||state.generation!==config.generation)return denied;
+ const homeRoute=(env.location.pathname==='/'||env.location.pathname==='/index.html')&&(!/^#(?:\/|!)/.test(env.location.hash)||env.location.hash==='#/');
+ // This path grants no private capability and never stores a public viewing key.
+ if(!candidate&&config.homepageSupported===true&&state.visibilityMode==='homepage'&&homeRoute)return{allowed:true,privateVisit:false,homepageVisit:true};
  let privateVisit=true;
  if(state.underConstruction===false){candidate={key:state.key};privateVisit=false;}
  if(!candidate||!/^[A-Za-z0-9_-]{43}$/.test(candidate.key||''))return denied;
@@ -23,3 +26,4 @@ export async function authorizeWorkshop(config,env=globalThis){
  if(privateVisit)try{env.sessionStorage.setItem(slot(config.site),JSON.stringify(candidate));}catch{}
  return{allowed:true,privateVisit};
 }
+

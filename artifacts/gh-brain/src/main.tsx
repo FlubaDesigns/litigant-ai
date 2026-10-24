@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 
 async function boot() {
-  let decision = { allowed: true, privateVisit: false };
+  let decision: {allowed:boolean;privateVisit:boolean;homepageVisit?:boolean} = { allowed: true, privateVisit: false };
   let entrance: any = null;
   if (import.meta.env.PROD) {
     decision = { allowed: false, privateVisit: false };
@@ -20,6 +20,10 @@ async function boot() {
     robots?.setAttribute('content', 'noindex,nofollow');
     return;
   }
+  if (decision.homepageVisit) {
+    const guardUrl = '/__workshop/homepage.js';
+    await import(/* @vite-ignore */ guardUrl);
+  }
   document.querySelectorAll('[data-workshop-style]').forEach(node => node.remove());
   const [{ default: App }, { RootErrorBoundary }] = await Promise.all([
     import('./App'), import('./components/RootErrorBoundary'), import('./index.css'), import('./styles/Master.css'),
@@ -36,3 +40,4 @@ void boot().catch(() => {
   const status = document.getElementById('workshop-status');
   if (status) status.textContent = "We're updating this experience. Please check back.";
 });
+

@@ -25,3 +25,16 @@ test('explicit public reopening uses only this approved generation and digest',a
  const state={site:config.site,available:true,underConstruction:false,generation,key};assert.deepEqual(await authorizeWorkshop(config,fixture({state})),{allowed:true,privateVisit:false});
  assert.equal((await authorizeWorkshop(config,fixture({state:{...state,key:'b'.repeat(43)}}))).allowed,false);
 });
+
+
+test('homepage mode opens only home routes and never grants a private capability',async()=>{
+ const state={site:config.site,available:true,underConstruction:true,generation,visibilityMode:'homepage'};
+ for(const pathname of ['/','/index.html','/app','/admin','/index.html/other']){
+  const env=fixture({state});env.location.pathname=pathname;
+  const decision=await authorizeWorkshop({...config,homepageSupported:true},env);
+  assert.equal(decision.allowed,pathname==='/'||pathname==='/index.html');assert.equal(env.storage.size,0);
+ }
+ const old=fixture({state});old.location.pathname='/';assert.equal((await authorizeWorkshop(config,old)).allowed,false);
+ const hash=fixture({state,hash:'#/admin'});hash.location.pathname='/';assert.equal((await authorizeWorkshop({...config,homepageSupported:true},hash)).allowed,false);
+ const owner=fixture({state,hash:'#workshop='+generation+'.'+key});assert.equal((await authorizeWorkshop({...config,homepageSupported:true},owner)).privateVisit,true);
+});
