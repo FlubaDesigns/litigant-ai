@@ -18,6 +18,7 @@ import {
   runtimeIdentityEvidence,
   assertServiceReady,
   assertAllowedImage,
+  selectAllowedImage,
   validateEngineApproval,
 } from './lai-release.mjs';
 
@@ -835,4 +836,13 @@ test('saved Canon must exist before any approved application release', async () 
     {fields:{text:{stringValue:'Saved'},version:{stringValue:''}}}, {fields:{text:{integerValue:'1'},version:{stringValue:'v1'}}}]) {
     assert.throws(() => validateSavedCanon(invalid), /Saved Canon/);
   }
+});
+
+test('Docker digest selection ignores local and unrelated entries without relying on order', () => {
+ const local = `docker.io/library/lai-release@sha256:${'a'.repeat(64)}`;
+ assert.equal(selectAllowedImage([local, IMAGE]), IMAGE);
+ assert.equal(selectAllowedImage([IMAGE, local, IMAGE]), IMAGE);
+});
+test('Docker digest selection refuses missing, mutable and ambiguous approved images', () => {
+ for(const values of [null, [], ['gcr.io/litigant-ai/api:latest'], [`gcr.io/other/api@sha256:${'a'.repeat(64)}`], [IMAGE, `gcr.io/litigant-ai/api@sha256:${'a'.repeat(64)}`]]) assert.throws(()=>selectAllowedImage(values));
 });

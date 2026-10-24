@@ -150,6 +150,13 @@ export function assertAllowedImage(image) {
   return image;
 }
 
+export function selectAllowedImage(repoDigests) {
+  assert(Array.isArray(repoDigests), 'Docker repository digests must be an array');
+  const approved = [...new Set(repoDigests.filter(image => typeof image === 'string' && /^gcr\.io\/litigant-ai\/api@sha256:[a-f0-9]{64}$/.test(image)))];
+  assert.equal(approved.length, 1, 'exactly one approved LAI API repository digest required');
+  return assertAllowedImage(approved[0]);
+}
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: 'utf8', stdio: 'pipe', timeout: 20 * 60 * 1000, maxBuffer: 32 * 1024 * 1024, ...options });
   // Command output can contain build-time public config or runtime credentials. Never echo it.
@@ -609,7 +616,7 @@ async function release() {
   console.log('Release stage: image publication attempted; production API and Hosting unchanged.');
   run('docker', ['push', tag]);
   console.log('Release stage: image published; production API and Hosting unchanged.');
-  const image = assertAllowedImage(run('docker', ['inspect', '--format={{index .RepoDigests 0}}', tag]));
+  const image = selectAllowedImage(JSON.parse(run('docker', ['inspect', '--format={{json .RepoDigests}}', tag])));
   await recheck();
   assert.equal(inspectPaymentIndexes(await paymentIndexes())?.state, 'READY', 'payment-history index is no longer READY; API unchanged');
   const deployedAt = new Date().toISOString();
