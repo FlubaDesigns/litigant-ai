@@ -6,7 +6,7 @@ async function boot() {
   if (import.meta.env.PROD) {
     decision = { allowed: false, privateVisit: false };
     try {
-      const response = await fetch('/__workshop/app.json', { cache: 'no-store', credentials: 'omit' });
+      const response = await fetch('/__workshop/app.json', { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(15000) });
       if (!response.ok) throw new Error('Updates in progress');
       const config = await response.json();
       const moduleUrl = '/__workshop/app-access.mjs';
@@ -15,6 +15,7 @@ async function boot() {
     } catch { /* The public construction page remains visible. */ }
   }
   if (!decision.allowed) {
+    document.getElementById('root')?.removeAttribute('data-workshop-pending');
     document.title = 'Litigant AI · Updates in progress';
     const robots = document.querySelector('meta[name="robots"]');
     robots?.setAttribute('content', 'noindex,nofollow');
@@ -24,10 +25,12 @@ async function boot() {
     const guardUrl = '/__workshop/homepage.js';
     await import(/* @vite-ignore */ guardUrl);
   }
-  document.querySelectorAll('[data-workshop-style]').forEach(node => node.remove());
   const [{ default: App }, { RootErrorBoundary }] = await Promise.all([
     import('./App'), import('./components/RootErrorBoundary'), import('./index.css'), import('./styles/Master.css'),
   ]);
+  document.getElementById('root')?.replaceChildren();
+  document.getElementById('root')?.removeAttribute('data-workshop-pending');
+  document.querySelectorAll('[data-workshop-style]').forEach(node => node.remove());
   createRoot(document.getElementById('root')!).render(<RootErrorBoundary><App /></RootErrorBoundary>);
   if (decision.privateVisit) {
     const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/__workshop/private.css'; document.head.append(style);
@@ -37,7 +40,9 @@ async function boot() {
   }
 }
 void boot().catch(() => {
+  document.getElementById('root')?.removeAttribute('data-workshop-pending');
   const status = document.getElementById('workshop-status');
   if (status) status.textContent = "We're updating this experience. Please check back.";
 });
+
 
