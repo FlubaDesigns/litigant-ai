@@ -22,11 +22,11 @@ import {getBillingDefaults} from "../lib/billingDefaultsConfig.js";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
+const {fixtureQuote} = vi.hoisted(() => ({fixtureQuote:vi.fn(async () => 200)}));
 vi.mock("../lib/sessionPricing.js", async importOriginal => ({
   ...await importOriginal<typeof import("../lib/sessionPricing.js")>(),
   prepareSession: vi.fn(async (config: any) => {
-    const {estimateSessionCreditsCalibrated} = await import("../lib/creditEngine.js");
-    return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {}, enabledProviders: ["openai"]};
+    return {config, estimatedCredits: await fixtureQuote(), rates: {}, enabledProviders: ["openai"]};
   }),
   priceCalls: vi.fn(() => 100),
 }));
@@ -71,8 +71,6 @@ vi.mock("../lib/brainEngine.js", () => ({
 
 vi.mock("../lib/creditEngine.js", async importOriginal => ({
   ...await importOriginal<typeof import("../lib/creditEngine.js")>(),
-  estimateSessionCreditsCalibrated: vi.fn(() => Promise.resolve(200)),
-  estimateFixedPipelineCost:        vi.fn(() => 50),
   calculateActualCredits:           vi.fn(() => 100),
   getModelRate:                     vi.fn(() => ({ input: 0.001, output: 0.002 })),
 }));
@@ -111,7 +109,6 @@ vi.mock("pino-http", () => ({
 import { addCredits, grantSignupBonus, checkAndTriggerAutoRefill, getCourtesyCreditEligibility, syncPaidProAccess } from "../lib/creditLedger.js";
 import { getFirestoreDb, verifyIdToken } from "../lib/firebaseAdmin.js";
 import { runBrainSession } from "../lib/brainEngine.js";
-import { estimateSessionCreditsCalibrated } from "../lib/creditEngine.js";
 import { isResendConfigured } from "../lib/emailService.js";
 import app from "../app-firebase.js";
 
@@ -399,7 +396,7 @@ describe("reserveCreditRun() — via POST /api/run-brain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // estimatedCost is mocked to 200 globally
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock());
   });
@@ -495,7 +492,7 @@ describe("reserveCreditRun() — via POST /api/run-brain", () => {
 describe("applyCreditRunSettlement() — via POST /api/run-brain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
   });
 
@@ -615,7 +612,7 @@ describe("settlement crash — refund transaction fails", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // estimated cost is 200 throughout this suite
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
   });
 
@@ -754,7 +751,7 @@ describe("settlement crash — refund transaction fails", () => {
 describe("saved session continuity", () => {
   beforeEach(()=>{
     vi.clearAllMocks();
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);
   });
   it("resumes the stored question/config/transcript and appends turns without resetting metadata", async()=>{
@@ -837,7 +834,7 @@ describe("one active run per saved session", () => {
   }
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
   });
 
@@ -962,7 +959,7 @@ describe("saved context for restored sessions and child runs", () => {
   }
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);
+    vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({ uid: FAKE_UID, admin: false } as any);
   });
 
@@ -977,7 +974,7 @@ describe("saved context for restored sessions and child runs", () => {
     expect(response.status).toBe(403);
     expect(response.body.code).toBe("PAID_ACCESS_REQUIRED");
     expect(runBrainSession).not.toHaveBeenCalled();
-    expect(estimateSessionCreditsCalibrated).not.toHaveBeenCalled();
+    expect(fixtureQuote).not.toHaveBeenCalled();
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
   });
 
@@ -1085,7 +1082,7 @@ describe("courtesy eligibility uses recorded successful payments",()=>{
 describe("invited session wiring",()=>{
   beforeEach(()=>{
     vi.clearAllMocks();
-    vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(50);
+    vi.mocked(fixtureQuote).mockResolvedValue(50);
     vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false,guest:true,emailVerified:false} as any);
     vi.mocked(runBrainSession).mockImplementation(makeBrainMock({creditsUsed:50}));
   });
@@ -1104,7 +1101,7 @@ describe("invited session wiring",()=>{
 });
 
 describe("Free conversations have no saved memory",()=>{
-  beforeEach(()=>{vi.clearAllMocks();vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);vi.mocked(estimateSessionCreditsCalibrated).mockResolvedValue(200);});
+  beforeEach(()=>{vi.clearAllMocks();vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);vi.mocked(fixtureQuote).mockResolvedValue(200);});
   it("delivers an answer but stores only accounting, with no transcript, question, files or turns",async()=>{
     const db=createRouteMockDb(FAKE_UID,500);db._store[`users/${FAKE_UID}`].plan="free";
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);vi.mocked(runBrainSession).mockImplementation(makeBrainMock());

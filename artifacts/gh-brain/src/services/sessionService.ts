@@ -292,10 +292,10 @@ export async function getSessions(
   const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(getApiUrl(`/sessions${qs}`), { headers });
   if (!res.ok) throw new Error("Failed to fetch sessions");
-  // Handle both new paginated format {sessions,hasMore,nextCursor} and legacy plain array
   const data = await res.json();
-  if (Array.isArray(data)) {
-    return { sessions: data, hasMore: false, nextCursor: null };
+  if (!data || Array.isArray(data) || !Array.isArray(data.sessions)
+    || typeof data.hasMore !== "boolean" || !(data.nextCursor === null || typeof data.nextCursor === "string")) {
+    throw new Error("Invalid session list response");
   }
   return data as SessionsPage;
 }

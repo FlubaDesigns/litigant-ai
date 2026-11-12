@@ -13,11 +13,11 @@ import { billingRecoveryDatabase } from "./billingRecoveryDatabase.js";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 
+const {fixtureQuote} = vi.hoisted(() => ({fixtureQuote:vi.fn(async () => 100)}));
 vi.mock("../lib/sessionPricing.js", async importOriginal => ({
   ...await importOriginal<typeof import("../lib/sessionPricing.js")>(),
   prepareSession: vi.fn(async (config: any) => {
-    const {estimateSessionCreditsCalibrated} = await import("../lib/creditEngine.js");
-    return {config, estimatedCredits: await estimateSessionCreditsCalibrated(config), rates: {"gpt-4":{input:.002,output:.008,multiplier:5,verifiedAt:"2026-10-05"}}, enabledProviders: ["openai"]};
+    return {config, estimatedCredits: await fixtureQuote(), rates: {"gpt-4":{input:.002,output:.008,multiplier:5,verifiedAt:"2026-10-05"}}, enabledProviders: ["openai"]};
   }),
   priceCalls: vi.fn(() => 100),
 }));
@@ -37,8 +37,6 @@ vi.mock("../lib/brainEngine.js", () => ({
 
 vi.mock("../lib/creditEngine.js", async importOriginal => ({
   ...await importOriginal<typeof import("../lib/creditEngine.js")>(),
-  estimateSessionCreditsCalibrated: vi.fn(() => Promise.resolve(100)),
-  estimateFixedPipelineCost:        vi.fn(() => 50),
   calculateActualCredits:           vi.fn(() => 100),
   getModelRate:                     vi.fn(() => ({ inputRate: 1, outputRate: 2 })),
 }));
@@ -383,5 +381,48 @@ describe("system health metrics", () => {
   it("does not invent a rate when no sessions exist",async()=>{
     vi.mocked(getFirestoreDb).mockReturnValue(healthDb(undefined,true) as any);
     expect((await health()).body.last7d).toMatchObject({errorSessions:0,activeSessions:0,errorRate:null});
+  });
+});
+
+describe('session privacy and execution boundaries', () => {
+  beforeEach(() => vi.clearAllMocks());
+  it.each([true, false])('preserves concurrent owner edits during resume (admin=%s)', async admin => {
+    const db = createMockDb({saved:{userId:'owner',status:'incomplete',shared:true,shareId:'revoked',title:'Old',starred:false,archived:false}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:'owner',admin,emailVerified:true});
+    vi.mocked(runBrainSession).mockImplementation(async ({sessionId}:any) => {
+      const edit=await request(app).patch('/api/sessions/saved').set('Authorization','Bearer test').send({shared:false,title:'New',starred:true,archived:true});
+      expect(edit.status).toBe(200);
+      return {sessionId,creditsUsed:0,confidence:50,model:'gpt-4',tokenUsage:{inputTokens:0,outputTokens:0,calls:[]},turns:[],transcript:[],finalAnswer:'Answer',courtroomOutcome:{reason:'approved'}} as any;
+    });
+    await request(app).post('/api/run-brain').set('Authorization','Bearer test').send({question:'Continue',sessionId:'saved',config:{model:'gpt-4',litigantCount:3}});
+    expect(runBrainSession).toHaveBeenCalled();
+    expect(db.store['sessions/saved']).toMatchObject({shared:false,shareId:null,title:'New',starred:true,archived:true,status:'complete'});
+  });
+  it('lets Free owners revoke sharing without allowing other edits or foreign access', async () => {
+    const db=createMockDb({saved:{userId:'owner',status:'complete',shared:true,shareId:'old'},foreign:{userId:'other',shared:true}});
+    db.store['users/owner'].plan='free';
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:'owner',emailVerified:true});
+    const edit=(id:string,body:any)=>request(app).patch(`/api/sessions/${id}`).set('Authorization','Bearer test').send(body);
+    expect((await edit('saved',{shared:false,title:'Changed'})).status).toBe(403);
+    expect((await edit('foreign',{shared:false})).status).toBe(403);
+    expect((await edit('saved',{shared:false})).status).toBe(200);
+    expect(db.store['sessions/saved']).toMatchObject({shared:false,shareId:null});
+  });
+  it('rejects active deletion and fences retries against resume/share/edit', async () => {
+    const db=createMockDb({saved:{userId:'owner',status:'incomplete',activeRun:{id:'working',expiresAt:Date.now()+600000}}});
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:'owner',emailVerified:true});
+    const del=()=>request(app).delete('/api/sessions/saved').set('Authorization','Bearer test');
+    expect((await del()).status).toBe(409);
+    db.store['sessions/saved'].activeRun=null;
+    db.store['sessions/saved'].status='deleting';
+    expect((await request(app).post('/api/sessions/saved/share').set('Authorization','Bearer test')).status).toBe(409);
+    expect((await request(app).patch('/api/sessions/saved').set('Authorization','Bearer test').send({title:'Restore'})).status).toBe(409);
+    const {claimSessionRun}=await import('../lib/sessionRunLock.js');
+    await expect(claimSessionRun(db as any,'saved','owner')).rejects.toThrow('no longer paused');
+    expect((await del()).status).toBe(200);
+    expect(db.store['sessions/saved']).toBeUndefined();
   });
 });

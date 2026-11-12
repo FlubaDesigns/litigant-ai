@@ -212,20 +212,7 @@ export async function issueRefund(
   return res.json();
 }
 
-export async function getFeatureFlags(): Promise<Record<string, boolean>> {
-  const res = await fetch(`${API_BASE}/feature-flags`, {cache:"no-store"});
-  if (!res.ok) throw new Error("Unable to load feature flags");
-  const data = await res.json();
-  return data.flags ?? {};
-}
 
-export async function setFeatureFlag(name: string, value: boolean | string): Promise<void> {
-  const res = await adminFetch(`/admin/feature-flags/${name}`, {
-    method: "PUT",
-    body: JSON.stringify({ value }),
-  });
-  if (!res.ok) throw new Error("Failed to update feature flag");
-}
 
 export interface ChecklistItem {
   id: string;

@@ -3,11 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {deployFeedbackRules,inspectFeedbackRules,RULES_RELEASE} from './lai-feedback-rules.mjs';
 const content=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8');
-// Reverse only the reviewed feedback block so shallow CI checkouts work too.
-const baseline=content.replace('// Feedback is written by the authenticated server API only.',
-  '// Feedback: any signed-in user (or guest, where userId is null) may\n    // create a feedback entry; nobody can read, update, or delete via the\n    // client SDK. submitFeedback() in feedbackService.ts relies on create\n    // succeeding — without this block all feedback submissions silently fail.')
-  .replace('// All submissions go through the authenticated, validated, rate-limited API.\n      allow create: if false;',
-  'allow create: if request.resource.data.userId == null\n                    || (request.auth != null && request.auth.uid == request.resource.data.userId);');
+const baseline=readFileSync(new URL('./fixtures/firestore-before-profile.rules',import.meta.url),'utf8');
 
 function fixture(source=baseline) {
  let active='projects/litigant-ai/rulesets/original';

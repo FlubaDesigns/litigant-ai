@@ -6,11 +6,7 @@ import { type EngineConfig as CourtConfig, CourtConfigSchema, ANSWER_STYLES, par
 import type { Response } from "express";
 import { createProviderAsync, getConfiguredProvidersAsync } from "./providers/index.js";
 import type { AIProvider, ChatMessage, ProviderName } from "./providers/index.js";
-import {
-  estimateSessionCredits,
-  calculateActualCredits,
-  charsToTokens,
-} from "./creditEngine.js";
+import { charsToTokens } from "./creditEngine.js";
 import { getRunInstructions, type RunInstructions } from "./runInstructions.js";
 
 export type ResponseMode = "balanced" | "thorough" | "concise";
@@ -120,16 +116,6 @@ function sendSSE(res: Response, event: Record<string, unknown>): void {
   }
 }
 
-/** Estimate credits before running — used for pre-reservation */
-export function estimateCreditCost(config: CourtConfig): number {
-  return estimateSessionCredits({
-    litigantCount: config.litigantCount,
-    maxIterations: config.maxIterations,
-    responseMode: config.responseMode,
-    model: config.model,
-  });
-}
-
 export type PauseReason = "credit_cap" | "iteration_limit" | "output_incomplete";
 
 export interface RebuttalContext {
@@ -180,13 +166,12 @@ export interface CaseFileItem {
 export interface BrainRunOptions {
   /** Server-owned snapshot; never accepted from the request body. */
   instructions?: RunInstructions;
-  /** Route owns terminal delivery after persistence and settlement. */
-  deferCompletion?: boolean;
-  priceCalls?: (calls: CallUsage[]) => number;
+  /** Reserved pricing snapshot supplied by the route for this run. */
+  priceCalls: (calls: CallUsage[]) => number;
   onCallUsage?: (call: CallUsage) => void;
   enabledProviders?: string[];
   fallbackModels?: Record<string, string>;
-  estimatedCredits?: number;
+  estimatedCredits: number;
 
   question: string;
   config: CourtConfig;
@@ -435,7 +420,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
   const sessionId = opts.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const roles = getRoles(config);
   const maxTokens = getMaxOutputTokens(config.responseMode);
-  const estimatedCredits = opts.estimatedCredits ?? estimateCreditCost(config);
+  const estimatedCredits = opts.estimatedCredits;
 
   const configured = opts.enabledProviders ?? await getConfiguredProvidersAsync();
   let globalProvider = await resolveProvider(config, opts.forcedProvider, configured, opts.fallbackModels);
@@ -462,19 +447,15 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
   // Cumulative token tracker — passed by reference into every streamRole call
   const usage: TokenUsage = { inputTokens: 0, outputTokens: 0, calls: [] };
-  const currentCharge = () => opts.priceCalls
-    ? opts.priceCalls(usage.calls ?? [])
-    : calculateActualCredits(modelName, usage.inputTokens, usage.outputTokens);
+  const currentCharge = () => opts.priceCalls(usage.calls ?? []);
   const chargeLimit = config.maxCredits ?? Infinity;
   const checkCallBudget = (p: AIProvider, messages: ChatMessage[], maxTokens: number) => {
     if (currentCharge() >= chargeLimit) throw new CreditCapError("Credit cap reached");
-    if (opts.priceCalls) {
-      const projected = opts.priceCalls([...(usage.calls ?? []), {
+    const projected = opts.priceCalls([...(usage.calls ?? []), {
         provider: p.name, model: p.model ?? modelName,
         inputTokens: charsToTokens(messages.reduce((n, m) => n + m.content.length, 0)), outputTokens: maxTokens,
-      }]);
-      if (projected > chargeLimit) throw new CreditCapError("Insufficient remaining budget for the next stage");
-    }
+    }]);
+    if (projected > chargeLimit) throw new CreditCapError("Insufficient remaining budget for the next stage");
   };
 
   // Each enabled provider can be attempted once per failed stage. A failed
@@ -622,7 +603,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         artifactPath: "no-artifact", courtroomOutcome: { reason: "not_enough", confidenceAtExit: 0, round: 0 },
         relayCount: opts.relayContext?.relayRound ?? 0, relayQuestion,
       };
-      if (!opts.deferCompletion) sendSSE(res, { ...result, type: "done", needsRelay: true });
+
       return result;
     }
   }
@@ -796,16 +777,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     // the full Architect→Builder→Auditor→Verdict pipeline seeded from this summary.
     if (creditCapHit) {
       const creditsUsed = currentCharge();
-      if (!opts.deferCompletion) sendSSE(res, {
-        type: "paused_post_moderator",
-        sessionId,
-        confidence,
-        creditsUsed,
-        finalAnswer: moderatorSummary,
-        debateTranscriptLines: transcript,
-        debateNotes: debateNotesList.join("\n\n---\n\n"),
-        pauseReason: "credit_cap",
-      });
+
       return {
         sessionId,
         confidence,
@@ -830,8 +802,11 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
   // ── Route: artifact vs no-artifact ───────────────────────────────────────
   // Parse the Moderator's ARTIFACT_NEEDED declaration.
-  // Falls back to "yes" (artifact path) when absent so old prompts don't break.
-  const artifactNeeded = outputPreferenceMode === "answer-only" ? false : outputPreferenceMode === "document" ? true : !/ARTIFACT_NEEDED:\s*no\b/i.test(moderatorSummary);
+  const routingDecisions = [...moderatorSummary.matchAll(/ARTIFACT_NEEDED:\s*(yes|no)\b/gi)].map(match => match[1].toLowerCase());
+  if (outputPreferenceMode === "auto" && (routingDecisions.length !== 1)) {
+    throw new IncompleteOutputError("Moderator", moderatorSummary, "missing_or_ambiguous_document_decision");
+  }
+  const artifactNeeded = outputPreferenceMode === "answer-only" ? false : outputPreferenceMode === "document" ? true : routingDecisions[0] === "yes";
 
   // Relay count: how many prior relay rounds have accumulated.
   const relayCount = opts.relayContext?.relayRound ?? 0;
@@ -1160,28 +1135,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
 
   sendSSE(res, { type: "courtroom_outcome", courtroomOutcome, artifactPath });
   sendSSE(res, { type: "role_end", role: "Verdict", fullContent: finalAnswer });
-  if (!opts.deferCompletion) sendSSE(res, {
-    type: "done",
-    sessionId,
-    confidence,
-    creditsUsed,
-    finalAnswer,
-    debateNotes: debateNotesList.join("\n\n---\n\n"),
-    transcript: transcript.join("\n\n---\n\n"),
-    transcriptLines: transcript,
-    caveats: `${caveats}\n\n${CONFIDENCE_NOTE}`,
-    artifacts: deliveredArtifact,
-    ...resultProvenance(),
-    tokenUsage: usage,
-    conscienceVersion,
-    artifactPath,
-    courtroomOutcome,
-    relayCount,
-    ...(relayQuestion ? { relayQuestion, needsRelay: true } : {}),
-    ...(pauseReason ? { pauseReason } : {}),
-    ...(convergenceFailure ? { convergenceFailure } : {}),
-    ...(relayCount >= 1 ? { endOfJobTap: null } : {}),
-  });
+
 
   return {
     sessionId,
@@ -1235,7 +1189,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
         ...(pendingRelayQuestion ? { relayQuestion: pendingRelayQuestion } : {}),
       };
       sendSSE(res, { type: "courtroom_outcome", courtroomOutcome: result.courtroomOutcome, artifactPath: result.artifactPath });
-      if (!opts.deferCompletion) sendSSE(res, { ...result, type: "done" });
+
       return result;
     }
     if (!(error instanceof CreditCapError)) throw error;
@@ -1249,7 +1203,7 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
       fixedStageTokens: { input: usage.inputTokens - usageAfterDebate.inputTokens, output: usage.outputTokens - usageAfterDebate.outputTokens },
       artifactPath: "artifact", courtroomOutcome: {reason:"credit_cap", confidenceAtExit:0, round:actualRound}, relayCount:opts.relayContext?.relayRound ?? 0,
     };
-    if (!opts.deferCompletion) sendSSE(res, { ...result, type:"paused_post_moderator", debateTranscriptLines:transcript });
+
     return result;
   }
 

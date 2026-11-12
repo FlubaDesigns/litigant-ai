@@ -53,8 +53,9 @@ export async function verifyIdToken(
     let guest = false;
     const db = getFirestore();
     if (!options.allowAccountDeletion && (await db.collection("account_deletions").doc(decoded.uid).get()).exists) return null;
+    const profile = (await db.collection("users").doc(decoded.uid).get()).data();
+    if (profile?.banned === true) return null;
     if (anonymous || decoded.guestTrial === true) {
-      const profile = (await db.collection("users").doc(decoded.uid).get()).data();
       if (profile?.guestInvitationId) {
         const invitation = (await db.collection("guest_invitations").doc(profile.guestInvitationId).get()).data();
         if (invitation?.claimedBy !== decoded.uid) return null;

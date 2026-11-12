@@ -392,10 +392,10 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
         .catch((e) => console.error("[admin] Account-suspended email failed (non-fatal):", e));
     }
 
-    return res.json({
-      success: true,
+    return res.status(authWarning ? 503 : 200).json({
+      success: !authWarning,
       banned,
-      ...(authWarning ? { authWarning } : {}),
+      ...(authWarning ? { authWarning, retryable: true } : {}),
     });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
@@ -864,77 +864,6 @@ router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
       totalCount: flagDocs.length,
       hasMore: snap.size > limit,
     });
-  } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
-  }
-});
-
-// ── Feature Flags (public read, admin write) ──────────────────────────────────
-
-const DEFAULT_FLAGS: Record<string, boolean> = {};
-
-router.get("/feature-flags", async (_req, res) => {
-  const db = getFirestoreDb();
-  if (!db) return res.json({ flags: DEFAULT_FLAGS });
-
-  try {
-    const doc = await db.collection("config").doc("featureFlags").get();
-    if (!doc.exists) return res.json({ flags: DEFAULT_FLAGS });
-    const saved = doc.data() ?? {};
-    const flags: Record<string, boolean|string> = {...DEFAULT_FLAGS};
-    for (const name of Object.keys(DEFAULT_FLAGS)) {
-      if (typeof saved[name] === "boolean") flags[name] = saved[name];
-      if (["all", "pro", "free"].includes(saved[`${name}_scope`])) flags[`${name}_scope`] = saved[`${name}_scope`];
-    }
-    return res.json({ flags });
-  } catch {
-    return res.status(503).json({error:"Feature flags are temporarily unavailable"});
-  }
-});
-
-router.put("/admin/feature-flags/:name", requireAdmin, async (req, res) => {
-  const db = getFirestoreDb();
-  if (!db) return res.status(503).json({ error: "Firebase not configured" });
-
-  const name  = req.params["name"]!;
-  const { value } = req.body as { value?: unknown };
-  const validFlags  = Object.keys(DEFAULT_FLAGS);
-  const VALID_SCOPES = new Set(["all", "pro", "free"]);
-
-  if (name.endsWith("_scope")) {
-    // Scope flags (e.g. "guestMode_scope") — value must be a valid plan scope string.
-    const baseName = name.slice(0, -"_scope".length);
-    if (!validFlags.includes(baseName)) {
-      return res.status(400).json({
-        error: `Unknown scope flag "${name}". Valid base flags: ${validFlags.join(", ")}`,
-      });
-    }
-    if (typeof value !== "string" || !VALID_SCOPES.has(value)) {
-      return res.status(400).json({
-        error: `Scope value must be one of: ${[...VALID_SCOPES].join(", ")}`,
-      });
-    }
-  } else {
-    // Boolean feature flags — name must be in DEFAULT_FLAGS, value must be boolean.
-    if (!validFlags.includes(name)) {
-      return res.status(400).json({
-        error: `Unknown flag "${name}". Valid flags: ${validFlags.join(", ")}`,
-      });
-    }
-    if (typeof value !== "boolean") {
-      return res.status(400).json({ error: "value must be a boolean (true or false)" });
-    }
-  }
-
-  try {
-    await db
-      .collection("config")
-      .doc("featureFlags")
-      .set(
-        { [name]: value, updatedAt: FieldValue.serverTimestamp() },
-        { merge: true }
-      );
-    return res.json({ success: true, name, value });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
   }

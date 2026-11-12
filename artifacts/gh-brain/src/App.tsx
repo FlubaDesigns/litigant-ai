@@ -68,7 +68,6 @@ function SavedConversationAccess({children}: {children: React.ReactNode}) {
 function AppRoutes() {
   return (
     <Switch>
-      <Route path="/app/session/:sessionId">{params => <Redirect to={`/session/${encodeURIComponent(params.sessionId)}`} />}</Route>
       {/* Public */}
       <Route path="/" component={LandingPage} />
       <Route path="/guest" component={GuestPage} />
@@ -98,8 +97,6 @@ function AppRoutes() {
           <SavedConversationAccess><SessionPage /></SavedConversationAccess>
         </ProtectedWithLayout>
       </Route>
-      <Route path="/tools"><Redirect to={`/templates${window.location.search}`} /></Route>
-      <Route path="/tools/:slug">{params => <Redirect to={`/templates/${encodeURIComponent(params.slug)}${window.location.search}`} />}</Route>
       <Route path="/templates" component={TemplatesPage} />
       <Route path="/templates/:slug" component={TemplatePage} />
       <Route path="/history">

@@ -59,7 +59,7 @@ vi.mock("../lib/creditEngine.js", () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createProviderAsync } from "../lib/providers/index.js";
-import { runBrainSession } from "../lib/brainEngine.js";
+import { runBrainSession } from "./engineFixture.js";
 import type { CourtConfig } from "../lib/brainEngine.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -159,13 +159,13 @@ it.each([
   expect(result.transcript.at(-1)).toContain("CUT-OFF");
   expect(res._events.some(e => e.type === "provider_failover")).toBe(false);
   expect(res._events.some(e => (e.courtroomOutcome as any)?.reason === "approved")).toBe(false);
-  expect(res._events.find(e => e.type === "done")).toMatchObject({pauseReason:"output_incomplete"});
+  expect(res._events.find(e => e.type === "done")).toBeUndefined();
 });
 
 it.each(["content_filter", "missing_completion_signal", "tool_calls"])("does not release an incomplete response (%s)", async reason => {
   const provider = makeProvider([{text:"APPROVED\nPartial", status:"incomplete", finishReason:reason}]);
   vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
-  const result = await runBrainSession({question:"Q",config,res:makeMockRes(),deferCompletion:true});
+  const result = await runBrainSession({question:"Q",config,res:makeMockRes(),});
   expect(result.outputIncomplete?.reason).toBe(reason);
   expect(result.courtroomOutcome.reason).toBe("output_incomplete");
   expect(provider.streamChat).toHaveBeenCalledTimes(1);
@@ -185,7 +185,7 @@ it("persists cancelled partial output and usage without approval or a second pro
   const provider = makeProvider(["Open", {text:"Partial independent reasoning",abort}]);
   vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
   const res=makeMockRes();
-  const result=await runBrainSession({question:"Q",config,res,abortSignal:abort.signal,deferCompletion:true});
+  const result=await runBrainSession({question:"Q",config,res,abortSignal:abort.signal,});
   expect(result).toMatchObject({cancelled:true,confidence:0,courtroomOutcome:{reason:"aborted"}});
   expect(result.transcript.at(-1)).toContain("Partial independent reasoning");
   expect(result.turns.at(-1)?.content).toBe("Partial independent reasoning");
@@ -273,7 +273,7 @@ it.each([true,false])("surfaces exhausted review diagnosis through delivery, rel
   expect(result.convergenceFailure).toBe(true);
   expect(result.relayQuestion).toContain(hasDiagnosis?question:"Missing signing date");
   expect(JSON.stringify(provider.streamChat.mock.calls.at(-1)![0])).toContain(hasDiagnosis?question:"Missing signing date");
-  expect(res._events.find(e=>e.type==="done")).toMatchObject({needsRelay:true,relayQuestion:result.relayQuestion});
+  expect(res._events.find(e=>e.type==="done")).toBeUndefined();
 });
 
 

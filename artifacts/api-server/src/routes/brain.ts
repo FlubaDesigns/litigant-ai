@@ -396,7 +396,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       config: effectiveConfig,
       instructions,
       templateSystemPrompt,
-      deferCompletion: true,
+
       priceCalls: calls => priceCalls(calls, prepared.rates),
       onCallUsage: call => runCalls.push(...annotateCalls([call], prepared.rates)),
       enabledProviders: prepared.enabledProviders,
@@ -470,6 +470,8 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
           fixedStageTokens: result.fixedStageTokens,
+          roundsCompleted: Math.max(Number(previousSession?.roundsCompleted ?? 0), ...(result.turns ?? []).filter(t => t.round > 0 && t.round < 99).map(t => t.round), 0),
+          litigantCount: effectiveConfig.litigantCount,
           status,
           finalAnswer: result.finalAnswer,
           debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
@@ -498,6 +500,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           createdAt: previousSession?.createdAt ?? FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         }, fullAccess);
+        // Resumes own execution fields only; concurrent owner edits remain authoritative.
+        if (previousSession) {
+          for (const field of ["title", "starred", "archived", "shared", "shareId"]) delete savedResult[field];
+        }
         if (creditReserved) {
           billingState = await prepareCreditRunSettlement(uid, creditRunId, actualCost, savedResult, runLease);
           resultSaved = true;

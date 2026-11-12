@@ -59,7 +59,7 @@ vi.mock("../lib/creditEngine.js", () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createProviderAsync } from "../lib/providers/index.js";
-import { runBrainSession } from "../lib/brainEngine.js";
+import { runBrainSession } from "./engineFixture.js";
 import type { CourtConfig } from "../lib/brainEngine.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ describe("ARTIFACT_NEEDED parsing", () => {
     expect(result.artifactPath).toBe("artifact");
   });
 
-  it("routes to artifact path when ARTIFACT_NEEDED is absent (fallback = yes)", async () => {
+  it("does not start document building when Auto routing is missing", async () => {
     // Moderator output has no ARTIFACT_NEEDED declaration at all.
     const provider = makeProvider([
       "Orchestrator opens.",
@@ -203,8 +203,9 @@ describe("ARTIFACT_NEEDED parsing", () => {
       res: makeMockRes(),
     });
 
-    // When absent, brainEngine defaults to artifact path (safe fallback)
-    expect(result.artifactPath).toBe("artifact");
+    expect(result.pauseReason).toBe("output_incomplete");
+    expect(result.courtroomOutcome?.reason).toBe("output_incomplete");
+    expect(provider.streamChat).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -292,16 +293,16 @@ describe("No-artifact path — APPROVED", () => {
     vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
 
     const res = makeMockRes();
-    await runBrainSession({
+    const result = await runBrainSession({
       question: "Life, universe, everything?",
       config: BASE_CONFIG,
       res,
     });
 
     const doneEvent = res._events.find((e) => e.type === "done");
-    expect(doneEvent).toBeDefined();
-    expect((doneEvent as any).artifacts).toBe(synthesis);
-    expect((doneEvent as any).artifactPath).toBe("no-artifact");
+    expect(doneEvent).toBeUndefined();
+    expect(result.artifacts).toBe(synthesis);
+    expect(result.artifactPath).toBe("no-artifact");
   });
 });
 
@@ -371,16 +372,16 @@ describe("No-artifact path — NOT_ENOUGH", () => {
     vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
 
     const res = makeMockRes();
-    await runBrainSession({
+    const result = await runBrainSession({
       question: "What local rules apply?",
       config: BASE_CONFIG,
       res,
     });
 
     const doneEvent = res._events.find((e) => e.type === "done");
-    expect(doneEvent).toBeDefined();
-    expect((doneEvent as any).needsRelay).toBe(true);
-    expect((doneEvent as any).relayQuestion).toBe(missingInfo);
+    expect(doneEvent).toBeUndefined();
+    expect(result.relayQuestion).toBeTruthy();
+    expect(result.relayQuestion).toBe(missingInfo);
   });
 
   it("emits courtroom_outcome SSE with reason=not_enough on NOT_ENOUGH", async () => {
@@ -641,7 +642,7 @@ describe("failure, budget and evidence regressions", () => {
     const provider=makeProvider(["Open","Argue","ARTIFACT_NEEDED: yes"]);
     vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
     const res=makeMockRes();
-    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,maxCredits:3},res,deferCompletion:true,
+    const result=await runBrainSession({question:"Q",config:{...BASE_CONFIG,maxCredits:3},res,
       priceCalls:calls=>calls.length});
     expect(provider.streamChat).toHaveBeenCalledTimes(3);
     expect(result.creditsUsed).toBe(3);
@@ -756,7 +757,7 @@ describe("Template questions and answers", () => {
       courtroomOutcome: { reason: "not_enough", round: 0 }, relayQuestion: "Who will read the plan? That determines the financial detail." });
     expect(result.transcript.join("\n")).toContain(result.relayQuestion);
     expect(result.transcript.join("\n")).not.toContain("ASK_USER");
-    expect(res._events.find(e => e.type === "done")).toMatchObject({ needsRelay: true, relayQuestion: result.relayQuestion });
+    expect(res._events.find(e => e.type === "done")).toBeUndefined();
   });
 
   it("retains successive answers and gives every seat the facts before building a Pro document", async () => {
@@ -800,7 +801,7 @@ describe("Template questions and answers", () => {
     const provider = makeProvider(["ASK_USER\nWhich audience?"]);
     vi.mocked(createProviderAsync).mockResolvedValue(provider as any);
     const res = makeMockRes();
-    await runBrainSession({ question: "Plan", templateSystemPrompt: "Business plan", config: BASE_CONFIG, res, deferCompletion: true });
+    await runBrainSession({ question: "Plan", templateSystemPrompt: "Business plan", config: BASE_CONFIG, res,  });
     expect(res._events.some(e => e.type === "done")).toBe(false);
   });
 });

@@ -2,7 +2,7 @@ import { test, expect } from "./fixtures";
 import { TEMPLATES } from "../../../lib/api-zod/src/templates";
 
 for (const width of [360, 768, 1440]) {
-  test(`public templates use saved configuration and preserve old links at ${width}px`, async ({page}) => {
+  test(`public templates use saved configuration and use current links at ${width}px`, async ({page}) => {
     await page.setViewportSize({width, height: 915});
     const template = {...TEMPLATES[0], title: "Owner's business plan", description: "The current saved description",
       inputFields: [{id: "goal", label: "Owner's saved question", placeholder: "Describe your goal", type: "text", required: true}],
@@ -25,7 +25,7 @@ for (const width of [360, 768, 1440]) {
     await expect(page.getByText(/Any paid credit purchase unlocks all features/).first()).toBeVisible();
     await expect(page.getByRole("link", {name: "Unlock all features", exact:true}).first()).toHaveAttribute("href", "/register?next=%2Fbilling");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await page.goto("/tools/business-plan-analyzer");
+    await page.goto("/templates/business-plan-analyzer");
     await expect(page).toHaveURL(/\/templates\/business-plan-analyzer$/);
     await expect(page.getByRole("heading", {level:1})).toHaveText(template.title);
     await page.goto("/session?templateId=business-plan&e2e=1");

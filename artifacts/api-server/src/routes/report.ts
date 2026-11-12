@@ -5,14 +5,18 @@ import { safeError } from "../lib/safeError.js";
 
 import { invitationActive } from "../lib/guestInvitations.js";
 
+import { makeRateLimiter } from "../lib/rateLimiter.js";
 const router = Router();
+const reportLimiter = makeRateLimiter({keyFn: req => `report:${req.ip ?? "unknown"}`,
+  limit: 120, windowMs: 60_000, message: "Too many report requests. Please try again shortly."});
 
 /**
  * GET /report/:shareId
  * Public endpoint — no auth required.
  * Returns a shared session report if sessions.shared === true and shareId matches.
  */
-router.get("/report/:shareId", async (req, res) => {
+router.get("/report/:shareId", reportLimiter, async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   const db = getFirestoreDb();
   if (!db) {
     return res.status(404).json({ error: "not_found" });
@@ -47,7 +51,7 @@ router.get("/report/:shareId", async (req, res) => {
       "sessionId", "title", "question", "templateId",
       "confidence", "creditsUsed", "status",
       "finalAnswer", "debateNotes", "transcript", "caveats", "artifacts",
-      "shared", "shareId",
+      "shared", "shareId", "courtroomOutcome", "acceptedAt", "outputIncomplete",
     ];
 
     const parsedConfig = CourtConfigSchema.safeParse(data.config ?? {});
@@ -60,8 +64,10 @@ router.get("/report/:shareId", async (req, res) => {
     if (data["createdAt"]?.toDate) result["createdAt"] = data["createdAt"].toDate().toISOString();
     if (data["updatedAt"]?.toDate) result["updatedAt"] = data["updatedAt"].toDate().toISOString();
 
-    // Always fetch session_turns to compute accurate metrics and fill missing inline fields
-    try {
+    // Current sessions persist metrics; legacy records alone need turn reconstruction.
+    result["roundsCompleted"] = data.roundsCompleted;
+    result["litigantCount"] = data.litigantCount;
+    if (!result.transcript || !result.debateNotes || data.roundsCompleted === undefined || data.litigantCount === undefined) try {
       const turnsSnap = await doc.ref
         .collection("session_turns")
         .orderBy("turnIndex")
