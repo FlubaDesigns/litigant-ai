@@ -58,7 +58,7 @@ test.describe("Public page layout — .main-inner removal regression", () => {
       if (msg.type() === "error") errors.push(msg.text());
     });
 
-    await page.goto("/tools", { waitUntil: "domcontentloaded" });
+    await page.goto("/templates", { waitUntil: "domcontentloaded" });
 
     // SiteHeader is visible
     await expect(page.locator("header").first()).toBeVisible({ timeout: 10_000 });
@@ -86,7 +86,7 @@ test.describe("Public page layout — .main-inner removal regression", () => {
       if (msg.type() === "error") errors.push(msg.text());
     });
 
-    await page.goto("/tools/business-plan-analyzer", { waitUntil: "domcontentloaded" });
+    await page.goto("/templates/business-plan-analyzer", { waitUntil: "domcontentloaded" });
 
     // SiteHeader is visible
     await expect(page.locator("header").first()).toBeVisible({ timeout: 10_000 });

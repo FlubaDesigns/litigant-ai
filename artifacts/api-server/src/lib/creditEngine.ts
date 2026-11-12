@@ -232,30 +232,6 @@ export function estimateSessionCredits(config: SessionEstimateConfig, price?: Mo
 }
 
 /**
- * Estimates credits for the fixed pipeline stages only (Moderator, Architect,
- * Builder, Auditor, Verdict). Used when resuming a paused-pre-pipeline session
- * so the second reservation covers only what will actually run.
- */
-export function estimateFixedPipelineCost(model?: string, price?: ModelPrice): number {
-  return creditsForTokens(price ?? {...getModelRate(model ?? "gpt-5"), multiplier:getModelMultiplier(model ?? "gpt-5")}, FIXED_STAGE_PRIOR.input, FIXED_STAGE_PRIOR.output);
-}
-
-/**
- * Async variant of estimateSessionCredits that replaces the hardcoded
- * FIXED_STAGE_PRIOR with real averages learned from the last 50 sessions.
- *
- * Use this anywhere a Firestore round-trip is already expected (brain.ts
- * reservation, admin pricing table). The sync version remains for contexts
- * where you need an instant result (frontend slider maths, unit tests).
- */
-export async function estimateSessionCreditsCalibrated(
-  config: SessionEstimateConfig, price?: ModelPrice
-): Promise<number> {
-  const fixed = await getCalibratedFixedStageTokens();
-  return estimateSessionCredits(config, price, fixed);
-}
-
-/**
  * Snapshot of a model's pricing data sent to the frontend.
  *
  * The frontend uses this to compute live credit estimates as the user

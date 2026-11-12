@@ -2,7 +2,6 @@ import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { verifyIdToken, getFirestoreDb } from "../lib/firebaseAdmin.js";
-import { FIXED_STAGE_PRIOR } from "../lib/creditEngine.js";
 import { safeError } from "../lib/safeError.js";
 import crypto from "crypto";
 import { FieldValue } from "firebase-admin/firestore";
@@ -71,7 +70,9 @@ router.get("/account/export", async (req, res) => {
 
 // Free users can delete their old records, but cannot read or reuse saved conversations.
 router.use("/sessions", async (req, res, next) => {
-  if (req.method === "DELETE") { next(); return; }
+  const unshareOnly = req.method === "PATCH" && req.body?.shared === false
+    && Object.keys(req.body).length === 1;
+  if (req.method === "DELETE" || unshareOnly) { next(); return; }
   const token = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : null;
   const decoded = token ? await verifyIdToken(token) : null;
   if (!decoded) { res.status(401).json({message:"Unauthorized"}); return; }
@@ -246,9 +247,18 @@ router.delete("/sessions/:id", async (req, res) => {
   if (!decoded) { res.status(401).json({ message: "Unauthorized" }); return; }
 
   try {
-    const doc = await db.collection("sessions").doc(req.params["id"]!).get();
-    if (!doc.exists) { res.status(404).json({ message: "Not found" }); return; }
-    if (doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
+    const ref = db.collection("sessions").doc(req.params["id"]!);
+    // Fence deletion atomically against resume claims. A failed teardown is retryable.
+    const code = await db.runTransaction(async tx => {
+      const current = (await tx.get(ref)).data();
+      if (!current) return 404;
+      if (current.userId !== decoded.uid) return 403;
+      if (hasActiveSessionRun(current)) return 409;
+      tx.update(ref, {status: "deleting", shared: false, shareId: null});
+      return 200;
+    });
+    if (code !== 200) { res.status(code).json({message: code === 409 ? "This session is running. Wait for it to finish before deleting it." : "Session unavailable"}); return; }
+    const doc = await ref.get();
     // Also delete session_turns subcollection
     const turnsSnap = await doc.ref.collection("session_turns").get();
     await Promise.all(turnsSnap.docs.map((t) => t.ref.delete()));
@@ -334,6 +344,7 @@ router.patch("/sessions/:id", async (req, res) => {
       if (!session || session.userId !== decoded.uid) {
         return { code: 403, body: { message: "Forbidden" } };
       }
+      if (session.status === "deleting") return {code: 409, body: {message: "Session deletion is in progress."}};
       const changes = { ...updates };
       if (status === "complete" && hasActiveSessionRun(session)) {
         return { code: 409, body: { message: "This session is running. Wait for it to finish before accepting the answer." } };
@@ -383,69 +394,20 @@ router.post("/sessions/:id/share", async (req, res) => {
   }
 
   try {
-    const doc = await db.collection("sessions").doc(req.params["id"]!).get();
-    if (!doc.exists || doc.data()!["userId"] !== decoded.uid) { res.status(403).json({ message: "Forbidden" }); return; }
-
-    // Always mint a new shareId — never reuse the old one.
-    // This means re-sharing after an unshare gives a new URL, not the same one.
-    const shareId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-
-    await doc.ref.update({ shared: true, shareId });
+    const ref = db.collection("sessions").doc(req.params["id"]!);
+    const shareId = crypto.randomUUID().replace(/-/g, "");
+    const code = await db.runTransaction(async tx => {
+      const session = (await tx.get(ref)).data();
+      if (!session || session.userId !== decoded.uid) return 403;
+      if (session.status === "deleting") return 409;
+      tx.update(ref, {shared: true, shareId});
+      return 200;
+    });
+    if (code !== 200) { res.status(code).json({message: "Session unavailable for sharing"}); return; }
     res.json({ success: true, shareId });
   } catch (e: any) {
     console.error("[sessions] POST /sessions/:id/share error:", e);
     res.status(500).json({ message: safeError(e) });
-  }
-});
-
-/**
- * GET /calibration
- * Returns per-user calibrated fixed-stage token averages derived from the
- * user's own session history.  The frontend uses this to make credit
- * estimates more accurate the more sessions the user has run.
- */
-router.get("/calibration", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-  const db = getFirestoreDb();
-  if (!db) {
-    res.json({ fixedStage: FIXED_STAGE_PRIOR, sessionCount: 0, isCalibrated: false, minSessions: 3 });
-    return;
-  }
-  const decoded = await verifyIdToken(authHeader.slice(7));
-  if (!decoded) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  const MIN_SESSIONS = 3;
-  try {
-    const snap = await db
-      .collection("sessions")
-      .where("userId", "==", decoded.uid)
-      .orderBy("createdAt", "desc")
-      .limit(50)
-      .get();
-
-    const records = snap.docs
-      .map((d) => d.data().fixedStageTokens as { input: number; output: number } | undefined)
-      .filter((r): r is { input: number; output: number } => !!r && r.input > 0 && r.output > 0);
-
-    if (records.length < MIN_SESSIONS) {
-      res.json({ fixedStage: FIXED_STAGE_PRIOR, sessionCount: records.length, isCalibrated: false, minSessions: MIN_SESSIONS });
-      return;
-    }
-
-    const avg = {
-      input:  Math.round(records.reduce((s, r) => s + r.input,  0) / records.length),
-      output: Math.round(records.reduce((s, r) => s + r.output, 0) / records.length),
-    };
-    res.json({ fixedStage: avg, sessionCount: records.length, isCalibrated: true, minSessions: MIN_SESSIONS });
-  } catch {
-    res.json({ fixedStage: FIXED_STAGE_PRIOR, sessionCount: 0, isCalibrated: false, minSessions: 3 });
   }
 });
 

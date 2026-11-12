@@ -65,3 +65,10 @@ describe("deletion state restricts verified Auth without changing privileges", (
     expect(await verifyIdToken("token", {allowAccountDeletion:true})).toBeNull();
   });
 });
+
+it('enforces a stored ban even when Auth disabling failed', async () => {
+  vi.mocked(getApps).mockReturnValue([{}] as any);
+  vi.mocked(getAuth).mockReturnValue({verifyIdToken:vi.fn(async()=>({uid:'banned-user',firebase:{sign_in_provider:'password'},email_verified:true}))} as any);
+  vi.mocked(getFirestore).mockReturnValue({collection:(name:string)=>({doc:()=>({get:async()=>({exists:name==='users',data:()=>name==='users'?{banned:true}:undefined})})})} as any);
+  expect(await verifyIdToken('test')).toBeNull();
+});

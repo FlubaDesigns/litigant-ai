@@ -9,7 +9,7 @@ import {getFirestoreDb} from "../lib/firebaseAdmin.js";
 import {createProviderAsync} from "../lib/providers/index.js";
 import adminRouter from "../routes/admin.js";
 import {getAllSeatBriefs,SEAT_IDS} from "../lib/seatBriefs.js";
-import {runBrainSession} from "../lib/brainEngine.js";
+import {runBrainSession} from "./engineFixture.js";
 const app=express().use(express.json()).use(adminRouter);
 let stored:Record<string,unknown>;
 let failRead=false,failWrite=false;

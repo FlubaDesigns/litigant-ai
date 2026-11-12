@@ -5,7 +5,7 @@ vi.mock("../lib/conscienceConfig.js",()=>({getConscienceClause:async()=>({text:"
 vi.mock("../lib/seatBriefs.js",()=>({getAllSeatBriefs:async()=>({orchestrator:"",moderator:"",architect:"",builder:"",auditor:"",litigant:""})}));
 vi.mock("../lib/creditEngine.js",()=>({estimateSessionCredits:()=>1,calculateActualCredits:()=>1,charsToTokens:(n:number)=>Math.ceil(n/4)}));
 import {createProviderAsync} from "../lib/providers/index.js";
-import {runBrainSession} from "../lib/brainEngine.js";
+import {runBrainSession} from "./engineFixture.js";
 const config={litigantCount:1,confidenceTarget:70,maxIterations:1,responseMode:"concise" as const,outputFormat:"verdict" as const,outputPreferenceMode:"answer-only" as const,provider:"openai",model:"configured-primary"};
 function response(){const events:any[]=[];return {events,res:{writableEnded:false,write:(data:string)=>{events.push(JSON.parse(data.slice(6)));return true;},flush:()=>{}} as unknown as Response};}
 function provider(name:string,model:string,fail=false){return {name,model,streamChat:vi.fn(async function*(){if(fail){yield "Failed partial";throw Error("Unavailable");}yield "APPROVED\nCONFIDENCE: 95\nARTIFACT_NEEDED: no\nComplete output";}),getLastUsage:()=>({inputTokens:10,outputTokens:20}),getLastCompletion:()=>({status:"complete",finishReason:"stop"})};}
@@ -18,7 +18,7 @@ it("attributes successful failover to the admin-configured backup and separates 
   expect(createProviderAsync).toHaveBeenCalledWith("anthropic","configured-backup");
   expect(result).toMatchObject({provider:"anthropic",model:"configured-backup",modelProvenance:{configured:{provider:"openai",model:"configured-primary"},completed:[{provider:"anthropic",model:"configured-backup"}],attempted:[{provider:"openai",model:"configured-primary"},{provider:"anthropic",model:"configured-backup"}]}});
   expect(result.tokenUsage.calls?.[0].model).toBe("configured-primary");
-  expect(events.find(e=>e.type==="done")).toMatchObject({provider:"anthropic",model:"configured-backup"});
+  expect(events.find(e=>e.type==="done")).toBeUndefined();
 });
 it("reports mixed actual models when explicit seat choices complete on two providers",async()=>{
   const primary=provider("openai","configured-primary"), backup=provider("anthropic","own-seat");

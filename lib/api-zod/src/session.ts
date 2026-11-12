@@ -149,3 +149,11 @@ export function sessionCompleteNotificationsEnabled(profile: {
   return typeof profile?.notifications?.sessionComplete === "boolean"
     ? profile.notifications.sessionComplete : profile?.notifySessionComplete === true;
 }
+
+/** Public and private views distinguish owner acceptance from AI approval. */
+export function reviewStatus(record: {status?: string; acceptedAt?: unknown; outputIncomplete?: unknown; courtroomOutcome?: {reason?: string}}): string {
+  if (record.outputIncomplete || record.courtroomOutcome?.reason === "output_incomplete") return "Interrupted — not approved";
+  if (record.courtroomOutcome?.reason === "approved") return "Auditor approved";
+  if (record.acceptedAt) return "Accepted by owner — not auditor approved";
+  return "Not auditor approved";
+}

@@ -8,6 +8,10 @@ const token = `${encode({alg:'none',typ:'JWT'})}.${encode({sub:'test-owner',user
 async function create(path, fields, authenticated = false) {
   return fetch(`${root}/${path}`, {method:'PATCH', headers:{'Content-Type':'application/json',...(authenticated?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({fields})});
 }
+for (const field of ['creditBalance','plan','squareCustomerId','futureServerField','banned']) {
+  const denied=await create('users/test-owner',{displayName:{stringValue:'Fixture owner'},[field]:{stringValue:'forged'}},true);
+  assert.equal(denied.status,403,`Creating a profile with server-owned ${field} must be denied`);
+}
 const profile = await create('users/test-owner',{displayName:{stringValue:'Fixture owner'}},true);
 assert.equal(profile.status,200,'The authenticated control must work before testing feedback denial');
 for (const authenticated of [false,true]) {
@@ -15,3 +19,10 @@ for (const authenticated of [false,true]) {
   assert.equal(r.status,403,'Direct client feedback writes must be denied');
 }
 console.log('Anonymous and authenticated direct feedback writes denied; authenticated profile control passed.');
+
+for (const field of ['creditBalance','plan','squareCustomerId','testProvider','testModel','futureServerField','banned']) {
+  const denied=await create('users/test-owner',{[field]:{stringValue:'forged'}},true);
+  assert.equal(denied.status,403,`Server-owned ${field} must be denied`);
+}
+const allowed=await create('users/test-owner',{displayName:{stringValue:'Updated owner'},notifications:{mapValue:{fields:{sessionComplete:{booleanValue:false}}}}},true);
+assert.equal(allowed.status,200,'Explicit profile preferences remain editable');

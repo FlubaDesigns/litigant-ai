@@ -3,7 +3,8 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const BASE_RULES_HASH = '41fd2c9c0317317e436d329cf6b420b183692dc2e7976b703c9340f836cf0fc6';
-export const TARGET_RULES_HASH = 'b1d1b3505095ed56b0a64d9f6e20a44e2909a93272ed725c4baafc8609d05282';
+export const PREVIOUS_RULES_HASH = 'b1d1b3505095ed56b0a64d9f6e20a44e2909a93272ed725c4baafc8609d05282';
+export const TARGET_RULES_HASH = 'e206f63bfba466b2fdca4c98e8627e3f627f34b84222d15a28be268010791701';
 export const RULES_RELEASE = 'projects/litigant-ai/releases/cloud.firestore';
 const API = 'https://firebaserules.googleapis.com/v1/';
 const hash = text => createHash('sha256').update(text).digest('hex');
@@ -18,7 +19,7 @@ export async function inspectFeedbackRules(read, content) {
   const ruleset = await read(API + rulesetName(release.rulesetName), 'read active Firestore rules');
   assert.equal(ruleset.source?.files?.length, 1, 'Unexpected active rules source bundle');
   const activeHash = hash(ruleset.source.files[0].content);
-  assert([BASE_RULES_HASH,TARGET_RULES_HASH].includes(activeHash), 'Active rules have drifted; review before release');
+  assert([BASE_RULES_HASH,PREVIOUS_RULES_HASH,TARGET_RULES_HASH].includes(activeHash), 'Active rules have drifted; review before release');
   return {rulesetName:release.rulesetName, activeHash};
 }
 export async function deployFeedbackRules({read, write, content, assertCurrent}) {

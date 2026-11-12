@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it, vi} from "vitest";
 import {QueryObserver, focusManager, onlineManager} from "@tanstack/react-query";
 import {queryClient, CONFIGURATION_REFRESH, refreshConfiguration} from "./queryClient";
 vi.mock("@/lib/firebase", () => ({auth:null}));
-import {setFeatureFlag} from "@/services/adminService";
+import {setAdminLimit} from "@/services/adminService";
 
 const cleanups: (() => void)[] = [];
 function watch(key: string[], fn: () => Promise<any>, enabled = true) {
@@ -41,13 +41,13 @@ describe("shared configuration refresh", () => {
   });
   it("refreshes immediately after a successful Admin save, but not a failed save", async () => {
     const read = vi.fn(async () => ({enabled:true}));
-    watch(["configuration","feature-flags"],read);
+    watch(["configuration","limits"],read);
     await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(1));
     vi.stubGlobal("fetch",vi.fn(async () => new Response("{}",{status:200})));
-    await setFeatureFlag("guestMode",true);
+    await setAdminLimit("maxLitigants",4);
     await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2));
     vi.stubGlobal("fetch",vi.fn(async () => new Response("{}",{status:500})));
-    await expect(setFeatureFlag("guestMode",false)).rejects.toThrow();
+    await expect(setAdminLimit("maxLitigants",5)).rejects.toThrow();
     expect(read).toHaveBeenCalledTimes(2);
   });
   it("refreshes fresh configuration on focus and reconnect", async () => {

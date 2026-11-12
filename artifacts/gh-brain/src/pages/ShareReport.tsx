@@ -1,6 +1,6 @@
 import { sessionOutput } from "@/lib/sessionOutput";
 import type { CourtConfig } from "@workspace/api-zod/session";
-import { confidenceLabel } from "@workspace/api-zod/session";
+import { confidenceLabel, reviewStatus } from "@workspace/api-zod/session";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { motion } from "framer-motion";
@@ -26,6 +26,9 @@ interface SharedReport {
   confidence?: number;
   creditsUsed?: number;
   status?: string;
+  acceptedAt?: unknown;
+  outputIncomplete?: unknown;
+  courtroomOutcome?: {reason?: string};
   finalAnswer?: string;
   debateNotes?: string;
   transcript?: string;
@@ -241,12 +244,12 @@ export default function ShareReportPage() {
                 variant="outline"
                 className={cn(
                   "text-xs",
-                  report.status === "complete"
+                  report.courtroomOutcome?.reason === "approved"
                     ? "text-primary border-primary/30 bg-primary/10"
                     : "text-amber-400 border-amber-400/30 bg-amber-400/10"
                 )}
               >
-                {report.status}
+                {reviewStatus(report)}
               </Badge>
             )}
           </div>
