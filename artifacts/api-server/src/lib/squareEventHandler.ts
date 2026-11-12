@@ -6,7 +6,7 @@ import { isFirebaseConfigured } from "./firebaseAdmin.js";
 import { logger } from "./logger.js";
 import { sendPaymentReceiptEmail, isResendConfigured } from "./emailService.js";
 import { validateCheckoutSnapshot } from "./checkoutSnapshot.js";
-import { getAllCreditPacks } from "./creditPacksConfig.js";
+import type { SquarePayment } from "./squareClient.js";
 
 /**
  * Verify a Square webhook signature.
@@ -55,6 +55,21 @@ interface SquareWebhookEvent {
   data: { object: Record<string, any> };
 }
 
+/** Current manual and automatic top-ups use the shared fixed conversion rate.
+ * Named packs must resolve their immutable checkout snapshot, never today's catalogue.
+ */
+function validateCustomTopUp(payment: SquarePayment, creditAmount: number, packId: string | null) {
+  if (packId !== "custom") throw new Error("Named-pack checkout requires its saved snapshot; reconciliation required");
+  if (!/^LITIGANT:userId=([^,\s/]+),creditAmount=\d+,pack=custom(?:,type=auto_refill,refill=[a-f0-9-]+)?$/.test(payment.note ?? "")) {
+    throw new Error("Custom payment metadata does not match a current top-up");
+  }
+  const cents = payment.amount_money?.amount;
+  if (typeof cents !== "number" || !Number.isSafeInteger(cents) || cents < 100 || cents > 50_000
+    || creditAmount !== cents * CREDITS_PER_DOLLAR / 100 || payment.amount_money?.currency !== "USD") {
+    throw new Error("Custom payment amount does not match the credit grant");
+  }
+}
+
 /**
  * Handle a verified Square webhook event and apply credit grants.
  *
@@ -99,42 +114,11 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         throw new Error("Invalid payment credit amount; reconciliation required");
       }
 
-      if (!snapshot) {
-        // Compatibility for links issued before snapshots existed. Never invent
-        // historical prices or credits when today's catalogue no longer verifies
-        // them: retain a retryable failure for explicit payment reconciliation.
-        if (creditAmount > 100_000) {
-          throw new Error("Legacy payment exceeds its validation ceiling; reconciliation required");
-        }
-        if (packId === "custom" || note.includes("type=auto_refill")) {
-          const cents = Number(payment.amount_money?.amount);
-          if (!Number.isInteger(cents) || cents < 100 || cents > 50_000 ||
-              creditAmount !== cents * CREDITS_PER_DOLLAR / 100 ||
-              (payment.amount_money?.currency && payment.amount_money.currency !== "USD")) {
-            throw new Error("Custom payment amount does not match the credit grant");
-          }
-        } else {
-          if (!packId) throw new Error("Legacy checkout terms are missing; reconciliation required");
-          let allPacks;
-          try { allPacks = await getAllCreditPacks(); }
-          catch { throw new Error("Credit-pack validation is unavailable; retry payment processing"); }
-          const pack = allPacks[packId];
-          const price = pack?.prices[0];
-          const expectedCredits = Number(price?.metadata?.creditAmount ?? pack?.metadata?.creditAmount);
-          const expectedCents = price?.unit_amount;
-          const paidCents = payment.amount_money?.amount;
-          // Active flags intentionally do not invalidate already-issued links.
-          if (!pack || !Number.isSafeInteger(expectedCredits) || expectedCredits <= 0
-            || expectedCredits !== creditAmount || !Number.isSafeInteger(expectedCents)
-            || !expectedCents || expectedCents <= 0 || !Number.isSafeInteger(paidCents)
-            || Math.abs(paidCents - expectedCents) > 5
-            || payment.amount_money?.currency !== price?.currency?.toUpperCase()) {
-            throw new Error("Legacy checkout cannot be verified from current terms; reconciliation required");
-          }
-        }
+      if (!snapshot) validateCustomTopUp(payment, creditAmount, packId);
+      const refillAttempt = await validateRefillPayment(userId, payment);
+      if (!snapshot && note.includes(",type=auto_refill") && !refillAttempt) {
+        throw new Error("Automatic top-up is missing its saved authorization");
       }
-
-      await validateRefillPayment(userId, payment);
 
       // Deduplication key is the payment ID, not the event ID.
       // Square can emit multiple distinct events for one payment (e.g. on retries);

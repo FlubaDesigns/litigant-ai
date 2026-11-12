@@ -27,10 +27,6 @@ vi.mock("../lib/creditLedger.js", () => ({
   addCredits: vi.fn(),
 }));
 
-vi.mock("../lib/creditPacksConfig.js", () => ({
-  getAllCreditPacks: vi.fn(),
-}));
-
 vi.mock("../lib/logger.js", () => ({
   logger: {
     info:  vi.fn(),
@@ -49,7 +45,6 @@ vi.mock("../lib/emailService.js", () => ({
 
 import webhookRouter from "../routes/webhook.js";
 import { addCredits } from "../lib/creditLedger.js";
-import { getAllCreditPacks } from "../lib/creditPacksConfig.js";
 
 // ── Test app factory ──────────────────────────────────────────────────────────
 
@@ -100,7 +95,7 @@ function makePaymentEvent(overrides: Record<string, unknown> = {}) {
         payment: {
           id:           "pay-001",
           status:       "COMPLETED",
-          note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=starter_pack",
+          note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=custom",
           amount_money: { amount: 1000, currency: "USD" },
           ...overrides,
         },
@@ -119,17 +114,6 @@ describe("POST /api/square/webhook — route-level", () => {
 
     // Restore env before each test so individual tests can override cleanly.
     process.env = { ...originalEnv, SQUARE_WEBHOOK_SIGNATURE_KEY: SIGNING_KEY, APP_DOMAIN };
-
-    // Default: pack catalogue returns a matching pack.
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "1000" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
 
     // Default: addCredits succeeds with a fresh grant.
     vi.mocked(addCredits).mockResolvedValue({ newBalance: 1000, skipped: false });
@@ -204,7 +188,7 @@ describe("POST /api/square/webhook — route-level", () => {
     // This test specifically guards against a regression where json() consumes
     // the body before the signature check can read it (req.rawBody would then
     // be undefined / empty, causing a false-negative HMAC mismatch).
-    const payload = makePaymentEvent({ note: "LITIGANT:userId=user-2,creditAmount=1000,pack=starter_pack" });
+    const payload = makePaymentEvent({ note: "LITIGANT:userId=user-2,creditAmount=1000,pack=custom" });
     const body    = JSON.stringify(payload);
     const sig     = makeSignature(body);
     const app     = buildApp();
@@ -280,29 +264,15 @@ describe("POST /api/square/webhook — route-level", () => {
     expect(secondResult).toMatchObject({ skipped: true });
   });
 
-  // ── Tamper: creditAmount in note doesn't match pack catalogue ────────────────
-
-  it("returns retryable 500 without calling addCredits when creditAmount in note mismatches the pack catalogue", async () => {
-    // The note claims 9999 credits but the catalogue says starter_pack = 1000.
+  it("returns retryable 500 without calling addCredits when custom credits exceed the paid amount", async () => {
     // The handler must reject the grant to prevent a forged note from inflating balances.
-    const tamperedNote = "LITIGANT:userId=user-1,creditAmount=9999,pack=starter_pack";
+    const tamperedNote = "LITIGANT:userId=user-1,creditAmount=9999,pack=custom";
     const body = JSON.stringify(
       makePaymentEvent({ note: tamperedNote, amount_money: { amount: 1000, currency: "USD" } }),
     );
     const sig = makeSignature(body);
     const app = buildApp();
 
-    // Catalogue pack declares creditAmount=1000, not 9999.
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "1000" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
-
     const res = await supertest(app)
       .post("/api/square/webhook")
       .set("Content-Type", "application/json")
@@ -313,31 +283,17 @@ describe("POST /api/square/webhook — route-level", () => {
     expect(addCredits).not.toHaveBeenCalled();
   });
 
-  // ── Tamper: paid amount doesn't match the pack's listed price ─────────────────
-
-  it("returns retryable 500 without calling addCredits when paid amount mismatches the pack price", async () => {
-    // The note is correct (1000 credits, starter_pack) but the payment shows
-    // only 1¢ was actually charged — a forged checkout lowering the price.
+  it("returns retryable 500 without calling addCredits when custom payment is below the minimum", async () => {
+    // A one-cent payment cannot purchase a custom top-up.
     const body = JSON.stringify(
       makePaymentEvent({
-        note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=starter_pack",
+        note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=custom",
         amount_money: { amount: 1, currency: "USD" }, // 1¢ instead of the expected 1000¢
       }),
     );
     const sig = makeSignature(body);
     const app = buildApp();
 
-    // Catalogue declares the pack costs 1000¢; we paid 1¢.
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "1000" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
-
     const res = await supertest(app)
       .post("/api/square/webhook")
       .set("Content-Type", "application/json")
@@ -348,11 +304,7 @@ describe("POST /api/square/webhook — route-level", () => {
     expect(addCredits).not.toHaveBeenCalled();
   });
 
-  // ── Tamper: unknown packId in note ────────────────────────────────────────────
-
-  it("returns retryable 500 without calling addCredits when packId is not in the catalogue", async () => {
-    // The note references a packId ("platinum_pack") that doesn't exist in the
-    // catalogue — could be a forged note trying to bypass validation.
+  it("returns retryable 500 without calling addCredits when a named pack has no checkout snapshot", async () => {
     const body = JSON.stringify(
       makePaymentEvent({
         note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=platinum_pack",
@@ -361,17 +313,6 @@ describe("POST /api/square/webhook — route-level", () => {
     );
     const sig = makeSignature(body);
     const app = buildApp();
-
-    // Catalogue only has starter_pack — platinum_pack is unknown.
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "1000" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
 
     const res = await supertest(app)
       .post("/api/square/webhook")

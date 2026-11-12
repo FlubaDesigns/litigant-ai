@@ -7,8 +7,8 @@
  *      • valid payment → credits granted
  *      • duplicate event (idempotency key already seen) → skipped, no double-grant
  *      • forged note (no LITIGANT metadata) → ignored
- *      • creditAmount mismatch with pack catalogue → rejected
- *      • unknown packId → rejected
+ *      • custom amount or currency mismatch → rejected
+ *      • snapshotless named pack → rejected
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import crypto from "crypto";
@@ -24,10 +24,6 @@ vi.mock("../lib/firebaseAdmin.js", () => ({
 
 vi.mock("../lib/creditLedger.js", () => ({
   addCredits: vi.fn(),
-}));
-
-vi.mock("../lib/creditPacksConfig.js", () => ({
-  getAllCreditPacks: vi.fn(),
 }));
 
 vi.mock("../lib/logger.js", () => ({
@@ -48,7 +44,7 @@ vi.mock("../lib/emailService.js", () => ({
 
 import { verifySquareWebhook, handleSquareEvent } from "../lib/squareEventHandler.js";
 import { addCredits }      from "../lib/creditLedger.js";
-import { getAllCreditPacks } from "../lib/creditPacksConfig.js";
+import { isFirebaseConfigured } from "../lib/firebaseAdmin.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -74,7 +70,7 @@ function makePaymentEvent(overrides: Record<string, unknown> = {}) {
         payment: {
           id:           "pay-001",
           status:       "COMPLETED",
-          note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=starter_pack",
+          note:         "LITIGANT:userId=user-1,creditAmount=1000,pack=custom",
           amount_money: { amount: 1000, currency: "USD" },
           ...overrides,
         },
@@ -134,16 +130,7 @@ describe("handleSquareEvent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default: pack catalogue returns a matching pack
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "1000" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
+    vi.mocked(isFirebaseConfigured).mockReturnValue(true);
 
     // Default: addCredits succeeds with a fresh grant
     vi.mocked(addCredits).mockResolvedValue({ newBalance: 1000, skipped: false });
@@ -164,9 +151,9 @@ describe("handleSquareEvent", () => {
     );
   });
 
-  it("retries when saved pack validation fails without granting credits or Pro", async () => {
-    vi.mocked(getAllCreditPacks).mockRejectedValueOnce(new Error("Firestore unavailable"));
-    await expect(handleSquareEvent(makePaymentEvent() as any)).rejects.toThrow(/validation is unavailable/);
+  it("retries when storage is unavailable without granting credits", async () => {
+    vi.mocked(isFirebaseConfigured).mockReturnValue(false);
+    await expect(handleSquareEvent(makePaymentEvent())).rejects.toThrow(/storage is unavailable/);
     expect(addCredits).not.toHaveBeenCalled();
   });
 
@@ -187,50 +174,18 @@ describe("handleSquareEvent", () => {
     expect(addCredits).not.toHaveBeenCalled();
   });
 
-  it("rejects when creditAmount in the note mismatches the pack catalogue", async () => {
-    // Pack declares 500 credits; note claims 1000 — potential forgery
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "500" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
-
-    await expect(handleSquareEvent(makePaymentEvent() as any)).rejects.toThrow(/reconciliation required/);
-
+  it("rejects a custom credit amount that exceeds the payment", async () => {
+    await expect(handleSquareEvent(makePaymentEvent({note:"LITIGANT:userId=user-1,creditAmount=2000,pack=custom"}))).rejects.toThrow(/does not match/);
     expect(addCredits).not.toHaveBeenCalled();
   });
 
-  it("rejects when the paid amount mismatches the pack price (>5 cent tolerance)", async () => {
-    // Pack price is $10.00 (1000 cents); event claims $5.00 (500 cents) was paid
-    vi.mocked(getAllCreditPacks).mockResolvedValue({
-      starter_pack: {
-        id:       "starter_pack",
-        name:     "Starter",
-        active:   true,
-        metadata: { creditAmount: "1000" },
-        prices:   [{ unit_amount: 1000, currency: "USD", id: "price-1" }],
-      } as any,
-    });
-
-    const event = makePaymentEvent({ amount_money: { amount: 500, currency: "USD" } });
-    await expect(handleSquareEvent(event as any)).rejects.toThrow(/reconciliation required/);
-
+  it("rejects a custom amount mismatch without any price tolerance", async () => {
+    await expect(handleSquareEvent(makePaymentEvent({amount_money:{amount:999,currency:"USD"}}))).rejects.toThrow(/does not match/);
     expect(addCredits).not.toHaveBeenCalled();
   });
 
-  it("rejects an unknown packId that is not in the catalogue", async () => {
-    // Pack catalogue does not contain "unknown_pack"
-    vi.mocked(getAllCreditPacks).mockResolvedValue({});
-
-    const event = makePaymentEvent({
-      note: "LITIGANT:userId=user-1,creditAmount=1000,pack=unknown_pack",
-    });
-    await expect(handleSquareEvent(event as any)).rejects.toThrow(/reconciliation required/);
-
+  it.each(["starter_pack","unknown_pack"])("rejects snapshotless named pack %s", async pack => {
+    await expect(handleSquareEvent(makePaymentEvent({note:`LITIGANT:userId=user-1,creditAmount=1000,pack=${pack}`}))).rejects.toThrow(/saved snapshot/);
     expect(addCredits).not.toHaveBeenCalled();
   });
 
@@ -256,6 +211,22 @@ describe("custom top-up validation", () => {
   });
   it("rejects a custom amount/credit mismatch", async () => {
     await expect(handleSquareEvent(makePaymentEvent({note:"LITIGANT:userId=user-1,creditAmount=9999,pack=custom",amount_money:{amount:1250,currency:"USD"}}))).rejects.toThrow(/does not match/);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+});
+
+describe("strict current top-up metadata", () => {
+  beforeEach(() => { vi.clearAllMocks(); vi.mocked(isFirebaseConfigured).mockReturnValue(true); });
+  it.each([undefined,"EUR"])("rejects missing or foreign currency: %s", async currency => {
+    await expect(handleSquareEvent(makePaymentEvent({amount_money:{amount:1000,currency}}))).rejects.toThrow(/does not match/);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+  it.each([99,50001,1000.5,"1000"])("rejects an invalid custom amount: %s", async amount => {
+    await expect(handleSquareEvent(makePaymentEvent({amount_money:{amount,currency:"USD"}}))).rejects.toThrow(/does not match/);
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+  it.each([",type=auto_refill",",refill=bad",",type=auto_refill,refill=bad,extra=true"])("rejects incomplete refill metadata %s", async suffix => {
+    await expect(handleSquareEvent(makePaymentEvent({note:"LITIGANT:userId=user-1,creditAmount=1000,pack=custom"+suffix}))).rejects.toThrow(/metadata/);
     expect(addCredits).not.toHaveBeenCalled();
   });
 });
