@@ -1,3 +1,4 @@
+import { decodeSessionContent, encodeSessionContent } from "@workspace/api-zod/session-content";
 vi.mock("../lib/runInstructions.js", () => ({getRunInstructions: async () => ({
   conscience: {text:"Offline test instructions",version:"test"},
   seats: {orchestrator:"Test",moderator:"Test",architect:"Test",builder:"Test",auditor:"Test",litigant:"Test"},
@@ -754,12 +755,18 @@ describe("saved session continuity", () => {
     vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);
   });
-  it("resumes the stored question/config/transcript and appends turns without resetting metadata", async()=>{
+  it.each(["legacy", "canonical"])("resumes %s question/config/transcript and appends turns without resetting metadata", async(format)=>{
     const db=createRouteMockDb(FAKE_UID,1000); db._store[`users/${FAKE_UID}`].plan="pro";
     db._store["sessions/saved"]={status:"paused_credit_cap",userId:FAKE_UID,question:"Original question",title:"My saved title",config:{...BRAIN_BODY.config,litigantCount:4,maxCredits:500},
       transcript:"**Litigant:** Original evidence\n\n---\n\n**Moderator (Summary):** Summary",debateNotes:"Original notes",creditsUsed:30,
       starred:true,archived:false,shared:true,shareId:"keep-link",createdAt:"original-date"};
     db._store["sessions/saved/session_turns/turn_000"]={turnIndex:0,content:"Original evidence"};
+    if (format === "canonical") {
+      const original = db._store["sessions/saved"];
+      original.sessionContent = encodeSessionContent({...original, turns:[{id:"turn_000",turnIndex:0,content:"Original evidence"}]});
+      delete original.transcript; delete original.debateNotes;
+      db._store["sessions/saved/session_turns/turn_000"].content = "STALE COPY";
+    }
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
     vi.mocked(runBrainSession).mockImplementation(async opts=>{
       expect(opts.question).toBe("Original question");
@@ -772,11 +779,14 @@ describe("saved session continuity", () => {
     });
     const res=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send({...BRAIN_BODY,sessionId:"saved",resumeWithFixedPipeline:true,continueFromTranscript:["Forged client transcript"],config:{...BRAIN_BODY.config,maxCredits:700}});
     const saved=db._store["sessions/saved"];
-    expect(saved).toMatchObject({title:"My saved title",creditsUsed:130,starred:true,shared:true,shareId:"keep-link",createdAt:"original-date",debateNotes:"Original notes"});
-    expect(saved.transcript).toContain("Original evidence");
-    expect(saved.transcript).not.toContain("Forged");
-    expect(db._store["sessions/saved/session_turns/turn_000"].content).toBe("Original evidence");
-    expect(db._store["sessions/saved/session_turns/turn_001"].content).toBe("APPROVED");
+    expect(saved).toMatchObject({title:"My saved title",creditsUsed:130,starred:true,shared:true,shareId:"keep-link",createdAt:"original-date"});
+    const content = decodeSessionContent(saved.sessionContent);
+    expect(content.debateNotes).toBe("Original notes");
+    expect(content.transcript).toContain("Original evidence");
+    expect(content.transcript).not.toContain("Forged");
+    expect(db._store["sessions/saved/session_turns/turn_000"].content).toBe(format === "canonical" ? "STALE COPY" : "Original evidence");
+    expect(content.turns).toMatchObject([{id:"turn_000", content:"Original evidence"}, {id:"turn_001", content:"APPROVED"}]);
+    expect(db._store["sessions/saved/session_turns/turn_001"]).toBeUndefined();
     const events=res.text.trim().split("\n\n").filter(l=>l.startsWith("data: ")).map(l=>JSON.parse(l.slice(6)));
     expect(events.at(-1)).toMatchObject({type:"done",creditsUsed:130});
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);

@@ -1,3 +1,4 @@
+import { presentSessionContent, readSessionTurns } from "../lib/sessionContent.js";
 import { ConfigurationUnavailableError } from "../lib/configurationError.js";
 import { evaluateSeatReview } from "@workspace/api-zod/evaluation";
 import { AdjustmentConflictError } from "../lib/creditLedger.js";
@@ -89,7 +90,7 @@ async function requireAdmin(req: any, res: any, next: any): Promise<void> {
 }
 
 function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot): Record<string, unknown> {
-  const data = doc.data() ?? {};
+  const data = presentSessionContent(doc.data() ?? {});
   const out: Record<string, unknown> = { id: doc.id };
   for (const [k, v] of Object.entries(data)) {
     if (v && typeof v === "object" && "toDate" in v && typeof (v as any).toDate === "function") {
@@ -711,8 +712,7 @@ router.get("/admin/sessions/:id", requireAdmin, async (req, res) => {
     if (!doc.exists) return res.status(404).json({ error: "Session not found" });
 
     const data = serializeDoc(doc);
-    const turnsSnap = await doc.ref.collection("session_turns").orderBy("turnIndex").get();
-    const turns = turnsSnap.docs.map((t) => serializeDoc(t));
+    const turns = (await readSessionTurns(doc.ref, doc.data()!)).map(turn => ({...turn, createdAt: turn.createdAt && typeof turn.createdAt === "object" && "toDate" in turn.createdAt && typeof turn.createdAt.toDate === "function" ? turn.createdAt.toDate().toISOString() : turn.createdAt}));
 
     return res.json({ session: data, turns });
   } catch (err: any) {

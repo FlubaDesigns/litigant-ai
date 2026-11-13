@@ -1,4 +1,4 @@
-import { projectSessionContent, sessionTurnMetrics } from "../lib/sessionContent.js";
+import { projectSessionContent, sessionTurnMetrics, presentSessionContent, decodeSessionContent } from "../lib/sessionContent.js";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
@@ -38,7 +38,8 @@ router.get("/report/:shareId", reportLimiter, async (req, res) => {
     }
 
     const doc = snap.docs[0]!;
-    const data = doc.data();
+    const rawData = doc.data();
+    const data = presentSessionContent(rawData);
 
     if (data.userId) {
       const profile = (await db.collection("users").doc(data.userId).get()).data();
@@ -68,7 +69,12 @@ router.get("/report/:shareId", reportLimiter, async (req, res) => {
     // Current sessions persist metrics; legacy records alone need turn reconstruction.
     result["roundsCompleted"] = data.roundsCompleted;
     result["litigantCount"] = data.litigantCount;
-    if (!result.transcript || !result.debateNotes || data.roundsCompleted === undefined || data.litigantCount === undefined) try {
+    if (rawData.sessionContent !== undefined) {
+      const metrics = sessionTurnMetrics(decodeSessionContent(rawData.sessionContent).turns);
+      result.roundsCompleted ??= metrics.roundsCompleted;
+      result.litigantCount ??= metrics.litigantCount;
+    }
+    if (rawData.sessionContent === undefined && (!result.transcript || !result.debateNotes || data.roundsCompleted === undefined || data.litigantCount === undefined)) try {
       const turnsSnap = await doc.ref
         .collection("session_turns")
         .orderBy("turnIndex")

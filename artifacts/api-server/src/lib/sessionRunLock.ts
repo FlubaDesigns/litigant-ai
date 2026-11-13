@@ -37,7 +37,6 @@ export async function claimSessionRun(db: FirebaseFirestore.Firestore, sessionId
 /** A stale worker must never overwrite the result of a newer run. */
 export async function writeSessionRun(
   db: FirebaseFirestore.Firestore, lease: SessionRunLease, changes: FirebaseFirestore.DocumentData,
-  relatedWrites: Array<{ ref: FirebaseFirestore.DocumentReference; data: FirebaseFirestore.DocumentData }> = [],
 ) {
   const ref = db.collection("sessions").doc(lease.sessionId);
   await db.runTransaction(async transaction => {
@@ -48,7 +47,6 @@ export async function writeSessionRun(
     transaction.update(ref, {
       ...changes, activeRun: { id: lease.runId, expiresAt: Date.now() + SESSION_RUN_LEASE_MS },
     });
-    for (const write of relatedWrites) transaction.set(write.ref, write.data);
   });
 }
 

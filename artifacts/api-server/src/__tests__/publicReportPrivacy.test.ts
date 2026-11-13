@@ -1,4 +1,5 @@
 import {beforeEach,expect,it,vi} from 'vitest';
+import { encodeSessionContent } from '@workspace/api-zod/session-content';
 import express from 'express';
 import request from 'supertest';
 vi.mock('../lib/firebaseAdmin.js',()=>({getFirestoreDb:vi.fn()}));
@@ -8,6 +9,13 @@ import {reviewStatus} from '@workspace/api-zod/session';
 const app=express().use(router);
 let record:any;
 let turns:ReturnType<typeof vi.fn>;
+it('projects canonical text without leaking internal turns or querying old copies', async () => {
+ record.sessionContent=encodeSessionContent({transcript:'Public transcript',debateNotes:'',turns:[{role:'Verdict',round:99,content:'PRIVATE TURN'}]});
+ const r=await request(app).get('/report/public');expect(r.status).toBe(200);
+ expect(r.body.transcript).toBe('Public transcript');expect(r.body.debateNotes).toBe('');
+ expect(JSON.stringify(r.body)).not.toContain('PRIVATE TURN');expect(r.body.sessionContent).toBeUndefined();
+ expect(turns).not.toHaveBeenCalled();
+});
 beforeEach(()=>{
  record={userId:'owner',shared:true,shareId:'public',status:'complete',acceptedAt:123,courtroomOutcome:{reason:'convergence_failure'},transcript:'Saved',debateNotes:'Notes',roundsCompleted:2,litigantCount:3};
  turns=vi.fn(()=>{throw new Error('Current report must not query turn collection');});

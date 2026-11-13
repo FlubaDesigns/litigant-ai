@@ -1,3 +1,4 @@
+import { decodeSessionContent } from "@workspace/api-zod/session-content";
 import {beforeEach,describe,it,expect,vi} from "vitest";
 import express from "express";
 import request from "supertest";
@@ -70,8 +71,8 @@ describe("production brain route billing recovery",()=>{
   vi.mocked(runBrainSession).mockImplementation(async opts=>finish(opts,{cancelled:true,courtroomOutcome:{reason:"aborted"}}));
   const done=events((await call()).text).at(-1);expect(done).toMatchObject({status:"cancelled",creditsUsed:0,creditsDebited:500,creditsReserved:500,settlementStatus:"pending"});
   const saved=db.store[`sessions/${done.sessionId}`];expect(saved.memorySaved).toBe(plan==="pro");
-  if(plan==="pro")expect(saved.transcriptLines).toEqual(["**Litigant 1:** Partial evidence"]);
-  else{expect(saved.transcriptLines).toBeUndefined();expect(saved.transcript).toBeUndefined();expect(saved.question).toBeUndefined();}
+  if(plan==="pro")expect(decodeSessionContent(saved.sessionContent).transcriptLines).toEqual(["**Litigant 1:** Partial evidence"]);
+  else{expect(saved.sessionContent).toBeUndefined();expect(saved.transcriptLines).toBeUndefined();expect(saved.transcript).toBeUndefined();expect(saved.question).toBeUndefined();}
   db.failTransactionsWhen();await recoverCreditRuns("u");expect(db.store["users/u"].creditBalance).toBe(500);
  });
  it("keeps actionable missing-info relay ahead of truncated final-delivery status",async()=>{

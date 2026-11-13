@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import './test_lai_credential_migration.mjs';
 import './test_lai_settings_migration.mjs';
+import './test_session_content.mjs';
 import {
   validateDescriptor,
   validateDeploymentCommit,
