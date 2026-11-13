@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {contentPlan, inspectContent, migrateContent} from './lai-content-migration.mjs';
+import {contentPlan, inspectContent, migrateContent, contentCleanupBatches} from './lai-content-migration.mjs';
 
 const ROOT='projects/litigant-ai/databases/(default)/documents';
 const str=stringValue=>({stringValue});
@@ -83,4 +83,31 @@ test('failed preservation never starts duplicate deletion',async()=>{
 });
 test('inventory rejects repeated pagination without logging content',async()=>{
   await assert.rejects(inspectContent(async()=>({documents:[],nextPageToken:'repeated'})),/Repeated/);
+});
+
+
+test('batches the observed inventory size while fencing every session in every commit',()=>{
+ const plans=Array.from({length:59},(_,i)=>({name:ROOT+'/sessions/s'+i,updateTime:'version-'+i,
+  deletes:Array.from({length:i<26?24:23},(_,j)=>({delete:ROOT+'/sessions/s'+i+'/session_turns/t'+j,currentDocument:{updateTime:'turn-'+i+'-'+j}}))}));
+ const batches=contentCleanupBatches(plans);
+ assert(batches.length<=9);
+ const removed=[];
+ for(const batch of batches){
+  assert(batch.length<=200);
+  for(const write of batch.filter(item=>item.delete)){
+   const parent=write.delete.split('/session_turns/')[0];
+   const plan=plans.find(item=>item.name===parent);
+   assert(batch.some(item=>item.verify===parent&&item.currentDocument.updateTime===plan.updateTime));
+   removed.push(write);
+  }
+ }
+ assert.deepEqual(removed,plans.flatMap(plan=>plan.deletes));
+ assert.equal(removed.length,1383);
+});
+
+test('large single-session cleanup repeats its root fence across bounded batches',()=>{
+ const plan={name:ROOT+'/sessions/large',updateTime:'root-version',deletes:Array.from({length:450},(_,i)=>({delete:'turn-'+i,currentDocument:{updateTime:'v'+i}}))};
+ const batches=contentCleanupBatches([plan]);assert.equal(batches.length,3);
+ assert(batches.every(batch=>batch[0].verify===plan.name&&batch.length<=200));
+ assert.equal(batches.flat().filter(write=>write.delete).length,450);
 });
