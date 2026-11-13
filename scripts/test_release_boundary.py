@@ -120,6 +120,14 @@ class ReleaseBoundaryTests(unittest.TestCase):
         self.assertIn('assertCurrent: recheck', release)
         self.assertIn('test_settings_migration_emulator.mjs', (ROOT / '.github/workflows/deploy-cloudrun.yml').read_text())
 
+    def test_content_migration_follows_canonical_api_verification(self):
+        controller = (ROOT / 'scripts/lai-release.mjs').read_text()
+        release = controller.split('async function release() {', 1)[1]
+        self.assertLess(release.index('verifyApi(after.status.url, descriptor.sourceCommit)'), release.index('await migrateContent('))
+        self.assertLess(release.index('await migrateContent('), release.index("'deploy', '--only', 'hosting'"))
+        self.assertIn('assertCurrent: recheck', release)
+        self.assertIn('test_content_migration_emulator.mjs', (ROOT / '.github/workflows/deploy-cloudrun.yml').read_text())
+
     def test_release_controller_guards(self):
         subprocess.run(['node', '--test', 'scripts/test_lai_release.mjs'], cwd=ROOT, check=True,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
