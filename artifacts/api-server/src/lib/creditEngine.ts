@@ -63,25 +63,6 @@ export function usdToCredits(usd: number, model: string): number {
   return Math.max(1, Math.ceil((usd * multiplier) / CREDIT_VALUE_USD));
 }
 
-/**
- * Calculates the exact credit cost from real, post-run token counts.
- *
- * Synchronous built-in estimate only. Settlement uses sessionPricing.priceCalls
- * with the price snapshot accepted before the run.
- *
- * @param model - The AI model ID used in the session.
- * @param inputTokens - Total input/prompt tokens consumed.
- * @param outputTokens - Total output/completion tokens generated.
- */
-export function calculateActualCredits(
-  model: string,
-  inputTokens: number,
-  outputTokens: number
-): number {
-  const rate = getModelRate(model);
-  const costUSD = tokenCostUSD(rate, inputTokens, outputTokens);
-  return usdToCredits(costUSD, model);
-}
 
 /**
  * Estimates character count → token count.

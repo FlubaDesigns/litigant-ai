@@ -5,7 +5,7 @@ import "./admin.css";
 import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Users, Brain, CreditCard, Activity, Flag, LayoutTemplate, Shield, Server, BarChart2, AlertCircle, HeartCrack, DollarSign, SlidersHorizontal, Package, ListChecks, Bot, ScrollText, Mail } from "lucide-react";
+import { Users, Brain, CreditCard, Activity, Flag, LayoutTemplate, Shield, Server, BarChart2, AlertCircle, DollarSign, SlidersHorizontal, Package, ListChecks, Bot, ScrollText, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { OverviewTab, SystemHealthTab, ApiUsageTab } from "./AdminOverview";
@@ -16,7 +16,7 @@ import { TransactionsTab } from "./AdminTransactions";
 import { CreditPacksTab } from "./AdminCreditPacks";
 import { LimitsTab } from "./AdminLimits";
 import { TemplatesTab } from "./AdminTemplates";
-import { ErrorLogsTab, FeedbackFlagsTab } from "./AdminLogs";
+import { ErrorLogsTab } from "./AdminLogs";
 import { AiStudioTab } from "./AdminModels";
 import { PricingTab } from "./AdminPricing";
 import { SeatOrdersTab } from "./AdminSeats";
@@ -24,7 +24,7 @@ import { EmailsTab } from "./AdminEmails";
 
 type AdminTab =
   | "satisfaction" | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
-  | "api-usage" | "errors" | "abuse" | "marketing" | "templates" | "pricing" | "credit-packs" | "api-keys"
+  | "api-usage" | "errors" | "marketing" | "templates" | "pricing" | "credit-packs" | "api-keys"
   | "ai-billing" | "checklist" | "ai-studio" | "seat-orders" | "emails";
 
 const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
@@ -42,7 +42,6 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "api-usage",    label: "API Usage",       icon: BarChart2 },
   { id: "errors",       label: "Error Logs",      icon: AlertCircle },
   { id: "satisfaction", label: "Satisfaction Score", icon: BarChart2 },
-  { id: "abuse",        label: "Feedback Flags",     icon: HeartCrack },
   { id: "credit-packs", label: "Credit Packs",    icon: Package },
   { id: "limits",       label: "Limits & Defaults",          icon: SlidersHorizontal },
   { id: "marketing",    label: "Marketing",   icon: Flag },
@@ -148,7 +147,6 @@ export default function AdminPage() {
           {activeTab === "api-usage"    && <ApiUsageTab />}
           {activeTab === "errors"       && <ErrorLogsTab />}
           {activeTab === "satisfaction" && <SatisfactionTab />}
-          {activeTab === "abuse"        && <FeedbackFlagsTab />}
           {activeTab === "credit-packs" && <CreditPacksTab />}
           {activeTab === "limits"       && <LimitsTab />}
           {activeTab === "marketing"    && <MarketingTab />}

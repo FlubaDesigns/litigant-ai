@@ -186,15 +186,6 @@ router.get("/billing/payment-history", async (req, res) => {
   } catch (error) { return res.status(error instanceof InvalidHistoryCursorError ? 400 : 503).json({error:"Could not load payment history. Please retry."}); }
 });
 
-/**
- * GET /billing/subscription
- * Square does not manage subscriptions — returns null.
- */
-router.get("/billing/subscription", async (req, res) => {
-  const user = await requireAuth(req, res);
-  if (!user) return;
-  return res.json({ subscription: null });
-});
 
 /**
  * POST /billing/checkout
@@ -289,13 +280,6 @@ router.post("/billing/checkout/custom", async (req, res) => {
   }
 });
 
-/**
- * POST /billing/cancel-subscription
- * Not applicable — Square does not manage subscriptions here.
- */
-router.post("/billing/cancel-subscription", async (_req, res) => {
-  return res.status(501).json({ error: "Subscriptions are not available" });
-});
 
 
 export default router;

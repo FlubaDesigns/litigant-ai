@@ -8,11 +8,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { updateModelMultiplier, getAiStudioModels, setAiStudioPower, toggleAiStudioModel, toggleAiStudioProvider, deleteAiStudioProvider, setModelQualityScore, type AiStudioData } from "@/services/adminService";
 import { TabSkeleton } from "./AdminShared";
-import { AddProviderModal, AiStudioProviderSection } from "./AdminModelProviders";
+import { AiStudioProviderSection } from "./AdminModelProviders";
 
 export function AiStudioTab() {
   const qc = useQueryClient();
-  const [addOpen, setAddOpen] = useState(false);
   const [openProvider, setOpenProvider] = useState<string | null>("openai");
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery<AiStudioData>({
@@ -131,10 +130,9 @@ export function AiStudioTab() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">{models.length} verified models · {enabledCount} enabled</p>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}><RefreshCw className={cn("w-4 h-4 mr-1",isFetching && "animate-spin")} />Check connection</Button>
-        <Button onClick={() => setAddOpen(true)} variant="outline" size="sm"><Plus className="w-4 h-4 mr-1" />Add Provider</Button>
       </div>
 
-      {!providers.length && <p className="text-sm text-muted-foreground">No connected providers. <a className="text-primary underline" href="/admin?tab=api-keys">API Keys</a></p>}
+      {!providers.length && <p className="text-sm text-muted-foreground">No connected providers. Check provider credentials in Fluba Cortex.</p>}
       {byProvider.map(({ id: pid, label, models: provModels, custom, enabled: provEnabled, connection, discoveredModels, pricingUrl }) => (
         <AiStudioProviderSection
           key={pid}
@@ -158,11 +156,6 @@ export function AiStudioTab() {
         />
       ))}
 
-      <AddProviderModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onSaved={() => { qc.invalidateQueries({ queryKey: ["admin-ai-studio"] }); qc.invalidateQueries({ queryKey: ["admin-pricing"] }); }}
-      />
     </div>
   );
 }

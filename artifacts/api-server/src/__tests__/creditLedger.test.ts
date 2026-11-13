@@ -819,7 +819,7 @@ describe("saved session continuity", () => {
     const event = events.at(-1);
     expect(event.status).toBe(expectedStatus);
     expect(db._store[`sessions/${event.sessionId}`].status).toBe(event.status);
-    expect(email.sendSessionCompleteEmail).toHaveBeenCalledTimes(expectedStatus === "complete" ? 1 : 0);
+    expect(email.sendSessionCompleteEmail).not.toHaveBeenCalled();
     expect(email.sendFirstSessionEmail).toHaveBeenCalledTimes(expectedStatus === "complete" ? 1 : 0);
     vi.mocked(email.isResendConfigured).mockResolvedValue(false);
   });

@@ -131,3 +131,13 @@ describe("pending deletion restores recovery without a new profile", () => {
     expect(await observer).toBe(true);
   });
 });
+
+it("keeps verification rate-limit failures on the canonical sender",async()=>{
+  const service=await import("./authService");
+  const firebase=await import("firebase/auth");
+  (auth as any).currentUser=user;
+  fetchMock.mockResolvedValueOnce(response({error:"Too many verification requests"},429));
+  await expect(service.sendEmailVerification()).rejects.toThrow("Too many verification requests");
+  expect(firebase.sendEmailVerification).not.toHaveBeenCalled();
+  (auth as any).currentUser=null;
+});

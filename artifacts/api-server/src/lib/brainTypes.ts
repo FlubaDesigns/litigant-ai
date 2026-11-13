@@ -172,7 +172,6 @@ export interface BrainRunResult {
    * End-of-job satisfaction tap — set to null initially; updated by the
    * frontend after the user taps. Only exposed when relayCount >= 1.
    */
-  endOfJobTap?: "worth_it" | "not_worth_it" | null;
   /**
    * When review requires user input (NOT_ENOUGH or convergence failure), this contains the
    * specific missing information the user must supply before the court

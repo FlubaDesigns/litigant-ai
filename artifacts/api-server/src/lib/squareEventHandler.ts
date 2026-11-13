@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { addCredits } from "./creditLedger.js";
 import { isFirebaseConfigured } from "./firebaseAdmin.js";
 import { logger } from "./logger.js";
-import { sendPaymentReceiptEmail, isResendConfigured } from "./emailService.js";
+import { sendPaymentReceiptEmail, sendTrackedEmail, isResendConfigured } from "./emailService.js";
 import { validateCheckoutSnapshot } from "./checkoutSnapshot.js";
 import type { SquarePayment } from "./squareClient.js";
 
@@ -141,13 +141,14 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
       } else {
         logger.info(`[SquareEvent] Granted ${creditAmount} credits to ${userId}`);
 
-        // Send payment receipt — only on a genuine, non-duplicate completed payment
-        if ((await isResendConfigured())) {
-          const amountPaidCents = (payment.amount_money?.amount as number | undefined) ?? 0;
-          const newBalance = result?.newBalance ?? 0;
-          sendPaymentReceiptEmail(userId, creditAmount, amountPaidCents, newBalance)
-            .catch((e) => logger.error(`[SquareEvent] Receipt email failed (non-fatal): ${e.message}`));
-        }
+      }
+      // Duplicate payment events may retry the independently tracked receipt.
+      if (await isResendConfigured()) {
+        const amountPaidCents = Number(payment.amount_money?.amount ?? 0);
+        const newBalance = result.newBalance ?? 0;
+        await sendTrackedEmail(userId, "paymentReceipt",
+          key => sendPaymentReceiptEmail(userId, creditAmount, amountPaidCents, newBalance, key),
+          {eventId: String(payment.id)});
       }
       break;
     }

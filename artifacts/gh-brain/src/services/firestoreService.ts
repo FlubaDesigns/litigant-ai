@@ -47,9 +47,10 @@ export interface UserProfile {
   squareCustomerId?: string;
   onboardingComplete?: boolean;
   defaultSettings: Partial<CourtConfig>;
-  /** Legacy read fallback only. New writes use notifications.sessionComplete. */
+  /** Explicit opt-ins for optional notifications. */
   notifications?: {
     sessionComplete: boolean;
+    reengagement?: boolean;
     weeklyDigest: boolean;
     productUpdates: boolean;
   };
@@ -90,10 +91,6 @@ export async function updateUserProfile(uid: string, data: Partial<UserProfile>)
   await updateDoc(ref, data as Record<string, unknown>);
 }
 
-/** Change only the delivered email preference; preserve unavailable options verbatim. */
-export async function updateSessionCompleteNotification(uid: string, enabled: boolean): Promise<void> {
-  await updateDoc(doc(db, "users", uid), { "notifications.sessionComplete": enabled });
-}
 
 export function onUserProfileSnapshot(
   uid: string,
@@ -108,4 +105,8 @@ export function onUserProfileSnapshot(
       callback({ ...snap.data(), userId: snap.id } as UserProfile);
     }
   }, onError);
+}
+
+export async function updateEmailNotifications(uid: string, sessionComplete: boolean, reengagement: boolean): Promise<void> {
+  await updateDoc(doc(db, "users", uid), {"notifications.sessionComplete": sessionComplete, "notifications.reengagement": reengagement});
 }

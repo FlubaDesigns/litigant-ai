@@ -18,9 +18,9 @@ vi.mock("../lib/autoRefill.js", () => ({
   getAutoRefillStatus: vi.fn(),
   removeAutoRefillCard: vi.fn(),
 }));
-vi.mock("../lib/emailService.js", () => ({
+vi.mock("../lib/emailService.js", async original => ({
   isResendConfigured: () => true,
-  sendPaymentReceiptEmail: vi.fn(async () => {}),
+  sendTrackedEmail: (await original<typeof import("../lib/emailService.js")>()).sendTrackedEmail, sendPaymentReceiptEmail: vi.fn(async () => true),
 }));
 vi.mock("../lib/logger.js", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -108,6 +108,7 @@ function database() {
                 ? { ...store[doc.path], ...data }
                 : { ...data };
             }),
+          update: (doc: any, data: any) => writes.push(() => {store[doc.path]={...store[doc.path],...data};}),
           create: (doc: any, data: any) => {
             if (doc.path in store) throw Error("Already exists");
             writes.push(() => {

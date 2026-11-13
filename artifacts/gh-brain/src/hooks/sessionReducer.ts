@@ -53,7 +53,6 @@ export function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionS
     relayCount: 0,
     relayQuestion: null,
     needsRelay: false,
-    endOfJobTap: null,
   };
 }
 
@@ -234,7 +233,6 @@ export function reducer(state: SessionState, action: Action): SessionState {
         relayCount: p.relayCount ?? state.relayCount,
         relayQuestion: p.relayQuestion ?? null,
         needsRelay: p.status === "relay_needed",
-        endOfJobTap: p.endOfJobTap ?? null,
         activityLog: [...state.activityLog, `[System] ${p.status} — ${p.confidence}/100 AI review`],
         runtimeFeed: state.runtimeFeed.map(item => ({...item, isComplete: true})),
       };
@@ -280,8 +278,6 @@ export function reducer(state: SessionState, action: Action): SessionState {
         artifactPath: action.artifactPath,
       };
 
-    case "SET_END_OF_JOB_TAP":
-      return { ...state, endOfJobTap: action.tap };
 
     case "RELAY_SUBMIT":
       return {

@@ -1,3 +1,5 @@
+import {APP_ROUTES, sessionPath, notificationSettingsPath} from "@workspace/api-zod/routes";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFlubaProviderKey } from "./flubaProviderKeys.js";
 import crypto from "node:crypto";
 import { Resend } from "resend";
@@ -18,6 +20,27 @@ async function getResend(): Promise<Resend> {
   const key = await readFlubaProviderKey("RESEND_API_KEY");
   if (!key) throw new Error("Resend is not configured in Fluba.");
   return new Resend(key);
+}
+
+const deliveryContext = new AsyncLocalStorage<{ref: FirebaseFirestore.DocumentReference; key: string}>();
+type MailPayload = {from: string; to: string; subject: string; html: string};
+async function deliverEmail(payload: MailPayload, options?: {idempotencyKey: string}) {
+  const context = deliveryContext.getStore();
+  // Freeze the actual provider payload so retry never changes purchase details or action links.
+  if (context) {
+    const db = getFirestoreDb();
+    if (!db) throw new Error("Email tracking unavailable");
+    payload = await db.runTransaction(async tx => {
+      const previous = (await tx.get(context.ref)).data();
+      if (previous?.attemptKey !== context.key) throw new Error("Email attempt changed");
+      if (previous.payload) return previous.payload as MailPayload;
+      tx.update(context.ref, {payload});
+      return payload;
+    });
+  }
+  const result = await (await getResend()).emails.send(payload, options ?? (context ? {idempotencyKey: context.key} : undefined));
+  if (context && result.data?.id) await context.ref.update({providerId: result.data.id});
+  return result;
 }
 
 const FROM = "Litigant AI <noreply@send.litigant-ai.com>";
@@ -227,7 +250,7 @@ function welcomeTemplate(intro: string, headline: string): string {
         { label: "Rebuttal rounds", desc: "Challenge any answer to trigger a full rebuttal — stress-test your position." },
         { label: "Top up anytime", desc: "Credits never expire. Add more whenever you need them." },
       ])}
-      ${ctaRow({ text: "Open dashboard", url: `${APP_URL}/app` }, { text: "Top up", url: `${APP_URL}/billing` })}
+      ${ctaRow({ text: "Open dashboard", url: `${APP_URL}${APP_ROUTES.session}` }, { text: "Top up", url: `${APP_URL}${APP_ROUTES.billing}` })}
     `,
   });
 }
@@ -240,7 +263,7 @@ function lowCreditsTemplate(intro: string, headline: string): string {
     body: `
       ${renderIntro(intro)}
       ${callout("Credits never expire once added — load any amount and use them at your own pace.", "#f59e0b")}
-      ${btn("Top up credits", `${APP_URL}/billing`, "#f59e0b", "#000")}
+      ${btn("Top up credits", `${APP_URL}${APP_ROUTES.billing}`, "#f59e0b", "#000")}
     `,
     footerExtra: "You received this because your balance crossed your configured alert threshold.",
   });
@@ -262,9 +285,9 @@ function sessionCompleteTemplate(
         { label: "Session", value: sessionTitle },
         { label: "Credits used", value: creditsUsed.toLocaleString(), color: "#888" },
       ])}
-      ${btn("View results", `${APP_URL}/session/${sessionId}`)}
+      ${btn("View results", `${APP_URL}${sessionPath(sessionId)}`)}
     `,
-    footerExtra: `Disable in your <a href="${APP_URL}/settings" style="color:#555;text-decoration:none;">account settings</a>.`,
+    footerExtra: `Disable in your <a href="${APP_URL}${notificationSettingsPath}" style="color:#555;text-decoration:none;">account settings</a>.`,
   });
 }
 
@@ -290,7 +313,7 @@ function paymentReceiptTemplate(
         { label: "New balance", value: `${newBalance.toLocaleString()} credits` },
         { label: "Date", value: now, color: "#888" },
       ])}
-      ${btn("Start a session", `${APP_URL}/app`)}
+      ${btn("Start a session", `${APP_URL}${APP_ROUTES.session}`)}
     `,
     footerExtra: "Keep this email as your purchase receipt.",
   });
@@ -321,9 +344,9 @@ function reengagementTemplate(creditBalance: number, intro: string, headline: st
         { label: "Strategy review", desc: "Test your arguments before filing — find the weak points first." },
         { label: "Legal research", desc: "Rapid reasoning on any question, jurisdiction, or doctrine." },
       ])}
-      ${btn("Return to dashboard", `${APP_URL}/app`)}
+      ${btn("Return to dashboard", `${APP_URL}${APP_ROUTES.session}`)}
     `,
-    footerExtra: `<a href="${APP_URL}/settings" style="color:#444;text-decoration:none;">Unsubscribe from re-engagement emails</a>`,
+    footerExtra: `<a href="${APP_URL}${notificationSettingsPath}" style="color:#444;text-decoration:none;">Unsubscribe from re-engagement emails</a>`,
   });
 }
 
@@ -344,8 +367,8 @@ function firstSessionTemplate(
         { label: "Session history", desc: "Every session is saved. Review, share, or export transcripts any time from your dashboard." },
       ])}
       ${ctaRow(
-        { text: "View my results", url: `${APP_URL}/session/${sessionId}` },
-        { text: "Back to dashboard", url: `${APP_URL}/app` }
+        { text: "View my results", url: `${APP_URL}${sessionPath(sessionId)}` },
+        { text: "Back to dashboard", url: `${APP_URL}${APP_ROUTES.session}` }
       )}
     `,
   });
@@ -360,8 +383,8 @@ function zeroCreditsTemplate(intro: string, headline: string): string {
       ${renderIntro(intro)}
       ${callout("Credits never expire once added — top up any amount and start again immediately.", "#ef4444")}
       ${ctaRow(
-        { text: "Top up now", url: `${APP_URL}/billing`, bg: "#ef4444", fg: "#fff" },
-        { text: "View plans", url: `${APP_URL}/billing` }
+        { text: "Top up now", url: `${APP_URL}${APP_ROUTES.billing}`, bg: "#ef4444", fg: "#fff" },
+        { text: "View plans", url: `${APP_URL}${APP_ROUTES.billing}` }
       )}
     `,
     footerExtra: "You received this because your credit balance reached zero.",
@@ -445,31 +468,33 @@ async function resolveTemplate(id: EmailTemplateId, vars: Record<string, string 
 
 // ── Public send functions ─────────────────────────────────────────────────────
 
-export async function sendVerificationEmail(uid: string): Promise<boolean> {
+async function deliverVerificationEmail(uid: string, newEmail?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const [user, billing] = await Promise.all([getAuth().getUser(uid), getBillingDefaults()]);
-  const link = await getAuth().generateEmailVerificationLink(user.email!, { url: `${APP_URL}/login?verified=1` });
+  const link = newEmail
+    ? await getAuth().generateVerifyAndChangeEmailLink(user.email!, newEmail, {url: `${APP_URL}${APP_ROUTES.signIn}?verified=1`})
+    : await getAuth().generateEmailVerificationLink(user.email!, {url: `${APP_URL}${APP_ROUTES.signIn}?verified=1`});
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("verification", {
     name, bonusCredits: billing.signupBonusCredits,
   });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
-    from: FROM, to: user.email!, subject,
-    html: verificationTemplate(link, intro, headline),
+  const { error } = await deliverEmail({
+    from: FROM, to: newEmail ?? user.email!, subject,
+    html: verificationTemplate(link, newEmail ? "Confirm this address to finish changing your Litigant AI email. Your current address stays in place until you confirm." : intro, headline),
   });
   if (error) throw new Error(`Resend: ${error.message}`);
   return true;
 }
 
-export async function sendPasswordResetEmail(email: string): Promise<boolean> {
+async function deliverPasswordResetEmail(email: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
-  const link = await getAuth().generatePasswordResetLink(email, { url: `${APP_URL}/login?reset=1` });
+  const link = await getAuth().generatePasswordResetLink(email, { url: `${APP_URL}${APP_ROUTES.signIn}?reset=1` });
   let name = "there";
   try { name = (await getAuth().getUserByEmail(email)).displayName ?? name; } catch { /* ok */ }
   const { enabled, subject, headline, intro } = await resolveTemplate("passwordReset", { name });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: email, subject,
     html: passwordResetTemplate(link, intro, headline),
   });
@@ -484,7 +509,7 @@ export async function sendWelcomeEmail(uid: string, idempotencyKey?: string): Pr
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("welcome", { name });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email!, subject,
     html: welcomeTemplate(intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -501,7 +526,7 @@ export async function sendLowCreditsEmail(uid: string, balance: number, threshol
     name, balance: balance.toLocaleString(), threshold: threshold.toLocaleString(),
   });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email!, subject,
     html: lowCreditsTemplate(intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -518,7 +543,7 @@ export async function sendSessionCompleteEmail(
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("sessionComplete", { name });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email!, subject,
     html: sessionCompleteTemplate(sessionId, title, creditsUsed, intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -527,7 +552,7 @@ export async function sendSessionCompleteEmail(
 }
 
 export async function sendPaymentReceiptEmail(
-  uid: string, creditsAdded: number, amountPaidCents: number, newBalance: number
+  uid: string, creditsAdded: number, amountPaidCents: number, newBalance: number, idempotencyKey?: string
 ): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
@@ -537,26 +562,26 @@ export async function sendPaymentReceiptEmail(
     name, credits: creditsAdded.toLocaleString(),
   });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email!, subject,
     html: paymentReceiptTemplate(creditsAdded, `$${(amountPaidCents / 100).toFixed(2)}`, newBalance, intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
   return true;
 }
 
 
-export async function sendAccountSuspendedEmail(uid: string, reason?: string): Promise<boolean> {
+export async function sendAccountSuspendedEmail(uid: string, reason?: string, idempotencyKey?: string): Promise<boolean> {
   if (!isFirebaseConfigured()) throw new Error("Firebase not configured");
   const user = await getAuth().getUser(uid);
   if (!user.email) return false;
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("accountSuspended", { name });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email, subject,
     html: accountSuspendedTemplate(reason, intro, headline),
-  });
+  }, idempotencyKey ? {idempotencyKey} : undefined);
   if (error) throw new Error(`Resend: ${error.message}`);
   return true;
 }
@@ -570,7 +595,7 @@ export async function sendReengagementEmail(uid: string, creditBalance: number, 
     name, credits: creditBalance.toLocaleString(),
   });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email, subject,
     html: reengagementTemplate(creditBalance, intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -587,7 +612,7 @@ export async function sendFirstSessionEmail(
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("firstSession", { name });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email!, subject,
     html: firstSessionTemplate(sessionId, title, intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -602,7 +627,7 @@ export async function sendZeroCreditsEmail(uid: string, idempotencyKey?: string)
   const name = user.displayName ?? "there";
   const { enabled, subject, headline, intro } = await resolveTemplate("zeroCredits", { name });
   if (!enabled) return false;
-  const { error } = await (await getResend()).emails.send({
+  const { error } = await deliverEmail({
     from: FROM, to: user.email!, subject,
     html: zeroCreditsTemplate(intro, headline),
   }, idempotencyKey ? {idempotencyKey} : undefined);
@@ -626,21 +651,24 @@ export async function sendTrackedEmail(
   const attempt = await db.runTransaction(async tx => {
     const state = (await tx.get(ref)).data();
     const user = (await tx.get(userRef)).data();
-    if (!user) return null;
-    const alreadySent = options.sentField ? user[options.sentField] : undefined;
+    const fence = await tx.get(db.collection("account_deletions").doc(uid));
+    if (fence.exists || (!user && !["verification", "passwordReset"].includes(kind))) return null;
+    if (kind === "reengagement" && user?.notifications?.reengagement !== true) return null;
+    const alreadySent = options.sentField ? user?.[options.sentField] : undefined;
     if ((alreadySent === true && !options.cooldownMs) ||
         (typeof alreadySent === "number" && alreadySent > now - (options.cooldownMs ?? 0)) ||
         (state?.status === "accepted" && (!options.cooldownMs || state.acceptedAt > now - options.cooldownMs)) ||
         (state?.status === "sending" && state.startedAt > now - 5 * 60_000)) return null;
+    if (state && ["sending", "failed"].includes(state.status) && state.attemptAt <= now - 23 * 3600_000) return null;
     const key = state && ["sending", "failed"].includes(state.status) && state.attemptAt > now - 23 * 3600_000
       ? state.attemptKey : crypto.randomUUID();
-    tx.set(ref, {userId: uid, templateId: kind, status: "sending", startedAt: now,
-      updatedAt: now, attemptKey: key, attemptAt: key === state?.attemptKey ? state!.attemptAt : now});
+    tx.set(ref, {userId: uid, templateId: kind, ...(options.sentField ? {sentField: options.sentField} : {}), ...(options.cooldownMs ? {cooldownMs: options.cooldownMs} : {}), status: "sending", startedAt: now,
+      updatedAt: now, ...(state && state.attemptKey === key && state.payload ? {payload: state.payload} : {}), attemptKey: key, attemptAt: key === state?.attemptKey ? state!.attemptAt : now});
     return key as string;
   });
   if (!attempt) return false;
   try {
-    const sent = await deliver(attempt);
+    const sent = await deliveryContext.run({ref, key: attempt}, () => deliver(attempt));
     await db.runTransaction(async tx => {
       const current = (await tx.get(ref)).data();
       if (current?.attemptKey !== attempt) return;
@@ -650,7 +678,8 @@ export async function sendTrackedEmail(
     return sent;
   } catch (error) {
     await db.runTransaction(async tx => {
-      if ((await tx.get(ref)).data()?.attemptKey === attempt) {
+      const current = (await tx.get(ref)).data();
+      if (current?.attemptKey === attempt && current.status !== "accepted") {
         tx.update(ref, {status: "failed", updatedAt: Date.now()});
       }
     }).catch(() => {});
@@ -667,7 +696,7 @@ function timestampMs(value: unknown): number {
 }
 
 export function eligibleForReengagement(data: Record<string, any>, cutoffMs: number): boolean {
-  if (data.banned || data.guestInvitationId || !(data.creditBalance > 0)) return false;
+  if (data.notifications?.reengagement !== true || data.banned || data.guestInvitationId || !(data.creditBalance > 0)) return false;
   const lastActivity = Math.max(timestampMs(data.lastSessionAt), timestampMs(data.createdAt));
   return Number.isFinite(lastActivity) && lastActivity > 0 && lastActivity <= cutoffMs &&
     timestampMs(data.reengagementEmailSentAt) <= cutoffMs;
@@ -700,4 +729,50 @@ export async function runReengagementCampaign(inactiveDays = 14): Promise<{sent:
 
 export async function isResendConfigured(): Promise<boolean> {
   return !!(await readFlubaProviderKey("RESEND_API_KEY"));
+}
+
+export async function sendVerificationEmail(uid: string, newEmail?: string): Promise<boolean> {
+  return sendTrackedEmail(uid, "verification", () => deliverVerificationEmail(uid, newEmail), {eventId: crypto.randomUUID()});
+}
+export async function sendPasswordResetEmail(email: string): Promise<boolean> {
+  const user = await getAuth().getUserByEmail(email);
+  return sendTrackedEmail(user.uid, "passwordReset", () => deliverPasswordResetEmail(email), {eventId: crypto.randomUUID()});
+}
+/** Explicit admin retry; the same frozen payload/key is used only within its safe window. */
+export async function retryEmailDelivery(id: string): Promise<boolean> {
+  if (!/^[a-f0-9]{64}$/.test(id)) throw new Error("Invalid delivery");
+  const db = getFirestoreDb();
+  if (!db) throw new Error("Email history unavailable");
+  const ref = db.collection("email_deliveries").doc(id);
+  const now = Date.now();
+  const claimed = await db.runTransaction(async tx => {
+    const state = (await tx.get(ref)).data();
+    if (!state || !state.payload || !["failed", "sending"].includes(state.status)) return null;
+    const user = (await tx.get(db.collection("users").doc(state.userId))).data();
+    const fence = await tx.get(db.collection("account_deletions").doc(state.userId));
+    const window = ["verification", "passwordReset"].includes(state.templateId) ? 3600000 : 23 * 3600000;
+    if (!user || fence.exists || now - state.attemptAt >= window || (state.status === "sending" && now - state.startedAt < 300000)) return null;
+    if (state.templateId === "reengagement" && user.notifications?.reengagement !== true) return null;
+    if (["sessionComplete", "firstSession"].includes(state.templateId) && user.notifications?.sessionComplete !== true) return null;
+    tx.update(ref, {status: "sending", startedAt: now, updatedAt: now});
+    return state;
+  });
+  if (!claimed) return false;
+  try {
+    const {data, error} = await (await getResend()).emails.send(claimed.payload, {idempotencyKey: claimed.attemptKey});
+    if (error) throw new Error("Email provider rejected retry");
+    await db.runTransaction(async tx => {
+      const current = (await tx.get(ref)).data();
+      if (current?.attemptKey !== claimed.attemptKey) return;
+      tx.update(ref, {status: "accepted", acceptedAt: Date.now(), updatedAt: Date.now(), ...(data?.id ? {providerId: data.id} : {})});
+      if (claimed.sentField) tx.update(db.collection("users").doc(claimed.userId), {[claimed.sentField]: claimed.cooldownMs ? Date.now() : true});
+    });
+    return true;
+  } catch {
+    await db.runTransaction(async tx => {
+      const current = (await tx.get(ref)).data();
+      if (current && current.attemptKey === claimed.attemptKey && current.status !== "accepted") tx.update(ref, {status: "failed", updatedAt: Date.now()});
+    });
+    throw new Error("Email retry failed");
+  }
 }

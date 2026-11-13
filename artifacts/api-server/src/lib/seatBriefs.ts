@@ -79,7 +79,3 @@ export async function getSeatBriefsConfig() {
 export async function getAllSeatBriefs(): Promise<Record<SeatId, string>> {
   return (await getSeatBriefsConfig()).active;
 }
-
-export async function getSeatBrief(seatId: SeatId): Promise<string> {
-  return (await getAllSeatBriefs())[seatId];
-}

@@ -42,7 +42,7 @@ export function isFirebaseConfigured(): boolean {
 export async function verifyIdToken(
   idToken: string,
   options: { allowUnclaimedGuest?: boolean; allowExpiredGuest?: boolean; allowAccountDeletion?: boolean } = {}
-): Promise<{ uid: string; email?: string; name?: string; admin?: boolean; emailVerified?: boolean; anonymous?: boolean; guest?: boolean } | null> {
+): Promise<{ uid: string; email?: string; name?: string; admin?: boolean; emailVerified?: boolean; anonymous?: boolean; guest?: boolean; authTime?: number } | null> {
   if (!isFirebaseConfigured()) return null;
   try {
     // checkRevoked: true makes Firebase reject tokens whose refresh tokens have
@@ -64,7 +64,7 @@ export async function verifyIdToken(
       } else if (anonymous && !options.allowUnclaimedGuest) return null;
     }
     return {
-      uid: decoded.uid, anonymous, guest,
+      uid: decoded.uid, anonymous, guest, authTime: decoded.auth_time,
       email: decoded.email,
       name: decoded.name,
       admin: decoded["admin"] === true,

@@ -155,8 +155,10 @@ it("applies balance-email cooldown only after acceptance", async () => {
 });
 it("excludes new, guest and banned users from re-engagement, including accounts with no sessions", () => {
   const now = Date.now(), cutoff = now - 14*86400_000;
-  const base = {creditBalance: 50, createdAt: new Date(now - 30*86400_000)};
+  const base = {notifications:{reengagement:true},creditBalance: 50, createdAt: new Date(now - 30*86400_000)};
   expect(eligibleForReengagement(base, cutoff)).toBe(true);
+  expect(eligibleForReengagement({...base,notifications:{reengagement:false}}, cutoff)).toBe(false);
+  expect(eligibleForReengagement({...base,notifications:undefined}, cutoff)).toBe(false);
   expect(eligibleForReengagement({...base, createdAt: new Date(now)}, cutoff)).toBe(false);
   expect(eligibleForReengagement({...base, lastSessionAt: now}, cutoff)).toBe(false);
   expect(eligibleForReengagement({...base, banned: true}, cutoff)).toBe(false);

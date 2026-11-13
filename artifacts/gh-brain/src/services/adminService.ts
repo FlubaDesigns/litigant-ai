@@ -376,17 +376,6 @@ export interface ApiUsageDay {
   creditsUsed: number;
 }
 
-export interface AbuseFlag {
-  id: string;
-  userId?: string;
-  sessionId?: string;
-  turnId?: string;
-  role?: string;
-  rating?: string;
-  reason?: string;
-  notes?: string;
-  createdAt?: string;
-}
 
 export interface ErrorLogEntry {
   id: string;
@@ -438,31 +427,7 @@ export async function getErrorLogs(): Promise<{
   return res.json();
 }
 
-export async function getAbuseFlags(): Promise<{
-  flags: AbuseFlag[];
-  totalCount: number;
-  hasMore:boolean;
-}> {
-  const res = await adminFetch("/admin/abuse-flags");
-  if (!res.ok) throw new Error("Failed to load feedback flags");
-  return res.json();
-}
 
-export async function setAdminClaim(
-  secret: string,
-  opts: { email?: string; uid?: string }
-): Promise<{ success: boolean; uid?: string; email?: string; message?: string }> {
-  const res = await fetch(`${API_BASE}/admin/set-claim`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ secret, ...opts }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error ?? "Failed to set admin claim");
-  }
-  return res.json();
-}
 
 export async function listAdminTemplates(): Promise<any[]> {
   const res = await adminFetch("/admin/templates");
@@ -618,16 +583,6 @@ export async function toggleAiStudioProvider(providerId: string, enabled: boolea
   }
 }
 
-export async function addAiStudioProvider(provider: AiStudioCustomProvider): Promise<void> {
-  const res = await adminFetch("/admin/ai-studio/providers", {
-    method: "POST",
-    body: JSON.stringify(provider),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error ?? "Failed to add provider");
-  }
-}
 
 // ─── Seat Orders (Seat Briefs) ────────────────────────────────────────────────
 
@@ -818,4 +773,10 @@ export async function getSatisfactionSummary():Promise<import("@workspace/api-zo
   const response=await adminFetch("/admin/satisfaction");
   if (!response.ok) throw new Error("Satisfaction scores could not be loaded.");
   return response.json();
+}
+
+export async function retryEmailDelivery(id: string): Promise<{sent: boolean}> {
+  const res = await adminFetch(`/admin/email-deliveries/${encodeURIComponent(id)}/retry`, {method: "POST"});
+  if (!res.ok) throw new Error("Email could not be retried.");
+  return res.json();
 }

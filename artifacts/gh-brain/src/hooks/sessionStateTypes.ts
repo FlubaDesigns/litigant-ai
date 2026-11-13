@@ -89,7 +89,6 @@ export interface SessionState {
   /**
    * End-of-job tap — null = not yet tapped; only relevant when relayCount >= 1.
    */
-  endOfJobTap: "worth_it" | "not_worth_it" | null;
 }
 
 export type Action =
@@ -132,7 +131,6 @@ export type Action =
         relayCount?: number;
         relayQuestion?: string;
         needsRelay?: boolean;
-        endOfJobTap?: "worth_it" | "not_worth_it" | null;
       };
     }
   | { type: "RECOVERY_FAILED"; previous: SessionState; message: string }
@@ -141,7 +139,6 @@ export type Action =
   | { type: "ERROR"; message: string }
   | { type: "PROVIDER_FAILOVER"; provider: string }
   | { type: "COURTROOM_OUTCOME"; courtroomOutcome: CourtroomOutcome; artifactPath: "artifact" | "no-artifact" }
-  | { type: "SET_END_OF_JOB_TAP"; tap: "worth_it" | "not_worth_it" }
   | { type: "RESET"; config?: Partial<CourtConfig> }
   | { type: "ADD_CASE_FILE"; item: CaseFileItem }
   | { type: "REMOVE_CASE_FILE"; id: string }

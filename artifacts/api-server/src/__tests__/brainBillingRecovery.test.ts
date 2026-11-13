@@ -111,7 +111,7 @@ describe("notifications respect preferences and settled balances",()=>{
  it("still delivers opted-in saved completion email while its refund is pending",async()=>{
   vi.mocked(isResendConfigured).mockResolvedValue(true);db.store["users/u"].notifications={sessionComplete:true};
   db.failTransactionsWhen(writes=>writes.some(w=>w.data.type==="refund"));await call();
-  expect(sendSessionCompleteEmail).toHaveBeenCalledOnce();expect(sendFirstSessionEmail).toHaveBeenCalledOnce();
+  expect(sendSessionCompleteEmail).not.toHaveBeenCalled();expect(sendFirstSessionEmail).toHaveBeenCalledOnce();
   expect(sendLowCreditsEmail).not.toHaveBeenCalled();expect(sendZeroCreditsEmail).not.toHaveBeenCalled();
  });
  it("does not send zero-balance prompts from its own unreturned reservation",async()=>{

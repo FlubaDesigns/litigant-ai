@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Users, ChevronRight, Loader2, AlertTriangle, ChevronDown, Plus, Trash2, Bot } from "lucide-react";
+import { Users, ChevronRight, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { addAiStudioProvider, type AiStudioModel, type AiStudioProvider, type AiStudioCustomModel } from "@/services/adminService";
+import { type AiStudioModel, type AiStudioProvider } from "@/services/adminService";
 import { formatDate, formatDateTime } from "./AdminShared";
 
 export function fmtRate(ratePerK: number): string {
@@ -24,183 +23,6 @@ export function ModelRateDetails({pricing}: {pricing: AiStudioModel["pricing"]})
     {pricing?.longContext && <p>{pricing.longContext.inclusive ? "At or above" : "Above"} {pricing.longContext.threshold.toLocaleString()} input tokens: {fmtRate(pricing.longContext.input)} in · {fmtRate(pricing.longContext.output)} out.</p>}
     {pricing?.note && <p>{pricing.note}</p>}
   </div>;
-}
-
-export const EMPTY_MODEL = (): AiStudioCustomModel => ({
-  id: "", label: "", inputRatePer1k: 0.003, outputRatePer1k: 0.015, multiplier: 5,
-});
-
-export function AddProviderModal({
-  open, onClose, onSaved,
-}: { open: boolean; onClose: () => void; onSaved: () => void }) {
-  const [label, setLabel] = useState("");
-  const [id, setId] = useState("");
-  const [idManual, setIdManual] = useState(false);
-  const [models, setModels] = useState<AiStudioCustomModel[]>([EMPTY_MODEL()]);
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
-
-  function toSlug(s: string) {
-    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  }
-
-  function handleLabelChange(v: string) {
-    setLabel(v);
-    if (!idManual) setId(toSlug(v));
-  }
-
-  function setModel(i: number, patch: Partial<AiStudioCustomModel>) {
-    setModels((ms) => ms.map((m, idx) => idx === i ? { ...m, ...patch } : m));
-  }
-
-  async function handleSave() {
-    setErr("");
-    if (!label.trim() || !id.trim()) { setErr("Provider name and ID are required."); return; }
-    if (models.some((m) => !m.id.trim() || !m.label.trim())) {
-      setErr("Every model needs an ID and a label."); return;
-    }
-    setSaving(true);
-    try {
-      await addAiStudioProvider({ id: id.trim(), label: label.trim(), models });
-      onSaved();
-      onClose();
-      setLabel(""); setId(""); setIdManual(false); setModels([EMPTY_MODEL()]);
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent data-admin-panel="" className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-primary" /> Add Provider
-          </DialogTitle>
-          <DialogDescription>
-            Define a custom AI provider and its models. Users will see these alongside built-in ones.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          {/* Provider identity */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Provider Name</label>
-              <Input
-                placeholder="e.g. Mistral AI"
-                value={label}
-                onChange={(e) => handleLabelChange(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Provider ID (slug)</label>
-              <Input
-                placeholder="e.g. mistral"
-                value={id}
-                onChange={(e) => { setIdManual(true); setId(toSlug(e.target.value)); }}
-              />
-            </div>
-          </div>
-
-          {/* Models */}
-          <div className="space-y-2">
-            <div className="admin-row flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Models</p>
-              <Button
-                size="sm" variant="ghost"
-                className="h-6 text-xs gap-1"
-                onClick={() => setModels((ms) => [...ms, EMPTY_MODEL()])}
-              >
-                <Plus className="w-3 h-3" /> Add model
-              </Button>
-            </div>
-
-            {models.map((m, i) => (
-              <div key={i} className="rounded-lg border border-border p-3 space-y-2 bg-secondary/20">
-                <div className="admin-row flex items-center justify-between">
-                  <p className="text-xs font-mono text-muted-foreground">Model {i + 1}</p>
-                  {models.length > 1 && (
-                    <button
-                      onClick={() => setModels((ms) => ms.filter((_, idx) => idx !== i))}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Model Label</label>
-                    <Input
-                      placeholder="e.g. Mistral Large"
-                      value={m.label}
-                      onChange={(e) => setModel(i, { label: e.target.value })}
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Model ID</label>
-                    <Input
-                      placeholder="e.g. mistral-large-2411"
-                      value={m.id}
-                      onChange={(e) => setModel(i, { id: e.target.value })}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Input $/1K tokens</label>
-                    <Input
-                      type="number" step="0.0001" min="0"
-                      value={m.inputRatePer1k}
-                      onChange={(e) => setModel(i, { inputRatePer1k: parseFloat(e.target.value) || 0 })}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Output $/1K tokens</label>
-                    <Input
-                      type="number" step="0.0001" min="0"
-                      value={m.outputRatePer1k}
-                      onChange={(e) => setModel(i, { outputRatePer1k: parseFloat(e.target.value) || 0 })}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Multiplier</label>
-                    <Input
-                      type="number" step="1" min="1"
-                      value={m.multiplier}
-                      onChange={(e) => setModel(i, { multiplier: parseInt(e.target.value) || 1 })}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {err && (
-            <p className="text-xs text-destructive flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" /> {err}
-            </p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-1.5">
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            Add Provider
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 export const CONNECTION_LABELS: Record<AiStudioProvider["connection"]["state"], string> = {
@@ -239,7 +61,7 @@ export function AiStudioProviderSection({
         <Switch aria-label={`Enable ${label}`} data-connection={checking ? "checking" : connected ? "connected" : "unavailable"} checked={providerEnabled} onCheckedChange={onToggleProvider} disabled={busy} />
       </div>
       {open && <div id={`provider-${pid}`}>
-        {!checking && !provModels.length && <p className="text-xs text-muted-foreground py-2">{connected ? (discoveredModels.length ? "New models need pricing before use." : "No supported models available.") : "Connection not verified."} <a className="text-primary underline" href="/admin?tab=api-keys">API Keys</a></p>}
+        {!checking && !provModels.length && <p className="text-xs text-muted-foreground py-2">{connected ? (discoveredModels.length ? "New models need pricing before use." : "No supported models available.") : "Connection not verified."} Check credentials in Fluba Cortex.</p>}
         {provModels.map(m => {
           const expanded = expandedModel === m.id;
           return <div key={m.id} className="studio-model">

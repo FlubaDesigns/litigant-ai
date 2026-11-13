@@ -20,7 +20,6 @@ const responses: Record<string,unknown> = {
   "/admin/transactions":{transactions:[{id:longId,userId:longId,type:"usage",amount:-50,balanceAfter:0,source:"session",createdAt:"2026-07-17T12:00:00Z"}],hasMore:false},
   "/admin/api-usage":{completedSessionCount:2,completedSessionsMissingCredits:0,averageConversationCredits:50,totalSessions:5,totalCreditsUsed:100,totalCalls:2,totalInputTokens:200,totalOutputTokens:50,costUSD:.005,sessionsMissingCallDetails:1,sessionsMissingCredits:0,unpricedCalls:0,estimatedCalls:0,since:"2026-09-05T00:00:00Z",through:"2026-10-05T00:00:00Z",truncated:false,limit:1000,byDay:[{date:"2026-10-04",sessions:5,creditsUsed:100}],byModel:[{provider:"openai",model:longId,calls:2,inputTokens:200,outputTokens:50,cachedInputTokens:20,cacheWriteTokens:0,cacheWrite1hTokens:0,costUSD:.005,unpricedCalls:0,estimatedCalls:0}]},
   "/admin/error-logs":{logs:[],failedSessions:[{id:longId,sessionId:longId,message:"Session timed out.",userId:longId,status:"complete",createdAt:"2026-10-04T12:00:00Z"}],hasMore:false},
-  "/admin/abuse-flags":{flags:[{id:longId,rating:"bad",reason:"The response was inaccurate.",userId:longId,sessionId:longId,createdAt:"2026-10-04T12:00:00Z"}],totalCount:1,hasMore:false},
   "/admin/credit-packs":{packs:[{id:"fixture",name:"Example pack",description:"A test fixture only",active:true,metadata:{creditAmount:"500"},prices:[{id:"price",unit_amount:500,currency:"usd"}]},{id:"inactive",name:"Inactive pack",active:false,metadata:{creditAmount:"500"},prices:[]}],bounds:{MIN_UNIT_AMOUNT_CENTS:100,MAX_UNIT_AMOUNT_CENTS:100000,MIN_CREDIT_AMOUNT:1,MAX_CREDIT_AMOUNT:1000000}},
   "/limits":{limits:{maxLitigants:10,overdraftLimit:500}},
   "/feature-flags":{flags:{}},
@@ -54,7 +53,7 @@ for (const width of [360, 412]) {
     const navigation=page.getByRole("navigation",{name:"Admin navigation"});
     await expect(navigation).toBeVisible();
     const tabs=await navigation.locator("button").evaluateAll(buttons=>buttons.map(button=>({id:button.getAttribute("data-admin-tab")!,label:button.textContent!})));
-    expect(tabs).toHaveLength(20);
+    expect(tabs).toHaveLength(19);
     for (const tab of tabs) {
       await navigation.getByRole("button",{name:tab.label,exact:true}).click();
       await expect(page.locator(".admin-page h1")).toHaveText(tab.label);
@@ -148,7 +147,7 @@ for (const width of [360, 412]) {
         await expect(card.getByText("Cached input: 20 tokens",{exact:true})).toBeVisible();
         await expect(page.getByText(/1 sessions have no recorded call details/)).toBeVisible();
       }
-      if (tab.id === "errors" || tab.id === "abuse") {
+      if (tab.id === "errors") {
         const card=page.getByRole("article",{name:tab.id === "errors" ? `Error ${longId}` : `Feedback flag ${longId}`,exact:true});
         await expect(card.getByText(tab.id === "errors" ? "Session timed out." : "The response was inaccurate.",{exact:true})).toBeVisible();
         await card.getByRole("button",{name:"Open session",exact:true}).click();
@@ -602,7 +601,7 @@ test("AI Studio shows discovered models awaiting pricing only after an on-demand
   await expect(page.getByRole("link",{name:"Provider models & pricing"})).toHaveAttribute("href","https://developers.openai.com/api/docs/pricing");
 });
 
-for (const [tab,path] of [["api-usage","/admin/api-usage"],["errors","/admin/error-logs"],["abuse","/admin/abuse-flags"]]) {
+for (const [tab,path] of [["api-usage","/admin/api-usage"],["errors","/admin/error-logs"]]) {
   test(`${tab} exposes read failures, retries, and refreshes without polling`,async({page})=>{
     await page.setViewportSize({width:360,height:800});
     let fail=true,reads=0;

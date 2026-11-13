@@ -3,14 +3,14 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
 vi.mock("@/pages/app/session/ConfigPanel", () => ({ ConfigPanel: "div" }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("@/services/sessionService", () => ({ exportAccountData: vi.fn(), deleteAccount: vi.fn() }));
-vi.mock("@/services/firestoreService", () => ({ getUserProfile: vi.fn(), updateUserProfile: vi.fn(), updateSessionCompleteNotification: vi.fn(), USER_ROLE_LABELS: {} }));
+vi.mock("@/services/firestoreService", () => ({ getUserProfile: vi.fn(), updateUserProfile: vi.fn(), updateEmailNotifications: vi.fn(), USER_ROLE_LABELS: {} }));
 vi.mock("@/components/ui/button", () => ({ Button: "button" }));
 vi.mock("@/components/ui/label", () => ({ Label: "label" }));
 vi.mock("@/components/ui/switch", () => ({ Switch: "switch" }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 import { useState, useEffect } from "react";
-import { getUserProfile, updateUserProfile, updateSessionCompleteNotification } from "@/services/firestoreService";
+import { getUserProfile, updateUserProfile, updateEmailNotifications } from "@/services/firestoreService";
 import { toast } from "sonner";
 import { NotificationsTab } from "./Settings";
 
@@ -33,12 +33,12 @@ beforeEach(() => {
     return [state[slot], (next: any) => { state[slot] = typeof next === "function" ? next(state[slot]) : next; }];
   }) as any);
   vi.mocked(useEffect).mockImplementation(effect => { effects.push(effect); });
-  vi.mocked(updateSessionCompleteNotification).mockResolvedValue();
+  vi.mocked(updateEmailNotifications).mockResolvedValue();
 });
 afterEach(() => { vi.useRealTimers(); });
 
 describe("delivered notification preferences", () => {
-  it.each([true, false])("renders only the live preference and preserves unavailable saved values (%s)", async enabled => {
+  it.each([true, false])("renders the live preferences and preserves unavailable saved values (%s)", async enabled => {
     const profile = { notifications: { sessionComplete: enabled, weeklyDigest: true, productUpdates: false } } as any;
     vi.mocked(getUserProfile).mockResolvedValue(profile);
     let tree = render();
@@ -47,13 +47,13 @@ describe("delivered notification preferences", () => {
     await Promise.resolve();
     tree = render();
     const switches = nodes(tree).filter(node => node.type === "switch");
-    expect(switches).toHaveLength(1);
+    expect(switches).toHaveLength(2);
     expect(switches[0].props.checked).toBe(enabled);
-    expect(nodes(tree).some(node => node.props.children === "Weekly digest and product updates")).toBe(true);
-    expect(JSON.stringify(tree)).toContain("These emails are not available yet.");
+    expect(switches[1].props.checked).toBe(false);
+    switches[1].props.onCheckedChange(true);
     switches[0].props.onCheckedChange(!enabled);
     await save(render()).props.onClick();
-    expect(updateSessionCompleteNotification).toHaveBeenCalledWith("test-user", !enabled);
+    expect(updateEmailNotifications).toHaveBeenCalledWith("test-user", !enabled, true);
     expect(updateUserProfile).not.toHaveBeenCalled();
     expect(profile.notifications).toEqual({ sessionComplete: enabled, weeklyDigest: true, productUpdates: false });
   });
@@ -68,7 +68,7 @@ describe("delivered notification preferences", () => {
     vi.mocked(getUserProfile).mockRejectedValue(new Error("offline"));
     const initial = render();
     await save(initial).props.onClick();
-    expect(updateSessionCompleteNotification).not.toHaveBeenCalled();
+    expect(updateEmailNotifications).not.toHaveBeenCalled();
     effects.forEach(effect => effect()); await Promise.resolve(); await Promise.resolve();
     const tree = render();
     expect(save(tree).props.disabled).toBe(true);
@@ -76,8 +76,8 @@ describe("delivered notification preferences", () => {
   });
 
   it("does not claim a failed save succeeded", async () => {
-    state = [false, false, false, true, false, 0];
-    vi.mocked(updateSessionCompleteNotification).mockRejectedValue(new Error("offline"));
+    state = [false, false, false, false, true, false, 0];
+    vi.mocked(updateEmailNotifications).mockRejectedValue(new Error("offline"));
     await save(render()).props.onClick();
     expect(toast.error).toHaveBeenCalledWith("Failed to save preferences.");
     expect(toast.success).not.toHaveBeenCalled();

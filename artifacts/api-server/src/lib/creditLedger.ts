@@ -148,7 +148,7 @@ export async function addCredits(
           return { newBalance: prior.balanceAfter, skipped: true };
         }
         // Already processed — safe to return without any balance mutation
-        return { newBalance: 0, skipped: true };
+        return { newBalance: dedupSnap.data()?.balanceAfter ?? 0, skipped: true };
       }
 
     }
@@ -219,7 +219,8 @@ export async function addCredits(
         eventType:   type,
         uid,
         amount,
-        ...(type === "admin_adjustment" ? {source: opts.source ?? "", balanceAfter: newBalance} : {}),
+        balanceAfter: newBalance,
+        ...(type === "admin_adjustment" ? {source: opts.source ?? ""} : {}),
         processedAt: FieldValue.serverTimestamp(),
       });
     }

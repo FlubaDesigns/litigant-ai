@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowRight, Mail, Loader2, LogOut } from "lucide-react";
 import { AccountSetupNotice } from "@/components/AccountSetupNotice";
-import { API_BASE } from "@/lib/apiUrl";
 import { authPath, safeNext } from "@/lib/authUtils";
 
 export default function VerifyEmailPage() {
@@ -28,13 +27,6 @@ export default function VerifyEmailPage() {
       await reload(user);
       if (user.emailVerified) {
         await retryAccountSetup();
-        // Fire welcome email exactly once (idempotent on server)
-        user.getIdToken().then((token) =>
-          fetch(
-            `${API_BASE}/auth/welcome`,
-            { method: "POST", headers: { Authorization: `Bearer ${token}` } }
-          )
-        ).catch(() => {});
         setLocation(next);
       } else {
         toast.error("Email not yet verified — please click the link in your inbox.");

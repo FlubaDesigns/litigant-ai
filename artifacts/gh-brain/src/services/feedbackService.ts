@@ -2,19 +2,7 @@ import { SatisfactionRatingsSchema, type SatisfactionRatings } from "@workspace/
 import { auth } from "@/lib/firebase";
 import { getApiUrl } from "@/lib/apiUrl";
 
-export type FeedbackRating = "good" | "bad" | "warn";
-
-export interface FeedbackEntry {
-  userId: string | null;
-  sessionId: string | null;
-  turnId: string;
-  role: string;
-  rating: FeedbackRating;
-  reason?: string;
-  notes?: string;
-}
-
-export async function submitFeedback(entry: FeedbackEntry | (SatisfactionRatings & {kind:"satisfaction";version:1;sessionId:string})): Promise<void> {
+export async function submitFeedback(entry: SatisfactionRatings & {kind:"satisfaction";version:1;sessionId:string}): Promise<void> {
   const user = auth?.currentUser;
   if (!user) throw new Error("Sign in before submitting feedback.");
   const response = await fetch(getApiUrl("/feedback"), {method: "POST",

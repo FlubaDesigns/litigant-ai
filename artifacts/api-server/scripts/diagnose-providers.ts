@@ -60,3 +60,16 @@ for (const provider of registry.providers) {
     models: provider.models.map(model => ({id: model.id, enabled: model.enabled})),
   }));
 }
+
+// Read-only sender inventory from the exact Resend workspace used by this site.
+// Never output credentials, message bodies, recipients, or action links.
+const {readFlubaProviderKey} = await import('../src/lib/flubaProviderKeys.js');
+const resendKey = await readFlubaProviderKey('RESEND_API_KEY');
+for (const resource of ['domains', 'emails']) {
+  const response = await request(`https://api.resend.com/${resource}`, {headers:{Authorization:`Bearer ${resendKey}`}, signal:AbortSignal.timeout(15000)});
+  const body = response.ok ? await response.json() as any : {};
+  const rows = Array.isArray(body.data) ? body.data : [];
+  console.log(JSON.stringify({check:'litigant-email-sender',resource,status:response.status,
+    ...(resource === 'domains' ? {domains:rows.filter((d:any)=>/litigant/i.test(d.name)).map((d:any)=>({name:d.name,status:d.status}))}
+      : {senders:[...new Set(rows.map((e:any)=>e.from).filter((from:any)=>typeof from==='string' && /litigant/i.test(from)))]})}));
+}

@@ -1,6 +1,5 @@
 import type { BillingDefaults } from "@workspace/api-zod/billing";
 import { auth } from "@/lib/firebase";
-import type { User } from "firebase/auth";
 
 import { API_BASE } from "@/lib/apiUrl";
 
@@ -90,25 +89,7 @@ export async function getPaymentHistory(cursor?: string): Promise<{data: Payment
   return { data: result.data ?? [], nextCursor: result.nextCursor ?? null };
 }
 
-export async function getSubscription(): Promise<null> {
-  return null;
-}
 
-/**
- * Called by authService after new user creation.
- * The server grants the admin-configured signup credits idempotently.
- */
-export async function grantSignupBonus(user: User): Promise<void> {
-  try {
-    const token = await user.getIdToken();
-    await fetch(`${API_BASE}/billing/signup-grant`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  } catch (err) {
-    console.warn("[BillingService] signup-grant failed:", err);
-  }
-}
 
 /**
  * Persist auto-refill preference to the server (Firestore-backed).
@@ -188,13 +169,6 @@ export async function createCustomCheckoutSession(
   return { url: data.url, creditAmount: data.creditAmount };
 }
 
-/**
- * Not available — Square does not have a hosted billing portal.
- * Returns null so the UI can hide the portal button gracefully.
- */
-export async function createPortalSession(): Promise<string | null> {
-  return null;
-}
 
 export interface AutoRefillStatus {available:boolean;enabled:boolean;card:{brand:string;last4:string}|null;recentCard:{brand:string;last4:string}|null;status:string;error:string|null}
 export async function getAutoRefillStatus():Promise<AutoRefillStatus> {

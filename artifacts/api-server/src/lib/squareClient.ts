@@ -84,11 +84,6 @@ export async function createPaymentLink(opts: {
   return data.payment_link;
 }
 
-export async function listPayments(limit = 20): Promise<any[]> {
-  const params = new URLSearchParams({ limit: String(limit) });
-  const data = await squareFetch<{ payments?: any[] }>(`/v2/payments?${params}`);
-  return data.payments ?? [];
-}
 
 export class SquareApiError extends Error {
   constructor(public status: number, public code: string) { super("Square could not complete the request."); }

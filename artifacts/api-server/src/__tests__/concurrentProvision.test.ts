@@ -33,6 +33,7 @@ vi.mock("../lib/creditLedger.js", () => ({
 vi.mock("../lib/emailService.js", () => ({
   sendVerificationEmail:  vi.fn(),
   sendPasswordResetEmail: vi.fn(),
+  sendTrackedEmail: vi.fn(async () => true),
   sendWelcomeEmail:       vi.fn(),
   isResendConfigured:     vi.fn(() => false),
 }));

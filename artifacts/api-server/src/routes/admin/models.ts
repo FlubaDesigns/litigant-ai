@@ -5,7 +5,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { MultiplierSchema, saveMultiplierOverride, resetMultiplierToDefault } from "../../lib/pricingConfig.js";
 import { safeError } from "../../lib/safeError.js";
 import { getAllConfiguredProviders } from "../../lib/apiKeyStore.js";
-import { getAdminPricingTable, getAiStudioModels, getModelRegistry, CustomProviderSchema, validateCustomProviders, type CustomProviderDefinition } from "../../lib/providerCatalog.js";
+import { getAdminPricingTable, getAiStudioModels, getModelRegistry, type CustomProviderDefinition } from "../../lib/providerCatalog.js";
 import { PROVIDER_MODELS } from "../../lib/providers/index.js";
 import { requireAdmin } from "./shared.js";
 
@@ -154,28 +154,6 @@ router.patch("/admin/ai-studio/providers/:providerId", requireAdmin, async (req:
 });
 
 
-/**
- * POST /admin/ai-studio/providers
- * Add a new custom provider with its models.
- */
-router.post("/admin/ai-studio/providers", requireAdmin, async (req: any, res) => {
-  const parsed = CustomProviderSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({error:"Valid provider ID, label, models, nonnegative rates and multipliers (1–100) are required"});
-  const db = getFirestoreDb();
-  if (!db) return res.status(503).json({ error: "Firebase not configured" });
-  try {
-    const ref = db.collection("system_config").doc("aiStudio");
-    await db.runTransaction(async tx => {
-      const doc = await tx.get(ref);
-      const customProviders = [...(doc.data()?.customProviders ?? []), parsed.data];
-      validateCustomProviders(customProviders);
-      tx.set(ref, {customProviders, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
-    });
-    return res.status(201).json({ok:true, id:parsed.data.id});
-  } catch (err: any) {
-    return res.status(err.message?.includes("already exists") ? 409 : 500).json({error:safeError(err)});
-  }
-});
 
 
 /**

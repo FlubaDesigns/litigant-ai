@@ -173,27 +173,4 @@ router.get("/admin/error-logs", requireAdmin, async (req, res) => {
 });
 
 
-// ── Abuse Flags ───────────────────────────────────────────────────────────────
-
-router.get("/admin/abuse-flags", requireAdmin, async (req, res) => {
-  const db = getFirestoreDb();
-  if (!db) return res.status(503).json({ error: "Feedback records are unavailable" });
-
-  const limit = Math.max(1, Math.min(Math.floor(Number(req.query["limit"])) || 50, 200));
-
-  try {
-    // Filter before limiting: positive feedback must not crowd out flags.
-    const snap = await db.collection("feedback")
-      .where("rating", "in", ["bad", "warn"])
-      .orderBy("createdAt", "desc").limit(limit + 1).get();
-    const flagDocs = snap.docs.slice(0, limit);
-    return res.json({
-      flags: flagDocs.map(d => serializeDoc(d)),
-      totalCount: flagDocs.length,
-      hasMore: snap.size > limit,
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: safeError(err) });
-  }
-});
 export default router;

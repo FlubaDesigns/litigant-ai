@@ -1,3 +1,4 @@
+import { API_BASE } from "@/lib/apiUrl";
 import { ConfigPanel } from "@/pages/app/session/ConfigPanel";
 import { CourtConfigSchema, sessionCompleteNotificationsEnabled, type CourtConfig } from "@workspace/api-zod/session";
 import { useState, useEffect } from "react";
@@ -28,11 +29,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateUserProfile, updateSessionCompleteNotification, getUserProfile, USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
+import { updateUserProfile, updateEmailNotifications, getUserProfile, USER_ROLE_LABELS, type UserRole } from "@/services/firestoreService";
 import { exportAccountData, deleteAccount, AccountDeletionError } from "@/services/sessionService";
 import {
   updateProfile,
-  updateEmail,
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -135,10 +135,13 @@ function ProfileTab({ user }: { user: User }) {
     try {
       const credential = EmailAuthProvider.credential(user.email!, emailPassword);
       await reauthenticateWithCredential(user, credential);
-      await updateEmail(user, newEmail.trim());
-      await updateUserProfile(user.uid, { email: newEmail.trim() });
+      const response = await fetch(`${API_BASE}/auth/change-email`, {
+        method: "POST", headers: {Authorization: `Bearer ${await user.getIdToken(true)}`, "Content-Type": "application/json"},
+        body: JSON.stringify({email: newEmail.trim()}),
+      });
+      if (!response.ok) throw new Error((await response.json()).error ?? "Could not send verification.");
       setEmailPassword("");
-      toast.success("Email updated. Please verify your new address.");
+      toast.success("Verification sent to your new address. Open that link to finish changing your email.");
     } catch (err: any) {
       if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
         toast.error("Current password is incorrect.");
@@ -147,7 +150,7 @@ function ProfileTab({ user }: { user: User }) {
       } else if (err?.code === "auth/invalid-email") {
         toast.error("Invalid email address.");
       } else {
-        toast.error("Failed to update email.");
+        toast.error(err?.message ?? "Failed to update email.");
       }
     } finally {
       setSavingEmail(false);
@@ -381,6 +384,7 @@ function PreferencesTab({ user }: { user: User }) {
 
 export function NotificationsTab({ user }: { user: User }) {
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [reengagement, setReengagement] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -394,6 +398,7 @@ export function NotificationsTab({ user }: { user: User }) {
       if (!profile) throw new Error("Profile unavailable");
       if (active) {
         setSessionComplete(sessionCompleteNotificationsEnabled(profile));
+        setReengagement(profile.notifications?.reengagement === true);
         setLoaded(true);
       }
     }).catch(() => { if (active) setLoadError(true); });
@@ -404,7 +409,7 @@ export function NotificationsTab({ user }: { user: User }) {
     if (!loaded || saving) return;
     setSaving(true);
     try {
-      await updateSessionCompleteNotification(user.uid, sessionComplete);
+      await updateEmailNotifications(user.uid, sessionComplete, reengagement);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       toast.success("Notification preferences saved.");
@@ -422,7 +427,7 @@ export function NotificationsTab({ user }: { user: User }) {
       </div>
 
       {loadError && <p role="alert">Could not load preferences. <button onClick={() => setLoadAttempt(n => n + 1)}>Retry</button></p>}
-      <div className="flex items-center justify-between gap-4">
+      <div className="row layout__split-2 layout--keep-columns items-center">
         <div>
           <Label htmlFor="session-complete-notifications">Session complete</Label>
           <p id="session-complete-description" className="text-xs text-muted-foreground">Notify when a Brain Session finishes processing.</p>
@@ -436,11 +441,10 @@ export function NotificationsTab({ user }: { user: User }) {
           className="shrink-0"
         />
       </div>
-      <div className="rounded-lg border border-border/50 p-3 text-sm space-y-2">
-        <p className="font-medium">Weekly digest and product updates</p>
-        <p className="text-xs text-muted-foreground">
-          These emails are not available yet. Any previously saved preferences are unchanged.
-        </p>
+      <div className="row layout__split-2 layout--keep-columns items-center">
+        <div><Label htmlFor="reengagement-notifications">Unused credit reminders</Label>
+          <p className="text-xs text-muted-foreground">Email me when I have unused credits after being away. Turn off and save to unsubscribe.</p></div>
+        <Switch id="reengagement-notifications" disabled={!loaded || saving} checked={reengagement} onCheckedChange={setReengagement} className="shrink-0" />
       </div>
 
       <Button
@@ -559,7 +563,7 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
 export default function SettingsPage() {
   const { user, logOut, firebaseReady, beginAccountDeletion, setAccountDeletionResult } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<TabId>("profile");
+  const [activeTab, setActiveTab] = useState<TabId>(new URLSearchParams(window.location.search).get("tab") === "notifications" ? "notifications" : "profile");
   const [deleting, setDeleting] = useState(false);
 
   async function handleDeleteAccount() {

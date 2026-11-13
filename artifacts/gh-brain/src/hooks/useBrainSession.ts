@@ -81,7 +81,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
             relayCount: event.relayCount,
             relayQuestion: event.relayQuestion,
             needsRelay: event.needsRelay,
-            endOfJobTap: event.endOfJobTap,
           },
         });
         break;
@@ -396,9 +395,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     }
   }, [user, handleSSEEvent]);
 
-  const setEndOfJobTap = useCallback((tap: "worth_it" | "not_worth_it") => {
-    dispatch({ type: "SET_END_OF_JOB_TAP", tap });
-  }, []);
 
   const addCaseFile = useCallback((item: CaseFileItem) => {
     dispatch({ type: "ADD_CASE_FILE", item });
@@ -419,7 +415,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     loadSession,
     submitRebuttal,
     submitRelay,
-    setEndOfJobTap,
     setQuestion,
     setTemplate,
     setConfig,

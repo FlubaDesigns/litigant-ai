@@ -72,7 +72,7 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, EmailTemplateMeta> = {
   },
   welcome: {
     label: "Welcome",
-    trigger: "Once, when user completes email verification",
+    trigger: "Once, on verified account setup (including social sign-in)",
     badgeText: "Access Granted",
     badgeColor: "#00c853",
     defaultSubject: "Welcome to Litigant AI — you're in",
@@ -96,7 +96,7 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, EmailTemplateMeta> = {
   },
   sessionComplete: {
     label: "Session complete",
-    trigger: "After each session — only for users who opt in",
+    trigger: "After completed saved sessions — opted in; first completion uses the milestone email",
     badgeText: "Analysis Complete",
     badgeColor: "#00c853",
     defaultSubject: "Your analysis is ready",
@@ -132,7 +132,7 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, EmailTemplateMeta> = {
   },
   reengagement: {
     label: "Re-engagement",
-    trigger: "Manual campaign — users with credits inactive 14+ days",
+    trigger: "Manual campaign — opted-in users with credits inactive 14+ days",
     badgeText: "We Miss You",
     badgeColor: "#00c853",
     defaultSubject: "You have {credits} credits waiting, {name}",

@@ -752,7 +752,6 @@ export async function runBrainSession(opts: BrainRunOptions): Promise<BrainRunRe
     courtroomOutcome,
     relayCount,
     ...(relayQuestion ? { relayQuestion } : {}),
-    ...(relayCount >= 1 ? { endOfJobTap: null as "worth_it" | "not_worth_it" | null } : {}),
     fixedStageTokens: {
       input:  usage.inputTokens  - usageAfterDebate.inputTokens,
       output: usage.outputTokens - usageAfterDebate.outputTokens,

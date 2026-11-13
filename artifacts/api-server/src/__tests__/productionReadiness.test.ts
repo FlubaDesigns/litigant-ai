@@ -19,21 +19,9 @@ beforeEach(()=>{
 afterEach(()=>vi.unstubAllEnvs());
 const body={userId:"owner",sessionId:"session",turnId:"turn",role:"Verdict",rating:"bad"};
 const post=(data:any=body)=>request(app).post("/feedback").set("Authorization","Bearer test").send(data);
-it("rejects unauthenticated, forged, oversized and foreign-session feedback without writes",async()=>{
- expect((await request(app).post("/feedback").send(body)).status).toBe(401);
- expect((await post({...body,userId:"other"})).status).toBe(400);
- expect((await post({...body,notes:"x".repeat(2001)})).status).toBe(400);
- expect((await post({...body,sessionId:"foreign"})).status).toBe(403);
- expect(entries).toEqual([]);
-});
-it("enforces the account allowance across client requests and stamps the verified owner",async()=>{
- expect((await post()).status).toBe(201);expect((await post()).status).toBe(201);
- expect((await post()).status).toBe(429);expect(entries).toHaveLength(2);
- expect(entries[0]).toMatchObject(body);expect(entries[0].createdAt).toBeDefined();
-});
-it("fails closed when the shared limiter fails",async()=>{
- broken=true;expect((await post()).status).toBe(503);expect(entries).toEqual([]);
-});
+
+
+
 it("keeps liveness distinct from dependency readiness",async()=>{
  state.db=null;expect((await request(app).get("/live")).status).toBe(200);
  expect((await request(app).get("/health")).status).toBe(503);
@@ -57,3 +45,5 @@ it("rejects uploads before parsing when shared quota storage is down",async()=>{
  const result=await request(app).post("/case-file/upload").set("Authorization","Bearer test").set("Content-Type","multipart/form-data").send("malformed input");
  expect(result.status).toBe(503);
 });
+
+it("rejects retired per-turn feedback",async()=>{expect((await post()).status).toBe(400);expect(entries).toEqual([]);});
