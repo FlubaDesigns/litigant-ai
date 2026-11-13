@@ -50,11 +50,19 @@ test("saved admin limits reload, bound session options, and refresh an open conf
   expect(errors).toEqual([]);
 });
 
-test("legacy above-engine settings remain visible with an explicit effective-limit warning",async({page})=>{
+test("unavailable saved limits show a retry instead of a substituted value",async({page})=>{
   const errors:string[]=[]; page.on("pageerror",error=>errors.push(error.message));
-  await page.route("**/api-server/api/limits",route=>route.fulfill({json:{limits:{maxLitigants:10,overdraftLimit:25},storedLimits:{maxLitigants:20,overdraftLimit:25},notices:["Saved maximum litigants is 20; this engine supports 10. Sessions use 10 until you save a supported limit. The saved value has not been changed."]}}));
+  let repaired=false;
+  await page.route("**/api-server/api/limits",route=>repaired
+    ? route.fulfill({json:{limits:{maxLitigants:10,overdraftLimit:25}}})
+    : route.fulfill({status:503,json:{error:"Platform limits are temporarily unavailable. Please try again."}}));
   await page.goto("/admin?tab=limits&e2e=1");
-  await expect(page.getByRole("spinbutton",{name:"Maximum litigants",exact:true})).toHaveValue("20");
-  await expect(page.getByRole("alert").filter({hasText:"saved value has not been changed"})).toBeVisible();
+  const failure=page.getByRole("alert").filter({hasText:"Could not load limits."});
+  await expect(failure).toBeVisible({timeout:15000});
+  await expect(page.getByRole("spinbutton",{name:"Maximum litigants",exact:true})).toHaveCount(0);
+  repaired=true;
+  await failure.getByRole("button",{name:"Retry",exact:true}).click();
+  await expect(page.getByRole("spinbutton",{name:"Maximum litigants",exact:true})).toHaveValue("10");
+  await expect(failure).toHaveCount(0);
   expect(errors).toEqual([]);
 });
