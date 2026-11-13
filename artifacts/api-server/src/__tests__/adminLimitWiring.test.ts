@@ -59,13 +59,10 @@ it("rejects unsupported direct writes/requests and oversized seat maps without c
   const seat={provider:"openai"};
   expect(CourtConfigSchema.safeParse({seatMap:{orchestrator:seat,moderator:seat,architect:seat,builder:seat,auditor:seat,litigants:Array(11).fill(seat)}}).success).toBe(false);
 });
-it("warns about legacy 11–20 settings, bounds execution, and never silently rewrites them",async()=>{
+it("rejects unsupported stored limits instead of silently substituting another value",async()=>{
   docs["config/adminLimits"].maxLitigants=20;
-  const response=await request(app).get("/limits");
-  expect(response.status).toBe(200);
-  expect(response.body).toMatchObject({limits:{maxLitigants:10},storedLimits:{maxLitigants:20}});
-  expect(response.body.notices[0]).toMatch(/saved value has not been changed/);
-  expect((await prepareSession({litigantCount:10})).config.litigantCount).toBe(10);
+  expect((await request(app).get("/limits")).status).toBe(503);
+  await expect(prepareSession({litigantCount:10})).rejects.toThrow();
   expect(docs["config/adminLimits"].maxLitigants).toBe(20);
   expect((await save(8)).status).toBe(200);
   expect((await request(app).get("/limits")).body).toEqual({limits:{...DEFAULT_PLATFORM_LIMITS,maxLitigants:8,overdraftLimit:25}});

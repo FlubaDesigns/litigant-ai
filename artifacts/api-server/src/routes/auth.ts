@@ -223,7 +223,7 @@ router.patch("/auth/preferences", async (req, res) => {
 
   const body = (req.body ?? {}) as Record<string, unknown>;
   const ds = body.defaultSettings ?? {};
-  const parsed = CourtConfigFieldsSchema.partial().safeParse(ds);
+  const parsed = CourtConfigFieldsSchema.partial().strict().safeParse(ds);
   if (!parsed.success) return res.status(400).json({error: "Invalid session configuration"});
   const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
   if (body.onboardingComplete === true) patch.onboardingComplete = true;

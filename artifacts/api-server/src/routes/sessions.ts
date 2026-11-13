@@ -12,7 +12,7 @@ import { getTemplate } from "../lib/templateStore.js";
 
 const router = Router();
 
-const EXPORT_PROFILE_FIELDS = ["email", "displayName", "role", "organization", "plan", "creditBalance", "subscriptionStatus", "createdAt", "updatedAt", "lastLoginAt", "onboardingComplete", "defaultSettings", "notifications", "notifySessionComplete"];
+const EXPORT_PROFILE_FIELDS = ["email", "displayName", "role", "organization", "plan", "creditBalance", "subscriptionStatus", "createdAt", "updatedAt", "lastLoginAt", "onboardingComplete", "defaultSettings", "notifications"];
 const EXPORT_SESSION_FIELDS = ["title", "question", "templateId", "config", "caseFile", "caseFileMeta", "status", "pauseReason", "confidence", "creditsUsed", "inputTokens", "outputTokens", "costUSD", "model", "provider", "modelProvenance", "finalAnswer", "transcript", "transcriptLines", "debateNotes", "caveats", "artifacts", "artifactPath", "courtroomOutcome", "outputIncomplete", "relayQuestion", "relayCount", "rebuttalRound", "parentSessionId", "isRebuttal", "rebuttalChallenge", "conscienceVersion", "starred", "archived", "shared", "createdAt", "updatedAt", "acceptedAt", "settlementStatus", "creditsReserved", "creditsDebited", "callUsage", "priceSnapshot"];
 function exportFields(data: FirebaseFirestore.DocumentData, keys: string[]) {
   return Object.fromEntries(keys.filter(key => data[key] !== undefined).map(key => [key, data[key]]));

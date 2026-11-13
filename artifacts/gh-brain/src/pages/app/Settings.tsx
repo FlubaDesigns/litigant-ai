@@ -1,5 +1,5 @@
 import { ConfigPanel } from "@/pages/app/session/ConfigPanel";
-import { CourtConfigSchema, restoreCourtConfig, sessionCompleteNotificationsEnabled, type CourtConfig } from "@workspace/api-zod/session";
+import { CourtConfigSchema, sessionCompleteNotificationsEnabled, type CourtConfig } from "@workspace/api-zod/session";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
@@ -366,7 +366,7 @@ function PreferencesTab({ user }: { user: User }) {
   useEffect(() => {
     let active = true;
     getUserProfile(user.uid).then(profile => {
-      if (active) setConfig(restoreCourtConfig(profile?.defaultSettings ?? {}));
+      if (active) setConfig(CourtConfigSchema.parse(profile?.defaultSettings ?? {}));
     }).catch(() => { if (active) setLoadError(true); });
     return () => {active = false;};
   }, [user.uid]);

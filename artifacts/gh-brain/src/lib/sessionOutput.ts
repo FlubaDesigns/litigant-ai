@@ -1,4 +1,4 @@
-import { restoreCourtConfig, RESPONSE_VIEWS, type CourtConfig } from "@workspace/api-zod/session";
+import { CourtConfigSchema, RESPONSE_VIEWS, type CourtConfig } from "@workspace/api-zod/session";
 
 export function isLitigantRole(role: string): boolean {
   return role !== "You" && !/^(Orchestrator|Moderator|Architect|Builder|Auditor|Verdict)(?:\b|$)/.test(role);
@@ -12,7 +12,7 @@ type OutputState = {
 
 /** The same selected output drives the screen, copy, print and every download. */
 export function sessionOutput(state: OutputState) {
-  const strategy = restoreCourtConfig(state.config ?? {}).outputStrategy;
+  const strategy = CourtConfigSchema.parse(state.config ?? {}).outputStrategy;
   const consensus = state.finalAnswer || "No final answer generated.";
   const voices = state.debateNotes || (state.runtimeFeed ?? []).filter(f => isLitigantRole(f.role) && f.content)
     .map(f => `### ${f.role} — Round ${f.round}\n${f.content}`).join("\n\n") || "No individual responses recorded.";
