@@ -142,33 +142,45 @@ export async function inspectContent(read) {
     const turns = await list(read, document.name + '/session_turns');
     totalTurns += turns.length;
     assert(totalTurns <= 10000, 'Total turn inventory exceeds reviewed bound');
-    plans.push({name:document.name, ...contentPlan(document, turns)});
+    plans.push({name:document.name, updateTime:document.updateTime, ...contentPlan(document, turns)});
   }
   return {plans, counts:{scanned:sessions.length, conversions:plans.filter(plan => plan.patch).length,
     duplicateTurns:plans.reduce((total,plan) => total + plan.deletes.length,0)}};
+}
+
+/** At most 200 writes per commit, including a root-version fence for every
+ * session whose duplicate turns occur in that commit. */
+export function contentCleanupBatches(plans) {
+  const batches = [];
+  let batch = [];
+  for (const plan of plans) {
+    for (let offset = 0; offset < plan.deletes.length; offset += 199) {
+      const group = [{verify:plan.name, currentDocument:{updateTime:plan.updateTime}}, ...plan.deletes.slice(offset,offset+199)];
+      if (batch.length + group.length > 200) { batches.push(batch); batch = []; }
+      batch.push(...group);
+    }
+  }
+  if (batch.length) batches.push(batch);
+  return batches;
 }
 
 export async function migrateContent({read,write,assertCurrent}) {
   assert.equal(typeof assertCurrent, 'function', 'Exact-source approval recheck required');
   await assertCurrent();
   const before = await inspectContent(read);
-  for (const plan of before.plans) {
-    if (!plan.patch && !plan.deletes.length) continue;
+  const patches = before.plans.flatMap(plan => plan.patch ? [plan.patch] : []);
+  for (let offset = 0; offset < patches.length; offset += 200) {
     await assertCurrent();
-    if (plan.patch) await write(`${API}${ROOT}:commit`, 'preserve session content', 'POST', {writes:[plan.patch]});
-    // Re-read canonical content before removing any duplicate. Root and turn
-    // preconditions atomically fence concurrent resumes, edits and deletion.
-    const current = await read(`${API}${plan.name}`, 'verify preserved session content');
-    const turns = await list(read, plan.name + '/session_turns');
-    const verified = contentPlan(current, turns);
-    assert.equal(verified.patch, null, 'Canonical record not visible after write');
-    for (let offset=0; offset<verified.deletes.length; offset+=200) {
-      await assertCurrent();
-      await write(`${API}${ROOT}:commit`, 'remove verified duplicate turns', 'POST', {writes:[
-        {verify:current.name, currentDocument:{updateTime:current.updateTime}},
-        ...verified.deletes.slice(offset,offset+200),
-      ]});
-    }
+    await write(`${API}${ROOT}:commit`, 'preserve session content', 'POST', {writes:patches.slice(offset,offset+200)});
+  }
+  // Re-read and verify all preserved content before any duplicate is removed.
+  // Each cleanup batch also atomically fences every affected session and turn.
+  await assertCurrent();
+  const preserved = await inspectContent(read);
+  assert.equal(preserved.counts.conversions,0,'Canonical records not visible after preservation');
+  for (const writes of contentCleanupBatches(preserved.plans)) {
+    await assertCurrent();
+    await write(`${API}${ROOT}:commit`, 'remove verified duplicate turns', 'POST', {writes});
   }
   await assertCurrent();
   const after = await inspectContent(read);
