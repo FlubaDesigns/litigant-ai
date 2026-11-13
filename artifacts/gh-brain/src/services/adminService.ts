@@ -521,47 +521,6 @@ export async function resetModelMultiplier(model: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to reset multiplier");
 }
 
-// ── API Key Management ────────────────────────────────────────────────────────
-
-export interface ProviderKeyInfo {
-  id: string;
-  label: string;
-  maskedKey: string;
-  baseUrl?: string;
-  source: "fluba";
-  updatedAt?: string;
-}
-
-export async function getApiKeys(): Promise<ProviderKeyInfo[]> {
-  const res = await adminFetch("/admin/api-keys");
-  if (!res.ok) throw new Error("Failed to load API keys");
-  const data = await res.json();
-  return data.providers as ProviderKeyInfo[];
-}
-
-export async function saveApiKey(
-  providerId: string,
-  key: string,
-  label: string,
-  baseUrl?: string
-): Promise<void> {
-  const res = await adminFetch(`/admin/api-keys/${encodeURIComponent(providerId)}`, {
-    method: "PUT",
-    body: JSON.stringify({ key, label, baseUrl }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error ?? "Failed to save API key");
-  }
-}
-
-export async function deleteApiKey(providerId: string): Promise<void> {
-  const res = await adminFetch(`/admin/api-keys/${encodeURIComponent(providerId)}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Failed to delete API key");
-}
-
 export interface BillingDefaults {
   autoRefillAmounts: number[];
   defaultAutoRefillAmount: number;

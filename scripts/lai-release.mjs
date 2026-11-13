@@ -1,3 +1,4 @@
+import {inspectContent, migrateContent} from './lai-content-migration.mjs';
 import {inspectSettings, migrateSettings} from './lai-settings-migration.mjs';
 /** LAI-only release controller. Inspection is read-only; deployment is descriptor-authorized.
  * No private Engine implementation or credentials belong in this public repository.
@@ -565,9 +566,10 @@ async function release() {
     await inspectFeedbackRules(cloud, await readFile(path.join(rulesRoot, 'firestore.rules'), 'utf8'));
     console.log('Read-only rules preflight passed: exact feedback-only tightening, no rules drift.');
     await permissions('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions',
-      ['datastore.entities.get', 'datastore.entities.list', 'datastore.entities.update'], 'LAI beta settings migration');
+      ['datastore.entities.get', 'datastore.entities.list', 'datastore.entities.update', 'datastore.entities.delete'], 'LAI reviewed content and settings migration');
   }
   if (descriptor.action === 'inspect') {
+    console.log('LAI_CONTENT_INSPECTION ' + JSON.stringify((await inspectContent(cloud)).counts));
     const settings = await inspectSettings(cloud);
     console.log('LAI_SETTINGS_INSPECTION ' + JSON.stringify({scanned: settings.scanned, changes: settings.counts}));
     await writeFile(tempPath(context, 'identity.json'), JSON.stringify(runtimeIdentityEvidence(context, before)) + '\n', { mode: 0o600 });
@@ -636,6 +638,7 @@ async function release() {
   assert.equal(deployedEnv.find(v => v.name === 'DEPLOY_TIMESTAMP')?.value, deployedAt);
   await retryRead(() => verifyApi(after.status.url, descriptor.sourceCommit));
   console.log('Release stage: API update complete and verified; Hosting unchanged.');
+  console.log('LAI_CONTENT_MIGRATION ' + JSON.stringify(await migrateContent({read: cloud, write: cloud, assertCurrent: recheck})));
   await recheck(); // Scope, evidence, Main and runtime checks immediately before Hosting mutation.
   const sourceRoot = path.resolve('release-source');
   const config = JSON.parse(await readFile(path.join(sourceRoot, 'firebase.lai-release.json'), 'utf8'));
