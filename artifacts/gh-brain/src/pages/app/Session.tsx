@@ -24,7 +24,6 @@ import { getCourtesyCredit } from "@/services/billingService";
 import { TEMPLATE_CATEGORIES, DEFAULT_CONFIG, type Template } from "@/data/templates";
 import type { CourtConfig } from "@/data/templates";
 import { makeDefaultSeatMap, type SeatAssignment } from "@/data/seatTypes";
-import { submitFeedback } from "@/services/feedbackService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLocation, useParams } from "wouter";
@@ -96,9 +95,9 @@ export default function SessionPage() {
   const brainSession = useBrainSession(savedConfig);
   const {
     state, run, stop, reset, acceptPartial, continueSession,
-    loadSession, submitRebuttal, submitRelay, setEndOfJobTap,
+    loadSession, submitRebuttal, submitRelay,
     setQuestion, setTemplate, setConfig, setSeatAI,
-    applyFeedbackGrades, addCaseFile, removeCaseFile,
+    addCaseFile, removeCaseFile,
   } = brainSession;
 
   const [, navigate] = useLocation();
@@ -117,7 +116,6 @@ export default function SessionPage() {
   const [configOpen, setConfigOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [feedbackGiven, setFeedbackGiven] = useState<"good" | "bad" | "warn" | null>(null);
   const [overdraftDialogOpen, setOverdraftDialogOpen] = useState(false);
   const [rebuttalChallenge, setRebuttalChallenge] = useState("");
   const [inspectorSeat, setInspectorSeat] = useState<{ seatId: string; litIndex?: number } | null>(null);
@@ -269,7 +267,6 @@ export default function SessionPage() {
       });
       return;
     }
-    setFeedbackGiven(null);
     await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined);
   }
 
@@ -277,11 +274,10 @@ export default function SessionPage() {
     setOverdraftDialogOpen(false);
     const hasFields = state.template && state.template.inputFields.length > 0;
     const effectiveQuestion = hasFields ? assembleFieldQuestion() : state.question;
-    setFeedbackGiven(null);
     await run(effectiveQuestion !== state.question ? effectiveQuestion : undefined, { overdraft: true });
   }
 
-  function handleReset() { reset(); setFeedbackGiven(null); }
+  function handleReset() { reset(); }
 
   function handleStop() { stop(); toast.info("Session stopped. Partial results are shown below."); }
 
@@ -345,21 +341,6 @@ export default function SessionPage() {
     const w = window.open("", "_blank");
     if (!w) { toast.error("Popup blocked — allow popups for this site to print/save as PDF."); return; }
     exportPDF(state, w);
-  }
-
-  async function handleFeedback(rating: "good" | "bad" | "warn") {
-    try {
-      await submitFeedback({
-        userId: user?.uid ?? null,
-        sessionId: state.sessionId,
-        turnId: state.sessionId ?? `anon-${Date.now()}`,
-        role: "Verdict",
-        rating,
-      });
-      setFeedbackGiven(rating);
-      if (rating === "good" || rating === "bad") applyFeedbackGrades(rating, "answer");
-      toast.success("Feedback recorded.");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Failed to save feedback."); }
   }
 
   function handleSeatClick(seatId: string, litIndex?: number) {
@@ -506,7 +487,6 @@ export default function SessionPage() {
                 estimatedCredits={estimatedCredits}
 
                 insufficientCredits={insufficientCredits}
-                feedbackGiven={feedbackGiven}
                 rebuttalChallenge={rebuttalChallenge}
                 setRebuttalChallenge={setRebuttalChallenge}
                 fieldValues={fieldValues}
@@ -520,13 +500,11 @@ export default function SessionPage() {
                 onContinue={continueSession}
                 onAcceptPartial={acceptPartial}
                 onReset={handleReset}
-                onFeedback={handleFeedback}
                 onCopyMarkdown={handleCopyMarkdown}
                 onDownload={handleDownload}
                 onExportPDF={handleExportPDF}
                 onSubmitRebuttal={submitRebuttal}
                 onSubmitRelay={submitRelay}
-                onSetEndOfJobTap={setEndOfJobTap}
                 onSetTemplate={setTemplate}
                 onSetFieldValues={(v) => setFieldValues(v)}
                 onRun={handleRun}

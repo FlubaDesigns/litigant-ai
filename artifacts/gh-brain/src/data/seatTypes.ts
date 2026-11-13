@@ -50,19 +50,6 @@ export const SEAT_DEFAULT_GRADES: Record<string, string> = {
   builder: "B+",
 };
 
-export const GRADE_SCALE = [
-  "F", "D", "D+", "C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+",
-];
-
-export function gradeToIndex(g: string): number {
-  const i = GRADE_SCALE.indexOf(g);
-  return i >= 0 ? i : 8;
-}
-
-export function indexToGrade(i: number): string {
-  return GRADE_SCALE[Math.max(0, Math.min(GRADE_SCALE.length - 1, i))];
-}
-
 export interface SeatGrade {
   grade: string;
   runs: number;

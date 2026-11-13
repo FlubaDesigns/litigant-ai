@@ -1,3 +1,4 @@
+import { SatisfactionSurvey } from "@/components/SatisfactionSurvey";
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { sessionOutput, isLitigantRole } from "@/lib/sessionOutput";
@@ -173,7 +174,6 @@ interface SessionCourtProps {
   estimatedCredits: number;
 
   insufficientCredits: boolean;
-  feedbackGiven: "good" | "bad" | "warn" | null;
   rebuttalChallenge: string;
   setRebuttalChallenge: (v: string) => void;
   fieldValues: Record<string, string>;
@@ -187,13 +187,11 @@ interface SessionCourtProps {
   onContinue: (cap?: number) => Promise<void>;
   onAcceptPartial: () => void;
   onReset: () => void;
-  onFeedback: (r: "good" | "bad" | "warn") => void;
   onCopyMarkdown: () => void;
   onDownload: () => Promise<void>;
   onExportPDF: () => void;
   onSubmitRebuttal: (challenge: string) => Promise<void>;
   onSubmitRelay: (missingInfo: string) => Promise<void>;
-  onSetEndOfJobTap: (tap: "worth_it" | "not_worth_it") => void;
   onSetTemplate: (t: Template | null) => void;
   onSetFieldValues: (v: Record<string, string>) => void;
   onRun: () => void;
@@ -208,7 +206,6 @@ export function SessionCourt({
   estimatedCredits,
 
   insufficientCredits,
-  feedbackGiven,
   rebuttalChallenge,
   setRebuttalChallenge,
   fieldValues,
@@ -222,13 +219,11 @@ export function SessionCourt({
   onContinue,
   onAcceptPartial,
   onReset,
-  onFeedback,
   onCopyMarkdown,
   onDownload,
   onExportPDF,
   onSubmitRebuttal,
   onSubmitRelay,
-  onSetEndOfJobTap,
   onSetTemplate,
   onSetFieldValues,
   onRun,
@@ -511,60 +506,12 @@ export function SessionCourt({
             </motion.div>
           )}
 
-          {/* End-of-job tap — only shown after relay rounds */}
-          {isComplete && state.relayCount >= 1 && (
-            <div style={{
-              padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,200,83,.18)",
-              background: "rgba(0,200,83,.04)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-            }}>
-              <span style={{ fontSize: 12, color: "#7ab87a" }}>Was it worth the relay?</span>
-              <button
-                onClick={() => onSetEndOfJobTap("worth_it")}
-                disabled={state.endOfJobTap !== null}
-                style={{
-                  padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-                  background: state.endOfJobTap === "worth_it" ? "rgba(0,200,83,.25)" : "transparent",
-                  border: state.endOfJobTap === "worth_it" ? "1px solid #00c853" : "1px solid #1d331d",
-                  color: "#eef7ee", cursor: state.endOfJobTap !== null ? "default" : "pointer",
-                }}
-              >👍 Worth it</button>
-              <button
-                onClick={() => onSetEndOfJobTap("not_worth_it")}
-                disabled={state.endOfJobTap !== null}
-                style={{
-                  padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-                  background: state.endOfJobTap === "not_worth_it" ? "rgba(200,64,64,.2)" : "transparent",
-                  border: state.endOfJobTap === "not_worth_it" ? "1px solid #c84040" : "1px solid #1d331d",
-                  color: "#eef7ee", cursor: state.endOfJobTap !== null ? "default" : "pointer",
-                }}
-              >👎 Not worth it</button>
-              {state.endOfJobTap && (
-                <span style={{ fontSize: 11, color: "#5a7a5a", marginLeft: 4 }}>Thanks for the feedback.</span>
-              )}
-            </div>
-          )}
-
           {/* Complete: feedback + export + output tabs + challenge */}
           {isComplete && (
             <>
-              {/* Feedback + export bar */}
+              {state.sessionId && <SatisfactionSurvey key={state.sessionId} sessionId={state.sessionId} />}
+              {/* Export bar */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", padding: "6px 0" }}>
-                <span style={{ fontSize: 12, color: "#7ab87a" }}>Helpful?</span>
-                {(["good", "bad", "warn"] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => onFeedback(r)}
-                    disabled={feedbackGiven !== null}
-                    style={{
-                      width: 34, height: 34, borderRadius: 8, fontSize: 16,
-                      background: feedbackGiven === r ? "rgba(0,200,83,.15)" : "transparent",
-                      border: feedbackGiven === r ? "1px solid #00c853" : "1px solid #1d331d",
-                      cursor: feedbackGiven !== null ? "default" : "pointer", color: "#eef7ee",
-                    }}
-                  >
-                    {r === "good" ? "👍" : r === "bad" ? "👎" : "⚠️"}
-                  </button>
-                ))}
                 <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
                   <button onClick={onCopyMarkdown} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>Copy</button>
                   <button disabled={!artifactsAllowed} title={artifactsAllowed ? "Download" : PAID_ACCESS_NOTE} onClick={() => void onDownload()} style={{ fontSize: 12, padding: "4px 8px", background: "transparent", border: "1px solid #1d331d", borderRadius: 7, color: "#eef7ee", cursor: "pointer" }}>

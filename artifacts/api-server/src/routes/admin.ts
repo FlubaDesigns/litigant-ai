@@ -9,7 +9,10 @@ import instructions from "./admin/instructions.js";
 import models from "./admin/models.js";
 import checklist from "./admin/checklist.js";
 
+import satisfaction from "./admin/satisfaction.js";
+
 const router = Router();
+router.use(satisfaction);
 router.use(invitations);
 router.use(overview);
 router.use(users);
