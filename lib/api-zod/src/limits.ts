@@ -20,6 +20,4 @@ export const PlatformLimitsSchema = z.object({
 export type PlatformLimits = z.infer<typeof PlatformLimitsSchema>;
 export interface PlatformLimitSettings {
   limits: PlatformLimits;
-  storedLimits?: Partial<PlatformLimits>;
-  notices?: string[];
 }

@@ -791,7 +791,7 @@ describe("saved session continuity", () => {
     const email = await import("../lib/emailService.js");
     vi.mocked(email.isResendConfigured).mockResolvedValue(true);
     const db = createRouteMockDb(FAKE_UID, 1000);
-    db._store[`users/${FAKE_UID}`].notifySessionComplete = true;
+    db._store[`users/${FAKE_UID}`].notifications = {sessionComplete: true};
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
     vi.mocked(runBrainSession).mockImplementation(async opts => ({ ...await makeBrainMock({ creditsUsed: 100 })(opts), ...overrides }));
     const response = await request(app).post("/api/run-brain").set("Authorization", `Bearer ${FAKE_TOKEN}`).send(BRAIN_BODY);

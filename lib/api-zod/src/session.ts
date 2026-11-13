@@ -27,13 +27,14 @@ export const CourtConfigFieldsSchema = z.object({
     litigants: z.array(SeatAssignmentSchema).max(MAX_LITIGANTS),
   }).optional(),
 });
-// Normalize saved configurations once at the boundary; execution and UI use only these fields.
-export const CourtConfigSchema = z.preprocess((input) => {
+// Canonical controls only. Beta formats are converted by the release migration.
+export const CourtConfigSchema = z.preprocess((input, ctx) => {
   if (!input || typeof input !== "object" || Array.isArray(input)) return input;
-  const { outputScope, outputPreference: _unused, ...value } = input as Record<string, unknown>;
-  if (outputScope === "all-voices" && (!value.outputStrategy || value.outputStrategy === "moderator-consensus")) {
-    value.outputStrategy = "consensus+individual";
+  if (Object.hasOwn(input, "outputScope") || Object.hasOwn(input, "outputPreference")) {
+    ctx.addIssue({code: "custom", message: "Use outputStrategy and outputPreferenceMode"});
+    return z.NEVER;
   }
+  const value = {...input} as Record<string, unknown>;
   if (value.intelligenceLevel === undefined && !value.provider && !value.model) value.intelligenceLevel = 50;
   const mode = value.outputPreferenceMode ?? (value.artifactType === "none" ? "answer-only"
     : value.artifactType && value.artifactType !== "auto" ? "document" : "auto");
@@ -49,10 +50,6 @@ export function applyLitigantLimit<T extends {litigantCount: number; seatMap?: C
   const litigantCount = Math.min(config.litigantCount, cap);
   if (litigantCount === config.litigantCount && (config.seatMap?.litigants.length ?? 0) <= cap) return config;
   return {...config, litigantCount, ...(config.seatMap ? {seatMap:{...config.seatMap, litigants:config.seatMap.litigants.slice(0, cap)}} : {})};
-}
-/** Repair the formerly offered 25-round preference when reading saved data. New requests remain strict. */
-export function restoreCourtConfig(input: Partial<CourtConfig> = {}): CourtConfig {
-  return CourtConfigSchema.parse({...input, maxIterations: input.maxIterations === 25 ? 20 : input.maxIterations});
 }
 export const RESPONSE_VIEWS: Record<CourtConfig["outputStrategy"], string> = {
   "moderator-consensus": "Court consensus", individual: "Individual responses",
@@ -141,13 +138,11 @@ export function storedSessionRecord(record: Record<string, any>, fullAccess: boo
   return {...Object.fromEntries(Object.entries(record).filter(([key]) => fields.has(key))), memorySaved: false, shared: false};
 }
 
-/** Canonical opt-in. An explicit nested false always wins over legacy data. */
+/** Only the saved, explicit current preference opts in to session email. */
 export function sessionCompleteNotificationsEnabled(profile: {
   notifications?: { sessionComplete?: boolean } | null;
-  notifySessionComplete?: boolean;
 } | null | undefined): boolean {
-  return typeof profile?.notifications?.sessionComplete === "boolean"
-    ? profile.notifications.sessionComplete : profile?.notifySessionComplete === true;
+  return profile?.notifications?.sessionComplete === true;
 }
 
 /** Public and private views distinguish owner acceptance from AI approval. */

@@ -59,7 +59,7 @@ describe("delivered notification preferences", () => {
   });
 
   it("loads legacy opt-out without enabling completion emails", async () => {
-    vi.mocked(getUserProfile).mockResolvedValue({ notifySessionComplete: false } as any);
+    vi.mocked(getUserProfile).mockResolvedValue({ notifications: {sessionComplete: false} } as any);
     render(); effects.forEach(effect => effect()); await Promise.resolve();
     expect(nodes(render()).find(node => node.type === "switch").props.checked).toBe(false);
   });

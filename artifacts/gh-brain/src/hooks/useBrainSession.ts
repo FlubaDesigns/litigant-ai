@@ -1,4 +1,4 @@
-import { CourtConfigSchema, restoreCourtConfig, canCreateArtifacts } from "@workspace/api-zod/session";
+import { CourtConfigSchema, canCreateArtifacts } from "@workspace/api-zod/session";
 import { useReducer, useRef, useCallback, useEffect } from "react";
 import { runBrainSession, updateSession, getSession, type SavedSession, type SSEEvent, type BrainRunRequest, type PauseReason, type RebuttalContext, type CaseFileItem, type CourtroomOutcome, type RelayContext } from "@/services/sessionService";
 export type { CaseFileItem, CourtroomOutcome, RelayContext };
@@ -177,7 +177,7 @@ function phaseForStatus(status: SavedSession["status"]): SessionPhase {
 
 function makeInitialState(initialConfig?: Partial<CourtConfig>): SessionState {
   const litigantCount = initialConfig?.litigantCount ?? DEFAULT_CONFIG.litigantCount;
-  const config = restoreCourtConfig({ ...initialConfig, seatMap: initialConfig?.seatMap ?? makeDefaultSeatMap(litigantCount) });
+  const config = CourtConfigSchema.parse({ ...initialConfig, seatMap: initialConfig?.seatMap ?? makeDefaultSeatMap(litigantCount) });
   return {
     canLoadDefaults: initialConfig === undefined,
     acceptingAnswer: false,

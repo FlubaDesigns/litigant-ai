@@ -120,6 +120,10 @@ it("persists editable questions and output defaults into the template used by ex
   const invalid = await request(app).put("/admin/templates/business-plan").set("Authorization", "Bearer fixture").send({inputFields: [...inputFields, ...inputFields]});
   expect(invalid.status).toBe(400);
 });
+it.each([{outputScope:"all-voices"},{outputPreference:"both"}])("rejects retired template controls instead of silently discarding them: %j", async defaultConfig => {
+  const result=await request(app).put("/admin/templates/business-plan").set("Authorization","Bearer fixture").send({defaultConfig});
+  expect(result.status).toBe(400);expect(store["templates/business-plan"]).toBeUndefined();
+});
 it("reports saved-template read failures instead of showing the stock catalogue as saved data", async () => {
   failCollection = "templates";
   expect((await read("templates")).status).toBe(500);

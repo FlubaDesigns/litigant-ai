@@ -48,7 +48,6 @@ export interface UserProfile {
   onboardingComplete?: boolean;
   defaultSettings: Partial<CourtConfig>;
   /** Legacy read fallback only. New writes use notifications.sessionComplete. */
-  notifySessionComplete?: boolean;
   notifications?: {
     sessionComplete: boolean;
     weeklyDigest: boolean;

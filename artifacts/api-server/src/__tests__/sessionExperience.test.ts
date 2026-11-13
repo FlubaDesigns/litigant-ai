@@ -131,10 +131,10 @@ describe("owned session pagination and exports", () => {
   });
 });
 describe("shared account policies", () => {
-  it("honors nested notification opt-in and explicit opt-out ahead of legacy values", () => {
+  it("honors only the current explicit notification preference", () => {
     expect(sessionCompleteNotificationsEnabled({notifications:{sessionComplete:true}})).toBe(true);
-    expect(sessionCompleteNotificationsEnabled({notifications:{sessionComplete:false},notifySessionComplete:true})).toBe(false);
-    expect(sessionCompleteNotificationsEnabled({notifySessionComplete:true})).toBe(true);
+    expect(sessionCompleteNotificationsEnabled({notifications:{sessionComplete:false},notifySessionComplete:true} as any)).toBe(false);
+    expect(sessionCompleteNotificationsEnabled({notifySessionComplete:true} as any)).toBe(false);
     expect(sessionCompleteNotificationsEnabled({})).toBe(false);
   });
   it("keeps financial recovery metadata while stripping all Free session content", () => {

@@ -1766,10 +1766,9 @@ function LimitsTab() {
           </Button>
         </div>
 
-        {settings?.notices?.map(notice => <p key={notice} role="alert" className="text-sm text-amber-500">{notice}</p>)}
         <div className="row layout__split-2">
           {Object.entries(LIMIT_DESCRIPTIONS).map(([name, meta]) => {
-            const current = settings?.storedLimits?.[name as keyof typeof limits] ?? limits[name as keyof typeof limits];
+            const current = limits[name as keyof typeof limits];
             return (
               <article key={name} aria-label={meta.label} className="lgt-card lgt-card--compact space-y-2">
                 <div className="flex-1 space-y-0.5 min-w-0">

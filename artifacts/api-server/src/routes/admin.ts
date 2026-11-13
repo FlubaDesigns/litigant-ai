@@ -1165,7 +1165,7 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
     updates["inputFields"] = fields.data;
   }
   if (defaultSettings || req.body.defaultConfig) {
-    const config = CourtConfigFieldsSchema.partial().safeParse(req.body.defaultConfig ?? defaultSettings);
+    const config = CourtConfigFieldsSchema.partial().strict().safeParse(req.body.defaultConfig ?? defaultSettings);
     if (!config.success) return res.status(400).json({error:"Invalid template settings"});
     updates["defaultConfig"] = config.data;
     updates["defaultSettings"] = FieldValue.delete();

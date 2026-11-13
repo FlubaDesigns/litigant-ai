@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CourtConfigSchema, restoreCourtConfig, RESPONSE_VIEWS } from "@workspace/api-zod/session";
+import { CourtConfigSchema, RESPONSE_VIEWS } from "@workspace/api-zod/session";
 import { sessionOutput } from "./sessionOutput";
 import { buildMarkdown, buildText, exportPDF, type SessionState } from "./sessionExport";
 
@@ -37,18 +37,19 @@ describe("one configured output for display and downloads", () => {
     const code = "# Notes\nresult_value = price * count\n`reference_id`";
     expect(buildText({...sample,finalAnswer:code})).toContain(code);
   });
-  it("normalizes overlapping saved controls and removes obsolete fields", () => {
-    const config = CourtConfigSchema.parse({outputScope:"all-voices",outputStrategy:"moderator-consensus",outputPreference:"both",artifactType:"none"});
+  it("rejects retired controls and keeps current output modes consistent", () => {
+    for (const retired of [{outputScope:"all-voices"}, {outputPreference:"both"}]) {
+      expect(CourtConfigSchema.safeParse(retired).success).toBe(false);
+    }
+    const config = CourtConfigSchema.parse({outputStrategy:"consensus+individual",artifactType:"none"});
     expect(config.outputStrategy).toBe("consensus+individual");
     expect(config.outputPreferenceMode).toBe("answer-only");
-    expect(config).not.toHaveProperty("outputScope");
-    expect(config).not.toHaveProperty("outputPreference");
     expect(CourtConfigSchema.parse({...config,outputPreferenceMode:"document"}).artifactType).toBe("auto");
     expect(CourtConfigSchema.parse({...config,artifactType:"report"}).artifactType).toBe("none");
   });
-  it("repairs the formerly offered 25-round preference without allowing new invalid requests", () => {
-    expect(restoreCourtConfig({maxIterations:25,outputStrategy:"individual"}).maxIterations).toBe(20);
+  it("rejects obsolete 25-round settings after the release migration", () => {
     expect(CourtConfigSchema.safeParse({maxIterations:25}).success).toBe(false);
+    expect(CourtConfigSchema.parse({maxIterations:20}).maxIterations).toBe(20);
   });
   it("does not substitute pipeline voices for individual arguments", () => {
     const state={...sample, config:CourtConfigSchema.parse({outputStrategy:"individual"}), debateNotes:"",runtimeFeed:[
