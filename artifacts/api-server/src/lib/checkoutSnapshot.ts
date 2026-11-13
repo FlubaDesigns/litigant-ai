@@ -123,7 +123,7 @@ export async function createPackCheckout(
   return link;
 }
 
-/** Returns null only for an unmarked legacy order with no saved snapshot. */
+/** Returns null for an unmarked order with no snapshot; the caller must validate a current custom top-up. */
 export async function validateCheckoutSnapshot(payment: {
   id?: unknown;
   note?: unknown;

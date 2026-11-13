@@ -1,7 +1,7 @@
 import { ConfigurationUnavailableError } from "./configurationError.js";
 /**
  * Canonical credit-pack catalogue: shared defaults overlaid with saved admin packs.
- * Public pages, admin, checkout and payment validation all read this catalogue.
+ * Public pages, admin and checkout all read this catalogue. Completed pack payments use immutable checkout snapshots.
  * Defaults initialize missing records; a failed saved-config read is an error.
  * Pack IDs remain stable because completed payment notes refer to them.
  */

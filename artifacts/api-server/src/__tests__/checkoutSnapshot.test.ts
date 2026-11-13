@@ -476,13 +476,10 @@ describe("already-issued legacy links", () => {
       note: "LITIGANT:userId=buyer,creditAmount=500,pack=offer_pack",
       order_id: "legacy-order",
     });
-  it("fulfills verifiable legacy terms after the pack is disabled", async () => {
+  it("rejects snapshotless named packs even when today's catalogue matches", async () => {
     db.store["config/creditPacks"].packs.offer_pack.active = false;
-    expect((await signedWebhook(event(legacy()))).status).toBe(200);
-    expect(db.store["users/buyer"]).toMatchObject({
-      creditBalance: 525,
-      plan: "pro",
-    });
+    expect((await signedWebhook(event(legacy()))).status).toBe(500);
+    unchanged();
   });
   it.each([
     "price edit",
@@ -508,4 +505,20 @@ describe("already-issued legacy links", () => {
       expect(db.store["checkout_snapshots/legacy-order"]).toBeUndefined();
     },
   );
+});
+
+describe("current custom checkout contract", () => {
+  it("fulfills the issued custom link once without reading today's pack catalogue", async () => {
+    const checkout = await request(app).post("/billing/checkout/custom").set("Authorization", "Bearer fixture").send({dollars:20});
+    expect(checkout.status).toBe(200);
+    expect(checkout.body).toMatchObject({creditAmount:2000,amountCents:2000});
+    expect(createPaymentLink).toHaveBeenCalledWith(expect.objectContaining({note:"LITIGANT:userId=buyer,creditAmount=2000,pack=custom",amountCents:2000}));
+    db.fail.configRead = true;
+    const paid = payment({amount_money:{amount:2000,currency:"USD"}});
+    expect((await signedWebhook(event(paid))).status).toBe(200);
+    expect((await signedWebhook(event(paid,"duplicate-event"))).status).toBe(200);
+    expect(db.store["users/buyer"]).toMatchObject({creditBalance:2025,plan:"pro"});
+    expect(ledgers()).toHaveLength(1);
+    expect(sendPaymentReceiptEmail).toHaveBeenCalledTimes(1);
+  });
 });
