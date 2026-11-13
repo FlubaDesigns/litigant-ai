@@ -1,3 +1,4 @@
+import { encodeSessionContent } from "@workspace/api-zod/session-content";
 vi.mock("../lib/runInstructions.js", () => ({getRunInstructions: async () => ({
   conscience: {text:"Offline test instructions",version:"test"},
   seats: {orchestrator:"Test",moderator:"Test",architect:"Test",builder:"Test",auditor:"Test",litigant:"Test"},
@@ -200,7 +201,7 @@ describe("Session ownership", () => {
 describe("accepting a saved partial answer", () => {
   const original = {
     userId: "owner", status: "paused_credit_cap", pauseReason: "credit_cap",
-    finalAnswer: "Saved partial answer", transcript: "Saved evidence", debateNotes: "Saved notes",
+    finalAnswer: "Saved partial answer", sessionContent: encodeSessionContent({transcript:"Saved evidence",debateNotes:"Saved notes"}),
     caveats: "Review still required", courtroomOutcome: { reason: "convergence_failure" },
     creditsUsed: 40, starred: true, shareId: "existing-link",
   };
@@ -291,7 +292,7 @@ describe("session failure telemetry", () => {
     expect(JSON.stringify(saved)).not.toContain("upstream sensitive diagnostic");
   });
   it("preserves the paused answer and releases its lease after a failed resume", async () => {
-    const original={userId:"owner",status:"paused_credit_cap",finalAnswer:"Saved answer",transcript:"Saved transcript",creditsUsed:40,createdAt:"original-date"};
+    const original={userId:"owner",status:"paused_credit_cap",finalAnswer:"Saved answer",sessionContent:encodeSessionContent({transcript:"Saved transcript"}),creditsUsed:40,createdAt:"original-date"};
     const db=createMockDb({saved:original});
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
     vi.mocked(runBrainSession).mockRejectedValue(new Error("Provider failed"));

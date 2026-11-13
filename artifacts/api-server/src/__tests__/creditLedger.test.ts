@@ -755,15 +755,15 @@ describe("saved session continuity", () => {
     vi.mocked(fixtureQuote).mockResolvedValue(200);
     vi.mocked(verifyIdToken).mockResolvedValue({uid:FAKE_UID,admin:false} as any);
   });
-  it.each(["legacy", "canonical"])("resumes %s question/config/transcript and appends turns without resetting metadata", async(format)=>{
+  it.each([true,false])("resumes canonical history without ID collisions (prior index: %s)", async(indexed)=>{
     const db=createRouteMockDb(FAKE_UID,1000); db._store[`users/${FAKE_UID}`].plan="pro";
     db._store["sessions/saved"]={status:"paused_credit_cap",userId:FAKE_UID,question:"Original question",title:"My saved title",config:{...BRAIN_BODY.config,litigantCount:4,maxCredits:500},
       transcript:"**Litigant:** Original evidence\n\n---\n\n**Moderator (Summary):** Summary",debateNotes:"Original notes",creditsUsed:30,
       starred:true,archived:false,shared:true,shareId:"keep-link",createdAt:"original-date"};
     db._store["sessions/saved/session_turns/turn_000"]={turnIndex:0,content:"Original evidence"};
-    if (format === "canonical") {
+    {
       const original = db._store["sessions/saved"];
-      original.sessionContent = encodeSessionContent({...original, turns:[{id:"turn_000",turnIndex:0,content:"Original evidence"}]});
+      original.sessionContent = encodeSessionContent({...original, turns:[{id:"turn_000",...(indexed?{turnIndex:0}:{}),content:"Original evidence"}]});
       delete original.transcript; delete original.debateNotes;
       db._store["sessions/saved/session_turns/turn_000"].content = "STALE COPY";
     }
@@ -784,12 +784,22 @@ describe("saved session continuity", () => {
     expect(content.debateNotes).toBe("Original notes");
     expect(content.transcript).toContain("Original evidence");
     expect(content.transcript).not.toContain("Forged");
-    expect(db._store["sessions/saved/session_turns/turn_000"].content).toBe(format === "canonical" ? "STALE COPY" : "Original evidence");
+    expect(db._store["sessions/saved/session_turns/turn_000"].content).toBe("STALE COPY");
     expect(content.turns).toMatchObject([{id:"turn_000", content:"Original evidence"}, {id:"turn_001", content:"APPROVED"}]);
     expect(db._store["sessions/saved/session_turns/turn_001"]).toBeUndefined();
     const events=res.text.trim().split("\n\n").filter(l=>l.startsWith("data: ")).map(l=>JSON.parse(l.slice(6)));
     expect(events.at(-1)).toMatchObject({type:"done",creditsUsed:130});
     expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(900);
+  });
+  it("rejects unconverted resume content before provider calls or reservation and releases the lease", async()=>{
+    const db=createRouteMockDb(FAKE_UID,1000);db._store[`users/${FAKE_UID}`].plan="pro";
+    db._store["sessions/old"]={userId:FAKE_UID,status:"paused_credit_cap",transcript:"UNCONVERTED",config:BRAIN_BODY.config};
+    vi.mocked(getFirestoreDb).mockReturnValue(db as any);
+    const response=await request(app).post("/api/run-brain").set("Authorization",`Bearer ${FAKE_TOKEN}`).send({...BRAIN_BODY,sessionId:"old"});
+    expect(response.status).toBe(503);expect(runBrainSession).not.toHaveBeenCalled();
+    expect(db._store[`users/${FAKE_UID}`].creditBalance).toBe(1000);
+    expect(db._store["sessions/old"].activeRun).toBeNull();
+    expect(db._store["sessions/old"].transcript).toBe("UNCONVERTED");
   });
   it.each([
     [{}, "complete"],
@@ -838,7 +848,7 @@ describe("one active run per saved session", () => {
   function savedDb(balance = 1000) {
     const db = createRouteMockDb(FAKE_UID, balance); db._store[`users/${FAKE_UID}`].plan="pro";
     db._store["sessions/saved"] = { userId: FAKE_UID, status: "incomplete", creditsUsed: 30,
-      question: "Saved question", finalAnswer: "Prior answer", transcript: "Prior evidence", config: resumeBody.config };
+      question: "Saved question", finalAnswer: "Prior answer", sessionContent: encodeSessionContent({transcript:"Prior evidence"}), config: resumeBody.config };
     vi.mocked(getFirestoreDb).mockReturnValue(db as any);
     return db;
   }
@@ -958,7 +968,7 @@ describe("saved context for restored sessions and child runs", () => {
     db._store["sessions/parent"] = {
       userId: FAKE_UID, status: "relay_needed", question: "Original question", title: "Parent title",
       templateId: template.id, config: { ...BRAIN_BODY.config, litigantCount: 4, maxCredits: 700 },
-      caseFile: evidence, transcript: "Saved transcript", finalAnswer: "Saved verdict", debateNotes: "Saved notes",
+      caseFile: evidence, sessionContent: encodeSessionContent({transcript:"Saved transcript",debateNotes:"Saved notes"}), finalAnswer: "Saved verdict",
       courtroomOutcome: { reason: "not_enough", round: 2, confidenceAtExit: 70 },
       relayCount: 2, rebuttalRound: 3, creditsUsed: 250, artifactPath: "no-artifact",
     };
@@ -1007,7 +1017,7 @@ describe("saved context for restored sessions and child runs", () => {
     const response = await request(app).get("/api/sessions/parent").set("Authorization", `Bearer ${FAKE_TOKEN}`);
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ caseFile: evidence, template: { id: template.id, title: template.title },
-      courtroomOutcome: { reason: "not_enough" }, relayCount: 2, rebuttalRound: 3, transcript: "Saved transcript" });
+      courtroomOutcome: { reason: "not_enough" }, relayCount: 2, rebuttalRound: 3, transcript: "Saved transcript", transcriptLines: ["Saved transcript"] });
   });
 
   it.each(["rebuttal", "relay"])("uses the owned parent as authoritative context for a %s", async kind => {

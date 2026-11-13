@@ -20,8 +20,9 @@ export async function requireAdmin(req: any, res: any, next: any): Promise<void>
   next();
 }
 
-export function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot): Record<string, unknown> {
-  const data = presentSessionContent(doc.data() ?? {});
+export function serializeDoc(doc: FirebaseFirestore.DocumentSnapshot, session = false): Record<string, unknown> {
+  const raw = doc.data() ?? {};
+  const data = session ? presentSessionContent(raw) : raw;
   const out: Record<string, unknown> = { id: doc.id };
   for (const [k, v] of Object.entries(data)) {
     if (v && typeof v === "object" && "toDate" in v && typeof (v as any).toDate === "function") {

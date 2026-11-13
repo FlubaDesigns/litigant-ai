@@ -84,7 +84,7 @@ function buildPrefillPausedAction(opts: {
 }) {
   return {
     type: "RESTORE_SESSION" as const,
-    session: { ...opts, id: opts.sessionId, title: opts.question, templateId: null,
+    session: { ...opts, transcriptLines: opts.transcript.split("\n\n---\n\n").filter(Boolean), id: opts.sessionId, title: opts.question, templateId: null,
       status: "paused_credit_cap" as const, createdAt: "", updatedAt: "" },
   };
 }
@@ -409,7 +409,7 @@ describe("full saved session restoration", () => {
     id: "saved-parent", title: "Saved", question: "Saved question", status: "complete", templateId: template.id, template,
     createdAt: "", updatedAt: "", confidence: 85, creditsUsed: 40,
     config: { litigantCount: 4, maxCredits: 700 } as any,
-    finalAnswer: "Saved answer", transcript: "Original transcript", debateNotes: "Notes", artifacts: "Built document",
+    finalAnswer: "Saved answer", transcript: "Original transcript", transcriptLines: ["Original transcript"], debateNotes: "Notes", artifacts: "Built document",
     caveats: "Review this", caseFile: [attachment], artifactPath: "artifact",
     courtroomOutcome: { reason: "approved", confidenceAtExit: 85, round: 2 },
     relayCount: 2, relayQuestion: "Missing fact?", rebuttalRound: 3,

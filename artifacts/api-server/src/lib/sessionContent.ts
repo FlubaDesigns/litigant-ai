@@ -1,7 +1,4 @@
-/** One projection for owner reads, public reports and account exports.
- * Turns must already be ordered by the caller. Saved content wins independently
- * for each field: a missing notes field must never replace a saved transcript.
- */
+/** Canonical projections for owner reads, public reports and account exports. */
 import { decodeSessionContent, type StoredTurn } from "@workspace/api-zod/session-content";
 export { encodeSessionContent, decodeSessionContent } from "@workspace/api-zod/session-content";
 
@@ -11,34 +8,23 @@ interface SessionTurnContent {
   content?: string;
 }
 
-/** Transitional reader: canonical records never consult legacy copies. */
-export function presentSessionContent(data: FirebaseFirestore.DocumentData): FirebaseFirestore.DocumentData {
-  if (data.sessionContent === undefined) return data;
-  const { sessionContent, ...metadata } = data;
-  const { turns: _turns, ...content } = decodeSessionContent(sessionContent);
-  return { ...metadata, ...content };
+/** All saved content has one representation. Metadata-only failed runs have no content. */
+function contentFor(data: FirebaseFirestore.DocumentData) {
+  if (data.sessionContent !== undefined) return decodeSessionContent(data.sessionContent);
+  if (["transcript", "transcriptLines", "debateNotes"].some(key => Object.hasOwn(data, key))) {
+    throw new Error("Saved session content has not been migrated");
+  }
+  return {transcript: "", transcriptLines: [] as string[], debateNotes: "", turns: [] as StoredTurn[]};
 }
 
-export async function readSessionTurns(ref: FirebaseFirestore.DocumentReference, data: FirebaseFirestore.DocumentData): Promise<StoredTurn[]> {
-  if (data.sessionContent !== undefined) return decodeSessionContent(data.sessionContent).turns;
-  const snapshot = await ref.collection("session_turns").get();
-  return snapshot.docs.sort((a, b) => Number(a.data().turnIndex ?? Number.MAX_SAFE_INTEGER) - Number(b.data().turnIndex ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id))
-    .map(doc => {
-      const turn = doc.data();
-      if (typeof turn.content !== "string") throw new TypeError("Invalid saved turn content");
-      return { ...turn, id: doc.id, content: turn.content };
-    });
+export function presentSessionContent(data: FirebaseFirestore.DocumentData): FirebaseFirestore.DocumentData {
+  const {sessionContent: _stored, transcript: _oldTranscript, transcriptLines: _oldLines, debateNotes: _oldNotes, ...metadata} = data;
+  const {turns: _turns, ...content} = contentFor(data);
+  return {...metadata, ...content};
 }
-export function projectSessionContent(
-  saved: {transcript?: string; debateNotes?: string},
-  turns: readonly SessionTurnContent[],
-): {transcript: string; debateNotes: string} {
-  return {
-    transcript: saved.transcript || turns.filter(turn => turn.role !== "Orchestrator")
-      .map(turn => `**${turn.role} (Round ${turn.round}):**\n${turn.content}`).join("\n\n---\n\n"),
-    debateNotes: saved.debateNotes || turns.filter(turn => turn.role !== "Orchestrator" && turn.role !== "Verdict")
-      .map(turn => `### ${turn.role} — Round ${turn.round}\n${turn.content}`).join("\n\n---\n\n"),
-  };
+
+export function readSessionTurns(data: FirebaseFirestore.DocumentData): StoredTurn[] {
+  return contentFor(data).turns;
 }
 
 /** Fixed pipeline stages use round 0 or 99; only debate rounds count. */

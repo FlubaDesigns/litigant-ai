@@ -111,3 +111,12 @@ test('large single-session cleanup repeats its root fence across bounded batches
  assert(batches.every(batch=>batch[0].verify===plan.name&&batch.length<=200));
  assert.equal(batches.flat().filter(write=>write.delete).length,450);
 });
+
+test('inventory includes missing parent records so orphaned turn collections cannot be overlooked',async()=>{
+ let requested;
+ await assert.rejects(inspectContent(async url=>{
+  requested ??= url;
+  return url.includes('/session_turns?') ? {documents:[turn()]} : {documents:[{name:session().name}]};
+ }),/update precondition/);
+ assert.equal(new URL(requested).searchParams.get('showMissing'),'true');
+});

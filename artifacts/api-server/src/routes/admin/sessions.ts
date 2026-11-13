@@ -37,7 +37,7 @@ router.get("/admin/sessions", requireAdmin, async (req, res) => {
     const hasMore = snap.docs.length > limit;
 
     return res.json({
-      sessions: docs.map((d: any) => serializeDoc(d)),
+      sessions: docs.map((d: any) => serializeDoc(d, true)),
       hasMore,
       nextCursor: hasMore ? docs[docs.length - 1]?.id : null,
     });
@@ -55,8 +55,8 @@ router.get("/admin/sessions/:id", requireAdmin, async (req, res) => {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
     if (!doc.exists) return res.status(404).json({ error: "Session not found" });
 
-    const data = serializeDoc(doc);
-    const turns = (await readSessionTurns(doc.ref, doc.data()!)).map(turn => ({...turn, createdAt: turn.createdAt && typeof turn.createdAt === "object" && "toDate" in turn.createdAt && typeof turn.createdAt.toDate === "function" ? turn.createdAt.toDate().toISOString() : turn.createdAt}));
+    const data = serializeDoc(doc, true);
+    const turns = (readSessionTurns(doc.data()!)).map(turn => ({...turn, createdAt: turn.createdAt && typeof turn.createdAt === "object" && "toDate" in turn.createdAt && typeof turn.createdAt.toDate === "function" ? turn.createdAt.toDate().toISOString() : turn.createdAt}));
 
     return res.json({ session: data, turns });
   } catch (err: any) {

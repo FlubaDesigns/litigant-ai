@@ -95,41 +95,35 @@ describe("owned session pagination and exports", () => {
     session("other",{userId:"someone-else"});
     for(const id of ["other","missing"]) expect((await request(app).get(`/sessions?cursor=${id}`).set(auth)).status).toBe(400);
   });
-  it("exports all paid owned content, archived records, legacy turns and all pages, excluding secrets and other owners", async () => {
+  it("exports all paid owned content, archived records, canonical turns and all pages, excluding secrets and other owners", async () => {
     for(let i=0;i<101;i++) session(`saved-${String(i).padStart(3,"0")}`,{artifacts:`DOCUMENT_${i}`,finalAnswer:`ANSWER_${i}`,caseFile:[{content:"EVIDENCE"}],config:{responseMode:"thorough"},archived:true,activeRun:{id:"PRIVATE_LEASE"},shareId:"PRIVATE_SHARE"});
-    data["sessions/saved-000/session_turns/turn"]={role:"Litigant 1",content:"LEGACY_TURN",round:1,turnIndex:0};
-    data["sessions/saved-000/session_turns/unindexed"]={role:"Moderator",content:"UNINDEXED_LEGACY_TURN",round:1};
+    data["sessions/saved-000"].sessionContent=encodeSessionContent({transcript:"SAVED_TURN",turns:[
+      {id:"turn",role:"Litigant 1",content:"SAVED_TURN",round:1,turnIndex:0},
+      {id:"unindexed",role:"Moderator",content:"PRESERVED_UNINDEXED_TURN",round:1},
+    ]});
     session("not-owned",{userId:"other",finalAnswer:"NOT_OWNED"}); session("free-era",{memorySaved:false,finalAnswer:"NOT_SAVED_MEMORY"});
     const res=await request(app).get("/account/export").set(auth);
     expect(res.status).toBe(200); expect(res.body.sessions).toHaveLength(101);
-    for(const marker of ["DOCUMENT_100","ANSWER_100","EVIDENCE","LEGACY_TURN","UNINDEXED_LEGACY_TURN","thorough"]) expect(res.text).toContain(marker);
+    for(const marker of ["DOCUMENT_100","ANSWER_100","EVIDENCE","SAVED_TURN","PRESERVED_UNINDEXED_TURN","thorough"]) expect(res.text).toContain(marker);
     for(const marker of ["PRIVATE_PAYMENT","PRIVATE_TOKEN","PRIVATE_LEASE","PRIVATE_SHARE","NOT_OWNED","NOT_SAVED_MEMORY"]) expect(res.text).not.toContain(marker);
-    expect(res.body.sessions[0].transcript).toContain("LEGACY_TURN");
+    expect(res.body.sessions[0].transcript).toContain("SAVED_TURN");
   });
-  it.each(["transcript", "debateNotes"])("preserves saved %s while deriving only its missing companion", async field => {
-    session("partial", {[field]: "SAVED_AUTHORITATIVE_CONTENT"});
-    data["sessions/partial/session_turns/turn"]={role:"Advocate",round:1,content:"TURN_CONTENT",turnIndex:0};
+  it.each(["transcript", "debateNotes"])("preserves canonical %s and its intentionally empty companion", async field => {
+    session("partial", {sessionContent:encodeSessionContent({[field]:"SAVED_AUTHORITATIVE_CONTENT",turns:[{role:"Advocate",round:1,content:"TURN_CONTENT"}]})});
     const owner=await request(app).get("/sessions/partial").set(auth);
     const backup=await request(app).get("/account/export").set(auth);
-    expect(owner.status).toBe(200); expect(backup.status).toBe(200);
+    expect(owner.status).toBe(200);expect(backup.status).toBe(200);
     expect(owner.body[field]).toBe("SAVED_AUTHORITATIVE_CONTENT");
     expect(backup.body.sessions[0][field]).toBe("SAVED_AUTHORITATIVE_CONTENT");
-    const missing=field==="transcript" ? "debateNotes" : "transcript";
-    expect(owner.body[missing]).toContain("TURN_CONTENT");
-    expect(owner.body[missing]).toBe(backup.body.sessions[0][missing]);
+    const empty=field==="transcript"?"debateNotes":"transcript";
+    expect(owner.body[empty]).toBe("");expect(backup.body.sessions[0][empty]).toBe("");
+    expect(backup.body.sessions[0].sessionTurns[0].content).toBe("TURN_CONTENT");
   });
-  it("renders owner and exported turn-only content identically without exposing the opening frame", async () => {
-    session("turn-only");
-    for (const [index,role] of ["Orchestrator","Advocate","Moderator","Verdict"].entries()) {
-      data[`sessions/turn-only/session_turns/turn_${index}`]={role,round:index===0?0:index===1?1:99,content:role+"_CONTENT",turnIndex:index};
-    }
-    const owner=(await request(app).get("/sessions/turn-only").set(auth)).body;
-    const exported=(await request(app).get("/account/export").set(auth)).body.sessions[0];
-    expect(owner.transcript).toBe(exported.transcript); expect(owner.debateNotes).toBe(exported.debateNotes);
-    expect(owner.transcript).not.toContain("Orchestrator_CONTENT");
-    expect(owner.transcript).toContain("Verdict_CONTENT");
-    expect(owner.debateNotes).not.toContain("Verdict_CONTENT");
-    expect(owner.debateNotes).toContain("Moderator_CONTENT");
+  it("rejects an unconverted root record instead of reconstructing legacy history", async () => {
+    session("unconverted",{transcript:"OLD FORMAT"});
+    expect((await request(app).get("/sessions/unconverted").set(auth)).status).toBe(500);
+    expect((await request(app).get("/account/export").set(auth)).status).toBe(500);
+    expect(collectionsRead.some(path=>path.endsWith("session_turns"))).toBe(false);
   });
   it("Free exports account data only and never queries saved memory or unlocks history", async () => {
     data["users/owner"].plan="free"; session("old",{finalAnswer:"DO_NOT_UNLOCK"});
@@ -139,9 +133,9 @@ describe("owned session pagination and exports", () => {
     expect((await request(app).get("/sessions").set(auth)).status).toBe(403);
   });
   it("fails instead of producing an incomplete backup if any content read fails, then supports retry", async () => {
-    session("saved"); turnsFail=true;
+    session("saved",{sessionContent:{version:1,blocks:[]}});
     const res=await request(app).get("/account/export").set(auth);
-    expect(res.status).toBe(500); expect(res.body.sessions).toBeUndefined(); turnsFail=false;
+    expect(res.status).toBe(500); expect(res.body.sessions).toBeUndefined(); data["sessions/saved"].sessionContent=encodeSessionContent({transcript:"Restored"});
     expect((await request(app).get("/account/export").set(auth)).body.sessions).toHaveLength(1);
   });
   it("requires authentication for exports", async () => {

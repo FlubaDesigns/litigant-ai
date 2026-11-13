@@ -54,7 +54,7 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
     }
     const snap = await q.get();
     const hasMore = snap.size > limit;
-    const users = snap.docs.slice(0, limit).map(serializeDoc);
+    const users = snap.docs.slice(0, limit).map(doc => serializeDoc(doc));
     return res.json({users, hasMore, nextCursor: hasMore ? users.at(-1)?.id : null});
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });
@@ -88,7 +88,7 @@ router.get("/admin/users/:uid", requireAdmin, async (req, res) => {
     return res.json({
       user: serializeDoc(userDoc),
       recentTransactions: txSnap.docs.map((d) => serializeDoc(d)),
-      recentSessions: sessionsSnap.docs.map((d) => serializeDoc(d)),
+      recentSessions: sessionsSnap.docs.map((d) => serializeDoc(d, true)),
     });
   } catch (err: any) {
     return res.status(500).json({ error: safeError(err) });

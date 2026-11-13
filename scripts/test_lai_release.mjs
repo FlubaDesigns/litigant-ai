@@ -849,3 +849,12 @@ test('Docker digest selection ignores local and unrelated entries without relyin
 test('Docker digest selection refuses missing, mutable and ambiguous approved images', () => {
  for(const values of [null, [], ['gcr.io/litigant-ai/api:latest'], [`gcr.io/other/api@sha256:${'a'.repeat(64)}`], [IMAGE, `gcr.io/litigant-ai/api@sha256:${'a'.repeat(64)}`]]) assert.throws(()=>selectAllowedImage(values));
 });
+
+
+test('retired content/settings cannot silently re-enter a release', async () => {
+  const {validateRetiredSessionData} = await import('./lai-release.mjs');
+  validateRetiredSessionData({conversions:0,duplicateTurns:0},{writes:[]});
+  assert.throws(()=>validateRetiredSessionData({conversions:1,duplicateTurns:0},{writes:[]}),/Unconverted/);
+  assert.throws(()=>validateRetiredSessionData({conversions:0,duplicateTurns:1},{writes:[]}),/turn copies/);
+  assert.throws(()=>validateRetiredSessionData({conversions:0,duplicateTurns:0},{writes:[{}]}),/saved settings/);
+});

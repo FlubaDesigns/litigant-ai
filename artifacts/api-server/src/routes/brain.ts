@@ -239,7 +239,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         sessionId = clientSessionId;
         previousSession = presentSessionContent(claimed.session);
         if (previousSession.memorySaved === false) throw new SessionRunError(403, "This Free conversation has no saved memory.");
-        previousTurns = await readSessionTurns(db.collection("sessions").doc(clientSessionId), claimed.session);
+        previousTurns = readSessionTurns(claimed.session);
       } catch (error) {
         if (runLease) {
           await releaseSessionRun(db, runLease).catch(() => false);
@@ -259,10 +259,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       }
       try {
         const parentData = (await db.collection("sessions").doc(parentSessionId).get()).data();
-        const parent = parentData ? presentSessionContent(parentData) : undefined;
-        if (!parent || parent.userId !== uid || parent.memorySaved === false) {
+        if (!parentData || parentData.userId !== uid || parentData.memorySaved === false) {
           res.status(403).json({ message: "Parent session not found or access denied." }); return;
         }
+        const parent = presentSessionContent(parentData);
         parentSession = parent;
         if (rebuttalContext) rebuttalContext = {
           ...rebuttalContext, originalVerdict: parent.finalAnswer ?? "",
@@ -270,7 +270,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         };
         if (relayContext) relayContext = {
           ...relayContext,
-          originalTranscript: Array.isArray(parent.transcriptLines) ? parent.transcriptLines : String(parent.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
+          originalTranscript: parent.transcriptLines,
           relayRound: Number(parent.relayCount ?? 0) + 1,
         };
       } catch {
@@ -288,7 +288,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       ...(previousSession ? { maxCredits: config.maxCredits } : {}) };
   }
   if (previousSession) {
-    continueFromTranscript = Array.isArray(previousSession.transcriptLines) ? previousSession.transcriptLines : String(previousSession.transcript ?? "").split("\n\n---\n\n").filter(Boolean);
+    continueFromTranscript = previousSession.transcriptLines;
     const lastSummary = continueFromTranscript!.reduce((last, line, i) => line.startsWith("**Moderator (Summary):**") ? i : last, -1);
     const lastDebate = continueFromTranscript!.reduce((last, line, i) => /^\*\*(?:Litigant|Conscience|Moderator \(Round)/.test(line) ? i : last, -1);
     resumeWithFixedPipeline = previousSession.status === "paused_credit_cap" && lastSummary >= 0 && lastSummary > lastDebate;
@@ -460,15 +460,18 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       // staging transaction leaves a recoverable full-refund reservation.
       try {
         const pricedCalls = annotateCalls(result.tokenUsage.calls ?? [], prepared.rates);
-        const offset = previousTurns.reduce((max, turn) => Math.max(max, Number(turn.turnIndex ?? -1) + 1), 0);
+        let nextTurnIndex = previousTurns.reduce((max, turn) => Math.max(max, Number(turn.turnIndex ?? -1) + 1), 0);
+        const usedTurnIds = new Set(previousTurns.map(turn => turn.id));
+        const newTurns = result.turns.map(turn => {
+          while (usedTurnIds.has(`turn_${String(nextTurnIndex).padStart(3, "0")}`)) nextTurnIndex++;
+          const turnIndex = nextTurnIndex++;
+          return {...turn, id: `turn_${String(turnIndex).padStart(3, "0")}`, turnIndex, createdAt: new Date()};
+        });
         const content = fullAccess ? encodeSessionContent({
           transcript: result.transcript.join("\n\n---\n\n"),
           transcriptLines: result.transcript,
           debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
-          turns: [...previousTurns, ...result.turns.map((turn, index) => ({
-            ...turn, id: `turn_${String(offset + index).padStart(3, "0")}`,
-            turnIndex: offset + index, createdAt: new Date(),
-          }))],
+          turns: [...previousTurns, ...newTurns],
         }) : undefined;
         const savedResult = storedSessionRecord({
           sessionId: result.sessionId,
@@ -493,9 +496,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           litigantCount: effectiveConfig.litigantCount,
           status,
           finalAnswer: result.finalAnswer,
-          ...(content ? { sessionContent: content,
-            debateNotes: FieldValue.delete(), transcriptLines: FieldValue.delete(), transcript: FieldValue.delete(),
-          } : {}),
+          ...(content ? { sessionContent: content } : {}),
           caveats: result.caveats,
           artifacts: result.artifacts,
           conscienceVersion: result.conscienceVersion,

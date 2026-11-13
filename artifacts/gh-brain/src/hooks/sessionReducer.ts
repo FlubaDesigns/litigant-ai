@@ -393,7 +393,7 @@ export function reducer(state: SessionState, action: Action): SessionState {
         needsRelay: phase === "relay_needed",
         rebuttalRound: saved.rebuttalRound ?? 0,
         pauseReason: phase === "paused" ? (saved.pauseReason ?? (saved.courtroomOutcome?.reason === "output_incomplete" ? "output_incomplete" : saved.status === "paused_credit_cap" ? "credit_cap" : "iteration_limit")) : null,
-        pauseTranscript: saved.transcriptLines ?? (saved.transcript ?? "").split("\n\n---\n\n").filter(Boolean),
+        pauseTranscript: saved.transcriptLines ?? [],
         errorMessage: phase === "error" ? "This session did not complete." : null,
         courtHappened: true,
       };
