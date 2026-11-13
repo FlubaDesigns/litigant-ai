@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { safeNext } from "@/lib/authUtils";
 
-/** Only displayed on the explicitly requested /login?engine=1 route. */
+/** Only displayed on the explicitly requested /sign-in?engine=1 route. */
 export default function AuthorizationEngineSignIn() {
   const [, setLocation] = useLocation();
   const [request, setRequest] = useState<{ requestId: string; expiresAtMs: number } | null>(null);
