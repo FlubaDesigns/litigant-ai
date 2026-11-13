@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import { authPath, safeNext } from "@/lib/authUtils";
+import { authPath, safeNext, signInErrorMessage } from "@/lib/authUtils";
 
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -22,6 +22,7 @@ export default function SignInPage() {
   const [, setLocation] = useLocation();
   const { signIn, signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
   const next = safeNext(new URLSearchParams(useSearch()).get("next"));
 
   const form = useForm<z.infer<typeof signInSchema>>({
@@ -30,13 +31,14 @@ export default function SignInPage() {
   });
 
   async function onSubmit(values: z.infer<typeof signInSchema>) {
+    setSignInError(null);
     setIsLoading(true);
     try {
       await signIn(values.email, values.password);
       toast.success("Authentication successful. Session initiated.");
       setLocation(next);
     } catch (error: any) {
-      toast.error(error.message || "Failed to authenticate.");
+      setSignInError(signInErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -44,13 +46,14 @@ export default function SignInPage() {
 
   async function handleGoogleSignIn() {
     if (isLoading) return;
+    setSignInError(null);
     setIsLoading(true);
     try {
       await signInGoogle();
       toast.success("Google authentication successful. Session initiated.");
       setLocation(next);
     } catch (error: any) {
-      toast.error(error.message || "Failed to authenticate with Google.");
+      setSignInError(signInErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +79,10 @@ export default function SignInPage() {
 
         <div className="bg-card border border-border p-8 rounded-lg shadow-2xl">
           {new URLSearchParams(window.location.search).get("engine") === "1" && <AuthorizationEngineSignIn />}
+          {signInError && <div role="alert" className="mb-6 space-y-2 rounded-lg border border-destructive p-4">
+            <h2 className="font-semibold">Sign-in did not finish</h2>
+            <p className="text-sm">{signInError}</p>
+          </div>}
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

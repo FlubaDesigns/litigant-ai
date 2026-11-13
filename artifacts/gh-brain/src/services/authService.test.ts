@@ -2,14 +2,14 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: vi.fn(), signInWithEmailAndPassword: vi.fn(),
-  signInWithPopup: vi.fn(), GoogleAuthProvider: class {},
+  signInWithPopup: vi.fn(), signInWithCredential: vi.fn(), GoogleAuthProvider: class { static credentialFromError = vi.fn(); },
   signInAnonymously: vi.fn(), linkWithCredential: vi.fn(), linkWithPopup: vi.fn(), EmailAuthProvider: {credential: vi.fn()},
   signOut: vi.fn(), updateProfile: vi.fn(), deleteUser: vi.fn(), sendEmailVerification: vi.fn(),
 }));
 vi.mock("@/lib/firebase", () => ({ auth: {} }));
 vi.mock("@/lib/apiUrl", () => ({ API_BASE: "/api" }));
 
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, linkWithCredential, linkWithPopup, deleteUser, signOut as firebaseSignOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider, linkWithCredential, linkWithPopup, deleteUser, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { ensureAccountSetup, signInWithEmail, signInWithGoogle, signUpWithEmail, signOut } from "./authService";
 
@@ -140,4 +140,17 @@ it("keeps verification rate-limit failures on the canonical sender",async()=>{
   await expect(service.sendEmailVerification()).rejects.toThrow("Too many verification requests");
   expect(firebase.sendEmailVerification).not.toHaveBeenCalled();
   (auth as any).currentUser=null;
+});
+
+it("signs a returning Google customer into their existing account from a guest trial", async () => {
+  (auth as any).currentUser = {...user, uid: "guest", isAnonymous: true};
+  fetchMock.mockImplementation(async (url: string) => response(url.endsWith("/guest/current") ? {invitation:{status:"claimed",expiresAt:"2099-01-01T00:00:00Z"}} : {provisioned:true}));
+  const verifiedCredential = {providerId: "google.com"};
+  vi.mocked(linkWithPopup).mockRejectedValueOnce({code:"auth/credential-already-in-use"});
+  vi.mocked(GoogleAuthProvider.credentialFromError).mockReturnValueOnce(verifiedCredential as any);
+  vi.mocked(signInWithCredential).mockResolvedValueOnce({user} as any);
+  expect(await signInWithGoogle()).toBe(user);
+  expect(signInWithCredential).toHaveBeenCalledWith(auth, verifiedCredential);
+  expect(linkWithCredential).not.toHaveBeenCalled();
+  expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
 });
