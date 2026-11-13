@@ -9,7 +9,8 @@
     "./templates": "./src/templates.ts",
     "./billing": "./src/billing.ts",
     "./limits": "./src/limits.ts",
-    "./evaluation": "./src/evaluation.ts"
+    "./evaluation": "./src/evaluation.ts",
+    "./session-content": "./src/session-content.mjs"
   },
   "dependencies": {
     "zod": "catalog:"

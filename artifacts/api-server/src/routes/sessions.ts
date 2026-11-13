@@ -1,4 +1,4 @@
-import { projectSessionContent } from "../lib/sessionContent.js";
+import { projectSessionContent, presentSessionContent, readSessionTurns } from "../lib/sessionContent.js";
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
 import { Router } from "express";
@@ -48,11 +48,10 @@ router.get("/account/export", async (req, res) => {
           const data = doc.data();
           if (data.memorySaved === false) continue;
           // A failed legacy read must fail the export, never silently drop content.
-          const turns = await doc.ref.collection("session_turns").get();
-          turns.docs.sort((a, b) => Number(a.data().turnIndex ?? Number.MAX_SAFE_INTEGER) - Number(b.data().turnIndex ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
-          const sessionTurns: Record<string, unknown>[] = turns.docs.map(turn => ({id: turn.id, ...exportFields(turn.data(), ["role", "content", "round", "turnIndex", "provider", "model", "inputTokens", "outputTokens", "createdAt"])}));
-          const saved = exportFields(data, EXPORT_SESSION_FIELDS);
-          Object.assign(saved, projectSessionContent(saved, sessionTurns));
+          const turns = await readSessionTurns(doc.ref, data);
+          const sessionTurns = turns.map(turn => exportFields(turn, ["id", "role", "content", "round", "turnIndex", "provider", "model", "inputTokens", "outputTokens", "createdAt"]));
+          const saved = exportFields(presentSessionContent(data), EXPORT_SESSION_FIELDS);
+          if (data.sessionContent === undefined) Object.assign(saved, projectSessionContent(saved, sessionTurns));
           sessions.push({id: doc.id, ...saved, sessionTurns});
         }
         if (page.docs.length < 100) break;
@@ -146,7 +145,7 @@ router.get("/sessions", async (req, res) => {
       if (matches.length === limit || !hasMore) break;
     }
     res.json({
-      sessions: matches.map(doc => ({...doc.data(), id: doc.id,
+      sessions: matches.map(doc => ({...presentSessionContent(doc.data()), id: doc.id,
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() ?? null,
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() ?? null,
       })),
@@ -189,7 +188,8 @@ router.get("/sessions/:id", async (req, res) => {
     const doc = await db.collection("sessions").doc(req.params["id"]!).get();
     if (!doc.exists) { res.status(404).json({ message: "Session not found" }); return; }
 
-    const data = doc.data()!;
+    const rawData = doc.data()!;
+    const data = presentSessionContent(rawData);
     if (data.memorySaved === false) { res.status(404).json({message:"This Free conversation has no saved memory."}); return; }
 
     // Strict owner check — no shared-flag bypass
@@ -201,7 +201,7 @@ router.get("/sessions/:id", async (req, res) => {
     // reconstruct them from the session_turns subcollection.
     let transcript = (data["transcript"] as string) || "";
     let debateNotes = (data["debateNotes"] as string) || "";
-    if (!transcript || !debateNotes) {
+    if (rawData.sessionContent === undefined && (!transcript || !debateNotes)) {
       try {
         const turnsSnap = await doc.ref
           .collection("session_turns")

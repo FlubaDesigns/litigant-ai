@@ -44,7 +44,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Test feedback rules in an isolated demo emulator
-        run: pnpm exec firebase emulators:exec --only firestore --project demo-litigant-readiness --config firebase.readiness-tests.json "node scripts/test_feedback_rules.mjs && node scripts/test_settings_migration_emulator.mjs"
+        run: pnpm exec firebase emulators:exec --only firestore --project demo-litigant-readiness --config firebase.readiness-tests.json "node scripts/test_feedback_rules.mjs && node scripts/test_settings_migration_emulator.mjs && node scripts/test_session_content_emulator.mjs"
       - name: Run backend tests
         run: pnpm --filter @workspace/api-server run test
       - name: Typecheck all packages

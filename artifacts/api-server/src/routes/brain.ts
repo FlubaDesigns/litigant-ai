@@ -1,4 +1,5 @@
-import { sessionTurnMetrics } from "../lib/sessionContent.js";
+import type { StoredTurn } from "@workspace/api-zod/session-content";
+import { sessionTurnMetrics, presentSessionContent, readSessionTurns, encodeSessionContent } from "../lib/sessionContent.js";
 import { getRunInstructions, type RunInstructions } from "../lib/runInstructions.js";
 import { ConfigurationUnavailableError } from "../lib/configurationError.js";
 import { mergeModelProvenance } from "../lib/modelProvenance.js";
@@ -179,6 +180,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   let instructions: RunInstructions;
   let courtesyLimit = 0;
   let previousSession: Record<string, any> | null = null;
+  let previousTurns: StoredTurn[] = [];
   const runCalls: CallUsage[] = [];
   let parentSession: Record<string, any> | null = null;
   let templateSystemPrompt: string | undefined;
@@ -235,9 +237,14 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         const claimed = await claimSessionRun(db, clientSessionId, uid);
         runLease = claimed.lease;
         sessionId = clientSessionId;
-        previousSession = claimed.session;
+        previousSession = presentSessionContent(claimed.session);
         if (previousSession.memorySaved === false) throw new SessionRunError(403, "This Free conversation has no saved memory.");
+        previousTurns = await readSessionTurns(db.collection("sessions").doc(clientSessionId), claimed.session);
       } catch (error) {
+        if (runLease) {
+          await releaseSessionRun(db, runLease).catch(() => false);
+          runLease = null;
+        }
         res.status(error instanceof SessionRunError ? error.status : 503).json({
           message: error instanceof SessionRunError ? error.message : "Could not load the saved session. Please retry.",
         });
@@ -251,7 +258,8 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         res.status(400).json({ message: "A saved parent session is required." }); return;
       }
       try {
-        const parent = (await db.collection("sessions").doc(parentSessionId).get()).data();
+        const parentData = (await db.collection("sessions").doc(parentSessionId).get()).data();
+        const parent = parentData ? presentSessionContent(parentData) : undefined;
         if (!parent || parent.userId !== uid || parent.memorySaved === false) {
           res.status(403).json({ message: "Parent session not found or access denied." }); return;
         }
@@ -452,6 +460,16 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       // staging transaction leaves a recoverable full-refund reservation.
       try {
         const pricedCalls = annotateCalls(result.tokenUsage.calls ?? [], prepared.rates);
+        const offset = previousTurns.reduce((max, turn) => Math.max(max, Number(turn.turnIndex ?? -1) + 1), 0);
+        const content = fullAccess ? encodeSessionContent({
+          transcript: result.transcript.join("\n\n---\n\n"),
+          transcriptLines: result.transcript,
+          debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
+          turns: [...previousTurns, ...result.turns.map((turn, index) => ({
+            ...turn, id: `turn_${String(offset + index).padStart(3, "0")}`,
+            turnIndex: offset + index, createdAt: new Date(),
+          }))],
+        }) : undefined;
         const savedResult = storedSessionRecord({
           sessionId: result.sessionId,
           userId: uid,
@@ -475,9 +493,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           litigantCount: effectiveConfig.litigantCount,
           status,
           finalAnswer: result.finalAnswer,
-          debateNotes: [previousSession?.debateNotes, result.debateNotes].filter(Boolean).join("\n\n---\n\n"),
-          transcriptLines: Array.isArray(result.transcript) ? result.transcript : [],
-          transcript: Array.isArray(result.transcript) ? result.transcript.join("\n\n---\n\n") : result.transcript ?? "",
+          ...(content ? { sessionContent: content,
+            debateNotes: FieldValue.delete(), transcriptLines: FieldValue.delete(), transcript: FieldValue.delete(),
+          } : {}),
           caveats: result.caveats,
           artifacts: result.artifacts,
           conscienceVersion: result.conscienceVersion,
@@ -564,27 +582,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
 
       } catch (e) {
         console.error("[brain] Post-session notifications failed (non-fatal):", e);
-      }
-
-      // ── Step 5: session_turns subcollection ──────────────────────────────
-      if (fullAccess) try {
-        const turnsCol = sessionRef.collection("session_turns");
-        const oldTurns = previousSession ? await turnsCol.get() : null;
-        const offset = oldTurns ? oldTurns.docs.reduce((max, d) => Math.max(max, Number(d.data().turnIndex ?? -1) + 1), 0) : 0;
-        const turnWrites = result.turns.map((turn, idx) => ({
-            ref: turnsCol.doc(`turn_${String(offset + idx).padStart(3, "0")}`),
-            data: {
-              turnIndex: offset + idx,
-              role: turn.role,
-              round: turn.round,
-              content: turn.content,
-              createdAt: FieldValue.serverTimestamp(),
-            },
-        }));
-        if (runLease) await writeSessionRun(db, runLease, {}, turnWrites);
-        else await Promise.all(turnWrites.map(write => write.ref.set(write.data)));
-      } catch (e) {
-        console.error("[brain] session_turns write failed (non-fatal):", e);
       }
     }
     resultSaved = true;

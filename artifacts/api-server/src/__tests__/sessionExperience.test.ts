@@ -1,4 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
+import { encodeSessionContent } from "@workspace/api-zod/session-content";
 import express from "express";
 import request from "supertest";
 vi.mock("../lib/firebaseAdmin.js", () => ({getFirestoreDb: vi.fn(), verifyIdToken: vi.fn()}));
@@ -42,6 +43,30 @@ beforeEach(() => {
   turnsFail = false; collectionsRead = [];
   vi.mocked(verifyIdToken).mockResolvedValue({uid:"owner"} as any);
   vi.mocked(getFirestoreDb).mockReturnValue(dbFixture() as any);
+});
+it("reads canonical history in detail, list and export without touching retired turn storage", async () => {
+  session("canonical", {sessionContent: encodeSessionContent({
+    transcript: "**User:** Follow-up", transcriptLines: ["**User:** Follow-up"], debateNotes: "",
+    turns: [{id:"turn_000", role:"Advocate", round:1, content:"Separate turn", privateMetadata:"not exported"}],
+  }), transcript:"STALE COPY", debateNotes:"STALE NOTES"});
+  turnsFail = true;
+  const detail = await request(app).get("/sessions/canonical").set(auth);
+  expect(detail.status).toBe(200);
+  expect(detail.body).toMatchObject({transcript:"**User:** Follow-up", transcriptLines:["**User:** Follow-up"], debateNotes:""});
+  expect(detail.body.sessionContent).toBeUndefined();
+  const list = await request(app).get("/sessions").set(auth);
+  expect(list.status).toBe(200); expect(list.body.sessions[0].transcript).toBe("**User:** Follow-up");
+  expect(list.body.sessions[0].sessionContent).toBeUndefined();
+  const exported = await request(app).get("/account/export").set(auth);
+  expect(exported.status).toBe(200);
+  expect(exported.body.sessions[0].debateNotes).toBe("");
+  expect(exported.body.sessions[0].sessionTurns).toEqual([{id:"turn_000", role:"Advocate", round:1, content:"Separate turn"}]);
+  expect(collectionsRead.some(path => path.endsWith("session_turns"))).toBe(false);
+});
+
+it("fails canonical export on corrupt history rather than returning a partial backup", async () => {
+  session("corrupt", {sessionContent:{version:1, blocks:[]}});
+  expect((await request(app).get("/account/export").set(auth)).status).toBe(500);
 });
 describe("owned session pagination and exports", () => {
   it("filters archived and memoryless records before forming the visible page", async () => {
