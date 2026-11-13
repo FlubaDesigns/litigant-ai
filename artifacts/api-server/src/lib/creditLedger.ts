@@ -94,9 +94,9 @@ function toIsoString(v: unknown): string {
  *   payment_events on first call and the operation is skipped on subsequent
  *   calls with the same key. Use Square event IDs or "signup_bonus_{uid}".
  *
- * @returns `{ newBalance }` on success, `{ newBalance: 0, skipped: true }` if
- *          the idempotency key was already present, or `null` if Firebase is
- *          not configured.
+ * @returns The recorded balance and `skipped` for duplicates, or `null` if
+ *          Firebase is not configured. `balanceUnavailable` marks older
+ *          duplicate records whose original balance cannot be reconstructed.
  */
 export async function addCredits(
   uid: string,
@@ -113,7 +113,7 @@ export async function addCredits(
     /** Verified immutable Square checkout; claimed atomically with the credit grant. */
     checkoutOrderId?: string;
   } = {}
-): Promise<{ newBalance: number; skipped?: boolean } | null> {
+): Promise<{ newBalance: number; skipped?: boolean; balanceUnavailable?: boolean } | null> {
   if (typeof amount !== "number" || !Number.isSafeInteger(amount)) {
     throw new Error("Credits must be a whole number");
   }
@@ -148,7 +148,9 @@ export async function addCredits(
           return { newBalance: prior.balanceAfter, skipped: true };
         }
         // Already processed — safe to return without any balance mutation
-        return { newBalance: dedupSnap.data()?.balanceAfter ?? 0, skipped: true };
+        const balanceAfter = dedupSnap.data()?.balanceAfter;
+        return { newBalance: balanceAfter ?? 0, skipped: true,
+          ...(!Number.isSafeInteger(balanceAfter) ? { balanceUnavailable: true } : {}) };
       }
 
     }
@@ -162,7 +164,7 @@ export async function addCredits(
       const fulfilled = (await tx.get(checkoutRef)).data();
       if (fulfilled) {
         if (fulfilled.paymentId === opts.paymentId && fulfilled.uid === uid && fulfilled.amount === amount) {
-          return { newBalance: 0, skipped: true };
+          return { newBalance: 0, skipped: true, balanceUnavailable: true };
         }
         throw new Error("Checkout order was already fulfilled by a different payment");
       }

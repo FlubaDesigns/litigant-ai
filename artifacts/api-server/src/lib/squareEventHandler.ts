@@ -142,8 +142,8 @@ export async function handleSquareEvent(event: SquareWebhookEvent): Promise<void
         logger.info(`[SquareEvent] Granted ${creditAmount} credits to ${userId}`);
 
       }
-      // Duplicate payment events may retry the independently tracked receipt.
-      if (await isResendConfigured()) {
+      // Retry receipts only with the recorded balance; old beta records may lack it.
+      if (!result.balanceUnavailable && await isResendConfigured()) {
         const amountPaidCents = Number(payment.amount_money?.amount ?? 0);
         const newBalance = result.newBalance ?? 0;
         await sendTrackedEmail(userId, "paymentReceipt",
