@@ -1,3 +1,4 @@
+import { SatisfactionTab } from "./AdminSatisfaction";
 import { AiBillingTab } from "./AiBillingTab";
 import { MarketingTab } from "./MarketingTab";
 import "./admin.css";
@@ -22,7 +23,7 @@ import { SeatOrdersTab } from "./AdminSeats";
 import { EmailsTab } from "./AdminEmails";
 
 type AdminTab =
-  | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
+  | "satisfaction" | "overview" | "health" | "users" | "sessions" | "transactions" | "limits"
   | "api-usage" | "errors" | "abuse" | "marketing" | "templates" | "pricing" | "credit-packs" | "api-keys"
   | "ai-billing" | "checklist" | "ai-studio" | "seat-orders" | "emails";
 
@@ -40,6 +41,7 @@ const TABS: { id: AdminTab; label: string; icon: React.ElementType }[] = [
   { id: "transactions", label: "Transactions",    icon: CreditCard },
   { id: "api-usage",    label: "API Usage",       icon: BarChart2 },
   { id: "errors",       label: "Error Logs",      icon: AlertCircle },
+  { id: "satisfaction", label: "Satisfaction Score", icon: BarChart2 },
   { id: "abuse",        label: "Feedback Flags",     icon: HeartCrack },
   { id: "credit-packs", label: "Credit Packs",    icon: Package },
   { id: "limits",       label: "Limits & Defaults",          icon: SlidersHorizontal },
@@ -145,6 +147,7 @@ export default function AdminPage() {
           {activeTab === "transactions" && <TransactionsTab />}
           {activeTab === "api-usage"    && <ApiUsageTab />}
           {activeTab === "errors"       && <ErrorLogsTab />}
+          {activeTab === "satisfaction" && <SatisfactionTab />}
           {activeTab === "abuse"        && <FeedbackFlagsTab />}
           {activeTab === "credit-packs" && <CreditPacksTab />}
           {activeTab === "limits"       && <LimitsTab />}

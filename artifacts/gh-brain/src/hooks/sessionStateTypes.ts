@@ -101,7 +101,6 @@ export type Action =
   | { type: "SET_TEMPLATE"; template: Template | null }
   | { type: "SET_CONFIG"; config: Partial<CourtConfig> }
   | { type: "SET_SEAT_AI"; seatId: string; litIndex?: number; assignment: SeatAssignment }
-  | { type: "APPLY_FEEDBACK_GRADES"; thumbs: "good" | "bad"; flow: "answer" | "build" }
   | { type: "SET_PHASE"; phase: SessionPhase }
   | { type: "SESSION_STARTED"; sessionId: string; estimatedCredits: number }
   | { type: "ROLE_START"; role: string; round: number; roleIndex: number; provider: string; attempt?: number }

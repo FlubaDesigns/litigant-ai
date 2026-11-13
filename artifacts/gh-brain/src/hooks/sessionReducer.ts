@@ -2,7 +2,7 @@ import { CourtConfigSchema } from "@workspace/api-zod/session";
 import { type SavedSession } from "@/services/sessionService";
 import type { CourtConfig } from "@/data/templates";
 import { DEFAULT_CONFIG } from "@/data/templates";
-import { makeDefaultSeatMap, makeDefaultGrades, syncLitigantSeats, gradeToIndex, indexToGrade, type SeatMapConfig } from "@/data/seatTypes";
+import { makeDefaultSeatMap, makeDefaultGrades, syncLitigantSeats, type SeatMapConfig } from "@/data/seatTypes";
 import type { SessionPhase, SessionState, Action } from "./sessionStateTypes.js";
 
 export function phaseForStatus(status: SavedSession["status"]): SessionPhase {
@@ -103,26 +103,6 @@ export function reducer(state: SessionState, action: Action): SessionState {
         updated = { ...seatMap, [seatId]: assignment };
       }
       return { ...state, config: { ...state.config, seatMap: updated }, canLoadDefaults: false };
-    }
-
-    case "APPLY_FEEDBACK_GRADES": {
-      const { thumbs, flow } = action;
-      const delta = thumbs === "good" ? 1 : -1;
-      const seatsToScore = flow === "build"
-        ? ["orchestrator", "moderator", "architect", "builder", "auditor"]
-        : ["orchestrator", "moderator"];
-
-      const grades = { ...state.grades };
-      for (const seatId of seatsToScore) {
-        const current = grades[seatId] ?? { grade: "B+", runs: 0, good: 0, bad: 0 };
-        grades[seatId] = {
-          grade: indexToGrade(gradeToIndex(current.grade) + delta),
-          runs: current.runs + 1,
-          good: current.good + (thumbs === "good" ? 1 : 0),
-          bad: current.bad + (thumbs === "bad" ? 1 : 0),
-        };
-      }
-      return { ...state, grades };
     }
 
     case "SET_PHASE":

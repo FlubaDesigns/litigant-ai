@@ -813,3 +813,9 @@ export async function getEmailDeliveries(): Promise<EmailDelivery[]> {
   if (!res.ok) throw new Error("Email history unavailable");
   return (await res.json()).deliveries;
 }
+
+export async function getSatisfactionSummary():Promise<import("@workspace/api-zod/satisfaction").SatisfactionSummary> {
+  const response=await adminFetch("/admin/satisfaction");
+  if (!response.ok) throw new Error("Satisfaction scores could not be loaded.");
+  return response.json();
+}

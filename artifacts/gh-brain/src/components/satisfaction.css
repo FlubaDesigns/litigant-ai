@@ -1,0 +1,14 @@
+.satisfaction-survey { margin-block: 1rem; }
+.satisfaction-survey summary { cursor: pointer; min-height: 44px; padding-block: .65rem; font-weight: 700; }
+.satisfaction-form > * { width: 100%; }
+.satisfaction-question { min-width: 0; border: 0; padding: 0; margin-block: .75rem; }
+.satisfaction-question legend { font-weight: 600; font-size: .95rem; }
+.satisfaction-stars { display: flex; gap: .25rem; margin-top: .5rem; }
+.satisfaction-star { position: relative; display: block; cursor: pointer; }
+.satisfaction-star input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.satisfaction-star span { display: block; width: 44px; height: 48px; line-height: 48px; text-align: center; font-size: 2rem; border: 1px solid currentColor; border-radius: .4rem; color: #c5bda6; }
+.satisfaction-star span[data-filled="true"] { color: #f5c451; background: #f5c45115; }
+.satisfaction-star input:focus-visible + span { outline: 3px solid currentColor; outline-offset: 3px; }
+.satisfaction-question:disabled .satisfaction-star { cursor: default; opacity: .65; }
+.satisfaction-scale { font-size: .8rem; margin-top: .4rem; color: var(--muted-foreground); }
+.satisfaction-score { font-size: 1.6rem; font-weight: 700; }

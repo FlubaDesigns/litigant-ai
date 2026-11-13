@@ -275,10 +275,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     dispatch({ type: "SET_SEAT_AI", seatId, assignment, litIndex });
   }, []);
 
-  const applyFeedbackGrades = useCallback((thumbs: "good" | "bad", flow: "answer" | "build") => {
-    dispatch({ type: "APPLY_FEEDBACK_GRADES", thumbs, flow });
-  }, []);
-
   const submitRebuttal = useCallback(async (challenge: string) => {
     const s = stateRef.current;
     if (!s.finalAnswer || !s.sessionId || (abortRef.current && !abortRef.current.signal.aborted)) return;
@@ -428,7 +424,6 @@ export function useBrainSession(initialConfig?: Partial<CourtConfig>) {
     setTemplate,
     setConfig,
     setSeatAI,
-    applyFeedbackGrades,
     addCaseFile,
     removeCaseFile,
     ...(import.meta.env.DEV ? { _dispatch: dispatch } : {}),
