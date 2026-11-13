@@ -1,3 +1,4 @@
+import { sessionTurnMetrics } from "../lib/sessionContent.js";
 import { getRunInstructions, type RunInstructions } from "../lib/runInstructions.js";
 import { ConfigurationUnavailableError } from "../lib/configurationError.js";
 import { mergeModelProvenance } from "../lib/modelProvenance.js";
@@ -470,7 +471,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
           confidence: Number.isNaN(result.confidence) ? 0 : result.confidence,
           creditsUsed: Number(previousSession?.creditsUsed ?? 0) + actualCost,
           fixedStageTokens: result.fixedStageTokens,
-          roundsCompleted: Math.max(Number(previousSession?.roundsCompleted ?? 0), ...(result.turns ?? []).filter(t => t.round > 0 && t.round < 99).map(t => t.round), 0),
+          roundsCompleted: Math.max(Number(previousSession?.roundsCompleted ?? 0), sessionTurnMetrics(result.turns ?? []).roundsCompleted),
           litigantCount: effectiveConfig.litigantCount,
           status,
           finalAnswer: result.finalAnswer,

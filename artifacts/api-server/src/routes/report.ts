@@ -1,3 +1,4 @@
+import { projectSessionContent, sessionTurnMetrics } from "../lib/sessionContent.js";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
@@ -74,36 +75,7 @@ router.get("/report/:shareId", reportLimiter, async (req, res) => {
         .get();
       if (!turnsSnap.empty) {
         const turns = turnsSnap.docs.map((t) => t.data());
-        if (!result["transcript"]) {
-          result["transcript"] = turns
-            .filter((t) => t["role"] !== "Orchestrator")
-            .map((t) => `**${t["role"]} (Round ${t["round"]}):**\n${t["content"]}`)
-            .join("\n\n---\n\n");
-        }
-        if (!result["debateNotes"]) {
-          result["debateNotes"] = turns
-            .filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict")
-            .map((t) => `### ${t["role"]} — Round ${t["round"]}\n${t["content"]}`)
-            .join("\n\n---\n\n");
-        }
-        // Always derive metrics from turns — do not rely on inline session fields.
-        //
-        // NON_LITIGANT_ROLES: every role brainEngine.ts writes that is NOT a
-        // real debate participant. Must be kept in sync with turns.push() calls
-        // in brainEngine.ts. Current pipeline roles and their round sentinels:
-        //   Orchestrator  round: 0   (opening frame)
-        //   Moderator     round: 99  (post-debate summary)
-        //   Architect     round: 99  (artifact blueprint)
-        //   Builder       round: 99  (initial build + any retry revision passes)
-        //   Auditor       round: 99  (initial review + any retry re-review passes)
-        //   Verdict       round: 99  (final verdict)
-        // All others are actual litigants carrying real round numbers (1, 2, 3…).
-        // Multiple Builder/Auditor turns appear when the Auditor retry loop fires.
-        const debateTurns = turns.filter((t: any) => t.round > 0 && t.round < 99);
-        const rounds   = debateTurns.reduce((max: number, t: any) => Math.max(max, t["round"] ?? 0), 0);
-        const litigants = new Set(debateTurns.map((t: any) => t["role"])).size;
-        result["roundsCompleted"] = rounds;
-        result["litigantCount"] = litigants;
+        Object.assign(result, projectSessionContent(data, turns), sessionTurnMetrics(turns));
       }
     } catch {
       // Non-fatal — report still renders without turn-derived metrics

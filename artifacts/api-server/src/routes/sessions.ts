@@ -1,3 +1,4 @@
+import { projectSessionContent } from "../lib/sessionContent.js";
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
 import { Router } from "express";
@@ -51,8 +52,7 @@ router.get("/account/export", async (req, res) => {
           turns.docs.sort((a, b) => Number(a.data().turnIndex ?? Number.MAX_SAFE_INTEGER) - Number(b.data().turnIndex ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id));
           const sessionTurns: Record<string, unknown>[] = turns.docs.map(turn => ({id: turn.id, ...exportFields(turn.data(), ["role", "content", "round", "turnIndex", "provider", "model", "inputTokens", "outputTokens", "createdAt"])}));
           const saved = exportFields(data, EXPORT_SESSION_FIELDS);
-          if (!saved.transcript) saved.transcript = sessionTurns.filter(turn => turn.role !== "Orchestrator").map(turn => `**${turn.role} (Round ${turn.round}):**\n${turn.content}`).join("\n\n---\n\n");
-          if (!saved.debateNotes) saved.debateNotes = sessionTurns.filter(turn => !["Orchestrator", "Verdict"].includes(String(turn.role))).map(turn => `### ${turn.role} — Round ${turn.round}\n${turn.content}`).join("\n\n---\n\n");
+          Object.assign(saved, projectSessionContent(saved, sessionTurns));
           sessions.push({id: doc.id, ...saved, sessionTurns});
         }
         if (page.docs.length < 100) break;
@@ -209,14 +209,7 @@ router.get("/sessions/:id", async (req, res) => {
           .get();
         if (!turnsSnap.empty) {
           const turns = turnsSnap.docs.map((t) => t.data());
-          const lines = turns
-            .filter((t) => t["role"] !== "Orchestrator")
-            .map((t) => `**${t["role"] as string} (Round ${t["round"] as number}):**\n${t["content"] as string}`);
-          transcript = lines.join("\n\n---\n\n");
-          debateNotes = turns
-            .filter((t) => t["role"] !== "Orchestrator" && t["role"] !== "Verdict")
-            .map((t) => `### ${t["role"] as string} — Round ${t["round"] as number}\n${t["content"] as string}`)
-            .join("\n\n---\n\n");
+          ({transcript, debateNotes} = projectSessionContent({transcript, debateNotes}, turns));
         }
       } catch {
         // non-fatal — return whatever we have
