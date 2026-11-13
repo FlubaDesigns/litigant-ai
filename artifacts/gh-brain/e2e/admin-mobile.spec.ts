@@ -6,6 +6,7 @@ const model = {id:"gpt-5",model:"gpt-5",label:"GPT model with a long descriptive
 const studioProvider = {id:"openai",label:"OpenAI",custom:false,enabled:true,connection:{state:"connected",checkedAt:"2026-10-05T02:00:00Z"}};
 const email = {id:"welcome",label:"Welcome email",trigger:longId,tokens:[],canDisable:true,enabled:true,defaultSubject:"Welcome",defaultHeadline:"Welcome",defaultIntroText:"Hello"};
 const responses: Record<string,unknown> = {
+  "/admin/satisfaction":{count:2,overall:4,averages:{answered:5,satisfied:4,reuse:3}},
   "/admin/stats":{userCount:9,sessionCount:12,txCount:9,recentSessions:0},
   "/admin/checklist":{items:[{id:"owner-item",section:"owner",text:"Review the provider configuration on your phone",checked:false,steps:["Open API Keys"]}]},
   "/admin/system-health":{status:"ok",collections:{credit_transactions:9},last24h:{newSessions:0},last7d:{errorSessions:1,feedbackEntries:2,activeSessions:100,errorRate:"1.0"}},
@@ -53,7 +54,7 @@ for (const width of [360, 412]) {
     const navigation=page.getByRole("navigation",{name:"Admin navigation"});
     await expect(navigation).toBeVisible();
     const tabs=await navigation.locator("button").evaluateAll(buttons=>buttons.map(button=>({id:button.getAttribute("data-admin-tab")!,label:button.textContent!})));
-    expect(tabs).toHaveLength(19);
+    expect(tabs).toHaveLength(20);
     for (const tab of tabs) {
       await navigation.getByRole("button",{name:tab.label,exact:true}).click();
       await expect(page.locator(".admin-page h1")).toHaveText(tab.label);
