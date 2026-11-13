@@ -5,12 +5,12 @@ import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 
 
-export type BrowserSessionConfig = { origin: string; principal: string; ownerEmail: string };
+export type BrowserSessionConfig = { origin: string; principal: string };
 const lifetime = 10 * 60_000;
 const cookieOptions = { httpOnly: true, secure: true, sameSite: "strict" as const, path: "/api-server/api/auth/engine" };
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const validId = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value);
-const denied = (status = 403) => Object.assign(new Error("Browser session unavailable"), { status });
+const denied = (status = 403, publicMessage = "Authorization Engine sign-in could not complete.") => Object.assign(new Error(publicMessage), { status, publicMessage });
 
 /** Existing Authorization Engine protocol: Main approves a browser-bound, one-use request.
  * No role grants, password changes, API exemptions, or bearer tokens in logs/URLs. */
@@ -26,19 +26,33 @@ export function registerBrowserSession(app: Express, deps: {
     res.set("Cache-Control", "no-store");
     try {
       if (!config || !config.origin.startsWith("https://") || new URL(config.origin).origin !== config.origin ||
-          !/^[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com$/.test(config.principal) || !config.ownerEmail) throw denied(404);
+          !/^[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com$/.test(config.principal)) throw denied(404);
       await handler(req, res);
     } catch (error: any) {
       res.status([400, 401, 403, 404, 409, 410, 429].includes(error?.status) ? error.status : 503)
-        .json({ error: "Authorization Engine sign-in could not complete." });
+        .json({ error: error?.publicMessage || "The sign-in service is temporarily unavailable. Please try again." });
     }
   };
   const browser = (req: Request) => { if (req.get("origin") !== config!.origin) throw denied(); };
+  const eligible = (user: {disabled?: boolean; emailVerified?: boolean; customClaims?: Record<string, unknown>}) =>
+    !user.disabled && user.emailVerified === true && user.customClaims?.admin === true;
   const owner = async () => {
-    const user = await auth.getUserByEmail(config!.ownerEmail);
-    if (user.disabled || !user.emailVerified || user.email !== config!.ownerEmail ||
-        user.customClaims?.admin !== true) throw denied();
-    return user.uid;
+    // Firebase administrator claims are authoritative. Never assume that an
+    // email from another project is an account here, and never grant a role.
+    let selected: string | undefined, pageToken: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const result = await auth.listUsers(1000, pageToken);
+      for (const user of result.users.filter(eligible)) {
+        if (selected) throw denied(403, "Administrator access needs a unique verified administrator. Contact site support.");
+        selected = user.uid;
+      }
+      pageToken = result.pageToken;
+      if (!pageToken) {
+        if (!selected) throw denied(403, "No verified administrator is configured for this site. Contact site support.");
+        return selected;
+      }
+    }
+    throw denied(503, "Administrator access could not be resolved. Contact site support.");
   };
   const active = (data: any) => {
     if (!data || !Number.isFinite(data.expiresAtMs) || data.expiresAtMs <= now() ||
@@ -81,18 +95,18 @@ export function registerBrowserSession(app: Express, deps: {
     const cookie = (req.get("cookie") || "").split(";").map(s => s.trim()).find(s => s.startsWith("__session="))?.slice(10);
     if (!cookie || !/^fluba-engine-[a-f0-9]{64}$/.test(cookie)) throw denied();
     const verifierHash = hash(cookie.slice("fluba-engine-".length));
-    const ownerUid = await owner();
     const consumed = await db.runTransaction(async tx => {
       const ref = sessions.doc(req.params.id as string), data = (await tx.get(ref)).data();
       active(data);
       if (data!.verifierHash !== verifierHash) throw denied();
-      if (data!.status === "pending") return false;
-      if (data!.ownerUid !== ownerUid) throw denied();
+      if (data!.status === "pending") return null;
+      const user = await auth.getUser(data!.ownerUid);
+      if (!eligible(user)) throw denied(403, "Administrator access is no longer available for this account.");
       tx.update(ref, { status: "consumed", consumedAtMs: now() });
-      return true;
+      return user.uid;
     });
     if (!consumed) { res.status(202).json({ status: "pending" }); return; }
-    const customToken = await auth.createCustomToken(ownerUid, { authorizationEngineSession: req.params.id });
+    const customToken = await auth.createCustomToken(consumed, { authorizationEngineSession: req.params.id });
     res.clearCookie("__session", cookieOptions);
     res.json({ customToken });
   }));

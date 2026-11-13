@@ -7,18 +7,19 @@ import { registerBrowserSession } from '../lib/authorizationBrowserSession.js';
 async function fixture(t) {
   let clock = 1_800_000_000_000;
   const docs = new Map(), issued = [];
-  const config = { origin: 'https://flubadesigns.com', principal: 'release@fixture.iam.gserviceaccount.com', ownerEmail: 'owner@example.test' };
-  const user = { uid:'owner-fixture', email:config.ownerEmail, emailVerified:true, disabled:false, customClaims:{admin:true} };
+  const config = { origin: 'https://flubadesigns.com', principal: 'release@fixture.iam.gserviceaccount.com' };
+  const user = { uid:'owner-fixture', email:"actual-admin@example.test", emailVerified:true, disabled:false, customClaims:{admin:true} };
+  const users=[user];
   let identity = {email:config.principal,email_verified:true,iat:clock/1000};
   const db = {collection:()=>({doc:id=>id}),runTransaction:async cb=>cb({get:async id=>({data:()=>docs.get(id)}),set:(id,data)=>docs.set(id,data),create:(id,data)=>docs.set(id,data),update:(id,data)=>docs.set(id,{...docs.get(id),...data})})};
   const app=express();
-  registerBrowserSession(app,{db,auth:{getUserByEmail:async()=>user,createCustomToken:async(uid,claims)=>{issued.push({uid,claims});return 'fixture-token';}},config,now:()=>clock,verifyIdentity:async(token,audience)=>{assert.equal(audience,config.origin+'/api-server/api/auth/engine/session');if(token!=='fixture-oidc')throw Error();return identity;}});
+  registerBrowserSession(app,{db,auth:{listUsers:async()=>({users:users}),getUser:async()=>user,createCustomToken:async(uid,claims)=>{issued.push({uid,claims});return 'fixture-token';}},config,now:()=>clock,verifyIdentity:async(token,audience)=>{assert.equal(audience,config.origin+'/api-server/api/auth/engine/session');if(token!=='fixture-oidc')throw Error();return identity;}});
   const server=app.listen(0,'127.0.0.1');
   await new Promise(resolve=>server.once('listening',resolve));
   afterEach(()=>new Promise(resolve=>server.close(resolve)));
   const post=async(path='',headers={})=>fetch('http://127.0.0.1:'+server.address().port+'/api/auth/engine/session'+path,{method:'POST',headers});
   const begin=async()=>{const response=await post('',{Origin:config.origin});assert.equal(response.status,201);assert.match(response.headers.get('set-cookie'),/HttpOnly/);assert.match(response.headers.get('set-cookie'),/Secure/);return {...await response.json(),cookie:response.headers.get('set-cookie').split(';')[0]};};
-  return {docs,issued,user,config,post,begin,expire:()=>clock+=600001,setIdentity:v=>identity=v};
+  return {docs,issued,user,users,config,post,begin,expire:()=>clock+=600001,setIdentity:v=>identity=v};
 }
 test('approval and redemption require Main identity and the same browser; redemption is one-use',async t=>{
  const f=await fixture(t),r=await f.begin(), headers={Origin:f.config.origin,Cookie:r.cookie};
@@ -48,4 +49,22 @@ test('cross-site creation, forged cookies, and creation flood are denied',async 
  const r=await f.begin();assert.equal((await f.post('/'+r.requestId,{Origin:f.config.origin,Cookie:'__session=fluba-engine-'+'0'.repeat(64)})).status,403);
  for(let i=0;i<4;i++)await f.begin();
  assert.equal((await f.post('',{Origin:f.config.origin})).status,429);
+});
+
+test('pending polls do not depend on a configured administrator and never select among multiple admins',async t=>{
+ const f=await fixture(t),r=await f.begin();f.users.length=0;
+ assert.equal((await f.post('/'+r.requestId,{Origin:f.config.origin,Cookie:r.cookie})).status,202);
+ let response=await f.post('/'+r.requestId+'/approve',{Authorization:'Bearer fixture-oidc'});
+ assert.equal(response.status,403);assert.match((await response.json()).error,/No verified administrator/);
+ f.users.push(f.user,{...f.user,uid:'second-admin'});
+ response=await f.post('/'+r.requestId+'/approve',{Authorization:'Bearer fixture-oidc'});
+ assert.equal(response.status,403);assert.match((await response.json()).error,/unique verified administrator/);
+ assert.equal(f.issued.length,0);
+});
+test('revoked administrator privilege between approval and redemption prevents token issuance',async t=>{
+ const f=await fixture(t),r=await f.begin();
+ assert.equal((await f.post('/'+r.requestId+'/approve',{Authorization:'Bearer fixture-oidc'})).status,200);
+ f.user.disabled=true;
+ assert.equal((await f.post('/'+r.requestId,{Origin:f.config.origin,Cookie:r.cookie})).status,403);
+ assert.equal(f.issued.length,0);
 });

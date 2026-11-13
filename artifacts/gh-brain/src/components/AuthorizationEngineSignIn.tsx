@@ -18,16 +18,16 @@ export default function AuthorizationEngineSignIn() {
     const poll = async () => {
       if (Date.now() >= request.expiresAtMs) { setStatus("Session expired. Start again."); setRequest(null); return; }
       try {
-        const response = await fetch("/api-server/api/auth/engine/session/" + request.requestId, { method: "POST", credentials: "same-origin", cache: "no-store" });
+        const response = await fetch("/api-server/api/auth/engine/session/" + request.requestId, { method: "POST", credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(20000) });
         if (cancelled) return;
         if (response.status === 202) { timer = setTimeout(poll, 3000); return; }
-        if (!response.ok) throw new Error();
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
+        if (!response.ok || typeof result?.customToken !== "string") throw new Error(result?.error || "Sign-in could not complete. Start again.");
         if (cancelled) return;
         await signInWithCustomToken(auth, result.customToken);
         setStatus("Signed in.");
         setLocation(safeNext(new URLSearchParams(window.location.search).get("next")));
-      } catch { if (!cancelled) { setStatus("Sign-in could not complete. Start again."); setRequest(null); } }
+      } catch (error) { if (!cancelled) { setStatus(error instanceof Error ? error.message : "Sign-in could not complete. Start again."); setRequest(null); } }
     };
     timer = setTimeout(poll, 3000);
     return () => { cancelled = true; clearTimeout(timer); };
@@ -35,11 +35,12 @@ export default function AuthorizationEngineSignIn() {
   async function start() {
     setBusy(true); setStatus("");
     try {
-      const response = await fetch("/api-server/api/auth/engine/session", { method: "POST", credentials: "same-origin", cache: "no-store" });
-      if (!response.ok) throw new Error();
-      setRequest(await response.json());
+      const response = await fetch("/api-server/api/auth/engine/session", { method: "POST", credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(20000) });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || typeof result?.requestId !== "string" || !Number.isFinite(result?.expiresAtMs) || result.expiresAtMs <= Date.now()) throw new Error(result?.error || "Authorization Engine sign-in is unavailable. Please try again.");
+      setRequest(result);
       setStatus("Waiting for Authorization Engine approval. Keep this page open.");
-    } catch { setStatus("Authorization Engine sign-in is unavailable."); }
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Authorization Engine sign-in is unavailable."); }
     finally { setBusy(false); }
   }
   return <section className="space-y-3 mb-6" aria-label="Authorization Engine sign-in">

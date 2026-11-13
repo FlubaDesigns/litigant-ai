@@ -75,7 +75,6 @@ const engineDb = getFirestoreDb();
 if (engineDb) registerBrowserSession(app, {db: engineDb, auth: getAuth(), config: {
   origin: "https://litigant-ai.web.app",
   principal: "github-action-1249917275@flubadesigns-25482.iam.gserviceaccount.com",
-  ownerEmail: "flubadesigns@gmail.com",
 }});
 app.use("/api", router);
 

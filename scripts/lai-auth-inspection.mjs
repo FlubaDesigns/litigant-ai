@@ -9,12 +9,20 @@ export async function inspectAuthRuntime(service, read) {
     try { return { data: await read(url, label, method, body) }; }
     catch (error) { return { httpStatus: error.httpStatus || null }; }
   };
-  const owner = await inspect('authentication owner metadata', 'https://identitytoolkit.googleapis.com/v1/projects/litigant-ai/accounts:lookup', 'POST', { email: ['flubadesigns@gmail.com'] });
-  if (owner.data) {
-    const user = owner.data.users?.[0];
-    let claims = {}; try { claims = JSON.parse(user?.customAttributes || '{}'); } catch {}
-    report.owner = { found: !!user, verified: user?.emailVerified === true, disabled: user?.disabled === true, admin: claims.admin === true };
-  } else report.owner = { httpStatus: owner.httpStatus };
+  const accounts = await inspect('administrator claim metadata', 'https://identitytoolkit.googleapis.com/v1/projects/litigant-ai/accounts:batchGet?maxResults=1000');
+  if (accounts.data) {
+    const eligible = (accounts.data.users || []).filter(user => {
+      let claims = {}; try { claims = JSON.parse(user.customAttributes || '{}'); } catch {}
+      return !user.disabled && user.emailVerified === true && claims.admin === true;
+    });
+    report.administrators = { count: eligible.length, complete: !accounts.data.nextPageToken };
+  } else report.administrators = { httpStatus: accounts.httpStatus };
+  if (spec?.serviceAccountName) {
+    const signing = await inspect('runtime signing permissions', 'https://iam.googleapis.com/v1/projects/-/serviceAccounts/' + encodeURIComponent(spec.serviceAccountName) + ':testIamPermissions', 'POST', { permissions: ['iam.serviceAccounts.signBlob', 'iam.serviceAccounts.setIamPolicy'] });
+    report.executorSigningPermissions = signing.data?.permissions || [];
+    const policy = await inspect('runtime signing policy', 'https://iam.googleapis.com/v1/projects/-/serviceAccounts/' + encodeURIComponent(spec.serviceAccountName) + ':getIamPolicy', 'POST', { options: {requestedPolicyVersion: 3} });
+    report.runtimeSelfSigning = policy.data ? (policy.data.bindings || []).some(binding => binding.role === 'roles/iam.serviceAccountTokenCreator' && !binding.condition && binding.members?.includes('serviceAccount:' + spec.serviceAccountName)) : null;
+  }
   const permissions = await inspect('authentication executor permissions', 'https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions', 'POST', { permissions: ['firebaseauth.users.get', 'firebaseauth.users.delete', 'firebaseauth.users.update', 'iam.serviceAccounts.getIamPolicy', 'iam.serviceAccounts.setIamPolicy'] });
   report.executorPermissions = permissions.data?.permissions || [];
   const policy = await inspect('authentication runtime roles', 'https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:getIamPolicy', 'POST', { options: { requestedPolicyVersion: 3 } });
