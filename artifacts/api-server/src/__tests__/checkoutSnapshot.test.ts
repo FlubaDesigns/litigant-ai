@@ -523,3 +523,21 @@ describe("current custom checkout contract", () => {
     expect(sendPaymentReceiptEmail).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe("historical payment receipt replays", () => {
+  it.each(["payment event", "fulfillment only"])("does not invent a receipt balance from an old %s", async kind => {
+    expect((await checkout()).status).toBe(200);
+    await handleSquareEvent(event());
+    const originalUser = structuredClone(db.store["users/buyer"]);
+    if (kind === "payment event") delete db.store["payment_events/payment_payment-1"].balanceAfter;
+    else delete db.store["payment_events/payment_payment-1"];
+    for (const key of Object.keys(db.store)) if (key.startsWith("email_deliveries/")) delete db.store[key];
+    vi.mocked(sendPaymentReceiptEmail).mockClear();
+    await handleSquareEvent(event(payment(), "historical-replay"));
+    expect(db.store["users/buyer"]).toEqual(originalUser);
+    expect(ledgers()).toHaveLength(1);
+    expect(sendPaymentReceiptEmail).not.toHaveBeenCalled();
+    expect(Object.keys(db.store).filter(key => key.startsWith("email_deliveries/"))).toHaveLength(0);
+  });
+});
