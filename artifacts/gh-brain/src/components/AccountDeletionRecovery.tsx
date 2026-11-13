@@ -1,3 +1,6 @@
+import { confirmAccountDeletion } from "@/services/authService";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,20 +16,24 @@ export function AccountDeletionRecovery() {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<AccountDeletionError | null>(null);
   const inFlight = useRef(false);
+  const [password, setPassword] = useState("");
+  const usesPassword = user?.providerData?.some(p => p.providerId === "password");
   const displayedFailure = failure ?? (accountDeletionResult ? new AccountDeletionError(accountDeletionResult) : null);
   async function retryDeletion() {
     if (!user || inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
     try {
-      await deleteAccount(await user.getIdToken());
+      await confirmAccountDeletion(user, password);
+      setPassword("");
+      await deleteAccount(await user.getIdToken(true));
       await logOut().catch(() => toast.error("Account deleted, but local sign-out failed. Try signing out again."));
       toast.success("Account deleted.");
       navigate("/");
     } catch (error) {
       setFailure(error instanceof AccountDeletionError ? error : new AccountDeletionError({ success: false,
-        code: "authentication_unavailable", phase: "unknown", appDataDeleted: null, authDeleted: null, retryable: false,
-        message: "Deletion could not be confirmed because your sign-in is unavailable. Contact support with your account ID to check final cleanup." }));
+        code: "authentication_unavailable", phase: "unknown", appDataDeleted: null, authDeleted: null, retryable: true,
+        message: "Confirm your sign-in and retry. No further deletion was confirmed by this attempt." }));
     } finally { inFlight.current = false; setBusy(false); }
   }
   return (
@@ -36,6 +43,7 @@ export function AccountDeletionRecovery() {
         <p role="status">{busy ? "Deleting remaining account data and sign-in access…" : displayedFailure?.message ??
           "Account deletion was requested. Some data may already be removed. Wait for the current request to finish, then retry here if needed."}</p>
         <p className="text-sm text-muted-foreground">Deletion cannot be undone. Account setup and new conversations are unavailable while it is pending.</p>
+        {usesPassword && <div><Label htmlFor="cleanup-password">Confirm your password</Label><Input id="cleanup-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} /></div>}
         {displayedFailure?.result.retryable !== false && <Button disabled={busy} className="w-full min-h-11" onClick={retryDeletion}>
           {busy ? "Deleting…" : "Retry account deletion"}
         </Button>}

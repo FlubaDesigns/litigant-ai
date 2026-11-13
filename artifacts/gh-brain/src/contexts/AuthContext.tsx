@@ -1,3 +1,4 @@
+import { API_BASE } from "@/lib/apiUrl";
 import type { AccountDeletionResult } from "@/services/sessionService";
 import { useContext, useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -11,7 +12,6 @@ import {
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
-  deleteAccount,
 } from "@/services/authService";
 import { AuthContext, type AuthContextValue } from "./authContextDef";
 
@@ -52,6 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profile) throw new Error("Your account profile could not be loaded. Retry setup to continue.");
       setIsAdmin(token.claims["admin"] === true);
       setUserProfile(profile);
+      // A separate server request owns durable follow-up recovery; sign-in stays responsive.
+      void firebaseUser.getIdToken().then(idToken => fetch(`${API_BASE}/session-followups/recover`, {
+        method: "POST", headers: {Authorization: `Bearer ${idToken}`},
+      })).catch(() => {});
       profileUnsub.current = onUserProfileSnapshot(firebaseUser.uid, next => {
         if (version !== generation.current) return;
         setUserProfile(next);
@@ -105,7 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logOut: signOut,
     resetPassword: sendPasswordResetEmail,
     resendVerification: sendEmailVerification,
-    removeAccount: deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

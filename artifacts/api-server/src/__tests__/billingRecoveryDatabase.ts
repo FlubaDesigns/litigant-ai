@@ -36,14 +36,15 @@ export function billingRecoveryDatabase(initial: Record<string, any> = {}) {
   return {store, collection, failTransactionsWhen:(fn?:typeof fault)=>{fault=fn;},
     runTransaction:<T>(callback:(transaction:any)=>Promise<T>):Promise<T>=>{
       const running=mutex.then(async()=>{
-        const writes:Array<{path:string;data:any;merge:boolean;create?:boolean}>=[];
+        const writes:Array<{path:string;data:any;merge:boolean;create?:boolean;remove?:boolean}>=[];
         const result=await callback({get:async(reference:any)=>{if(writes.length)throw new Error("Read after write");return reference.get();},
           set:(r:any,data:any,opts:any)=>writes.push({path:r.path,data,merge:opts?.merge===true}),
           update:(r:any,data:any)=>writes.push({path:r.path,data,merge:true}),
+          delete:(r:any)=>writes.push({path:r.path,data:{},merge:false,remove:true}),
           create:(r:any,data:any)=>writes.push({path:r.path,data,merge:false,create:true})});
         if(fault?.(writes))throw new Error("Injected atomic transaction failure");
         if(writes.some(w=>w.create&&w.path in store))throw new Error("Already exists");
-        for(const write of writes)merge(write.path,write.data,write.merge);
+        for(const write of writes) { if(write.remove) delete store[write.path]; else merge(write.path,write.data,write.merge); }
         return result;
       });
       mutex=running.then(()=>{},()=>{});return running;

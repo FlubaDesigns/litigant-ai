@@ -145,3 +145,15 @@ it("all customer email links use current application destinations",async()=>{
    }
  }
 });
+
+it("starts a new recurring alert after expiry while preserving the old attempt", async () => {
+  const deliver = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(true);
+  const options = {sentField: "lowCreditEmailSentAt", cooldownMs: 86400000};
+  await expect(email.sendTrackedEmail("fixture", "lowCredits", deliver, options)).rejects.toThrow();
+  const [path, old] = Object.entries(records).find(([,r]) => r.templateId === "lowCredits")!;
+  old.attemptAt = Date.now() - 25*3600000;
+  expect(await email.sendTrackedEmail("fixture", "lowCredits", deliver, options)).toBe(true);
+  expect(deliver.mock.calls[1][0]).not.toBe(deliver.mock.calls[0][0]);
+  expect(records[path + "-" + old.attemptKey].status).toBe("expired");
+  expect(await email.sendTrackedEmail("fixture", "lowCredits", deliver, options)).toBe(false);
+});

@@ -1,3 +1,4 @@
+import type { SessionFollowup } from "./sessionFollowups.js";
 /** Durable, idempotent reservations. No provider calls or monetary charges occur here. */
 import { FieldValue } from "firebase-admin/firestore";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
@@ -41,7 +42,7 @@ export async function reserveCreditRun(uid: string, budget: number, sessionId: s
  * worker can never lose the obligation or overwrite a successor's session.
  */
 export async function prepareCreditRunSettlement(uid: string, runId: string, targetCharge: number,
-  savedResult?: FirebaseFirestore.DocumentData, lease?: SessionRunLease | null): Promise<CreditRunState> {
+  savedResult?: FirebaseFirestore.DocumentData, lease?: SessionRunLease | null, followup?: SessionFollowup): Promise<CreditRunState> {
   const db = database(), ref = db.collection("credit_runs").doc(runId);
   return db.runTransaction(async tx => {
     const saved = (await tx.get(ref)).data();
@@ -60,6 +61,7 @@ export async function prepareCreditRunSettlement(uid: string, runId: string, tar
     // Failure recovery may only reduce an existing charge, never collect again.
     tx.set(ref, { state: "pending", targetCharge, refundSource: targetCharge === 0 ? "brain_failure_refund" : "brain_reconcile",
       settlementRequestedAt: Date.now(), ...(savedResult ? {resultStored: true} : {}) }, { merge: true });
+    if (followup) tx.set(db.collection("session_followups").doc(runId), {...followup, state: "pending", leaseUntil: 0});
     if (savedResult) tx.set(sessionRef, { ...savedResult, billingRunId: runId,
       creditsUsed: saved.previousCredits + targetCharge, creditsDebited: saved.previousCredits + saved.chargedCredits,
       creditsReserved: saved.chargedCredits - targetCharge, settlementStatus: "pending" }, { merge: true });

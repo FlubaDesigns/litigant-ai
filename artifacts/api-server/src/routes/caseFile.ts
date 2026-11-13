@@ -6,7 +6,7 @@
  *
  * Security notes:
  *   - fetch-url: resolves hostname DNS before connecting and rejects private/reserved
- *     IP ranges (SSRF protection). Redirects are not followed. Response is streamed
+ *     IP ranges (SSRF protection) at each of at most three redirects. Response is streamed
  *     with a 2 MB hard ceiling so large responses cannot exhaust container memory.
  *   - upload: authentication precedes parsing; one file, no text fields, 10 MB limit.
  *     Content is extracted and truncated server-side.
@@ -159,50 +159,52 @@ router.post("/case-file/fetch-url", authenticateUpload, async (req, res) => {
     return;
   }
 
-  // SSRF protection: DNS-resolve hostname and reject private/reserved targets
-  const safeIp = await resolveSafe(parsedUrl.hostname);
-  if (!safeIp) {
-    res.status(400).json({ message: "URL target is not allowed" });
-    return;
-  }
-
   try {
-    // Connect to the exact address checked above. Resolving again at connect
-    // time would allow DNS rebinding to a private address.
-    const response = await new Promise<{status: number; contentType: string; text: string}>((resolve, reject) => {
-      const client = parsedUrl.protocol === "https:" ? https : http;
-      const request = client.request({
-        protocol: parsedUrl.protocol, hostname: safeIp, port: parsedUrl.port || undefined,
-        servername: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
-        headers: {Host: parsedUrl.host, "User-Agent":"LitigantAI-CaseFile/1.0"},
-        signal: AbortSignal.timeout(10_000),
-      }, incoming => {
-        const chunks: Buffer[] = [];
-        let bytes = 0;
-        incoming.on("error", reject);
-        incoming.on("data", (chunk: Buffer) => {
-          bytes += chunk.length;
-          if (bytes > MAX_FETCH_BYTES) { incoming.destroy(new Error("Response too large")); return; }
-          chunks.push(chunk);
+    const signal = AbortSignal.timeout(10_000);
+    let response!: {status: number; contentType: string; body: Buffer; location?: string};
+    let totalBytes = 0;
+    for (let hop = 0; hop <= 3; hop++) {
+      if (!["http:", "https:"].includes(parsedUrl.protocol) || parsedUrl.username || parsedUrl.password) {
+        res.status(400).json({message: "Only public http/https URLs are supported"}); return;
+      }
+      const safeIp = await resolveSafe(parsedUrl.hostname);
+      if (!safeIp) { res.status(400).json({message: "URL target is not allowed"}); return; }
+      // Revalidate and pin every hop; redirects cannot reach internal services.
+      response = await new Promise((resolve, reject) => {
+        const client = parsedUrl.protocol === "https:" ? https : http;
+        const request = client.request({
+          protocol: parsedUrl.protocol, hostname: safeIp, port: parsedUrl.port || undefined,
+          servername: parsedUrl.hostname, path: parsedUrl.pathname + parsedUrl.search,
+          headers: {Host: parsedUrl.host, "User-Agent": "LitigantAI-CaseFile/1.0"}, signal,
+        }, incoming => {
+          const chunks: Buffer[] = [];
+          incoming.on("error", reject);
+          incoming.on("data", (chunk: Buffer) => {
+            totalBytes += chunk.length;
+            if (totalBytes > MAX_FETCH_BYTES) { incoming.destroy(new Error("Response too large")); return; }
+            chunks.push(chunk);
+          });
+          incoming.on("end", () => resolve({status: incoming.statusCode ?? 502,
+            contentType: String(incoming.headers["content-type"] ?? ""),
+            location: incoming.headers.location, body: Buffer.concat(chunks)}));
         });
-        incoming.on("end", () => resolve({status: incoming.statusCode ?? 502,
-          contentType: String(incoming.headers["content-type"] ?? ""), text: Buffer.concat(chunks).toString("utf8")}));
+        request.on("error", reject); request.end();
       });
-      request.on("error", reject);
-      request.end();
-    });
-    if (response.status >= 300 && response.status < 400) {
-      res.status(400).json({message:"Redirected URLs are not supported"}); return;
+      if (![301,302,303,307,308].includes(response.status)) break;
+      if (!response.location || hop === 3) { res.status(400).json({message: "URL has too many redirects or no redirect destination"}); return; }
+      parsedUrl = new URL(response.location, parsedUrl);
     }
     if (response.status < 200 || response.status >= 300) {
-      res.status(400).json({message:`URL returned ${response.status}`}); return;
+      res.status(400).json({message: `URL returned ${response.status}`}); return;
     }
-    const rawText = response.text;
+    const rawText = response.body.toString("utf8");
     const contentType = response.contentType;
     let content: string;
     let title = parsedUrl.hostname;
 
-    if (contentType.includes("application/json")) {
+    if (contentType.includes("application/pdf") || response.body.subarray(0,5).toString() === "%PDF-") {
+      content = await extractDocument(response.body, "pdf", res.locals.extractionTimeoutMs, signal);
+    } else if (contentType.includes("application/json")) {
       try {
         content = JSON.stringify(JSON.parse(rawText), null, 2);
       } catch {
@@ -212,8 +214,10 @@ router.post("/case-file/fetch-url", authenticateUpload, async (req, res) => {
       const titleMatch = rawText.match(/<title[^>]*>([^<]+)<\/title>/i);
       if (titleMatch) title = titleMatch[1].trim();
       content = stripHtml(rawText);
-    } else {
+    } else if (contentType.startsWith("text/")) {
       content = rawText;
+    } else {
+      res.status(400).json({message: "Unsupported URL document type. Use a webpage, text, JSON or PDF document."}); return;
     }
 
     res.json({ title, content: truncate(content) });

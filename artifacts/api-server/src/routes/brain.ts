@@ -3,7 +3,7 @@ import { sessionTurnMetrics, presentSessionContent, readSessionTurns, encodeSess
 import { getRunInstructions, type RunInstructions } from "../lib/runInstructions.js";
 import { ConfigurationUnavailableError } from "../lib/configurationError.js";
 import { mergeModelProvenance } from "../lib/modelProvenance.js";
-import { PAID_ACCESS_NOTE, storedSessionRecord, sessionCompleteNotificationsEnabled } from "@workspace/api-zod/session";
+import { PAID_ACCESS_NOTE, storedSessionRecord } from "@workspace/api-zod/session";
 import { LimitsUnavailableError } from "../lib/adminLimitsConfig.js";
 import { prepareSession, priceCalls, annotateCalls, type CallUsage } from "../lib/sessionPricing.js";
 import { getTemplate } from "../lib/templateStore.js";
@@ -30,17 +30,8 @@ import { verifyIdToken, getFirestoreDb, isFirebaseConfigured } from "../lib/fire
 import { FieldValue } from "firebase-admin/firestore";
 
 
-import { reserveCreditRun, prepareCreditRunSettlement, persistCreditRunFailure, applyCreditRunSettlement, recoverCreditRuns, getSettledCreditBalance, type CreditRunState } from "../lib/creditRunSettlement.js";
-import { checkAndTriggerAutoRefill } from "../lib/creditLedger.js";
-import { getBillingDefaults } from "../lib/billingDefaultsConfig.js";
-import {
-  sendTrackedEmail,
-  sendLowCreditsEmail,
-  sendSessionCompleteEmail,
-  sendFirstSessionEmail,
-  sendZeroCreditsEmail,
-  isResendConfigured,
-} from "../lib/emailService.js";
+import { reserveCreditRun, prepareCreditRunSettlement, persistCreditRunFailure, applyCreditRunSettlement, recoverCreditRuns, type CreditRunState } from "../lib/creditRunSettlement.js";
+import { processSessionFollowup, type SessionFollowup } from "../lib/sessionFollowups.js";
 import { getCourtesyCreditEligibility } from "../lib/creditLedger.js";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 
@@ -163,6 +154,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
   let sessionId: string = crypto.randomUUID();
   const creditRunId = crypto.randomUUID();
   let creditReserved = false;
+  let followup: SessionFollowup | undefined;
   let billingState: CreditRunState = { chargedCredits: 0, targetCharge: 0, reservedCredits: 0, settlementStatus: "settled" };
   let fullAccess = false;
 
@@ -445,7 +437,6 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
     // (step 2) failed — the user was charged the estimated cost and any excess
     // must be refunded regardless of whether the session doc write succeeded.
     if (db && uid) {
-      const sessionUid = uid;
       const sessionRef = db.collection("sessions").doc(result.sessionId);
       const sessionTitle = rebuttalContext
         ? `[Rebuttal ${rebuttalContext.rebuttalRound}] ${question.slice(0, 70)}`
@@ -524,8 +515,10 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         if (previousSession) {
           for (const field of ["title", "starred", "archived", "shared", "shareId"]) delete savedResult[field];
         }
+        followup = {userId: uid, sessionId: result.sessionId, runId: creditRunId, creditRun: creditReserved,
+          cancelled: !!result.cancelled, fullAccess, sessionStatus: status, title: sessionTitle, actualCost};
         if (creditReserved) {
-          billingState = await prepareCreditRunSettlement(uid, creditRunId, actualCost, savedResult, runLease);
+          billingState = await prepareCreditRunSettlement(uid, creditRunId, actualCost, savedResult, runLease, followup);
           resultSaved = true;
           // Both attempts are idempotent. A persistent outage leaves the result
           // and refund obligation durable for the next authenticated recovery.
@@ -535,8 +528,11 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
             catch (error) { console.error("[brain] Settlement pending", { sessionId, error }); }
           }
         } else {
-          if (runLease) await writeSessionRun(db, runLease, savedResult);
-          else await sessionRef.set(savedResult, { merge: true });
+          if (runLease) await writeSessionRun(db, runLease, savedResult, followup);
+          else await db.runTransaction(async tx => {
+            tx.set(sessionRef, savedResult, {merge: true});
+            tx.set(db.collection("session_followups").doc(creditRunId), {...followup, state: "pending", leaseUntil: 0});
+          });
           resultSaved = true;
         }
       } catch (e) {
@@ -544,55 +540,7 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         throw new Error("Could not confirm the saved result. Check History before retrying; credit reconciliation may still be pending.");
       }
 
-      // ── Step 4: Post-session notifications ───────────────────────────────
-      try {
-        const userSnap = await db.collection("users").doc(uid).get();
-        const userData = userSnap.data() ?? {};
-        let newBalance = (userData.creditBalance as number) ?? 0;
 
-        await db.collection("users").doc(uid).update({ lastSessionAt: Date.now() })
-          .catch((e) => console.error("[brain] lastSessionAt update failed (non-fatal):", e));
-
-        if (!result.cancelled && billingState.settlementStatus === "settled") await checkAndTriggerAutoRefill(uid, newBalance, result.sessionId);
-        newBalance = (await db.collection("users").doc(uid).get()).data()?.creditBalance ?? newBalance;
-
-          if (fullAccess && status === "complete") await db.runTransaction(async tx => {
-            const ref = db.collection("users").doc(sessionUid);
-            const profile = (await tx.get(ref)).data();
-            if (profile && !profile.firstCompletedSessionId) tx.update(ref, {firstCompletedSessionId: result.sessionId});
-          });
-
-        if ((await isResendConfigured())) {
-          const billingDefaults = await getBillingDefaults();
-          const emailThreshold = billingDefaults.emailCreditWarningThreshold;
-
-          const notifications: Promise<boolean>[] = [];
-          const settledBalance = await getSettledCreditBalance(uid);
-          if (settledBalance !== null && emailThreshold > 0 && settledBalance > 0 && settledBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
-            key => sendLowCreditsEmail(sessionUid, settledBalance!, emailThreshold, key),
-            {sentField: "lowCreditEmailSentAt", cooldownMs: 86400_000}));
-          const notificationProfile = (await db.collection("users").doc(uid).get()).data() ?? {};
-          if (fullAccess && status === "complete" && sessionCompleteNotificationsEnabled(notificationProfile) && result.sessionId) {
-            if (notificationProfile.firstCompletedSessionId === result.sessionId) {
-              notifications.push(sendTrackedEmail(sessionUid, "firstSession",
-                key => sendFirstSessionEmail(sessionUid, result.sessionId, sessionTitle, key), {sentField: "firstSessionEmailSent"}));
-            } else {
-              notifications.push(sendTrackedEmail(sessionUid, "sessionComplete",
-                key => sendSessionCompleteEmail(sessionUid, result.sessionId, sessionTitle, actualCost, key), {eventId: result.sessionId}));
-            }
-          }
-          if (settledBalance !== null && settledBalance <= 0) notifications.push(sendTrackedEmail(sessionUid, "zeroCredits",
-            key => sendZeroCreditsEmail(sessionUid, key), {sentField: "zeroCreditsEmailSentAt", cooldownMs: 86400_000}));
-          const outcomes = await Promise.allSettled(notifications);
-          outcomes.forEach(outcome => {
-            if (outcome.status === "rejected") console.error("[brain] Notification failed (non-fatal):", outcome.reason);
-          });
-        }
-
-
-      } catch (e) {
-        console.error("[brain] Post-session notifications failed (non-fatal):", e);
-      }
     }
     resultSaved = true;
     if (runLease && db) {
@@ -614,6 +562,9 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
       transcriptLines: result.transcript, debateTranscriptLines: result.transcript,
       needsRelay: !!result.relayQuestion,
     })}\n\n`);
+    // The UI receives its terminal event before any external follow-up. Keep
+    // this request alive while draining; never rely on unawaited Cloud Run work.
+    if (followup && uid) await processSessionFollowup(uid, creditRunId).catch(() => {});
   } catch (err: any) {
     console.error("[brain] Unhandled session error:", err);
     // Keep health and error logs on the same session record. A failed resume

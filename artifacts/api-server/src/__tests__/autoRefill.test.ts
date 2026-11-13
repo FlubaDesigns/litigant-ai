@@ -55,6 +55,11 @@ describe("automatic card top-ups",()=>{
   await checkAndTriggerAutoRefill("u",50,"one");db.store['users/u'].creditBalance=10;
   await checkAndTriggerAutoRefill("u",10,"one");expect(chargeSquareCard).toHaveBeenCalledTimes(1);
  });
+ it("does not recharge an older session after a newer session has topped up",async()=>{
+  await checkAndTriggerAutoRefill("u",50,"old"); db.store["users/u"].creditBalance=10;
+  await checkAndTriggerAutoRefill("u",10,"new"); db.store["users/u"].creditBalance=10;
+  await checkAndTriggerAutoRefill("u",10,"old"); expect(chargeSquareCard).toHaveBeenCalledTimes(2);
+ });
  it("requires consent for enabling or changing a charge amount",async()=>{
   await expect(setAutoRefillPreference("u",{enabled:true,thresholdCredits:100,dollarAmount:50})).rejects.toThrow("Authorize");
   await setAutoRefillPreference("u",{enabled:true,thresholdCredits:100,dollarAmount:50,consent:true});

@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   updateDoc,
+  deleteField,
   onSnapshot,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -88,7 +89,12 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function updateUserProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
   const ref = doc(db, "users", uid);
-  await updateDoc(ref, data as Record<string, unknown>);
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if ((key === "role" || key === "organization") && (value === undefined || value === "")) fields[key] = deleteField();
+    else if (value !== undefined) fields[key] = value;
+  }
+  await updateDoc(ref, fields);
 }
 
 

@@ -1,3 +1,4 @@
+import AuthorizationEngineSignIn from "@/components/AuthorizationEngineSignIn";
 import { useState } from "react";
 import { useLocation, useSearch, Link } from "wouter";
 import { useForm } from "react-hook-form";
@@ -74,6 +75,7 @@ export default function SignInPage() {
         </div>
 
         <div className="bg-card border border-border p-8 rounded-lg shadow-2xl">
+          {new URLSearchParams(window.location.search).get("engine") === "1" && <AuthorizationEngineSignIn />}
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

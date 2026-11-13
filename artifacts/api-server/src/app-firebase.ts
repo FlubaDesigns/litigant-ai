@@ -1,3 +1,6 @@
+import { registerBrowserSession } from "./lib/authorizationBrowserSession.js";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestoreDb } from "./lib/firebaseAdmin.js";
 import * as Sentry from "@sentry/node";
 import express, { type Express } from "express";
 import cors from "cors";
@@ -67,6 +70,13 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 
+// Same browser-bound, one-use protocol as the central Authorization Engine.
+const engineDb = getFirestoreDb();
+if (engineDb) registerBrowserSession(app, {db: engineDb, auth: getAuth(), config: {
+  origin: "https://litigant-ai.web.app",
+  principal: "github-action-1249917275@flubadesigns-25482.iam.gserviceaccount.com",
+  ownerEmail: "flubadesigns@gmail.com",
+}});
 app.use("/api", router);
 
 // Sentry error handler must come after routes and before any other error middleware.

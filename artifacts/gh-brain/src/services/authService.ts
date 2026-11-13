@@ -4,9 +4,9 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  reauthenticateWithCredential, reauthenticateWithPopup,
   signOut as firebaseSignOut,
   updateProfile,
-  deleteUser,
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -176,8 +176,14 @@ export async function sendEmailVerification(): Promise<void> {
   }
 }
 
-export async function deleteAccount(): Promise<void> {
-  if (auth.currentUser) {
-    await deleteUser(auth.currentUser);
+
+/** Shared confirmation for initial deletion and resumable cleanup. */
+export async function confirmAccountDeletion(user: User, password: string): Promise<void> {
+  if (user.providerData.some(p => p.providerId === "password") && user.email) {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+  } else if (user.providerData.some(p => p.providerId === "google.com")) {
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+  } else {
+    throw new Error("Sign in again before deleting your account.");
   }
 }

@@ -183,7 +183,7 @@ export async function removeAutoRefillCard(uid:string) {
 export async function checkAndTriggerAutoRefill(uid:string, _newBalance:number, sessionId:string) {
   if(!(await isSquareConfigured())) return;
   const db=database(), user=db.collection("users").doc(uid), account=db.collection("billing_accounts").doc(uid);
-  const proposedId=crypto.randomUUID(), now=Date.now();
+  const proposedId=crypto.createHash("sha256").update(`${uid}:${sessionId}`).digest("hex").slice(0,40), now=Date.now();
   const attempt: {id:string;paymentId?:string;request:Record<string,unknown>} | null=await db.runTransaction(async tx=>{
     const [u,a]=await Promise.all([tx.get(user),tx.get(account)]);
     const profile=u.data(), billing=a.data(), pref=profile?.autoRefill;
@@ -197,6 +197,8 @@ export async function checkAndTriggerAutoRefill(uid:string, _newBalance:number, 
       return {...saved,id:billing.activeAttempt,request:saved.request,paymentId:saved.paymentId};
     }
     if (!mayCharge) return null;
+    // A queued older session must not charge again after a newer trigger.
+    if ((await tx.get(db.collection("auto_refill_attempts").doc(proposedId))).exists) return null;
     if(billing!.lastTriggerSession===sessionId || Number(profile?.creditBalance)>=pref.thresholdCredits) return null;
     // A reservation makes credits unavailable temporarily; it is not completed
     // usage and must never cause a saved-card charge. Existing attempts above

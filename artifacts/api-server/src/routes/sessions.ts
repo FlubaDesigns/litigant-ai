@@ -1,3 +1,5 @@
+import { recoverSessionFollowups } from "../lib/sessionFollowups.js";
+import { recoverCreditRuns } from "../lib/creditRunSettlement.js";
 import { presentSessionContent, readSessionTurns } from "../lib/sessionContent.js";
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
@@ -80,6 +82,18 @@ router.use("/sessions", async (req, res, next) => {
     res.status(403).json({message:PAID_ACCESS_NOTE, code:"PAID_ACCESS_REQUIRED"}); return;
   }
   next();
+});
+
+// Explicit authenticated recovery request; no payment work runs after a response ends.
+router.post("/session-followups/recover", async (req, res) => {
+  const bearer = req.headers.authorization;
+  const decoded = bearer?.startsWith("Bearer ") ? await verifyIdToken(bearer.slice(7)) : null;
+  if (!decoded) return res.status(401).json({message: "Unauthorized"});
+  try {
+    await recoverCreditRuns(decoded.uid);
+    await recoverSessionFollowups(decoded.uid);
+    return res.json({success: true});
+  } catch { return res.status(503).json({message: "Follow-up recovery unavailable"}); }
 });
 
 router.get("/sessions", async (req, res) => {
