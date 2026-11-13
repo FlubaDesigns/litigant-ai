@@ -13,8 +13,11 @@ function configValue(value) {
   if (value === undefined || value.nullValue !== undefined) return value;
   assert(value.mapValue, 'Saved configuration must be a map');
   const fields = structuredClone(value.mapValue.fields ?? {});
+  const strategy = fields.outputStrategy;
+  const unsetStrategy = !strategy || strategy.nullValue !== undefined || strategy.stringValue === ''
+    || strategy.booleanValue === false || Number(strategy.integerValue ?? strategy.doubleValue) === 0;
   if (fields.outputScope?.stringValue === 'all-voices'
-    && (!fields.outputStrategy || fields.outputStrategy.stringValue === 'moderator-consensus')) {
+    && (unsetStrategy || strategy.stringValue === 'moderator-consensus')) {
     fields.outputStrategy = {stringValue: 'consensus+individual'};
   }
   delete fields.outputScope;

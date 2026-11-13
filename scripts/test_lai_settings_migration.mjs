@@ -19,6 +19,10 @@ test('migrates only retired controls, preserves current choices and is idempoten
   assert.equal(settingsPatch({...before, fields: {...before.fields, ...patch.update.fields}}), null);
   assert.equal(settingsPatch(doc('sessions/s', {config: map({outputScope: string('all-voices'), outputStrategy: string('individual')})})).update.fields.config.mapValue.fields.outputStrategy.stringValue, 'individual');
   assert.equal(settingsPatch(doc('users/empty', {defaultSettings: {mapValue: {}}})), null);
+  for (const outputStrategy of [string(''), {nullValue: null}, bool(false), integer(0)]) {
+    const patch = settingsPatch(doc('sessions/s', {config: map({outputScope: string('all-voices'), outputStrategy})}));
+    assert.equal(patch.update.fields.config.mapValue.fields.outputStrategy.stringValue, 'consensus+individual');
+  }
 });
 test('notification opt-out wins, legacy opt-in is copied only when needed', () => {
   for (const current of [true, false, undefined]) for (const legacy of [true, false]) {
