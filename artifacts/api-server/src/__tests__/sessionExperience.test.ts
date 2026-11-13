@@ -81,6 +81,31 @@ describe("owned session pagination and exports", () => {
     for(const marker of ["PRIVATE_PAYMENT","PRIVATE_TOKEN","PRIVATE_LEASE","PRIVATE_SHARE","NOT_OWNED","NOT_SAVED_MEMORY"]) expect(res.text).not.toContain(marker);
     expect(res.body.sessions[0].transcript).toContain("LEGACY_TURN");
   });
+  it.each(["transcript", "debateNotes"])("preserves saved %s while deriving only its missing companion", async field => {
+    session("partial", {[field]: "SAVED_AUTHORITATIVE_CONTENT"});
+    data["sessions/partial/session_turns/turn"]={role:"Advocate",round:1,content:"TURN_CONTENT",turnIndex:0};
+    const owner=await request(app).get("/sessions/partial").set(auth);
+    const backup=await request(app).get("/account/export").set(auth);
+    expect(owner.status).toBe(200); expect(backup.status).toBe(200);
+    expect(owner.body[field]).toBe("SAVED_AUTHORITATIVE_CONTENT");
+    expect(backup.body.sessions[0][field]).toBe("SAVED_AUTHORITATIVE_CONTENT");
+    const missing=field==="transcript" ? "debateNotes" : "transcript";
+    expect(owner.body[missing]).toContain("TURN_CONTENT");
+    expect(owner.body[missing]).toBe(backup.body.sessions[0][missing]);
+  });
+  it("renders owner and exported turn-only content identically without exposing the opening frame", async () => {
+    session("turn-only");
+    for (const [index,role] of ["Orchestrator","Advocate","Moderator","Verdict"].entries()) {
+      data[`sessions/turn-only/session_turns/turn_${index}`]={role,round:index===0?0:index===1?1:99,content:role+"_CONTENT",turnIndex:index};
+    }
+    const owner=(await request(app).get("/sessions/turn-only").set(auth)).body;
+    const exported=(await request(app).get("/account/export").set(auth)).body.sessions[0];
+    expect(owner.transcript).toBe(exported.transcript); expect(owner.debateNotes).toBe(exported.debateNotes);
+    expect(owner.transcript).not.toContain("Orchestrator_CONTENT");
+    expect(owner.transcript).toContain("Verdict_CONTENT");
+    expect(owner.debateNotes).not.toContain("Verdict_CONTENT");
+    expect(owner.debateNotes).toContain("Moderator_CONTENT");
+  });
   it("Free exports account data only and never queries saved memory or unlocks history", async () => {
     data["users/owner"].plan="free"; session("old",{finalAnswer:"DO_NOT_UNLOCK"});
     const res=await request(app).get("/account/export").set(auth);

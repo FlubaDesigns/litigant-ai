@@ -31,3 +31,16 @@ it('does not label interrupted or unreviewed work as approved',()=>{
  expect(reviewStatus({acceptedAt:123,outputIncomplete:true})).toBe('Interrupted — not approved');
  expect(reviewStatus({courtroomOutcome:{reason:'approved'}})).toBe('Auditor approved');
 });
+
+it('fills missing notes without replacing saved transcript and excludes fixed stages from metrics',async()=>{
+ delete record.debateNotes; delete record.roundsCompleted; delete record.litigantCount;
+ const values=[{role:'Orchestrator',round:0,content:'OPENING'},
+  {role:'Advocate',round:1,content:'ARGUMENT'}, {role:'Skeptic',round:2,content:'CHALLENGE'},
+  {role:'Builder',round:99,content:'DOCUMENT'}, {role:'Auditor',round:99,content:'REVIEW'},
+  {role:'Verdict',round:99,content:'VERDICT'}];
+ turns.mockImplementation(()=>({orderBy:()=>({get:async()=>({empty:false,docs:values.map(value=>({data:()=>value}))})})}));
+ const r=await request(app).get('/report/public'); expect(r.status).toBe(200);
+ expect(r.body.transcript).toBe('Saved');expect(r.body.debateNotes).toContain('ARGUMENT');
+ expect(r.body.debateNotes).not.toContain('OPENING');expect(r.body.debateNotes).not.toContain('VERDICT');
+ expect(r.body.roundsCompleted).toBe(2);expect(r.body.litigantCount).toBe(2);
+});
