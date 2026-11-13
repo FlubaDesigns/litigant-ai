@@ -1,4 +1,5 @@
 import {inspectContent} from './lai-content-migration.mjs';
+import {inspectAuthRuntime} from './lai-auth-inspection.mjs';
 import {inspectSettings} from './lai-settings-migration.mjs';
 /** LAI-only release controller. Inspection is read-only; deployment is descriptor-authorized.
  * No private Engine implementation or credentials belong in this public repository.
@@ -580,6 +581,7 @@ async function release() {
     console.log('LAI_SETTINGS_INSPECTION ' + JSON.stringify({scanned: settings.scanned, changes: settings.counts}));
   }
   if (descriptor.action === 'inspect') {
+    console.log('LAI_AUTH_INSPECTION ' + JSON.stringify(await inspectAuthRuntime(before, cloud)));
     await writeFile(tempPath(context, 'identity.json'), JSON.stringify(runtimeIdentityEvidence(context, before)) + '\n', { mode: 0o600 });
     console.log('LAI_CREDENTIAL_WIRING ' + JSON.stringify(await inspectCredentialWiring(before)));
     let migrationPending=true;
