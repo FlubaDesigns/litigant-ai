@@ -1,3 +1,4 @@
+vi.mock("@/services/authService", () => ({confirmAccountDeletion: vi.fn(async()=>{})}));
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(), useState: vi.fn(), useEffect: vi.fn() }));
 vi.mock("wouter", () => ({ Link: "a", Redirect: "redirect", useLocation: vi.fn(), useSearch: vi.fn() }));
@@ -67,7 +68,8 @@ describe("auth destination continuity", () => {
   it.each([SignIn, Register])("does not navigate after a canceled/failed Google popup (%s)", async Page => {
     context.signInGoogle.mockRejectedValue(new Error("Popup canceled"));
     await handler(Page(), "handleGoogleSignIn")();
-    expect(toast.error).toHaveBeenCalledWith("Popup canceled");
+    if (Page === Register) expect(toast.error).toHaveBeenCalledWith("Popup canceled");
+    else expect(toast.success).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -170,4 +172,18 @@ describe("public onboarding clarity", () => {
     expect(toast.success).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
+});
+
+it("keeps an actionable failure on the sign-in form until retry", async () => {
+  let message: string | null = null;
+  vi.mocked(useState).mockImplementation(((value: any) => value === null ? [message, (next: string | null) => { message = next; }] : [value, vi.fn()]) as any);
+  context.signInGoogle.mockRejectedValue({code:"auth/popup-blocked"});
+  await handler(SignIn(), "handleGoogleSignIn")();
+  const alert = nodes(SignIn()).find(node => node.props.role === "alert");
+  expect(JSON.stringify(alert)).toContain("Allow pop-ups");
+  expect(navigate).not.toHaveBeenCalled();
+  context.signInGoogle.mockResolvedValue({});
+  await handler(SignIn(), "handleGoogleSignIn")();
+  expect(message).toBe(null);
+  expect(navigate).toHaveBeenCalledWith(destination);
 });

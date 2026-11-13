@@ -1,3 +1,5 @@
+import http from "node:http";
+import { processSessionFollowup } from "../lib/sessionFollowups.js";
 import { decodeSessionContent } from "@workspace/api-zod/session-content";
 import {beforeEach,describe,it,expect,vi} from "vitest";
 import express from "express";
@@ -135,4 +137,27 @@ describe("instruction source failure before charging",()=>{
   await call();
   expect(vi.mocked(runBrainSession).mock.calls[0][0].instructions?.conscience).toEqual({text:"Saved test policy",version:"test-v1"});
  });
+});
+
+it("streams the saved terminal event before slow mail and retains work after delivery failure", async () => {
+  vi.mocked(isResendConfigured).mockResolvedValue(true);
+  db.store["users/u"].notifications={sessionComplete:true};
+  let release!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  vi.mocked(sendFirstSessionEmail).mockImplementationOnce(async()=>{await gate;throw new Error("offline");});
+  const server=app.listen(0,"127.0.0.1");
+  await new Promise<void>(resolve=>server.once("listening",resolve));
+  try {
+    await new Promise<void>((resolve,reject)=>{
+      const outgoing=http.request({host:"127.0.0.1",port:(server.address() as any).port,path:"/run-brain",method:"POST",headers:{Authorization:"Bearer local","Content-Type":"application/json"}},incoming=>{
+        let body="";incoming.on("data",chunk=>{body+=chunk; if(body.includes('"type":"done"'))resolve();});incoming.on("error",reject);
+      });outgoing.on("error",reject);outgoing.end(JSON.stringify({question:"Private question",config}));
+    });
+    expect(Object.keys(db.store).some(key=>key.startsWith("session_followups/"))).toBe(true);
+    release();
+    const [path]=Object.entries(db.store).find(([key])=>key.startsWith("session_followups/"))!;
+    await vi.waitFor(()=>expect(db.store[path].leaseUntil).toBe(0));
+    await processSessionFollowup("u",path.split("/")[1]);
+    expect(db.store[path]).toBeUndefined();
+  } finally {release();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });

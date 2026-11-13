@@ -1,3 +1,4 @@
+vi.mock("@/services/authService", () => ({confirmAccountDeletion: vi.fn(async()=>{})}));
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("react", async original => ({...await original<typeof import("react")>(),useState:vi.fn(),useRef:vi.fn()}));
 vi.mock("wouter", () => ({useLocation:vi.fn(),useSearch:()=>"",Redirect:"redirect"}));

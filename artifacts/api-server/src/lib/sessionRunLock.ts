@@ -1,3 +1,4 @@
+import type { SessionFollowup } from "./sessionFollowups.js";
 import crypto from "crypto";
 
 // Longer than the API's ten-minute run timeout; recover after a crashed worker.
@@ -36,7 +37,7 @@ export async function claimSessionRun(db: FirebaseFirestore.Firestore, sessionId
 
 /** A stale worker must never overwrite the result of a newer run. */
 export async function writeSessionRun(
-  db: FirebaseFirestore.Firestore, lease: SessionRunLease, changes: FirebaseFirestore.DocumentData,
+  db: FirebaseFirestore.Firestore, lease: SessionRunLease, changes: FirebaseFirestore.DocumentData, followup?: SessionFollowup,
 ) {
   const ref = db.collection("sessions").doc(lease.sessionId);
   await db.runTransaction(async transaction => {
@@ -44,6 +45,7 @@ export async function writeSessionRun(
     if (!saved || saved.activeRun?.id !== lease.runId || !hasActiveSessionRun(saved)) {
       throw new SessionRunError(409, "This session run expired or was replaced. Reload it from History.");
     }
+    if (followup) transaction.set(db.collection("session_followups").doc(followup.runId), {...followup, state: "pending", leaseUntil: 0});
     transaction.update(ref, {
       ...changes, activeRun: { id: lease.runId, expiresAt: Date.now() + SESSION_RUN_LEASE_MS },
     });

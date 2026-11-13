@@ -646,7 +646,8 @@ export async function sendTrackedEmail(
   const db = getFirestoreDb();
   if (!db) throw new Error("Email tracking unavailable");
   const userRef = db.collection("users").doc(uid);
-  const ref = db.collection("email_deliveries").doc(crypto.createHash("sha256").update(`${uid}:${kind}:${options.eventId ?? ""}`).digest("hex"));
+  const deliveryId = crypto.createHash("sha256").update(`${uid}:${kind}:${options.eventId ?? ""}`).digest("hex");
+  const ref = db.collection("email_deliveries").doc(deliveryId);
   const now = Date.now();
   const attempt = await db.runTransaction(async tx => {
     const state = (await tx.get(ref)).data();
@@ -659,7 +660,15 @@ export async function sendTrackedEmail(
         (typeof alreadySent === "number" && alreadySent > now - (options.cooldownMs ?? 0)) ||
         (state?.status === "accepted" && (!options.cooldownMs || state.acceptedAt > now - options.cooldownMs)) ||
         (state?.status === "sending" && state.startedAt > now - 5 * 60_000)) return null;
-    if (state && ["sending", "failed"].includes(state.status) && state.attemptAt <= now - 23 * 3600_000) return null;
+    const expired = state && ["sending", "failed"].includes(state.status) && state.attemptAt <= now - 23 * 3600_000;
+    if (expired) {
+      // Never replay an uncertain old send outside the provider's idempotency
+      // window. A later recurring notification is a new event, not that retry.
+      if (!options.cooldownMs || options.eventId || state.attemptAt > now - options.cooldownMs) return null;
+      tx.set(db.collection("email_deliveries").doc(`${deliveryId}-${state.attemptKey}`), {
+        ...state, status: "expired", updatedAt: now,
+      });
+    }
     const key = state && ["sending", "failed"].includes(state.status) && state.attemptAt > now - 23 * 3600_000
       ? state.attemptKey : crypto.randomUUID();
     tx.set(ref, {userId: uid, templateId: kind, ...(options.sentField ? {sentField: options.sentField} : {}), ...(options.cooldownMs ? {cooldownMs: options.cooldownMs} : {}), status: "sending", startedAt: now,

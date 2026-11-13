@@ -2,11 +2,11 @@ import {
   createUserWithEmailAndPassword,
   signInAnonymously, linkWithCredential, linkWithPopup, EmailAuthProvider,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithPopup, signInWithCredential,
   GoogleAuthProvider,
+  reauthenticateWithCredential, reauthenticateWithPopup,
   signOut as firebaseSignOut,
   updateProfile,
-  deleteUser,
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -130,7 +130,18 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export async function signInWithGoogle(): Promise<User> {
   return performSignIn(async () => {
     const guest = await guestForSignup();
-    const credential = guest ? await linkWithPopup(guest, googleProvider) : await signInWithPopup(auth, googleProvider);
+    let credential;
+    try {
+      credential = guest ? await linkWithPopup(guest, googleProvider) : await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      // Returning customers may still have an anonymous trial in this browser.
+      // An existing Google identity cannot be linked to that trial. Sign in to
+      // the existing account with the credential Google just verified instead.
+      if (!guest || (error as {code?: string}).code !== "auth/credential-already-in-use") throw error;
+      const existing = GoogleAuthProvider.credentialFromError(error as Parameters<typeof GoogleAuthProvider.credentialFromError>[0]);
+      if (!existing) throw error;
+      credential = await signInWithCredential(auth, existing);
+    }
     await provisionUser(credential.user);
     return credential.user;
   });
@@ -176,8 +187,14 @@ export async function sendEmailVerification(): Promise<void> {
   }
 }
 
-export async function deleteAccount(): Promise<void> {
-  if (auth.currentUser) {
-    await deleteUser(auth.currentUser);
+
+/** Shared confirmation for initial deletion and resumable cleanup. */
+export async function confirmAccountDeletion(user: User, password: string): Promise<void> {
+  if (user.providerData.some(p => p.providerId === "password") && user.email) {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+  } else if (user.providerData.some(p => p.providerId === "google.com")) {
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+  } else {
+    throw new Error("Sign in again before deleting your account.");
   }
 }

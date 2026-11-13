@@ -1,3 +1,4 @@
+import { confirmAccountDeletion } from "@/services/authService";
 import { API_BASE } from "@/lib/apiUrl";
 import { ConfigPanel } from "@/pages/app/session/ConfigPanel";
 import { CourtConfigSchema, sessionCompleteNotificationsEnabled, type CourtConfig } from "@workspace/api-zod/session";
@@ -459,10 +460,12 @@ export function NotificationsTab({ user }: { user: User }) {
   );
 }
 
-function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
+function DangerTab({ user, onDelete }: { user: User; onDelete: (password: string) => void }) {
   const [exportLoading, setExportLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const usesPassword = user.providerData.some(p => p.providerId === "password");
 
   async function handleExportData() {
     setExportLoading(true);
@@ -534,6 +537,10 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
                   <p className="text-xs font-medium">
                     Type <span className="font-mono text-destructive">DELETE</span> to confirm:
                   </p>
+                  {usesPassword ? <>
+                    <Label htmlFor="delete-password">Confirm your password</Label>
+                    <Input id="delete-password" type="password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} />
+                  </> : <p>Google will ask you to confirm your sign-in.</p>}
                   <Input
                     value={deleteConfirm}
                     onChange={(e) => setDeleteConfirm(e.target.value)}
@@ -545,10 +552,10 @@ function DangerTab({ user, onDelete }: { user: User; onDelete: () => void }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirm("")}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setDeleteConfirm(""); setDeletePassword(""); }}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={deleteConfirm !== "DELETE"}
-              onClick={onDelete}
+              disabled={deleteConfirm !== "DELETE" || (usesPassword && !deletePassword)}
+              onClick={() => { onDelete(deletePassword); setDeletePassword(""); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
             >
               Delete account
@@ -566,11 +573,18 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>(new URLSearchParams(window.location.search).get("tab") === "notifications" ? "notifications" : "profile");
   const [deleting, setDeleting] = useState(false);
 
-  async function handleDeleteAccount() {
+  async function handleDeleteAccount(password: string) {
     if (!user) return;
     setDeleting(true);
     try {
-      const idToken = await user.getIdToken();
+      await confirmAccountDeletion(user, password);
+    } catch {
+      setDeleting(false);
+      toast.error("Sign-in confirmation failed. Your account was not deleted.");
+      return;
+    }
+    try {
+      const idToken = await user.getIdToken(true);
       beginAccountDeletion?.();
       await deleteAccount(idToken);
 

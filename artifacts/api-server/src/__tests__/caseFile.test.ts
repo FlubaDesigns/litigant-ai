@@ -51,3 +51,31 @@ describe("case files",()=>{
     expect(res.status).toBe(200);expect(res.body.content.length).toBeLessThanOrEqual(12000);
   });
 });
+
+function serveResponses(responses: Array<{status: number; type?: string; location?: string; body?: Buffer}>) {
+  return vi.spyOn(https,"request").mockImplementation(((_options:any, callback:any) => {
+    const response=responses.shift()!; const outgoing=new EventEmitter() as any;
+    outgoing.end=()=>{const incoming=new EventEmitter() as any; incoming.statusCode=response.status;
+      incoming.headers={"content-type":response.type,location:response.location}; callback(incoming);
+      if(response.body) incoming.emit("data",response.body); incoming.emit("end");}; return outgoing;
+  }) as any);
+}
+it("follows a checked redirect and parses the resulting real PDF", async () => {
+  vi.spyOn(dns,"lookup").mockResolvedValue({address:"93.184.216.34",family:4} as any);
+  const outbound=serveResponses([{status:302,location:"/document.pdf"},{status:200,type:"application/pdf",body:pdfFixture()}]);
+  const res=await request(app).post("/case-file/fetch-url").set("Authorization","Bearer test").send({url:"https://example.com/start"});
+  expect(res.status).toBe(200);expect(res.body.content).toContain("Verified case file evidence");
+  expect(outbound.mock.calls[1][0]).toMatchObject({hostname:"93.184.216.34",path:"/document.pdf"});
+});
+it("rejects a redirect into a private address before opening its connection", async () => {
+  vi.spyOn(dns,"lookup").mockResolvedValueOnce({address:"93.184.216.34",family:4} as any).mockResolvedValueOnce({address:"127.0.0.1",family:4} as any);
+  const outbound=serveResponses([{status:302,location:"https://internal.example/secret"}]);
+  const res=await request(app).post("/case-file/fetch-url").set("Authorization","Bearer test").send({url:"https://example.com/start"});
+  expect(res.status).toBe(400);expect(outbound).toHaveBeenCalledTimes(1);
+});
+it("bounds redirect loops and rejects unsupported binary content",async()=>{
+  vi.spyOn(dns,"lookup").mockResolvedValue({address:"93.184.216.34",family:4} as any);
+  const outbound=serveResponses(Array.from({length:4},()=>({status:302,location:"/again"})));
+  const res=await request(app).post("/case-file/fetch-url").set("Authorization","Bearer test").send({url:"https://example.com/start"});
+  expect(res.status).toBe(400);expect(outbound).toHaveBeenCalledTimes(4);
+});

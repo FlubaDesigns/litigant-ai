@@ -364,7 +364,7 @@ export default function BillingPage() {
   const didCancel = params.get("cancelled") === "true";
 
   useEffect(() => {
-    if (didSucceed) toast.success("Payment successful! Credits will appear shortly.");
+    if (didSucceed) toast.info("Returned from checkout. Check payment history below for confirmation; your balance updates when credits are received.");
     if (didCancel) toast.info("Payment cancelled.");
   }, [didSucceed, didCancel]);
 

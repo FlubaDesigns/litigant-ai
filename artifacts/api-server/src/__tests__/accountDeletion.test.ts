@@ -39,11 +39,19 @@ beforeEach(() => {
     "users/other": { creditBalance: 99 }, "sessions/other": { userId: "other" },
   });
   vi.mocked(getFirestoreDb).mockReturnValue(db as any);
-  vi.mocked(verifyIdToken).mockResolvedValue({ uid: "u", emailVerified: true });
+  vi.mocked(verifyIdToken).mockResolvedValue({ uid: "u", emailVerified: true, authTime: Date.now() / 1000 });
   vi.mocked(getAuth).mockReturnValue({ deleteUser } as any);
   deleteUser.mockImplementation(async () => { vi.mocked(verifyIdToken).mockResolvedValue(null); });
 });
 describe("truthful owner account deletion", () => {
+  it("rejects stale authentication before touching data or payments", async () => {
+    vi.mocked(verifyIdToken).mockResolvedValue({uid:"u", authTime: Date.now()/1000 - 301});
+    const before = JSON.stringify(db.store);
+    expect((await remove()).body.code).toBe("recent_login_required");
+    expect(JSON.stringify(db.store)).toBe(before);
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(disableSquareCard).not.toHaveBeenCalled();
+  });
   it("confirms completion only after data, Auth and temporary state are removed", async () => {
     const response = await remove();
     expect(response.status).toBe(200);

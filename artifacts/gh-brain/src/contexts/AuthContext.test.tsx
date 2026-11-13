@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 // Small hook harness: keeps state/ref slots across renders without browser Firebase.
 vi.mock("react", async importOriginal => ({
@@ -23,7 +23,7 @@ import { AuthProvider } from "./AuthContext";
 
 let slots: any[], cursor: number;
 let authChanged: (user: any) => void;
-const user = { uid: "existing", getIdTokenResult: vi.fn(async () => ({ claims: {} })) } as any;
+const user = { uid: "existing", getIdToken: vi.fn(async () => "fixture-token"), getIdTokenResult: vi.fn(async () => ({ claims: {} })) } as any;
 const profile = { uid: "existing", credits: 100 } as any;
 function render() {
   cursor = 0;
@@ -36,6 +36,7 @@ function deferred<T>() {
 }
 
 beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ok: true})));
   vi.clearAllMocks(); slots = []; cursor = 0;
   vi.mocked(useState).mockImplementation(((initial: any) => {
     const i = cursor++;
@@ -57,6 +58,8 @@ beforeEach(() => {
   (auth as any).currentUser = user;
   render();
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("account readiness gate", () => {
   it("keeps loading until provisioning AND the saved profile are confirmed", async () => {

@@ -22,6 +22,10 @@ router.delete("/account", async (req, res) => {
   const decoded = await verifyIdToken(authHeader.slice(7), { allowAccountDeletion: true });
   if (!decoded) return res.status(401).json({ message: "Sign in again to retry deletion, or contact support if the sign-in account is already unavailable." });
 
+  if (!decoded.authTime || Date.now() / 1000 - decoded.authTime > 300) {
+    return res.status(403).json({ success: false, code: "recent_login_required", message: "Confirm your sign-in before deleting your account.", phase: "preparing", appDataDeleted: false, authDeleted: false, retryable: true });
+  }
+
   const uid = decoded.uid, user = db.collection("users").doc(uid);
   const fence = db.collection("account_deletions").doc(uid);
   const requestId = crypto.randomUUID();
@@ -85,7 +89,7 @@ router.delete("/account", async (req, res) => {
       await billingAccount.delete();
       for (const doc of runs.docs) await doc.ref.delete();
       for (const [collection, field] of [["auto_refill_attempts", "uid"], ["sessions", "userId"],
-        ["credit_transactions", "userId"], ["email_deliveries", "userId"], ["feedback", "userId"], ["api_logs", "userId"]] as const) {
+        ["session_followups", "userId"], ["credit_transactions", "userId"], ["email_deliveries", "userId"], ["feedback", "userId"], ["api_logs", "userId"]] as const) {
         const snapshot = await db.collection(collection).where(field, "==", uid).get();
         for (const doc of snapshot.docs) {
           await doc.ref.delete();
