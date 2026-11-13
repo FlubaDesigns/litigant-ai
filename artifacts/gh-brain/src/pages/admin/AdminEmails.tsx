@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { getAdminBillingDefaults, saveAdminBillingDefaults, getEmailTemplates, updateEmailTemplate, fetchEmailTemplatePreview, getEmailDeliveries, sendReengagementCampaign, getEmailTemplateVersions, saveEmailTemplateVersion, activateEmailTemplateVersion, deleteEmailTemplateVersion, type EmailTemplate, type EmailTemplateVersion, type BillingDefaults } from "@/services/adminService";
+import { getAdminBillingDefaults, saveAdminBillingDefaults, getEmailTemplates, updateEmailTemplate, fetchEmailTemplatePreview, getEmailDeliveries, retryEmailDelivery, sendReengagementCampaign, getEmailTemplateVersions, saveEmailTemplateVersion, activateEmailTemplateVersion, deleteEmailTemplateVersion, type EmailTemplate, type EmailTemplateVersion, type BillingDefaults } from "@/services/adminService";
 import { LoadError, TabSkeleton } from "./AdminShared";
 
 export function VersionRow({
@@ -184,6 +184,10 @@ export function EmailRow({ template, onEdit, onToggle }: { template: EmailTempla
 }
 
 export function EmailActivity() {
+  const retry = useMutation({mutationFn: retryEmailDelivery,
+    onSuccess: result => { toast.success(result.sent ? "Email accepted by provider." : "Not eligible for retry; request a fresh message if needed."); void history.refetch(); },
+    onError: (error: Error) => toast.error(error.message),
+  });
   const history = useQuery({queryKey: ["admin-email-deliveries"], queryFn: getEmailDeliveries});
   return <details className="lgt-card lgt-card--compact">
     <summary className="min-h-11 cursor-pointer py-3">Recent email attempts</summary>
@@ -191,6 +195,7 @@ export function EmailActivity() {
     {history.isLoading ? <p role="status">Loading…</p> : history.isError ? <LoadError onRetry={history.refetch} /> :
       <div className="space-y-3 pt-3">{history.data?.map(item => <div key={item.id} className="border-t border-border pt-3 text-sm">
         <p>{item.templateId} · {item.status === "accepted" ? "Accepted by email provider" : item.status}</p>
+        {["failed", "sending"].includes(item.status) && <Button className="min-h-11" variant="outline" disabled={retry.isPending} onClick={() => retry.mutate(item.id)}>Retry email</Button>}
         <p className="text-xs text-muted-foreground break-all">{item.userId} · {new Date(item.updatedAt).toLocaleString()}</p>
       </div>)}{!history.data?.length && <p>No tracked email attempts yet.</p>}</div>}
   </details>;

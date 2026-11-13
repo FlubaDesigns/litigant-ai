@@ -85,7 +85,7 @@ router.delete("/account", async (req, res) => {
       await billingAccount.delete();
       for (const doc of runs.docs) await doc.ref.delete();
       for (const [collection, field] of [["auto_refill_attempts", "uid"], ["sessions", "userId"],
-        ["credit_transactions", "userId"], ["feedback", "userId"], ["api_logs", "userId"]] as const) {
+        ["credit_transactions", "userId"], ["email_deliveries", "userId"], ["feedback", "userId"], ["api_logs", "userId"]] as const) {
         const snapshot = await db.collection(collection).where(field, "==", uid).get();
         for (const doc of snapshot.docs) {
           await doc.ref.delete();

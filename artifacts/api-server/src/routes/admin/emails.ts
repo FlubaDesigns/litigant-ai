@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getFirestoreDb } from "../../lib/firebaseAdmin.js";
-import { runReengagementCampaign, renderTemplatePreview } from "../../lib/emailService.js";
+import { runReengagementCampaign, renderTemplatePreview, retryEmailDelivery } from "../../lib/emailService.js";
 import { EMAIL_TEMPLATE_IDS, EMAIL_TEMPLATE_META, getTemplateConfig, saveTemplateConfig, listTemplateVersions, saveTemplateVersion, activateTemplateVersion, deleteTemplateVersion, type EmailTemplateId, validateTemplateContent } from "../../lib/emailTemplateStore.js";
 import { safeError } from "../../lib/safeError.js";
 import { requireAdmin } from "./shared.js";
@@ -38,11 +38,16 @@ router.get("/admin/email-deliveries", requireAdmin, async (_req, res) => {
 });
 
 
+router.post("/admin/email-deliveries/:id/retry", requireAdmin, async (req, res) => {
+  try { return res.json({sent: await retryEmailDelivery(req.params["id"]!)}); }
+  catch { return res.status(503).json({error: "Email could not be retried. Request a fresh verification/reset link if it has expired."}); }
+});
+
 // ── Email template management ─────────────────────────────────────────────────
 
 /**
  * GET /admin/email-templates
- * Returns all 11 template IDs with their metadata + current active config.
+ * Returns all template IDs with their metadata + current active config.
  */
 router.get("/admin/email-templates", requireAdmin, async (_req, res) => {
   try {

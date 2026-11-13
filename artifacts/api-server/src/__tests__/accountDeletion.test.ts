@@ -33,6 +33,7 @@ beforeEach(() => {
     "billing_accounts/u": { cardId: "offline-card" },
     "sessions/s": { userId: "u", sessionContent: encodeSessionContent({turns:[{id:"t",content:"offline"}]}) },
     "credit_transactions/c": { userId: "u", amount: 500, type: "signup_bonus" },
+    "email_deliveries/mail": {userId:"u",payload:{html:"private mail"}},
     "feedback/f": { userId: "u" }, "api_logs/l": { userId: "u" },
     "payment_events/signup_bonus_u": { uid: "u", eventType: "signup_bonus" },
     "users/other": { creditBalance: 99 }, "sessions/other": { userId: "other" },
@@ -46,6 +47,7 @@ describe("truthful owner account deletion", () => {
   it("confirms completion only after data, Auth and temporary state are removed", async () => {
     const response = await remove();
     expect(response.status).toBe(200);
+    expect(db.store["email_deliveries/mail"]).toBeUndefined();
     expect(response.body).toMatchObject({ success: true, authDeleted: true, appDataDeleted: true, phase: "complete" });
     expect(deleteUser).toHaveBeenCalledWith("u");
     expect(Object.keys(db.store).sort()).toEqual(["payment_events/signup_bonus_u", "sessions/other", "users/other"]);

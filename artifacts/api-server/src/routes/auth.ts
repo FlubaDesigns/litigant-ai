@@ -2,6 +2,7 @@ import { DEFAULT_CONFIG } from "@workspace/api-zod/templates";
 import { sendTrackedEmail } from "../lib/emailService.js";
 import { CourtConfigFieldsSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
+import { z } from "zod";
 import { makeRateLimiter } from "../lib/rateLimiter.js";
 import { verifyIdToken, isFirebaseConfigured, getFirestoreDb } from "../lib/firebaseAdmin.js";
 import { grantSignupBonus, syncPaidProAccess } from "../lib/creditLedger.js";
@@ -118,6 +119,9 @@ router.post("/auth/provision", async (req, res) => {
     await db.runTransaction(async (txn) => {
       const snap = await txn.get(userRef);
       if ((await txn.get(db.collection("account_deletions").doc(uid))).exists) { deletionPending = true; return; }
+      if (snap.exists && decoded.emailVerified && decoded.email && snap.data()?.email !== decoded.email) {
+        txn.update(userRef, {email: decoded.email, updatedAt: FieldValue.serverTimestamp()});
+      }
       if (!snap.exists) {
         // Revalidate Auth inside the transaction, AFTER its profile/fence reads.
         // A provision request verified before deletion may resume after teardown.
@@ -160,6 +164,8 @@ router.post("/auth/provision", async (req, res) => {
     if (decoded.emailVerified === true) {
       const { skipped } = await grantSignupBonus(uid, decoded);
       bonusGranted = !skipped;
+      await sendTrackedEmail(uid, "welcome", key => sendWelcomeEmail(uid, key), {sentField: "welcomeEmailSent"})
+        .catch(() => console.error("[Auth] Welcome delivery failed; next account setup can retry."));
     }
 
     return res.json({
@@ -172,35 +178,6 @@ router.post("/auth/provision", async (req, res) => {
     if (err instanceof InvitationError) return res.status(err.status).json({error: err.message});
     console.error("[Auth] provision error:", err.message);
     return res.status(500).json({ error: "Provisioning failed" });
-  }
-});
-
-/**
- * POST /auth/welcome
- *
- * Sends the post-verification welcome email exactly once per user.
- * Called by the frontend when the user confirms their email is verified.
- *
- * Uses the same atomic notification tracking as post-session emails.
- */
-router.post("/auth/welcome", async (req, res) => {
-  const authHeader = req.headers["authorization"] as string | undefined;
-  if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
-
-  const decoded = await verifyIdToken(authHeader.slice(7));
-  if (!decoded) return res.status(401).json({ error: "Unauthorized" });
-
-  if (!isFirebaseConfigured()) return res.json({ sent: false, reason: "firebase_not_configured" });
-  const db = getFirestoreDb();
-  if (!db) return res.json({ sent: false, reason: "firestore_unavailable" });
-
-  const uid = decoded.uid;
-  try {
-    const sent = await sendTrackedEmail(uid, "welcome", key => sendWelcomeEmail(uid, key), {sentField: "welcomeEmailSent"});
-    return res.json({sent, ...(!sent ? {reason: "disabled_or_already_sent"} : {})});
-  } catch (err: any) {
-    console.error("[Auth] /auth/welcome error:", err.message);
-    return res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -294,6 +271,20 @@ router.post("/auth/send-password-reset", resetByEmailLimiter, resetByIpLimiter, 
   }
   // Always return success — don't reveal whether the email exists
   return res.json({ sent: true });
+});
+
+
+router.post("/auth/change-email", verifyByIpLimiter, async (req, res) => {
+  const header = req.headers.authorization;
+  const decoded = header?.startsWith("Bearer ") ? await verifyIdToken(header.slice(7)) : null;
+  if (!decoded || decoded.anonymous) return res.status(401).json({error: "Sign in again."});
+  if (!decoded.authTime || Date.now() / 1000 - decoded.authTime > 300) return res.status(403).json({error: "Confirm your password again before changing your email."});
+  const email = z.string().trim().email().max(254).safeParse(req.body?.email);
+  if (!email.success || email.data.toLowerCase() === decoded.email?.toLowerCase()) return res.status(400).json({error: "Enter a valid new email address."});
+  try {
+    await sendVerificationEmail(decoded.uid, email.data);
+    return res.json({sent: true});
+  } catch { return res.status(503).json({error: "Could not send verification to the new address. Your current email has not changed."}); }
 });
 
 export default router;

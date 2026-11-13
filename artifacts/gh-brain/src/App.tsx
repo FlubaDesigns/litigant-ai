@@ -1,3 +1,4 @@
+import {APP_ROUTES} from "@workspace/api-zod/routes";
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { useArtifactAccess } from "@/hooks/useArtifactAccess";
 import { Link } from "wouter";
@@ -45,6 +46,10 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   if (loading) return null;
   if (user?.isAnonymous) return <>{children}</>;
   if (setupError) return <AccountSetupNotice />;
+  // Action links return here even when another tab has a stale signed-in user.
+  // A fresh sign-in refreshes the changed email/verification state.
+  const action = new URLSearchParams(window.location.search);
+  if (window.location.pathname === APP_ROUTES.signIn && (action.has("verified") || action.has("reset"))) return <>{children}</>;
   if (user) {
     const next = safeNext(new URLSearchParams(window.location.search).get("next"));
     return <Redirect to={user.emailVerified ? next : `/verify-email?next=${encodeURIComponent(next)}`} />;
@@ -71,7 +76,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" component={LandingPage} />
       <Route path="/guest" component={GuestPage} />
-      <Route path="/sign-in">
+      <Route path={APP_ROUTES.signIn}>
         <RedirectIfAuthed>
           <SignInPage />
         </RedirectIfAuthed>
@@ -87,7 +92,7 @@ function AppRoutes() {
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsPage} />
 
-      <Route path="/session">
+      <Route path={APP_ROUTES.session}>
         <ProtectedWithLayout>
           <SessionPage />
         </ProtectedWithLayout>
@@ -105,12 +110,12 @@ function AppRoutes() {
         </ProtectedWithLayout>
       </Route>
 
-      <Route path="/billing">
+      <Route path={APP_ROUTES.billing}>
         <ProtectedWithLayout>
           <BillingPage />
         </ProtectedWithLayout>
       </Route>
-      <Route path="/settings">
+      <Route path={APP_ROUTES.settings}>
         <ProtectedWithLayout>
           <SettingsPage />
         </ProtectedWithLayout>

@@ -141,7 +141,6 @@ export interface SSEEvent {
   /** True when the session needs a user relay answer before it can complete. */
   needsRelay?: boolean;
   /** End-of-job tap — null until user taps; only present when relayCount >= 1. */
-  endOfJobTap?: "worth_it" | "not_worth_it" | null;
   /** Whether convergence failed after 3 artifact cycles. */
   convergenceFailure?: boolean;
 }
@@ -375,18 +374,6 @@ export async function deleteSession(id: string, idToken?: string): Promise<void>
   }
 }
 
-/** Fetch every session page by cursor until exhausted. Use for exports. */
-export async function getAllSessions(idToken?: string): Promise<SavedSession[]> {
-  const all: SavedSession[] = [];
-  let cursor: string | null = null;
-  do {
-    const page = await getSessions(idToken, { limit: 100, cursor, includeArchived: true });
-    if (page.hasMore && (!page.nextCursor || page.nextCursor === cursor)) throw new Error("Session pagination did not advance. Please retry.");
-    all.push(...page.sessions);
-    cursor = page.hasMore ? page.nextCursor : null;
-  } while (cursor);
-  return all;
-}
 
 export async function generateShareLink(id: string, idToken?: string): Promise<string> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };

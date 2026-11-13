@@ -11,7 +11,8 @@
     "./limits": "./src/limits.ts",
     "./evaluation": "./src/evaluation.ts",
     "./session-content": "./src/session-content.mjs",
-    "./satisfaction": "./src/satisfaction.ts"
+    "./satisfaction": "./src/satisfaction.ts",
+    "./routes": "./src/routes.ts"
   },
   "dependencies": {
     "zod": "catalog:"

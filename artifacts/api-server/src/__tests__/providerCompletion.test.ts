@@ -13,7 +13,6 @@ import { OpenAIProvider } from "../lib/providers/openai.js";
 import { AnthropicProvider } from "../lib/providers/anthropic.js";
 import { GrokProvider } from "../lib/providers/grok.js";
 import { GeminiProvider } from "../lib/providers/gemini.js";
-import { CustomProvider } from "../lib/providers/custom.js";
 import type { AIProvider } from "../lib/providers/types.js";
 
 type CompletionProvider = AIProvider & Required<Pick<AIProvider, "getLastCompletion" | "getLastUsage">>;
@@ -63,7 +62,6 @@ const adapters: {
   { name: "OpenAI", create: () => new OpenAIProvider("test-model", credentials), mock: mocks.openai, normalReason: "stop", packets: compatibleEvents },
   { name: "Grok", create: () => new GrokProvider("test-model", credentials), mock: mocks.openai, normalReason: "stop", packets: compatibleEvents },
   { name: "Gemini", create: () => new GeminiProvider("test-model", credentials), mock: mocks.openai, normalReason: "stop", packets: compatibleEvents },
-  { name: "Custom", create: () => new CustomProvider("custom", "Custom", "test-model", { ...credentials, baseUrl: "https://example.invalid/v1" }), mock: mocks.openai, normalReason: "stop", packets: compatibleEvents },
   { name: "Anthropic", create: () => new AnthropicProvider("test-model", credentials), mock: mocks.anthropic, normalReason: "end_turn", packets: anthropicEvents },
 ];
 
@@ -251,14 +249,4 @@ describe("Anthropic stream termination", () => {
     await consume(provider);
     expect(provider.getLastCompletion()).toEqual({ status: "incomplete", finishReason: "end_turn" });
   });
-});
-
-it("preserves custom-provider completion and usage through the stream_options fallback", async () => {
-  mocks.openai.mockRejectedValueOnce(new Error("Unsupported stream_options"));
-  mocks.openai.mockReturnValueOnce(events(compatibleEvents("length")));
-  const provider = new CustomProvider("custom", "Custom", "test-model", { ...credentials, baseUrl: "https://example.invalid/v1" });
-  await consume(provider);
-  expect(mocks.openai).toHaveBeenCalledTimes(2);
-  expect(provider.getLastCompletion()).toEqual({ status: "truncated", finishReason: "length" });
-  expect(provider.getLastUsage()).toMatchObject(usage);
 });

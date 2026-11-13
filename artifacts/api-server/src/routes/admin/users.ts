@@ -4,7 +4,7 @@ import { getFirestoreDb } from "../../lib/firebaseAdmin.js";
 import { addCredits } from "../../lib/creditLedger.js";
 import { FieldValue, FieldPath } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
-import { sendAccountSuspendedEmail, isResendConfigured } from "../../lib/emailService.js";
+import { sendAccountSuspendedEmail, sendTrackedEmail, isResendConfigured } from "../../lib/emailService.js";
 import { safeError } from "../../lib/safeError.js";
 import { requireAdmin, serializeDoc } from "./shared.js";
 
@@ -164,9 +164,9 @@ router.post("/admin/users/:uid/ban", requireAdmin, async (req: any, res) => {
       authWarning = `Firestore flag was set, but Firebase Auth account update failed: ${authErr.message}. The user can still sign in.`;
     }
 
-    // Send suspension email (fire-and-forget, non-fatal)
+    // Track suspension delivery independently; email failure does not undo the ban.
     if (banned && (await isResendConfigured())) {
-      sendAccountSuspendedEmail(req.params["uid"]!, reason)
+      await sendTrackedEmail(req.params["uid"]!, "accountSuspended", key => sendAccountSuspendedEmail(req.params["uid"]!, reason, key), {eventId: String((await db.collection("users").doc(req.params["uid"]!).get()).data()?.bannedAt?.toMillis?.() ?? Date.now())})
         .catch((e) => console.error("[admin] Account-suspended email failed (non-fatal):", e));
     }
 

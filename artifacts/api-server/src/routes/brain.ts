@@ -556,22 +556,31 @@ router.post("/run-brain", brainIpLimiter, async (req, res) => {
         if (!result.cancelled && billingState.settlementStatus === "settled") await checkAndTriggerAutoRefill(uid, newBalance, result.sessionId);
         newBalance = (await db.collection("users").doc(uid).get()).data()?.creditBalance ?? newBalance;
 
+          if (fullAccess && status === "complete") await db.runTransaction(async tx => {
+            const ref = db.collection("users").doc(sessionUid);
+            const profile = (await tx.get(ref)).data();
+            if (profile && !profile.firstCompletedSessionId) tx.update(ref, {firstCompletedSessionId: result.sessionId});
+          });
+
         if ((await isResendConfigured())) {
           const billingDefaults = await getBillingDefaults();
           const emailThreshold = billingDefaults.emailCreditWarningThreshold;
 
           const notifications: Promise<boolean>[] = [];
           const settledBalance = await getSettledCreditBalance(uid);
-          if (settledBalance !== null && emailThreshold > 0 && settledBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
+          if (settledBalance !== null && emailThreshold > 0 && settledBalance > 0 && settledBalance < emailThreshold) notifications.push(sendTrackedEmail(sessionUid, "lowCredits",
             key => sendLowCreditsEmail(sessionUid, settledBalance!, emailThreshold, key),
             {sentField: "lowCreditEmailSentAt", cooldownMs: 86400_000}));
           const notificationProfile = (await db.collection("users").doc(uid).get()).data() ?? {};
           if (fullAccess && status === "complete" && sessionCompleteNotificationsEnabled(notificationProfile) && result.sessionId) {
-            notifications.push(sendTrackedEmail(sessionUid, "sessionComplete",
-              key => sendSessionCompleteEmail(sessionUid, result.sessionId, sessionTitle, actualCost, key), {eventId: result.sessionId}));
+            if (notificationProfile.firstCompletedSessionId === result.sessionId) {
+              notifications.push(sendTrackedEmail(sessionUid, "firstSession",
+                key => sendFirstSessionEmail(sessionUid, result.sessionId, sessionTitle, key), {sentField: "firstSessionEmailSent"}));
+            } else {
+              notifications.push(sendTrackedEmail(sessionUid, "sessionComplete",
+                key => sendSessionCompleteEmail(sessionUid, result.sessionId, sessionTitle, actualCost, key), {eventId: result.sessionId}));
+            }
           }
-          if (fullAccess && status === "complete" && sessionCompleteNotificationsEnabled(notificationProfile) && result.sessionId) notifications.push(sendTrackedEmail(sessionUid, "firstSession",
-            key => sendFirstSessionEmail(sessionUid, result.sessionId, sessionTitle, key), {sentField: "firstSessionEmailSent"}));
           if (settledBalance !== null && settledBalance <= 0) notifications.push(sendTrackedEmail(sessionUid, "zeroCredits",
             key => sendZeroCreditsEmail(sessionUid, key), {sentField: "zeroCreditsEmailSentAt", cooldownMs: 86400_000}));
           const outcomes = await Promise.allSettled(notifications);

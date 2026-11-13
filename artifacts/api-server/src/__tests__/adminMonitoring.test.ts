@@ -51,17 +51,11 @@ it("shows the failure marker even when a resumed session still has a saved succe
   const r=await read("error-logs");expect(r.status).toBe(200);
   expect(r.body.failedSessions[0]).toMatchObject({sessionId:"resumed",message:"Session timed out.",status:"complete"});
 });
-it("finds negative feedback even after hundreds of positive responses",async()=>{
-  records.feedback=[...Array.from({length:600},()=>({createdAt:now(),rating:"good"})),{id:"bad",createdAt:now(),rating:"bad"},{id:"warn",createdAt:now(),rating:"warn"}];
-  const r=await read("abuse-flags");expect(r.status).toBe(200);
-  expect(r.body.flags.map((f:any)=>f.id).sort()).toEqual(["bad","warn"]);
-  expect(r.body).toMatchObject({totalCount:2,hasMore:false});
-  expect(queries).toContainEqual(["feedback","rating","in",["bad","warn"]]);
-});
-it.each([["api-usage","sessions"],["error-logs","api_logs"],["error-logs","sessions"],["abuse-flags","feedback"]])("does not show empty success when %s cannot read %s",async(path,collection)=>{
+it("retires historical-only flags",async()=>{expect((await read("abuse-flags")).status).toBe(404);});
+it.each([["api-usage","sessions"],["error-logs","api_logs"],["error-logs","sessions"]])("does not show empty success when %s cannot read %s",async(path,collection)=>{
   fail=collection;expect((await read(path)).status).toBe(500);
 });
-it.each(["api-usage","error-logs","abuse-flags"])("returns unavailable if %s has no database",async path=>{
+it.each(["api-usage","error-logs"])("returns unavailable if %s has no database",async path=>{
   vi.mocked(getFirestoreDb).mockReturnValue(null);expect((await read(path)).status).toBe(503);
 });
 

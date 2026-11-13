@@ -87,26 +87,15 @@ async function guestForSignup(): Promise<User | null> {
   return null;
 }
 
-/**
- * Send email verification via the server (Resend), falling back to
- * Firebase's built-in sender if the server endpoint is unavailable.
- */
+/** Verification uses the canonical server sender and its rate limits. */
 async function sendVerificationViaServer(user: User): Promise<void> {
-  try {
-    const token = await user.getIdToken();
-    const res = await fetch(`${API_BASE}/auth/send-verification`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error ?? `HTTP ${res.status}`);
-    }
-  } catch (err) {
-    console.warn("[AuthService] server verification email failed, falling back to Firebase:", err);
-    // Fallback: use Firebase's built-in sender
-    const { sendEmailVerification } = await import("firebase/auth");
-    await sendEmailVerification(user);
+  const token = await user.getIdToken();
+  const res = await fetch(`${API_BASE}/auth/send-verification`, {
+    method: "POST", headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Verification email could not be sent. Please retry.");
   }
 }
 

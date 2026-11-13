@@ -4,7 +4,11 @@ const { send } = vi.hoisted(() => ({ send: vi.fn(async () => ({ error: null })) 
 vi.mock("resend", () => ({ Resend: class { emails = { send }; } }));
 vi.mock("firebase-admin/auth", () => ({ getAuth: () => ({
   getUser: async () => ({ email: "test@example.test", displayName: "Alex & Pat <Friends>" }),
-  getUserByEmail: async () => ({ displayName: "Alex & Pat <Friends>" }),
+  getUserByEmail: async () => ({ uid: "fixture", displayName: "Alex & Pat <Friends>" }),
+  generateVerifyAndChangeEmailLink: async (_current: string, next: string, settings: any) => {
+    expect(next).toBe("new@example.test");expect(settings.url).toBe("https://litigant-ai.com/sign-in?verified=1");
+    return "https://example.test/change?token=fixture";
+  },
   generateEmailVerificationLink: async () => "https://example.test/verify?token=fixture",
   generatePasswordResetLink: async () => "https://example.test/reset?token=fixture",
 }) }));
@@ -14,9 +18,26 @@ vi.mock("../lib/emailTemplateStore.js", async original => ({
   ...await original<typeof import("../lib/emailTemplateStore.js")>(), getTemplateConfig: vi.fn(),
 }));
 import { EMAIL_TEMPLATE_IDS, EMAIL_TEMPLATE_META, getTemplateConfig, validateTemplateContent, type EmailTemplateId } from "../lib/emailTemplateStore.js";
+import {getFirestoreDb} from "../lib/firebaseAdmin.js";
 import * as email from "../lib/emailService.js";
 
+let records: Record<string, any>;
 beforeEach(() => {
+  records = {"users/fixture": {notifications:{reengagement:true,sessionComplete:true}}};
+  let lock = Promise.resolve();
+  const doc = (path:string):any => ({path,
+    get: async () => ({exists: !!records[path],data:()=>records[path]}),
+    update: async (v:any) => {records[path]={...records[path],...v};},
+  });
+  vi.mocked(getFirestoreDb).mockReturnValue({collection:(name:string)=>({doc:(id:string)=>doc(`${name}/${id}`)}),
+    runTransaction:(run:any)=> {const result=lock.then(async()=>{
+      const writes:Array<()=>void>=[];
+      const value=await run({get:(ref:any)=>{if(writes.length)throw Error("read after write");return ref.get();},
+        set:(ref:any,v:any)=>writes.push(()=>{records[ref.path]=v;}),
+        update:(ref:any,v:any)=>writes.push(()=>{records[ref.path]={...records[ref.path],...v};})});
+      writes.forEach(write=>write());return value;
+    });lock=result.catch(()=>{});return result;},
+  } as any);
   vi.clearAllMocks();
   vi.stubEnv("RESEND_API_KEY", "test-fixture-only");
   vi.mocked(getTemplateConfig).mockImplementation(async id => {
@@ -81,4 +102,46 @@ describe("email variable wiring", () => {
     await email.sendWelcomeEmail("fixture");
     expect(send).toHaveBeenCalledTimes(3);
   });
+});
+
+
+describe("durable delivery retries",()=>{
+  it("retries the frozen receipt and key without changing payment details",async()=>{
+    send.mockResolvedValueOnce({error:{message:"temporary provider failure"}} as any);
+    await expect(email.sendTrackedEmail("fixture","paymentReceipt",key=>email.sendPaymentReceiptEmail("fixture",100,500,125,key),{eventId:"payment-1"})).rejects.toThrow();
+    const [path,record]=Object.entries(records).find(([p])=>p.startsWith("email_deliveries/"))!;
+    const original=(send.mock.calls[0] as any)[0];
+    expect(record.status).toBe("failed");
+    expect(await email.retryEmailDelivery(path.split("/")[1]!)).toBe(true);
+    expect((send.mock.calls[1] as any)[0]).toEqual(original);
+    expect((send.mock.calls[1] as any)[1]).toEqual({idempotencyKey:record.attemptKey});
+    expect(await email.retryEmailDelivery(path.split("/")[1]!)).toBe(false);
+  });
+  it("serializes concurrent sends and blocks expired or opted-out retries",async()=>{
+    const deliver=vi.fn(async()=>true);
+    await Promise.all(Array.from({length:5},()=>email.sendTrackedEmail("fixture","welcome",deliver,{sentField:"welcomeEmailSent"})));
+    expect(deliver).toHaveBeenCalledTimes(1);
+    send.mockResolvedValueOnce({error:{message:"offline"}} as any);
+    await expect(email.sendTrackedEmail("fixture","reengagement",key=>email.sendReengagementEmail("fixture",100,key),{cooldownMs:86400000})).rejects.toThrow();
+    const [path,record]=Object.entries(records).find(([,r])=>r.templateId==="reengagement")!;
+    records["users/fixture"].notifications.reengagement=false;
+    expect(await email.retryEmailDelivery(path.split("/")[1]!)).toBe(false);
+    records["users/fixture"].notifications.reengagement=true;record.attemptAt=Date.now()-24*3600000;
+    expect(await email.retryEmailDelivery(path.split("/")[1]!)).toBe(false);
+  });
+});
+
+it("sends change verification to the proposed address, without claiming it is already changed",async()=>{
+ await email.sendVerificationEmail("fixture","new@example.test");
+ const payload=(send.mock.calls[0] as any)[0];
+ expect(payload.to).toBe("new@example.test");expect(payload.html).toContain("current address stays in place until you confirm");
+});
+it("all customer email links use current application destinations",async()=>{
+ for(const id of EMAIL_TEMPLATE_IDS){
+   send.mockClear();await senders[id]();
+   const html=(send.mock.calls[0] as any)[0].html as string;
+   for(const [,href] of html.matchAll(/href="(https:\/\/litigant-ai.com[^" ]*)"/g)){
+     expect(new URL(href!).pathname).toMatch(/^\/(?:session(?:\/[^/]+)?|billing|settings)?$/);
+   }
+ }
 });
