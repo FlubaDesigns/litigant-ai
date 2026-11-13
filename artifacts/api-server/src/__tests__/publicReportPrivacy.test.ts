@@ -17,7 +17,7 @@ it('projects canonical text without leaking internal turns or querying old copie
  expect(turns).not.toHaveBeenCalled();
 });
 beforeEach(()=>{
- record={userId:'owner',shared:true,shareId:'public',status:'complete',acceptedAt:123,courtroomOutcome:{reason:'convergence_failure'},transcript:'Saved',debateNotes:'Notes',roundsCompleted:2,litigantCount:3};
+ record={userId:'owner',shared:true,shareId:'public',status:'complete',acceptedAt:123,courtroomOutcome:{reason:'convergence_failure'},sessionContent:encodeSessionContent({transcript:'Saved',debateNotes:'Notes'}),roundsCompleted:2,litigantCount:3};
  turns=vi.fn(()=>{throw new Error('Current report must not query turn collection');});
  const query:any={where:()=>query,limit:()=>query,get:async()=>({empty:!record.shared,docs:record.shared?[{id:'s',data:()=>record,ref:{collection:turns}}]:[]})};
  const counters=new Map<string,any>();
@@ -40,15 +40,14 @@ it('does not label interrupted or unreviewed work as approved',()=>{
  expect(reviewStatus({courtroomOutcome:{reason:'approved'}})).toBe('Auditor approved');
 });
 
-it('fills missing notes without replacing saved transcript and excludes fixed stages from metrics',async()=>{
- delete record.debateNotes; delete record.roundsCompleted; delete record.litigantCount;
- const values=[{role:'Orchestrator',round:0,content:'OPENING'},
-  {role:'Advocate',round:1,content:'ARGUMENT'}, {role:'Skeptic',round:2,content:'CHALLENGE'},
-  {role:'Builder',round:99,content:'DOCUMENT'}, {role:'Auditor',round:99,content:'REVIEW'},
-  {role:'Verdict',round:99,content:'VERDICT'}];
- turns.mockImplementation(()=>({orderBy:()=>({get:async()=>({empty:false,docs:values.map(value=>({data:()=>value}))})})}));
- const r=await request(app).get('/report/public'); expect(r.status).toBe(200);
- expect(r.body.transcript).toBe('Saved');expect(r.body.debateNotes).toContain('ARGUMENT');
- expect(r.body.debateNotes).not.toContain('OPENING');expect(r.body.debateNotes).not.toContain('VERDICT');
+it('preserves empty canonical notes and derives only missing metrics from canonical turns',async()=>{
+ delete record.roundsCompleted; delete record.litigantCount;
+ record.sessionContent=encodeSessionContent({transcript:'Saved',debateNotes:'',turns:[
+  {role:'Advocate',round:1,content:'ARGUMENT'},{role:'Skeptic',round:2,content:'CHALLENGE'},
+  {role:'Verdict',round:99,content:'VERDICT'},
+ ]});
+ const r=await request(app).get('/report/public');expect(r.status).toBe(200);
+ expect(r.body.transcript).toBe('Saved');expect(r.body.debateNotes).toBe('');
  expect(r.body.roundsCompleted).toBe(2);expect(r.body.litigantCount).toBe(2);
+ expect(turns).not.toHaveBeenCalled();
 });

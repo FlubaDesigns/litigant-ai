@@ -1,4 +1,4 @@
-import { projectSessionContent, sessionTurnMetrics, presentSessionContent, decodeSessionContent } from "../lib/sessionContent.js";
+import { sessionTurnMetrics, presentSessionContent, decodeSessionContent } from "../lib/sessionContent.js";
 import { CourtConfigSchema } from "@workspace/api-zod/session";
 import { Router } from "express";
 import { getFirestoreDb } from "../lib/firebaseAdmin.js";
@@ -73,18 +73,6 @@ router.get("/report/:shareId", reportLimiter, async (req, res) => {
       const metrics = sessionTurnMetrics(decodeSessionContent(rawData.sessionContent).turns);
       result.roundsCompleted ??= metrics.roundsCompleted;
       result.litigantCount ??= metrics.litigantCount;
-    }
-    if (rawData.sessionContent === undefined && (!result.transcript || !result.debateNotes || data.roundsCompleted === undefined || data.litigantCount === undefined)) try {
-      const turnsSnap = await doc.ref
-        .collection("session_turns")
-        .orderBy("turnIndex")
-        .get();
-      if (!turnsSnap.empty) {
-        const turns = turnsSnap.docs.map((t) => t.data());
-        Object.assign(result, projectSessionContent(data, turns), sessionTurnMetrics(turns));
-      }
-    } catch {
-      // Non-fatal — report still renders without turn-derived metrics
     }
 
     return res.json(result);

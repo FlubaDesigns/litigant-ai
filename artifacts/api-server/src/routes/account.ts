@@ -88,10 +88,6 @@ router.delete("/account", async (req, res) => {
         ["credit_transactions", "userId"], ["feedback", "userId"], ["api_logs", "userId"]] as const) {
         const snapshot = await db.collection(collection).where(field, "==", uid).get();
         for (const doc of snapshot.docs) {
-          if (collection === "sessions") {
-            const turns = await doc.ref.collection("session_turns").get();
-            for (const turn of turns.docs) await turn.ref.delete();
-          }
           await doc.ref.delete();
         }
       }

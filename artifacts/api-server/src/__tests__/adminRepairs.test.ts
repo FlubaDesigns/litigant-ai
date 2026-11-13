@@ -1,3 +1,4 @@
+import {encodeSessionContent} from "@workspace/api-zod/session-content";
 import {beforeEach, expect, it, vi} from "vitest";
 import express from "express";
 import {LITMUS_TESTS} from "@workspace/api-zod/evaluation";
@@ -211,4 +212,21 @@ it("requires admin authentication and evidence before persisting an uncalibrated
  const result=await submit(body);expect(result.status).toBe(201);
  expect(store[`seat_evaluations/${result.body.id}`]).toMatchObject({...body,reviewerUid:"owner",calibrated:false,score:100});
  const saved=await read("seat-evaluations");expect(saved.status).toBe(200);expect(saved.body.reviews).toHaveLength(1);
+});
+
+
+it("projects session content without adding transcript fields to admin user records", async () => {
+  store["sessions/s"] = {userId:"u",status:"complete",sessionContent:encodeSessionContent({transcript:"Saved",debateNotes:"Notes"})};
+  store["users/second"] = {creditBalance:50};
+  const users = await read("users");
+  expect(users.status).toBe(200);
+  expect(users.body.users).toHaveLength(2);
+  for (const user of users.body.users) {
+    expect(user).not.toHaveProperty("transcript");
+    expect(user).not.toHaveProperty("transcriptLines");
+  }
+  const detail = await read("sessions/s");
+  expect(detail.status).toBe(200);
+  expect(detail.body.session).toMatchObject({transcript:"Saved",debateNotes:"Notes",transcriptLines:["Saved"]});
+  expect(detail.body.session).not.toHaveProperty("sessionContent");
 });

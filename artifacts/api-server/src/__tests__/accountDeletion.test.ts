@@ -1,3 +1,4 @@
+import { encodeSessionContent } from "@workspace/api-zod/session-content";
 import { reserveCreditRun } from "../lib/creditRunSettlement.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
@@ -30,7 +31,7 @@ beforeEach(() => {
   db = accountDeletionDatabase({
     "users/u": { plan: "pro", email: "offline@example.invalid", creditBalance: 500, autoRefill: { enabled: true, consentVersion: 1, thresholdCredits: 600, dollarAmount: 20 } },
     "billing_accounts/u": { cardId: "offline-card" },
-    "sessions/s": { userId: "u" }, "sessions/s/session_turns/t": { content: "offline" },
+    "sessions/s": { userId: "u", sessionContent: encodeSessionContent({turns:[{id:"t",content:"offline"}]}) },
     "credit_transactions/c": { userId: "u", amount: 500, type: "signup_bonus" },
     "feedback/f": { userId: "u" }, "api_logs/l": { userId: "u" },
     "payment_events/signup_bonus_u": { uid: "u", eventType: "signup_bonus" },
@@ -68,7 +69,7 @@ describe("truthful owner account deletion", () => {
     expect(chargeSquareCard).not.toHaveBeenCalled();
     expect(disableSquareCard).toHaveBeenCalledTimes(1);
   });
-  it.each(["sessions/s/session_turns/t", "sessions/s", "credit_transactions/c", "feedback/f", "api_logs/l"])("reports partial failure at %s and safely resumes", async path => {
+  it.each(["sessions/s", "credit_transactions/c", "feedback/f", "api_logs/l"])("reports partial failure at %s and safely resumes", async path => {
     db.failDirectWhen((kind, target) => kind === "delete" && target === path);
     const failed = await remove();
     expect(failed.status).toBe(503);

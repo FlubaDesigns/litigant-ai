@@ -122,6 +122,7 @@ async function list(read, path, limit = 5000) {
   let token;
   do {
     const query = new URLSearchParams({pageSize:'100'});
+    if (path === ROOT + '/sessions') query.set('showMissing','true');
     if (token) query.set('pageToken',token);
     const page = await read(`${API}${path}?${query}`, 'inspect session content');
     documents.push(...page.documents ?? []);

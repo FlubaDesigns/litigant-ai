@@ -1,4 +1,4 @@
-import { projectSessionContent, presentSessionContent, readSessionTurns } from "../lib/sessionContent.js";
+import { presentSessionContent, readSessionTurns } from "../lib/sessionContent.js";
 import { PAID_ACCESS_NOTE } from "@workspace/api-zod/session";
 import { canCreateArtifacts } from "@workspace/api-zod/session";
 import { Router } from "express";
@@ -47,11 +47,10 @@ router.get("/account/export", async (req, res) => {
         for (const doc of page.docs) {
           const data = doc.data();
           if (data.memorySaved === false) continue;
-          // A failed legacy read must fail the export, never silently drop content.
-          const turns = await readSessionTurns(doc.ref, data);
+          // Invalid saved content must fail the export, never silently drop content.
+          const turns = readSessionTurns(data);
           const sessionTurns = turns.map(turn => exportFields(turn, ["id", "role", "content", "round", "turnIndex", "provider", "model", "inputTokens", "outputTokens", "createdAt"]));
           const saved = exportFields(presentSessionContent(data), EXPORT_SESSION_FIELDS);
-          if (data.sessionContent === undefined) Object.assign(saved, projectSessionContent(saved, sessionTurns));
           sessions.push({id: doc.id, ...saved, sessionTurns});
         }
         if (page.docs.length < 100) break;
@@ -189,39 +188,18 @@ router.get("/sessions/:id", async (req, res) => {
     if (!doc.exists) { res.status(404).json({ message: "Session not found" }); return; }
 
     const rawData = doc.data()!;
-    const data = presentSessionContent(rawData);
-    if (data.memorySaved === false) { res.status(404).json({message:"This Free conversation has no saved memory."}); return; }
+    if (rawData.memorySaved === false) { res.status(404).json({message:"This Free conversation has no saved memory."}); return; }
 
     // Strict owner check — no shared-flag bypass
-    if (data["userId"] !== uid) {
+    if (rawData["userId"] !== uid) {
       res.status(403).json({ message: "Forbidden" }); return;
     }
 
-    // If transcript/debateNotes were not saved in the session doc (legacy sessions),
-    // reconstruct them from the session_turns subcollection.
-    let transcript = (data["transcript"] as string) || "";
-    let debateNotes = (data["debateNotes"] as string) || "";
-    if (rawData.sessionContent === undefined && (!transcript || !debateNotes)) {
-      try {
-        const turnsSnap = await doc.ref
-          .collection("session_turns")
-          .orderBy("turnIndex")
-          .get();
-        if (!turnsSnap.empty) {
-          const turns = turnsSnap.docs.map((t) => t.data());
-          ({transcript, debateNotes} = projectSessionContent({transcript, debateNotes}, turns));
-        }
-      } catch {
-        // non-fatal — return whatever we have
-      }
-    }
-
+    const data = presentSessionContent(rawData);
     res.json({
       id: doc.id,
       ...data,
       template: typeof data.templateId === "string" ? await getTemplate(data.templateId, true) : null,
-      transcript,
-      debateNotes,
       createdAt: data["createdAt"]?.toDate?.()?.toISOString() ?? null,
       updatedAt: data["updatedAt"]?.toDate?.()?.toISOString() ?? null,
     });
@@ -251,11 +229,7 @@ router.delete("/sessions/:id", async (req, res) => {
       return 200;
     });
     if (code !== 200) { res.status(code).json({message: code === 409 ? "This session is running. Wait for it to finish before deleting it." : "Session unavailable"}); return; }
-    const doc = await ref.get();
-    // Also delete session_turns subcollection
-    const turnsSnap = await doc.ref.collection("session_turns").get();
-    await Promise.all(turnsSnap.docs.map((t) => t.ref.delete()));
-    await doc.ref.delete();
+    await ref.delete();
     res.json({ success: true });
   } catch (e: any) {
     console.error("[sessions] DELETE /sessions/:id error:", e);

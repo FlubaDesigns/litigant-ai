@@ -1,5 +1,5 @@
-import {inspectContent, migrateContent} from './lai-content-migration.mjs';
-import {inspectSettings, migrateSettings} from './lai-settings-migration.mjs';
+import {inspectContent} from './lai-content-migration.mjs';
+import {inspectSettings} from './lai-settings-migration.mjs';
 /** LAI-only release controller. Inspection is read-only; deployment is descriptor-authorized.
  * No private Engine implementation or credentials belong in this public repository.
  */
@@ -555,6 +555,12 @@ export function validateSavedCanon(document) {
   assert(typeof fields?.version?.stringValue === 'string' && fields.version.stringValue.trim(), 'Saved Canon version is missing; configure it before releasing');
 }
 
+export function validateRetiredSessionData(content, settings) {
+  assert.equal(content.conversions, 0, 'Unconverted session content remains');
+  assert.equal(content.duplicateTurns, 0, 'Retired turn copies remain');
+  assert.equal(settings.writes.length, 0, 'Retired saved settings remain');
+}
+
 async function release() {
   const { context, descriptor } = await loadPlan();
   const before = await preflight(context);
@@ -566,12 +572,14 @@ async function release() {
     await inspectFeedbackRules(cloud, await readFile(path.join(rulesRoot, 'firestore.rules'), 'utf8'));
     console.log('Read-only rules preflight passed: exact feedback-only tightening, no rules drift.');
     await permissions('https://cloudresourcemanager.googleapis.com/v1/projects/litigant-ai:testIamPermissions',
-      ['datastore.entities.get', 'datastore.entities.list', 'datastore.entities.update', 'datastore.entities.delete'], 'LAI reviewed content and settings migration');
+      ['datastore.entities.get', 'datastore.entities.list'], 'LAI saved-data integrity');
+    const content = await inspectContent(cloud);
+    const settings = await inspectSettings(cloud);
+    validateRetiredSessionData(content.counts, settings);
+    console.log('LAI_CONTENT_INSPECTION ' + JSON.stringify(content.counts));
+    console.log('LAI_SETTINGS_INSPECTION ' + JSON.stringify({scanned: settings.scanned, changes: settings.counts}));
   }
   if (descriptor.action === 'inspect') {
-    console.log('LAI_CONTENT_INSPECTION ' + JSON.stringify((await inspectContent(cloud)).counts));
-    const settings = await inspectSettings(cloud);
-    console.log('LAI_SETTINGS_INSPECTION ' + JSON.stringify({scanned: settings.scanned, changes: settings.counts}));
     await writeFile(tempPath(context, 'identity.json'), JSON.stringify(runtimeIdentityEvidence(context, before)) + '\n', { mode: 0o600 });
     console.log('LAI_CREDENTIAL_WIRING ' + JSON.stringify(await inspectCredentialWiring(before)));
     let migrationPending=true;
@@ -616,7 +624,6 @@ async function release() {
   await recheck();
   await paymentHistoryIndexGate(context, descriptor, { recheck });
   await recheck();
-  console.log('LAI_SETTINGS_MIGRATION ' + JSON.stringify(await migrateSettings({read: cloud, write: cloud, assertCurrent: recheck})));
   run('gcloud', ['auth', 'configure-docker', 'gcr.io', '--quiet']);
   const tag = `gcr.io/litigant-ai/api:lai-${descriptor.sourceCommit}-${context.runId}-${context.attempt}`;
   run('docker', ['tag', built.localImage, tag]);
@@ -638,7 +645,6 @@ async function release() {
   assert.equal(deployedEnv.find(v => v.name === 'DEPLOY_TIMESTAMP')?.value, deployedAt);
   await retryRead(() => verifyApi(after.status.url, descriptor.sourceCommit));
   console.log('Release stage: API update complete and verified; Hosting unchanged.');
-  console.log('LAI_CONTENT_MIGRATION ' + JSON.stringify(await migrateContent({read: cloud, write: cloud, assertCurrent: recheck})));
   await recheck(); // Scope, evidence, Main and runtime checks immediately before Hosting mutation.
   const sourceRoot = path.resolve('release-source');
   const config = JSON.parse(await readFile(path.join(sourceRoot, 'firebase.lai-release.json'), 'utf8'));

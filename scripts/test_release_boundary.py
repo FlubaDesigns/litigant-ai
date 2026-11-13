@@ -112,21 +112,13 @@ class ReleaseBoundaryTests(unittest.TestCase):
         self.assertLess(release.index('inspectPaymentIndexes(await paymentIndexes())'), release.index("'run', 'services', 'update'"))
         self.assertIn("'projects/litigant-ai/databases/(default)/collectionGroups/credit_transactions'", controller)
 
-    def test_settings_migration_precedes_runtime_replacement(self):
+    def test_retired_data_is_verified_before_runtime_replacement(self):
         controller = (ROOT / 'scripts/lai-release.mjs').read_text()
         release = controller.split('async function release() {', 1)[1]
-        self.assertLess(release.index("descriptor.action === 'inspect'"), release.index('await migrateSettings('))
-        self.assertLess(release.index('await migrateSettings('), release.index("'run', 'services', 'update'"))
-        self.assertIn('assertCurrent: recheck', release)
-        self.assertIn('test_settings_migration_emulator.mjs', (ROOT / '.github/workflows/deploy-cloudrun.yml').read_text())
-
-    def test_content_migration_follows_canonical_api_verification(self):
-        controller = (ROOT / 'scripts/lai-release.mjs').read_text()
-        release = controller.split('async function release() {', 1)[1]
-        self.assertLess(release.index('verifyApi(after.status.url, descriptor.sourceCommit)'), release.index('await migrateContent('))
-        self.assertLess(release.index('await migrateContent('), release.index("'deploy', '--only', 'hosting'"))
-        self.assertIn('assertCurrent: recheck', release)
-        self.assertIn('test_content_migration_emulator.mjs', (ROOT / '.github/workflows/deploy-cloudrun.yml').read_text())
+        self.assertLess(release.index('validateRetiredSessionData('), release.index("'run', 'services', 'update'"))
+        self.assertNotIn('migrateSettings(', release)
+        self.assertNotIn('migrateContent(', release)
+        self.assertNotIn('datastore.entities.delete', release)
 
     def test_release_controller_guards(self):
         subprocess.run(['node', '--test', 'scripts/test_lai_release.mjs'], cwd=ROOT, check=True,
